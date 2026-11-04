@@ -1,0 +1,55 @@
+{
+  "title": "A321 공력 연구 CPU 준비 결과",
+  "sections": [
+    "1. 연구의 목표와 완료 정의",
+    "2. 저장소·원본·권한 경계",
+    "3. 실제 단계별 결과",
+    "4. NASA 지침을 이 연구에 적용하는 방법",
+    "5. 항공기 검토 순서와 후속 수용 기준",
+    "6. 단계 6~14 로드맵 — 아직 실행하지 않음",
+    "7. 현재 불가능·미확인 항목과 다음 한 건",
+    "8. 재실행과 산출물 안내",
+    "실제 단면 비교"
+  ],
+  "nasaLinks": [
+    {
+      "label": "입구",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/tutorial.html"
+    },
+    {
+      "label": "CFD Analysis Process",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/process.html"
+    },
+    {
+      "label": "Verification Assessment",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/verassess.html"
+    },
+    {
+      "label": "Validation Assessment",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/valassess.html"
+    },
+    {
+      "label": "Iterative Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/iterconv.html"
+    },
+    {
+      "label": "Solution Consistency",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/consistency.html"
+    },
+    {
+      "label": "Spatial Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html"
+    },
+    {
+      "label": "Temporal Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/tempconv.html"
+    }
+  ],
+  "hasFixFirst": true,
+  "sectionsImage": [
+    {
+      "src": "http://127.0.0.1:8769/evidence/sections.svg",
+      "loaded": true
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "study_id": "A321-CPU-PREFLIGHT-20261104",
+  "scope": "stages_1_to_5_only",
+  "gpu_compute_authorized": false,
+  "solver_execution_authorized": false,
+  "mesh_generation_authorized": false,
+  "intent": "first exploratory low-speed external aerodynamic calculation on a simplified A321-derived airframe",
+  "source_native_sha256": "1fd3cfd08b1dbf5e5f2fb288caf9846ad149ff8839a37cc2e4c2c8074bc1073c",
+  "source_status": "RESEARCH_HOLD",
+  "source_axes": {"x": "nose to tail", "y": "port negative, starboard positive", "z": "up"},
+  "future_flow_proposal": {
+    "status": "PLANNED_NOT_RUN",
+    "freestream_m_s": 30.0,
+    "temperature_K": 288.15,
+    "density_kg_m3": 1.225,
+    "kinematic_viscosity_m2_s": 0.0000146,
+    "alpha_deg": 2.0,
+    "beta_deg": 0.0,
+    "velocity_formula": "U=(V*cos(alpha),0,V*sin(alpha)) in body axes; positive alpha is upward relative flow",
+    "drag_unit_vector": "(cos(alpha),0,sin(alpha))",
+    "lift_unit_vector": "(-sin(alpha),0,cos(alpha))",
+    "gravity": "off",
+    "intended_driver": "ofgpu-lowmach",
+    "turbulence_proposal": "kOmegaSST, wall treatment and first-cell spacing selected jointly after geometry acceptance",
+    "reference_area_m2": null,
+    "reference_area_status": "must measure and lock a planform definition; no assumed OEM coefficient reference",
+    "moment_reference_m": null
+  },
+  "geometry_trial": {
+    "purpose": "coarse airframe-only surface preparation feasibility; not a clean A321 performance geometry",
+    "voxel_m": 0.08,
+    "omitted": ["engines and pylons", "landing gear", "interior", "decorative seams", "secondary flap slots", "zero-thickness spoiler panels"],
+    "sampled_deviation_max_budget_m": 0.15,
+    "budget_note": "research trial triage only; not an aerodynamic accuracy or manufacturing tolerance",
+    "required_for_meshing": ["no open edges", "no nonmanifold edges", "consistent outward winding", "no degenerate or duplicate faces", "component review", "intersection/contact review", "shape and section fidelity review"]
+  },
+  "stop": "before CUDA/GPU probe, solver, mesher or validation suite; stage 6 requires a new execution decision"
+}

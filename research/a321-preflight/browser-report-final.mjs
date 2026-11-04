@@ -1,0 +1,11 @@
+const fs=await import('node:fs/promises');
+const task=await taskSpace(7);
+const page=task.page('p1');
+const tabs=await task.tabs();
+const win=await task.cdp('Browser.getWindowForTarget',{targetId:tabs.find(t=>t.label==='p1').targetId});
+await task.cdp('Browser.setWindowBounds',{windowId:win.windowId,bounds:{windowState:'normal'}});
+await page.cdp('Page.bringToFront');
+console.log('REPORT',await page.evaluate(()=>({title:document.title,heading:document.querySelector('h1')?.textContent,sections:document.querySelectorAll('h2').length,partial:document.body.innerText.includes('PARTIAL')})));
+console.log(await page.screenshot({path:'D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-preflight/artifacts/ego-report.png'}));
+await fs.writeFile('D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-preflight/evidence/browser-report.json',JSON.stringify({url:await page.url(),checked_at:new Date().toISOString(),title:await page.title(),gpu_compute:false},null,2));
+console.log(await page.snapshot());

@@ -1,5 +1,9 @@
 # Provenance — where every file came from
 
+CPU-only A321 research scripts added 2026-11-04 are individually classified in
+[`research/a321-preflight/PROVENANCE.md`](../research/a321-preflight/PROVENANCE.md).
+They do not change solver numerics or introduce GPU execution.
+
 meteor-cfd is source-available under the Prosperity Public License 3.0.0
 (see ../LICENSE). This file is the per-file record that
 [`../LICENSING.md`](../LICENSING.md) §6 phase 4 calls for: for each source

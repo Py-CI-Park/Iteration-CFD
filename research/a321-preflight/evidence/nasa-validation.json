@@ -1,0 +1,52 @@
+{
+  "title": "Validation Assessment",
+  "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/valassess.html",
+  "text": " V&V Home       Archive       Tutorial\nValidation Assessment\n\nThis page discusses Validation Assessment, which focuses on the methods for the Validation of a CFD codes for simulation of a certain type of flows.\n\nValidation\n\nValidation is defined as:\n\nThe process of determining the degree to which a model is an accurate representation of the real world from the perspective of the intended uses of the model. (AIAA G-077-1998)\n\nValidation has also been described as \"solving the right equations\". It is not possible to validate the entire CFD code. One can only validate the code for a specific range of applications for which there is experimental data. Thus one validates a model or simulation. Applying the code to flows beyond the region of validity is termed prediction.\n\nValidation examines if the conceptual models, computational models as implemented into the CFD code, and computational simulation agree with real world observations. The strategy is to indentify and quantify error and uncertainty through comparison of simulation results with experimental data. The experiment data sets themselves will contain bias errors and random errors which must be properly quantified and documented as part of the data set. The accuracy required in the validation activities is dependent on the application, and so, the validation should be flexible to allow various levels of accuracy.\n\nThe approach to Validation Assessment is to perform a systematic comparison of CFD simulation results to experimental data from a set increasingly complex cases.\n\nEach CFD simulation requires verification of the calculation as specified in the discussion of Verification Assessment.\n\nValidation Assessment Process\n\nThe process for Validation Assessment of a CFD simulation can be summarized as:\n\n1. Examine Iterative Convergence.\n\nValidation assessment requires that a simulation demonstrates iterative convergence. Further details can be page entitled Examining Iterative Convergence.\n\n2. Examine Consistency.\n\nOne should check for consistency in the CFD solution. For example, the flow in a duct should maintain mass conservation through the duct. Further total pressure recovery in an inlet should stay constant or decrease through the duct.\n\n3. Examine Spatial (Grid) Convergence.\n\nThe CFD simulation results should demonstrate spatial convergence. Further details and methods can be found on the page entitled Examining Spatial (Grid) Convergence.\n\n4. Examine Temporal Convergence.\n\nThe CFD simulation results should demonstrate temporal convergence. Further details and methods can be found on the page entitled Examining Temporal Convergence.\n\n5. Compare CFD Results to Experimental Data.\n\nExperimental data is the observation of the \"real world\" in some controlled manner. By comparing the CFD results to experimental data, one hopes that there is a good agreement, which inreases confidence that the physical models and the code represents the \"real world\" for this class of simulations. However, the experimental data contains some level of error. This is usually related to the complexity of the experiment. Validation assessment calls for a \"building block\" approach of experiments which sets a hierarchy of experiment complexity.\n\n6. Examine Model Uncertainties.\n\nThe physical models in the CFD code contain uncertainties due to a lack of complete understanding or knowledge of the physical processes. One of the models with the most uncertainty is the turbulence models. The uncertainty can be examined by running a number of simulations with the various turbulence models and examine the affect on the results.\nBuilding-Block Approach for Experiments\n\nA building-block approach is followed in performing the validation assessment for a complex system such as an aircraft inlet. The approach consists of phases involving successively more complex flow physics, geometry, and interactions. These phases include:\n\nUnit Problems involve simple geometry, one element of the complex flow physics, and one relevant flow feature. An example is the measurement of a turbulent boundary layer over a flat plate. The experiment data set contains detailed data collected with high accuracy. The boundary conditions and initial conditions are accurately measured.\nBenchmark Cases involve fairly simple hardware representing a key feature of the system. The flow field contains only two separate flow features of the flow physics which are likely coupled. An example is a shock / boundary layer interaction. The experiment data set is extensive in scope and uncertainties are low; however, some measurements, such as, initial and boundary conditions, may not have been collected.\nSubsystem Cases involve geometry of a component of the complete system which may have been simplified. The flow physics of the complete system may be well represented; but the level of coupling between flow phenomena is typically reduced. An example is a test of a subsonic diffuser for a supersonic inlet. The exact inflow conditions may not be matched. The quality and quantity of the experiment data set may not be as extensive as the benchmark cases.\nComplete System Cases involve actual hardware and the complete flow physics. All of the relevant flow features are present. An example is a test of a mixed-compression inlet in the 10x10 wind tunnel at NASA Glenn. Less detailed data is collected since the emphasis is on system evaluation. Uncertainties on initial and boundary conditions may be large.\nRequirements for Experimental Data\n\nThe experimental data likely has uncertainties and error associated with it. In comparing the CFD simulation results to experimental data, one should discuss the experimental errors. Plots comparing CFD results and experimental data should include a visual display of the error bars on the experimental data.\n\nLast Updated: Wednesday, 10-Feb-2021 09:38:58 EST\n\nResponsible NASA Official/Curator: John W. Slater\nWeb Policies: Web Privacy Policy and Important Notices\nAdobe Reader Download: Adobe Reader",
+  "links": [
+    {
+      "label": "V&V Home",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/homepage.html"
+    },
+    {
+      "label": "Archive",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/archive.html"
+    },
+    {
+      "label": "Tutorial",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/tutorial.html"
+    },
+    {
+      "label": "Validation",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/glossary.html#validation"
+    },
+    {
+      "label": "Verification \nAssessment",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/verassess.html"
+    },
+    {
+      "label": "Examining Iterative Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/iterconv.html"
+    },
+    {
+      "label": "Examining Spatial (Grid) Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html"
+    },
+    {
+      "label": "Examining Temporal Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html"
+    },
+    {
+      "label": "John W. Slater",
+      "url": "mailto:john.w.slater@nasa.gov"
+    },
+    {
+      "label": "Web Privacy Policy and Important Notices",
+      "url": "http://www.grc.nasa.gov/Doc/grcwebpolicies.html"
+    },
+    {
+      "label": "Adobe Reader",
+      "url": "http://www.adobe.com/products/acrobat/readstep2.html"
+    }
+  ],
+  "accessed_at": "2026-11-04T13:41:44.714Z"
+}

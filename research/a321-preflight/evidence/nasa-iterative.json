@@ -1,0 +1,32 @@
+{
+  "title": "Examining Iterative Convergence",
+  "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/iterconv.html",
+  "text": " V&V Home       Archive       Tutorial\nExamining Iterative Convergence\n\nGenerally, CFD methods involve some iterative scheme to arrive at the simulation results. Here it is assumed that the iteration is with respect to time or a pseudo-temporal quantity and some type of time step is taken at each iteration. A steady-state flow simulation involves starting with a uniform or fabricated flow field and iterating in time until the steady-state flow field is obtained. This is termed iterative convergence, but requires some criteria for determining convergence. Criteria include:\n\nResiduals. The residuals of the equations are the change in the equations over an iteration. These are usually scaled or normalized. One usually looks for the residuals to reach a certain level and then level-off as an indication of iterative convergence. For a time-marching, steady-state strategy, this involves examining whether the residual has been reduced a certain number (usually 3-4) of orders of magnitude.\n\nResults. The CFD simulation has the objective of determining some quantity such as lift, drag, recovery, etc... One can track the values of such engineering quantities with respect to iteration and define iterative convergence when these quantities converge. The convergence criteria is usually defined by acceptable error in these values. It is often the case that certain quantities may reach convergence at a different rate than other quantities. One can check that a monitored flow value (such as thrust, drag, or boundary layer profile) has remained unchanged with respect to the number of iterations.\n\nTime-Accurate Simulations. For a time-marching, time-accurate strategy, this involves examining whether the final time has been reached with proper convergence at each time step.\n\nSpace-Marching Simulation For a space-marching strategy, this involves examining whether the end of the marching segment has been reached with proper convergence at each marching step.\n\nLast Updated: Wednesday, 10-Feb-2021 09:38:58 EST\n\nResponsible NASA Official/Curator: John W. Slater\nWeb Policies: Web Privacy Policy and Important Notices\nAdobe Reader Download: Adobe Reader",
+  "links": [
+    {
+      "label": "V&V Home",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/homepage.html"
+    },
+    {
+      "label": "Archive",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/archive.html"
+    },
+    {
+      "label": "Tutorial",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/tutorial.html"
+    },
+    {
+      "label": "John W. Slater",
+      "url": "mailto:john.w.slater@nasa.gov"
+    },
+    {
+      "label": "Web Privacy Policy and Important Notices",
+      "url": "http://www.grc.nasa.gov/Doc/grcwebpolicies.html"
+    },
+    {
+      "label": "Adobe Reader",
+      "url": "http://www.adobe.com/products/acrobat/readstep2.html"
+    }
+  ],
+  "accessed_at": "2026-11-04T13:41:45.158Z"
+}

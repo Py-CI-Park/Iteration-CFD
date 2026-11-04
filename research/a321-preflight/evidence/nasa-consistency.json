@@ -1,0 +1,6 @@
+{
+  "title": "Examining Solution Consistency",
+  "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/consistency.html",
+  "text": " V&V Home       Archive       Tutorial\nExamining Solution Consistency\n\nOne can evaluate convergence by checking for consistency in the flow field. The conservation relations require a balance of fluxes through a control surface. For a closed duct, the flow through the duct should be conserved. Low-speed flow over a closed body should have zero drag. Other such consistency relations can be defined for specific flow fields. These provide verification of the code since the consistency relations are usually a statement of some analytic result.\n\nLast Updated: Wednesday, 10-Feb-2021 09:38:58 EST\n\nResponsible NASA Official/Curator: John W. Slater\nWeb Policies: Web Privacy Policy and Important Notices\nAdobe Reader Download: Adobe Reader",
+  "accessed_at": "2026-11-04T13:42:47.690Z"
+}

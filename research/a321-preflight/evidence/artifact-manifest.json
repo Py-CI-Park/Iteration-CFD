@@ -1,0 +1,157 @@
+{
+  "study_id": "A321-CPU-PREFLIGHT-20261104",
+  "generated_at": "2026-11-04T14:27:55.267744+00:00",
+  "source_path": "D:\\Chanil_Park\\Project\\Programming\\Aircraft-Workbench\\.workstation\\models\\a321\\source-native\\A321_NATIVE_G1B_LOCAL_NORMAL_ENCODING_RESEARCH.blend",
+  "source_bytes": 38570017,
+  "source_sha256": "1fd3cfd08b1dbf5e5f2fb288caf9846ad149ff8839a37cc2e4c2c8074bc1073c",
+  "frozen_sha256": "1fd3cfd08b1dbf5e5f2fb288caf9846ad149ff8839a37cc2e4c2c8074bc1073c",
+  "source_unchanged": true,
+  "frozen_matches_source": true,
+  "wing_stl_reexport_byte_identical": true,
+  "trial040_stl_reexport_byte_identical": true,
+  "gpu_compute_executed": false,
+  "solver_executed": false,
+  "volume_mesh_generated": false,
+  "files": [
+    {
+      "path": "artifacts/ego-report-final.png",
+      "bytes": 139921,
+      "sha256": "4c3a1d96b5b0a9ef1b8ef47d360b90f2de55c33121133bbd124c88163109b2a3"
+    },
+    {
+      "path": "artifacts/ego-report.png",
+      "bytes": 139922,
+      "sha256": "b07db7837a646200ccbc10f4517dbe6c096a863e2e4d57fba8621f8584569b7c"
+    },
+    {
+      "path": "artifacts/input/A321_G1B_FROZEN.blend",
+      "bytes": 38570017,
+      "sha256": "1fd3cfd08b1dbf5e5f2fb288caf9846ad149ff8839a37cc2e4c2c8074bc1073c"
+    },
+    {
+      "path": "artifacts/sections.png",
+      "bytes": 202702,
+      "sha256": "9c985b9d8ad0aaf057888af89901c0761bf23f2e87cb79f3e49dde562a629248"
+    },
+    {
+      "path": "artifacts/trial-v040/candidate.blend",
+      "bytes": 30553335,
+      "sha256": "bca9bdf7a882a87ff1aaf89fbd7b78dca6bc241bc7f81b63f2d3d9cc416f5a2a"
+    },
+    {
+      "path": "artifacts/trial-v040/candidate.stl",
+      "bytes": 99700284,
+      "sha256": "c75cd9530fc5bcf375ef7ebdeb695c1f98834f5d5844e6e8d0b33da92a50d426"
+    },
+    {
+      "path": "artifacts/trial-v040/extracted.blend",
+      "bytes": 13904677,
+      "sha256": "412826f40a913720b19ee2cecfae7ebf25a066fce41a8462326dff0f7b6ee4ab"
+    },
+    {
+      "path": "artifacts/trial-v040/extracted.stl",
+      "bytes": 26577384,
+      "sha256": "a44a539c948fa88a143d562912b7420286a1537b27416438c3d8e63c041f42ec"
+    },
+    {
+      "path": "artifacts/trial-v040/preparation.json",
+      "bytes": 56512,
+      "sha256": "d5150e38628e77a2be883d353654e23279f04d691c5d2633474d4c9c145f5cf6"
+    },
+    {
+      "path": "artifacts/trial-v040/reopened.json",
+      "bytes": 865,
+      "sha256": "8ca02717e02752c766e5e3dd42861b06ce82169ff9051a889fdf4914f802355e"
+    },
+    {
+      "path": "artifacts/trial-v040/reopened.stl",
+      "bytes": 99700284,
+      "sha256": "c75cd9530fc5bcf375ef7ebdeb695c1f98834f5d5844e6e8d0b33da92a50d426"
+    },
+    {
+      "path": "artifacts/trial-v040/source-surface.npz",
+      "bytes": 4199923,
+      "sha256": "f90213dc4fdfa08478e587ca31b9402f51dd5bc6fb1f6ba01c3b10485a75a826"
+    },
+    {
+      "path": "artifacts/trial-v040/trial-surface.npz",
+      "bytes": 14781143,
+      "sha256": "7b9c68954d136c79894c32d0ab03b14bcd53d200dd837d9434156802e1a3a69a"
+    },
+    {
+      "path": "artifacts/trial-v080/candidate.blend",
+      "bytes": 5689437,
+      "sha256": "c5bf85f6fef0f17876f7cadd636865fdc3289b6936a41c997e901e41a826e49e"
+    },
+    {
+      "path": "artifacts/trial-v080/candidate.stl",
+      "bytes": 18062484,
+      "sha256": "3f02adbbbb74540679b800e30bc15e794faff1596bf5f888deeab08f449d5759"
+    },
+    {
+      "path": "artifacts/trial-v080/extracted.blend",
+      "bytes": 13904677,
+      "sha256": "412826f40a913720b19ee2cecfae7ebf25a066fce41a8462326dff0f7b6ee4ab"
+    },
+    {
+      "path": "artifacts/trial-v080/extracted.stl",
+      "bytes": 26577384,
+      "sha256": "a44a539c948fa88a143d562912b7420286a1537b27416438c3d8e63c041f42ec"
+    },
+    {
+      "path": "artifacts/trial-v080/preparation.json",
+      "bytes": 40238,
+      "sha256": "a0e8e58a67793fd49a115fabe93cc7eb2287b5b23e7f320fbf8a49a24d8fbeac"
+    },
+    {
+      "path": "artifacts/trial-v080/source-surface.npz",
+      "bytes": 4199923,
+      "sha256": "f90213dc4fdfa08478e587ca31b9402f51dd5bc6fb1f6ba01c3b10485a75a826"
+    },
+    {
+      "path": "artifacts/trial-v080/trial-surface.npz",
+      "bytes": 2701848,
+      "sha256": "86ffcef23eaaf1e4beac0840d62c86db599ac12fd1fefe7372bb82df3dc9c763"
+    },
+    {
+      "path": "artifacts/wing-guarded-check/extraction.json",
+      "bytes": 1899,
+      "sha256": "41ae937199f524c3dab25da94c4e0edf808f160a4c1f360b8641d6ed8be00866"
+    },
+    {
+      "path": "artifacts/wing-guarded-check/wing-fixed-box.blend",
+      "bytes": 208839,
+      "sha256": "7dbd564a9a74c6abe7dd91a0679ff108cc10134572d5aaea617aedcc13286344"
+    },
+    {
+      "path": "artifacts/wing-guarded-check/wing-fixed-box.stl",
+      "bytes": 214484,
+      "sha256": "9e7ae69a358160a2417c20dc4ea39ddad9898a0b2366ccfa58abafb68b173ce3"
+    },
+    {
+      "path": "artifacts/wing-subsystem/extraction.json",
+      "bytes": 1631,
+      "sha256": "d590bbae7c32a80b372c24b720cc7db139f77c4fcf469ea39e614f26ac4cb98c"
+    },
+    {
+      "path": "artifacts/wing-subsystem/reopened.json",
+      "bytes": 830,
+      "sha256": "eca0de8209b0795091e29769185dd1d04001abff18a6f2b35e4365fb2d3db931"
+    },
+    {
+      "path": "artifacts/wing-subsystem/reopened.stl",
+      "bytes": 214484,
+      "sha256": "9e7ae69a358160a2417c20dc4ea39ddad9898a0b2366ccfa58abafb68b173ce3"
+    },
+    {
+      "path": "artifacts/wing-subsystem/wing-fixed-box.blend",
+      "bytes": 208839,
+      "sha256": "7dbd564a9a74c6abe7dd91a0679ff108cc10134572d5aaea617aedcc13286344"
+    },
+    {
+      "path": "artifacts/wing-subsystem/wing-fixed-box.stl",
+      "bytes": 214484,
+      "sha256": "9e7ae69a358160a2417c20dc4ea39ddad9898a0b2366ccfa58abafb68b173ce3"
+    }
+  ]
+}

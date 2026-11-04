@@ -1,0 +1,38 @@
+[
+  {
+    "id": "tutorial",
+    "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/tutorial.html",
+    "title": "Tutorial on CFD Verification & Validation",
+    "chars": 1255
+  },
+  {
+    "id": "process",
+    "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/analprocess.html",
+    "title": "NASA Glenn Research Center",
+    "chars": 358
+  },
+  {
+    "id": "verification",
+    "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/verassess.html",
+    "title": "Verification Assessment",
+    "chars": 5188
+  },
+  {
+    "id": "validation",
+    "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/valassess.html",
+    "title": "Validation Assessment",
+    "chars": 6015
+  },
+  {
+    "id": "iterative",
+    "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/iterconv.html",
+    "title": "Examining Iterative Convergence",
+    "chars": 2163
+  },
+  {
+    "id": "grid",
+    "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html",
+    "title": "Examining Spatial (Grid) Convergence",
+    "chars": 19648
+  }
+]

@@ -1,0 +1,84 @@
+{
+  "title": "Tutorial on CFD Verification & Validation",
+  "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/tutorial.html",
+  "text": " V&V Home       Archive\nTutorial on CFD Verification and Validation\n\nThis page provides links to several pages of the NPARC Alliance Verification and Validation Web Site that collectively form a tutorial on CFD Verification and Validation that may be of use to the general CFD community. Much of the material follows AIAA G-077-1998, \"Guide for the Verification and Validation of Computational Fluid Dynamics Simulations\", which is referred to here as the AIAA Guidelines. Information from other sources is also used as appropriate.\n\nPlease note that the material is still under development. Please feel free to contact me (John Slater) at the email address below if you have comments regarding this tutorial. The pages include:\n\nTutorial on CFD Verification and Validation\n\nOverview\nCFD Analysis Process\nUncertainty and Error in CFD Simulations\nVerification Assessment\nValidation Assessment\nExamining Iterative Convergence\nExamining Solution Consistency\nExamining Spatial (Grid) Convergence\nExamining Temporal Convergence\nGlossary\nBibliography\nLinks to Web Sites\nLast Updated: Wednesday, 10-Feb-2021 09:38:58 EST\n\nResponsible NASA Official/Curator: John W. Slater\nWeb Policies: Web Privacy Policy and Important Notices\nAdobe Reader Download: Adobe Reader",
+  "links": [
+    {
+      "label": "V&V Home",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/homepage.html"
+    },
+    {
+      "label": "Archive",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/archive.html"
+    },
+    {
+      "label": "AIAA G-077-1998, \n\"Guide for the Verification and Validation of Computational Fluid \nDynamics Simulations\"",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/bibliog.html#AIAA98"
+    },
+    {
+      "label": "AIAA Guidelines",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/bibliog.html#AIAA98"
+    },
+    {
+      "label": "Overview",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/overview.html"
+    },
+    {
+      "label": "CFD Analysis Process",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/process.html"
+    },
+    {
+      "label": "Uncertainty and Error in CFD Simulations",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/errors.html"
+    },
+    {
+      "label": "Verification Assessment",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/verassess.html"
+    },
+    {
+      "label": "Validation Assessment",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/valassess.html"
+    },
+    {
+      "label": "Examining Iterative Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/iterconv.html"
+    },
+    {
+      "label": "Examining Solution Consistency",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/consistency.html"
+    },
+    {
+      "label": "Examining Spatial (Grid) Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html"
+    },
+    {
+      "label": "Examining Temporal Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/tempconv.html"
+    },
+    {
+      "label": "Glossary",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/glossary.html"
+    },
+    {
+      "label": "Bibliography",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/bibliog.html"
+    },
+    {
+      "label": "Links to Web Sites",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/links.html"
+    },
+    {
+      "label": "John W. Slater",
+      "url": "mailto:john.w.slater@nasa.gov"
+    },
+    {
+      "label": "Web Privacy Policy and Important Notices",
+      "url": "http://www.grc.nasa.gov/Doc/grcwebpolicies.html"
+    },
+    {
+      "label": "Adobe Reader",
+      "url": "http://www.adobe.com/products/acrobat/readstep2.html"
+    }
+  ],
+  "accessed_at": "2026-11-04T13:41:42.671Z"
+}

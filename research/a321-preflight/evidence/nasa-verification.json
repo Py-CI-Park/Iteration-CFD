@@ -1,0 +1,52 @@
+{
+  "title": "Verification Assessment",
+  "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/verassess.html",
+  "text": " V&V Home       Archive       Tutorial\nVerification Assessment\n\nThis page discusses Verification Assessment, which focuses on the methods for Verification of CFD codes and simulation results.\n\nVerification\n\nVerification is defined as:\n\nThe process of determining that a model implementation accurately represents the developer's conceptual description of the model and the solution to the model. (AIAA G-077-1998)\n\nVerification assessment examines 1) if the computational models are the correct implementation of the conceptual models, and 2) if the resulting code can be properly used for an analysis. The strategy is to identify and quantify the errors in the model implementation and the solution. The two aspects of verification are the verification of a code and the verification of a calculation. The objective of verifying a code is error evaluation, that is, finding and removing errors in the code. The objective of verifying a calculation is error estimation, that is determining the accuracy of a calculation. Each are discussed below.\n\nVerification has also been described as solving the equations right. It is intended to concern itself more with mathematics rather than engineering. It is intended to look for errors in the programming and implementation of the models.\n\nRoache considers two aspects of verification: 1) verification of a code and 2) verification of a calculation. These two aspects are described below:\n\nVerification of a code involves error evaluation, which is, looking for bugs, incorrect implementations of conceptual models, errors in inputs, and other errors in the code and usage. This is typically done by the developers prior to release of the code. First, consistency checks are performed which examine basic relationships expected in the solutions (i.e. mass conservation). Then the code is used to simulate a suite of ``highly accurate'' verification cases. These cases should be analytic or numeric solution to ordinary and partial differential equations. Verification should not performed with experimental data. A grid refinement study should be conducted to bring out potential errors. All the options of the code should be examined. This becomes more complicated as the number of options available within a CFD code increase. Identifying and quantifying each type of error is important because errors can interact and cancel each other - leading to erroneous conclusions in the validation process. One potentially useful method of verification is comparing the results of two codes. However, verification is not a democratic activity and one should watch for comparing with an inaccurate code. The comparison is strengthened when the two codes use differing numerical methods. The following paragraphs discuss specific checks that can be performed as part of a code verification process.\nVerification of a calculation involves error estimation, which is determining the accuracy of a single calculation and putting an error band on the final value. The approach involves peformimg a grid convergence study and determine the observed order of convergence, error bands, and grid convergence indices (GCI).\nVerification Assessment Process\n\nThe process for Verification Assessment of a CFD code and / or simulation can be summarized as:\n\n1. Examine the Computer Programming of the Code.\n\nOne of the most basic tasks of verification assessment is the review of the computer programming or coding to check for and identify computer programming errors or \"bugs\". This is done by visually checking the coding and by computationally running subprograms using a test code. This is aided by complete and clear documentation, both internal and external. This step is to directly detect computer programming errors.\n\n2. Examine Iterative Convergence.\n\nVerification assessment requires that a simulation demonstrates iterative convergence. Further details can be page entitled Examining Iterative Convergence.\n\n3. Examine Consistency.\n\nOne should check for consistency in the CFD solution. For example, the flow in a duct should maintain mass conservation through the duct. Further total pressure recovery in an inlet should stay constant or decrease through the duct.\n\n4. Examine Spatial (Grid) Convergence.\n\nThe CFD simulation results should demonstrate spatial convergence. Further details and methods can be found on the page entitled Examining Spatial (Grid) Convergence.\n\n5. Examine Temporal Convergence.\n\nThe CFD simulation results should demonstrate temporal convergence. Further details and methods can be found on the page entitled Examining Temporal Convergence.\n\n6. Compare CFD Results to Highly Accurate Solutions\n\nThe veracity of a code can be examined by comparing the CFD simulation results to highly accurate solution to the models used within the CFD code. This can include analytical solutions, benchmark numerical solutions to ordinary differential equations (ODEs), and benchmark numerical solutions to partial differential equations (PDEs).\nLast Updated: Wednesday, 10-Feb-2021 09:38:58 EST\n\nResponsible NASA Official/Curator: John W. Slater\nWeb Policies: Web Privacy Policy and Important Notices\nAdobe Reader Download: Adobe Reader",
+  "links": [
+    {
+      "label": "V&V Home",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/homepage.html"
+    },
+    {
+      "label": "Archive",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/archive.html"
+    },
+    {
+      "label": "Tutorial",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/tutorial.html"
+    },
+    {
+      "label": "Verification",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/glossary.html#verification"
+    },
+    {
+      "label": "grid convergence\nstudy",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html"
+    },
+    {
+      "label": "Examining Iterative Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/iterconv.html"
+    },
+    {
+      "label": "Examining Spatial (Grid) Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html"
+    },
+    {
+      "label": "Examining Temporal Convergence",
+      "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html"
+    },
+    {
+      "label": "John W. Slater",
+      "url": "mailto:john.w.slater@nasa.gov"
+    },
+    {
+      "label": "Web Privacy Policy and Important Notices",
+      "url": "http://www.grc.nasa.gov/Doc/grcwebpolicies.html"
+    },
+    {
+      "label": "Adobe Reader",
+      "url": "http://www.adobe.com/products/acrobat/readstep2.html"
+    }
+  ],
+  "accessed_at": "2026-11-04T13:41:44.270Z"
+}

@@ -1,0 +1,31 @@
+{
+  "file": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-preflight\\artifacts\\wing-subsystem\\wing-fixed-box.blend",
+  "object": "Wing_fixed_box_STARBOARD",
+  "blender": "5.2.2 LTS",
+  "surface": {
+    "vertices": 2146,
+    "triangles": 4288,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_edges": 0,
+    "degenerate_triangles": 0,
+    "duplicate_triangles": 0,
+    "area_m2": 89.32436904145374,
+    "signed_volume_m3": 16.299853406266717,
+    "bounds_m": [
+      [
+        16.934064865112305,
+        0.0,
+        2.7161738872528076
+      ],
+      [
+        25.679719924926758,
+        16.290000915527344,
+        4.570444583892822
+      ]
+    ],
+    "closed_oriented": true
+  },
+  "gpu_compute_used": false,
+  "native_saved": false
+}

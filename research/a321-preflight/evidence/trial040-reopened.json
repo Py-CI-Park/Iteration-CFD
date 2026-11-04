@@ -1,0 +1,31 @@
+{
+  "file": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-preflight\\artifacts\\trial-v040\\candidate.blend",
+  "object": "A321_SIMPLIFIED_VOXEL_0.040m_NOT_VALIDATED",
+  "blender": "5.2.2 LTS",
+  "surface": {
+    "vertices": 992248,
+    "triangles": 1994004,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_edges": 0,
+    "degenerate_triangles": 228,
+    "duplicate_triangles": 0,
+    "area_m2": 1201.7498291178251,
+    "signed_volume_m3": 69.84910616419012,
+    "bounds_m": [
+      [
+        0.026115531101822853,
+        -17.888364791870117,
+        1.8200000524520874
+      ],
+      [
+        44.49049377441406,
+        17.888364791870117,
+        11.960000038146973
+      ]
+    ],
+    "closed_oriented": false
+  },
+  "gpu_compute_used": false,
+  "native_saved": false
+}

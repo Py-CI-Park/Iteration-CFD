@@ -1,0 +1,1622 @@
+{
+  "source": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-preflight\\artifacts\\input\\A321_G1B_FROZEN.blend",
+  "voxel_m": 0.08,
+  "selected_objects": [
+    {
+      "name": "AILERON_PORT",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1554,
+      "triangles": 3062,
+      "boundary_edges": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 5.886852332557504,
+      "signed_volume_m3": 0.18061059381010813,
+      "bounds_m": [
+        [
+          24.156709671020508,
+          -16.290000915527344,
+          3.993446111679077
+        ],
+        [
+          26.139068603515625,
+          -11.930000305175781,
+          4.532162666320801
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "AILERON_STARBOARD",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1554,
+      "triangles": 3062,
+      "boundary_edges": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 5.886852332557504,
+      "signed_volume_m3": 0.18061059381011044,
+      "bounds_m": [
+        [
+          24.156709671020508,
+          11.930000305175781,
+          3.993446111679077
+        ],
+        [
+          26.139068603515625,
+          16.290000915527344,
+          4.532162666320801
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Cockpit_glass_PORT_1",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 4,
+      "triangles": 2,
+      "boundary_edges": 4,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.5221636695825047,
+      "signed_volume_m3": -0.4038843496106727,
+      "bounds_m": [
+        [
+          1.329374074935913,
+          -0.977060079574585,
+          4.470449447631836
+        ],
+        [
+          2.295074701309204,
+          -0.1025075912475586,
+          4.894349098205566
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Cockpit_glass_PORT_2",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 4,
+      "triangles": 2,
+      "boundary_edges": 4,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.35065901258534776,
+      "signed_volume_m3": 0.2745147871583594,
+      "bounds_m": [
+        [
+          1.8689250946044922,
+          -1.3897957801818848,
+          4.438609600067139
+        ],
+        [
+          3.0278587341308594,
+          -0.9978587031364441,
+          4.879895210266113
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Cockpit_glass_PORT_3",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 4,
+      "triangles": 2,
+      "boundary_edges": 4,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.16829230456523414,
+      "signed_volume_m3": 0.1312560188088392,
+      "bounds_m": [
+        [
+          2.5294063091278076,
+          -1.5571882724761963,
+          4.405956268310547
+        ],
+        [
+          3.4726030826568604,
+          -1.3924587965011597,
+          4.806190490722656
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Cockpit_glass_STARBOARD_1",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 4,
+      "triangles": 2,
+      "boundary_edges": 4,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.5221636695825047,
+      "signed_volume_m3": -0.4038843496106727,
+      "bounds_m": [
+        [
+          1.329374074935913,
+          0.1025075912475586,
+          4.470449447631836
+        ],
+        [
+          2.295074701309204,
+          0.977060079574585,
+          4.894349098205566
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Cockpit_glass_STARBOARD_2",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 4,
+      "triangles": 2,
+      "boundary_edges": 4,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.35065901258534776,
+      "signed_volume_m3": -0.2745147871583594,
+      "bounds_m": [
+        [
+          1.8689250946044922,
+          0.9978587031364441,
+          4.438609600067139
+        ],
+        [
+          3.0278587341308594,
+          1.3897957801818848,
+          4.879895210266113
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Cockpit_glass_STARBOARD_3",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 4,
+      "triangles": 2,
+      "boundary_edges": 4,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.16829230456523414,
+      "signed_volume_m3": -0.1312560188088392,
+      "bounds_m": [
+        [
+          2.5294063091278076,
+          1.3924587965011597,
+          4.405956268310547
+        ],
+        [
+          3.4726030826568604,
+          1.5571882724761963,
+          4.806190490722656
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "D1_panel_PORT",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3460,
+      "triangles": 1680,
+      "boundary_edges": 3460,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6813754420641258,
+      "signed_volume_m3": 1.6436196947850756,
+      "bounds_m": [
+        [
+          4.619999885559082,
+          -1.9899998903274536,
+          3.634999990463257
+        ],
+        [
+          5.460000038146973,
+          -1.3089908361434937,
+          5.465000152587891
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "D1_panel_STARBOARD",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3458,
+      "triangles": 1680,
+      "boundary_edges": 3458,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6813754420641258,
+      "signed_volume_m3": 1.6436196947850756,
+      "bounds_m": [
+        [
+          4.619999885559082,
+          1.3089908361434937,
+          3.634999990463257
+        ],
+        [
+          5.460000038146973,
+          1.9899998903274536,
+          5.465000152587891
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "D3_panel_PORT",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3372,
+      "triangles": 1680,
+      "boundary_edges": 3374,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6135389336492896,
+      "signed_volume_m3": 1.6623538439633034,
+      "bounds_m": [
+        [
+          26.415000915527344,
+          -1.9899998903274536,
+          3.634999990463257
+        ],
+        [
+          27.225000381469727,
+          -1.4103050231933594,
+          5.485000133514404
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "D3_panel_STARBOARD",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3366,
+      "triangles": 1680,
+      "boundary_edges": 3368,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6135389336492896,
+      "signed_volume_m3": 1.6623538439633034,
+      "bounds_m": [
+        [
+          26.415000915527344,
+          1.4103050231933594,
+          3.634999990463257
+        ],
+        [
+          27.225000381469727,
+          1.9899998903274536,
+          5.485000133514404
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "D4_panel_PORT",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3464,
+      "triangles": 1680,
+      "boundary_edges": 3464,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6038137707443,
+      "signed_volume_m3": 3.541411180961868,
+      "bounds_m": [
+        [
+          36.064998626708984,
+          -1.8166661262512207,
+          3.634999990463257
+        ],
+        [
+          36.875,
+          -1.3649559020996094,
+          5.485000133514404
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "D4_panel_STARBOARD",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3466,
+      "triangles": 1680,
+      "boundary_edges": 3466,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6038137707443,
+      "signed_volume_m3": 3.541411180961868,
+      "bounds_m": [
+        [
+          36.064998626708984,
+          1.3649559020996094,
+          3.634999990463257
+        ],
+        [
+          36.875,
+          1.8166661262512207,
+          5.485000133514404
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Elevator_PORT",
+      "collections": [
+        "08_Tail"
+      ],
+      "vertices": 1480,
+      "triangles": 2916,
+      "boundary_edges": 42,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 9.912443483343186,
+      "signed_volume_m3": 0.35222545846230296,
+      "bounds_m": [
+        [
+          41.14801788330078,
+          -6.224999904632568,
+          4.48740291595459
+        ],
+        [
+          43.70000076293945,
+          0.0,
+          5.467568397521973
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Elevator_STARBOARD",
+      "collections": [
+        "08_Tail"
+      ],
+      "vertices": 1480,
+      "triangles": 2916,
+      "boundary_edges": 42,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 9.912443483343186,
+      "signed_volume_m3": 0.35222545846230324,
+      "bounds_m": [
+        [
+          41.14801788330078,
+          0.0,
+          4.48740291595459
+        ],
+        [
+          43.70000076293945,
+          6.224999904632568,
+          5.467568397521973
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Flap_track_fairing_PORT_1",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 100,
+      "triangles": 160,
+      "boundary_edges": 40,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6944531675097232,
+      "signed_volume_m3": 0.154405207057984,
+      "bounds_m": [
+        [
+          21.562246322631836,
+          -4.340000152587891,
+          3.0228066444396973
+        ],
+        [
+          23.71224594116211,
+          -3.9600000381469727,
+          3.3180549144744873
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Flap_track_fairing_PORT_2",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 100,
+      "triangles": 160,
+      "boundary_edges": 40,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.694555697899577,
+      "signed_volume_m3": 0.15508668616055163,
+      "bounds_m": [
+        [
+          21.897424697875977,
+          -6.889999866485596,
+          3.252666711807251
+        ],
+        [
+          24.04742431640625,
+          -6.510000228881836,
+          3.5479485988616943
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Flap_track_fairing_PORT_3",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 100,
+      "triangles": 160,
+      "boundary_edges": 40,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.69209162682027,
+      "signed_volume_m3": 0.1564619055652927,
+      "bounds_m": [
+        [
+          22.859275817871094,
+          -9.789999961853027,
+          3.533529758453369
+        ],
+        [
+          25.00927734375,
+          -9.40999984741211,
+          3.8278145790100098
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Flap_track_fairing_STARBOARD_1",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 100,
+      "triangles": 160,
+      "boundary_edges": 40,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6944531675095011,
+      "signed_volume_m3": 0.15440520746385178,
+      "bounds_m": [
+        [
+          21.562246322631836,
+          3.9600000381469727,
+          3.0228066444396973
+        ],
+        [
+          23.71224594116211,
+          4.340000152587891,
+          3.3180549144744873
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Flap_track_fairing_STARBOARD_2",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 100,
+      "triangles": 160,
+      "boundary_edges": 40,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6945556978995604,
+      "signed_volume_m3": 0.15508668668589953,
+      "bounds_m": [
+        [
+          21.897424697875977,
+          6.510000228881836,
+          3.252666711807251
+        ],
+        [
+          24.04742431640625,
+          6.889999866485596,
+          3.5479485988616943
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Flap_track_fairing_STARBOARD_3",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 100,
+      "triangles": 160,
+      "boundary_edges": 40,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.6920916268202588,
+      "signed_volume_m3": 0.1564619061060669,
+      "bounds_m": [
+        [
+          22.859275817871094,
+          9.40999984741211,
+          3.533529758453369
+        ],
+        [
+          25.00927734375,
+          9.789999961853027,
+          3.8278145790100098
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Fuselage_Belly_APEX_OUTER_NORMAL_FAN_TRIAL1_CROWN_EQUATOR_NORMAL_TRIAL1_DETACHED_RETURN_CLOSED_TRIAL1",
+      "collections": [
+        "01_Fuselage"
+      ],
+      "vertices": 50600,
+      "triangles": 97636,
+      "boundary_edges": 2665,
+      "nonmanifold_edges": 1,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 7,
+      "duplicate_triangles": 0,
+      "area_m2": 479.01853869972774,
+      "signed_volume_m3": 7.131006168138565,
+      "bounds_m": [
+        [
+          0.0,
+          -1.975000023841858,
+          1.9500000476837158
+        ],
+        [
+          44.5099983215332,
+          1.975000023841858,
+          5.113011837005615
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Fuselage_Crown_CROWN_EQUATOR_NORMAL_TRIAL1_DETACHED_RETURN_CLOSED_TRIAL1",
+      "collections": [
+        "01_Fuselage"
+      ],
+      "vertices": 60155,
+      "triangles": 116006,
+      "boundary_edges": 4082,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 480.6519536015346,
+      "signed_volume_m3": 7.086107512686188,
+      "bounds_m": [
+        [
+          0.0,
+          -1.975000023841858,
+          3.3849985599517822
+        ],
+        [
+          44.5099983215332,
+          1.975000023841858,
+          6.132683753967285
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Horizontal_stabilizer_PORT",
+      "collections": [
+        "08_Tail"
+      ],
+      "vertices": 1480,
+      "triangles": 2916,
+      "boundary_edges": 42,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 25.493584357971937,
+      "signed_volume_m3": 2.561376817852178,
+      "bounds_m": [
+        [
+          38.35213088989258,
+          -6.224999904632568,
+          4.404244422912598
+        ],
+        [
+          43.35279846191406,
+          0.0,
+          5.4921956062316895
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Horizontal_stabilizer_STARBOARD",
+      "collections": [
+        "08_Tail"
+      ],
+      "vertices": 1480,
+      "triangles": 2916,
+      "boundary_edges": 42,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 25.493584357971937,
+      "signed_volume_m3": 2.561376817852179,
+      "bounds_m": [
+        [
+          38.35213088989258,
+          0.0,
+          4.404244422912598
+        ],
+        [
+          43.35279846191406,
+          6.224999904632568,
+          5.4921956062316895
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "INBOARD_PORT",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1628,
+      "triangles": 3208,
+      "boundary_edges": 46,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 14.137585302082549,
+      "signed_volume_m3": 1.0247316493437657,
+      "bounds_m": [
+        [
+          21.568456649780273,
+          -6.329999923706055,
+          2.9720921516418457
+        ],
+        [
+          23.2773494720459,
+          -1.9800000190734863,
+          3.6561198234558105
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "INBOARD_STARBOARD",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1628,
+      "triangles": 3208,
+      "boundary_edges": 46,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 14.137585302082549,
+      "signed_volume_m3": 1.024731649343765,
+      "bounds_m": [
+        [
+          21.568456649780273,
+          1.9800000190734863,
+          2.9720921516418457
+        ],
+        [
+          23.2773494720459,
+          6.329999923706055,
+          3.6561198234558105
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "OUTBOARD_PORT",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1554,
+      "triangles": 3062,
+      "boundary_edges": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 11.591636577110037,
+      "signed_volume_m3": 0.5479843503076256,
+      "bounds_m": [
+        [
+          22.196447372436523,
+          -11.90999984741211,
+          3.414449691772461
+        ],
+        [
+          24.87912940979004,
+          -6.349999904632568,
+          4.153881549835205
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "OUTBOARD_STARBOARD",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1554,
+      "triangles": 3062,
+      "boundary_edges": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 11.591636577110037,
+      "signed_volume_m3": 0.5479843503076255,
+      "bounds_m": [
+        [
+          22.196447372436523,
+          6.349999904632568,
+          3.414449691772461
+        ],
+        [
+          24.87912940979004,
+          11.90999984741211,
+          4.153881549835205
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "OW1_panel_PORT",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3382,
+      "triangles": 1680,
+      "boundary_edges": 3384,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.527031429034851,
+      "signed_volume_m3": 0.5686090491007136,
+      "bounds_m": [
+        [
+          18.44499969482422,
+          -1.9844553470611572,
+          4.175000190734863
+        ],
+        [
+          18.954999923706055,
+          -1.6603492498397827,
+          5.164999961853027
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "OW1_panel_STARBOARD",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3374,
+      "triangles": 1680,
+      "boundary_edges": 3376,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.527031429034851,
+      "signed_volume_m3": 0.5686090491007136,
+      "bounds_m": [
+        [
+          18.44499969482422,
+          1.6603492498397827,
+          4.175000190734863
+        ],
+        [
+          18.954999923706055,
+          1.9844553470611572,
+          5.164999961853027
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "OW2_panel_PORT",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3384,
+      "triangles": 1680,
+      "boundary_edges": 3388,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.5270314208545681,
+      "signed_volume_m3": 0.5686090403653069,
+      "bounds_m": [
+        [
+          19.28499984741211,
+          -1.9844553470611572,
+          4.175000190734863
+        ],
+        [
+          19.795000076293945,
+          -1.6603492498397827,
+          5.164999961853027
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "OW2_panel_STARBOARD",
+      "collections": [
+        "Windows_Doors"
+      ],
+      "vertices": 3384,
+      "triangles": 1680,
+      "boundary_edges": 3388,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 0.5270314208545681,
+      "signed_volume_m3": 0.5686090403653069,
+      "bounds_m": [
+        [
+          19.28499984741211,
+          1.6603492498397827,
+          4.175000190734863
+        ],
+        [
+          19.795000076293945,
+          1.9844553470611572,
+          5.164999961853027
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "PORT_S2_SHARED_NATIVE_CAP_P1_RESEARCH",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 45297,
+      "triangles": 19940,
+      "boundary_edges": 48678,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 3.087061349101135,
+      "signed_volume_m3": 0.23630206311840762,
+      "bounds_m": [
+        [
+          19.30238151550293,
+          -8.209050178527832,
+          3.3373138904571533
+        ],
+        [
+          20.700603485107422,
+          -6.210717678070068,
+          3.878225088119507
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "PORT_S3_SHARED_NATIVE_CAP_P4_RESEARCH",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 95001,
+      "triangles": 32028,
+      "boundary_edges": 95292,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 3.677009506004639,
+      "signed_volume_m3": 0.267740510123969,
+      "bounds_m": [
+        [
+          20.349618911743164,
+          -10.670555114746094,
+          3.538874864578247
+        ],
+        [
+          21.972232818603516,
+          -8.014768600463867,
+          4.0803327560424805
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "PORT_S4_SOURCE_BOUNDARY_RESEARCH",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 143567,
+      "triangles": 52928,
+      "boundary_edges": 147094,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 3.331092252888303,
+      "signed_volume_m3": 0.22070426465578366,
+      "bounds_m": [
+        [
+          21.637495040893555,
+          -13.110404014587402,
+          3.7845022678375244
+        ],
+        [
+          23.229524612426758,
+          -10.490589141845703,
+          4.290374279022217
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "PORT_WING_S2_S3_S4_NEIGHBOR_P2_RESEARCH",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 101025,
+      "triangles": 38624,
+      "boundary_edges": 103640,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 94.97438234200825,
+      "signed_volume_m3": 16.501908902006576,
+      "bounds_m": [
+        [
+          16.934064865112305,
+          -16.290000915527344,
+          2.7161738872528076
+        ],
+        [
+          25.679719924926758,
+          0.0,
+          4.570444583892822
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Rudder",
+      "collections": [
+        "08_Tail"
+      ],
+      "vertices": 1923,
+      "triangles": 3646,
+      "boundary_edges": 196,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 15.617855129256544,
+      "signed_volume_m3": 0.6249479998389874,
+      "bounds_m": [
+        [
+          40.39025115966797,
+          -0.12986573576927185,
+          5.5
+        ],
+        [
+          43.67920684814453,
+          0.12986573576927185,
+          11.960000038146973
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Sharklet_PORT",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 4144,
+      "triangles": 8060,
+      "boundary_edges": 228,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 7.606736808862541,
+      "signed_volume_m3": 0.25423105599715806,
+      "bounds_m": [
+        [
+          24.5,
+          -17.899999618530273,
+          4.384364604949951
+        ],
+        [
+          27.719999313354492,
+          -16.290000915527344,
+          6.912829399108887
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Sharklet_STARBOARD",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 4144,
+      "triangles": 8060,
+      "boundary_edges": 228,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 7.606736808919349,
+      "signed_volume_m3": 0.2542310560000131,
+      "bounds_m": [
+        [
+          24.5,
+          16.290000915527344,
+          4.384364604949951
+        ],
+        [
+          27.719999313354492,
+          17.899999618530273,
+          6.912829399108887
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Slat_PORT_01",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1554,
+      "triangles": 3062,
+      "boundary_edges": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 5.762306478801782,
+      "signed_volume_m3": 0.6223345272217093,
+      "bounds_m": [
+        [
+          17.060583114624023,
+          -4.440000057220459,
+          2.8780226707458496
+        ],
+        [
+          18.955625534057617,
+          -1.975000023841858,
+          3.594827651977539
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Slat_PORT_06",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1480,
+      "triangles": 2916,
+      "boundary_edges": 42,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.3118851285066624,
+      "signed_volume_m3": 0.048566489146403886,
+      "bounds_m": [
+        [
+          23.57020378112793,
+          -16.290000915527344,
+          4.223053932189941
+        ],
+        [
+          24.700321197509766,
+          -14.5,
+          4.556241989135742
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Slat_STARBOARD_01",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1554,
+      "triangles": 3062,
+      "boundary_edges": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 5.762306478801782,
+      "signed_volume_m3": 0.6223345272217097,
+      "bounds_m": [
+        [
+          17.060583114624023,
+          1.975000023841858,
+          2.8780226707458496
+        ],
+        [
+          18.955625534057617,
+          4.440000057220459,
+          3.594827651977539
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Slat_STARBOARD_02",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1480,
+      "triangles": 2916,
+      "boundary_edges": 42,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 3.529068843421998,
+      "signed_volume_m3": 0.30252572104596104,
+      "bounds_m": [
+        [
+          18.34950065612793,
+          4.440000057220459,
+          3.1417737007141113
+        ],
+        [
+          19.815568923950195,
+          6.329999923706055,
+          3.715564012527466
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Slat_STARBOARD_03",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1554,
+      "triangles": 3062,
+      "boundary_edges": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 3.0338196900756893,
+      "signed_volume_m3": 0.2203584966841857,
+      "bounds_m": [
+        [
+          19.330049514770508,
+          6.329999923706055,
+          3.3526289463043213
+        ],
+        [
+          20.78341293334961,
+          8.300000190734863,
+          3.895350694656372
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Slat_STARBOARD_04",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1554,
+      "triangles": 3062,
+      "boundary_edges": 44,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 4.398141362020434,
+      "signed_volume_m3": 0.2759011453533936,
+      "bounds_m": [
+        [
+          20.35462760925293,
+          8.300000190734863,
+          3.575164794921875
+        ],
+        [
+          22.55286407470703,
+          11.90999984741211,
+          4.1934895515441895
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Slat_STARBOARD_05",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1480,
+      "triangles": 2916,
+      "boundary_edges": 42,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 2.4163122431482895,
+      "signed_volume_m3": 0.11529320205351073,
+      "bounds_m": [
+        [
+          22.22660255432129,
+          11.90999984741211,
+          3.951663017272949
+        ],
+        [
+          23.822839736938477,
+          14.5,
+          4.408542633056641
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Slat_STARBOARD_06",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1480,
+      "triangles": 2916,
+      "boundary_edges": 42,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 1.3118851285066624,
+      "signed_volume_m3": 0.048566489146403,
+      "bounds_m": [
+        [
+          23.57020378112793,
+          14.5,
+          4.223053932189941
+        ],
+        [
+          24.700321197509766,
+          16.290000915527344,
+          4.556241989135742
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Vertical_stabilizer",
+      "collections": [
+        "08_Tail"
+      ],
+      "vertices": 1923,
+      "triangles": 3646,
+      "boundary_edges": 196,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 41.133710538842166,
+      "signed_volume_m3": 4.544612359827166,
+      "bounds_m": [
+        [
+          35.25,
+          -0.2304486632347107,
+          5.5
+        ],
+        [
+          43.28248596191406,
+          0.2304486632347107,
+          11.960000038146973
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Wing_body_fairing_-1_FRONT_FIT_VISUAL_TRIAL1_AFT_FIT_VISUAL_TRIAL2_S1_HERMITE",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 17813,
+      "triangles": 34567,
+      "boundary_edges": 885,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 39.63742501620752,
+      "signed_volume_m3": 11.3754142234173,
+      "bounds_m": [
+        [
+          14.199999809265137,
+          -2.2125000953674316,
+          1.8200000524520874
+        ],
+        [
+          27.0,
+          -0.6000000238418579,
+          2.9800000190734863
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Wing_body_fairing_1_FRONT_FIT_VISUAL_TRIAL1_AFT_FIT_VISUAL_TRIAL2_S1_HERMITE",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 17811,
+      "triangles": 34565,
+      "boundary_edges": 883,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 39.63742516132162,
+      "signed_volume_m3": 11.375416348616817,
+      "bounds_m": [
+        [
+          14.199999809265137,
+          0.6000000238418579,
+          1.8200000524520874
+        ],
+        [
+          27.0,
+          2.2125000953674316,
+          2.9800000190734863
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Wing_fixed_box_STARBOARD",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 2146,
+      "triangles": 4288,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 89.32436904145374,
+      "signed_volume_m3": 16.299853406266717,
+      "bounds_m": [
+        [
+          16.934064865112305,
+          0.0,
+          2.7161738872528076
+        ],
+        [
+          25.679719924926758,
+          16.290000915527344,
+          4.570444583892822
+        ]
+      ],
+      "closed_oriented": true
+    },
+    {
+      "name": "Wing_root_trailing_PORT",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1479,
+      "triangles": 2770,
+      "boundary_edges": 184,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 9.187349878600735,
+      "signed_volume_m3": 0.8338783798055068,
+      "bounds_m": [
+        [
+          21.24749755859375,
+          -1.975000023841858,
+          2.886319160461426
+        ],
+        [
+          23.2773494720459,
+          0.0,
+          3.3588204383850098
+        ]
+      ],
+      "closed_oriented": false
+    },
+    {
+      "name": "Wing_root_trailing_STARBOARD",
+      "collections": [
+        "07_Wings"
+      ],
+      "vertices": 1479,
+      "triangles": 2770,
+      "boundary_edges": 184,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "degenerate_triangles": 0,
+      "duplicate_triangles": 0,
+      "area_m2": 9.187349878600735,
+      "signed_volume_m3": 0.833878379805506,
+      "bounds_m": [
+        [
+          21.24749755859375,
+          0.0,
+          2.886319160461426
+        ],
+        [
+          23.2773494720459,
+          1.975000023841858,
+          3.3588204383850098
+        ]
+      ],
+      "closed_oriented": false
+    }
+  ],
+  "source_exact_welded": {
+    "vertices": 263778,
+    "triangles": 531546,
+    "boundary_edges": 3234,
+    "nonmanifold_edges": 5618,
+    "inconsistent_edges": 0,
+    "degenerate_triangles": 7,
+    "duplicate_triangles": 1609,
+    "area_m2": 1509.3989384233628,
+    "signed_volume_m3": 105.5233154859006,
+    "bounds_m": [
+      [
+        0.0,
+        -17.899999618530273,
+        1.8200000524520874
+      ],
+      [
+        44.5099983215332,
+        17.899999618530273,
+        11.960000038146973
+      ]
+    ],
+    "closed_oriented": false
+  },
+  "trial": {
+    "vertices": 184210,
+    "triangles": 361248,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_edges": 0,
+    "degenerate_triangles": 0,
+    "duplicate_triangles": 0,
+    "area_m2": 656.6707801887652,
+    "signed_volume_m3": 64.22008928801837,
+    "bounds_m": [
+      [
+        0.07365003228187561,
+        -17.85084342956543,
+        1.8200000524520874
+      ],
+      [
+        44.482574462890625,
+        17.85084342956543,
+        11.9399995803833
+      ]
+    ],
+    "closed_oriented": true
+  },
+  "sampled_deviation": {
+    "source_to_trial": {
+      "samples": 12000,
+      "p50_m": 0.0020808273693546653,
+      "p95_m": 0.1291361682116985,
+      "p99_m": 0.2739124894142151,
+      "max_sample_m": 1.0239511728286743
+    },
+    "trial_to_source": {
+      "samples": 12000,
+      "p50_m": 0.001198671932797879,
+      "p95_m": 0.014608833426609635,
+      "p99_m": 0.03350051518529657,
+      "max_sample_m": 0.08292616158723831
+    }
+  },
+  "omissions": [
+    "engines and pylons",
+    "landing gear",
+    "interior",
+    "decorative seams",
+    "secondary flap slots",
+    "zero-thickness spoiler panels"
+  ],
+  "self_intersections": "UNMEASURED",
+  "engineering_status": "NOT_VALIDATED",
+  "gpu_compute_used": false,
+  "source_native_overwritten": false
+}
