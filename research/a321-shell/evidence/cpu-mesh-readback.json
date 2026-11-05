@@ -1,0 +1,34 @@
+{
+  "status": "CPU_VOLUME_MESH_DONE_NOT_AERO_ACCEPTED",
+  "cells": 793977,
+  "points": 154758,
+  "min_volume_m3": 5.744924875019987e-13,
+  "nonpositive_cells": 0,
+  "total_volume_m3": 2339495.3386484156,
+  "expected_volume_m3": 2339495.338648416,
+  "relative_volume_error": 1.9904347728974884e-16,
+  "mean_ratio_min": 2.3181492862208182e-07,
+  "mean_ratio_p01": 0.03559906014937273,
+  "cells_mean_ratio_below_0_01": 4797,
+  "fluid_connected_components": 1,
+  "nonmanifold_cell_faces": 0,
+  "boundary_triangles": {
+    "inlet": 2,
+    "outlet": 2,
+    "yMin": 2,
+    "yMax": 2,
+    "zMin": 2,
+    "zMax": 2,
+    "wall_aircraft": 129532
+  },
+  "boundary_layers": 0,
+  "gpu_compute": false,
+  "solver_run": false,
+  "not_ready_reasons": [
+    "near-zero-volume slivers",
+    "no boundary layers",
+    "no y+",
+    "no domain/mesh independence",
+    "ofgpu acceptance untested"
+  ]
+}

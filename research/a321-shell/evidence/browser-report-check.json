@@ -1,0 +1,20 @@
+{
+  "title": "A321 공력 전용 외피 R2",
+  "heading": "A321 기반 공력 전용 외피 R2 — GPU 실행 전 준비 결과",
+  "hold": true,
+  "modelLinks": [
+    "http://127.0.0.1:8770/models/A321_AIRFRAME_SHELL_R2.blend",
+    "http://127.0.0.1:8770/models/A321_AIRFRAME_SHELL_R2.stl"
+  ],
+  "images": [
+    {
+      "url": "http://127.0.0.1:8770/evidence/overview.png",
+      "loaded": true
+    },
+    {
+      "url": "http://127.0.0.1:8770/evidence/sections-r2.png",
+      "loaded": true
+    }
+  ],
+  "checked_at": "2026-11-05T13:15:34.828Z"
+}

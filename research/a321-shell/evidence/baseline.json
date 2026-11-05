@@ -1,0 +1,100 @@
+{
+  "source_path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-preflight\\artifacts\\input\\A321_G1B_FROZEN.blend",
+  "source_sha256": "1fd3cfd08b1dbf5e5f2fb288caf9846ad149ff8839a37cc2e4c2c8074bc1073c",
+  "source_bytes": 38570017,
+  "blender": "5.2.2 LTS",
+  "axis": "X aft,Y starboard,Z up",
+  "unit": "m",
+  "groups": [
+    {
+      "group": "fuselage",
+      "objects": [
+        "Fuselage_Belly_APEX_OUTER_NORMAL_FAN_TRIAL1_CROWN_EQUATOR_NORMAL_TRIAL1_DETACHED_RETURN_CLOSED_TRIAL1",
+        "Fuselage_Crown_CROWN_EQUATOR_NORMAL_TRIAL1_DETACHED_RETURN_CLOSED_TRIAL1"
+      ],
+      "triangles": 213642,
+      "bounds_m": [
+        [
+          0.0,
+          -1.975000023841858,
+          1.9500000476837158
+        ],
+        [
+          44.5099983215332,
+          1.975000023841858,
+          6.132683753967285
+        ]
+      ]
+    },
+    {
+      "group": "wing",
+      "objects": [
+        "AILERON_STARBOARD",
+        "INBOARD_STARBOARD",
+        "OUTBOARD_STARBOARD",
+        "Slat_STARBOARD_01",
+        "Slat_STARBOARD_02",
+        "Slat_STARBOARD_03",
+        "Slat_STARBOARD_04",
+        "Slat_STARBOARD_05",
+        "Slat_STARBOARD_06",
+        "Wing_fixed_box_STARBOARD",
+        "Wing_root_trailing_STARBOARD"
+      ],
+      "triangles": 34324,
+      "bounds_m": [
+        [
+          16.934064865112305,
+          0.0,
+          2.7161738872528076
+        ],
+        [
+          26.139068603515625,
+          16.290000915527344,
+          4.570444583892822
+        ]
+      ]
+    },
+    {
+      "group": "horizontal",
+      "objects": [
+        "Elevator_STARBOARD",
+        "Horizontal_stabilizer_STARBOARD"
+      ],
+      "triangles": 5832,
+      "bounds_m": [
+        [
+          38.35213088989258,
+          0.0,
+          4.404244422912598
+        ],
+        [
+          43.70000076293945,
+          6.224999904632568,
+          5.4921956062316895
+        ]
+      ]
+    },
+    {
+      "group": "vertical",
+      "objects": [
+        "Rudder",
+        "Vertical_stabilizer"
+      ],
+      "triangles": 7292,
+      "bounds_m": [
+        [
+          35.25,
+          -0.2304486632347107,
+          5.5
+        ],
+        [
+          43.67920684814453,
+          0.2304486632347107,
+          11.960000038146973
+        ]
+      ]
+    }
+  ],
+  "gpu_compute": false
+}

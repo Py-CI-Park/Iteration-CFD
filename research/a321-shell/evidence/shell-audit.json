@@ -1,0 +1,185 @@
+{
+  "sha256": "8611df489ea1b92b8155f4c91c55d08b78fb5800d2a0e36c9b7cec0e1c31cf70",
+  "bytes": 6310184,
+  "surface": {
+    "topology_scope": "edge-incidence-only; closed_oriented is not a full manifold proof",
+    "vertex_manifoldness": "UNMEASURED",
+    "vertices": 63103,
+    "triangles": 126202,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_edges": 0,
+    "degenerate_triangles": 0,
+    "duplicate_triangles": 0,
+    "area_m2": 794.0774648432243,
+    "signed_volume_m3": 503.9779531101844,
+    "bounds_m": [
+      [
+        0.0,
+        -16.290000915527344,
+        1.9500000476837158
+      ],
+      [
+        44.5099983215332,
+        16.290000915527344,
+        11.960000038146973
+      ]
+    ],
+    "closed_oriented": true
+  },
+  "vertex_link_failures": 0,
+  "kernel_status": "Error.NoError",
+  "kernel_components": 1,
+  "euler_number": 2,
+  "is_volume": true,
+  "sections": [
+    {
+      "part": "fuselage",
+      "station_m": 2,
+      "axis": 0,
+      "bounds_max_delta_m": 0.0007223542480225831,
+      "reference_hull_area_m2": 6.243001434569217,
+      "shell_hull_area_m2": 6.238649633970446
+    },
+    {
+      "part": "fuselage",
+      "station_m": 5,
+      "axis": 0,
+      "bounds_max_delta_m": 0.0011288594359057935,
+      "reference_hull_area_m2": 12.503301788906196,
+      "shell_hull_area_m2": 12.49408615494254
+    },
+    {
+      "part": "fuselage",
+      "station_m": 10,
+      "axis": 0,
+      "bounds_max_delta_m": 0.0007076797417837621,
+      "reference_hull_area_m2": 12.836010488583186,
+      "shell_hull_area_m2": 12.829576394551381
+    },
+    {
+      "part": "fuselage",
+      "station_m": 20,
+      "axis": 0,
+      "bounds_max_delta_m": 0.00037550602364677665,
+      "reference_hull_area_m2": 12.840315588396825,
+      "shell_hull_area_m2": 12.832544617547283
+    },
+    {
+      "part": "fuselage",
+      "station_m": 30,
+      "axis": 0,
+      "bounds_max_delta_m": 0.0009758815168190438,
+      "reference_hull_area_m2": 12.840255914610692,
+      "shell_hull_area_m2": 12.830050786916022
+    },
+    {
+      "part": "fuselage",
+      "station_m": 40,
+      "axis": 0,
+      "bounds_max_delta_m": 0.0011303354486080774,
+      "reference_hull_area_m2": 3.923929305590646,
+      "shell_hull_area_m2": 3.9269298000655803
+    },
+    {
+      "part": "fuselage",
+      "station_m": 43,
+      "axis": 0,
+      "bounds_max_delta_m": 9.457471887497348e-05,
+      "reference_hull_area_m2": 1.3885034941378165,
+      "shell_hull_area_m2": 1.3876224937335124
+    },
+    {
+      "part": "wing",
+      "station_m": 2,
+      "axis": 1,
+      "bounds_max_delta_m": 0.29815153821797935,
+      "reference_hull_area_m2": 2.873416698868181,
+      "shell_hull_area_m2": 2.6997935103855544
+    },
+    {
+      "part": "wing",
+      "station_m": 5,
+      "axis": 1,
+      "bounds_max_delta_m": 0.05368967985480566,
+      "reference_hull_area_m2": 1.6057724189898235,
+      "shell_hull_area_m2": 1.5907527197562008
+    },
+    {
+      "part": "wing",
+      "station_m": 10,
+      "axis": 1,
+      "bounds_max_delta_m": 0.01095141964221824,
+      "reference_hull_area_m2": 0.711758079542927,
+      "shell_hull_area_m2": 0.7064870180423911
+    },
+    {
+      "part": "wing",
+      "station_m": 15,
+      "axis": 1,
+      "bounds_max_delta_m": 0.007208072018503486,
+      "reference_hull_area_m2": 0.27491950515925023,
+      "shell_hull_area_m2": 0.27280736399801725
+    },
+    {
+      "part": "horizontal",
+      "station_m": 1,
+      "axis": 1,
+      "bounds_max_delta_m": 0.010824719772436708,
+      "reference_hull_area_m2": 0.7936695596279614,
+      "shell_hull_area_m2": 0.7702345173599149
+    },
+    {
+      "part": "horizontal",
+      "station_m": 3,
+      "axis": 1,
+      "bounds_max_delta_m": 0.07198221739682253,
+      "reference_hull_area_m2": 0.4479912518998146,
+      "shell_hull_area_m2": 0.4324438102600682
+    },
+    {
+      "part": "horizontal",
+      "station_m": 5,
+      "axis": 1,
+      "bounds_max_delta_m": 0.035907390095708536,
+      "reference_hull_area_m2": 0.19764223203076692,
+      "shell_hull_area_m2": 0.19110256859459218
+    },
+    {
+      "part": "vertical",
+      "station_m": 6,
+      "axis": 2,
+      "bounds_max_delta_m": 0.01931894069292639,
+      "reference_hull_area_m2": 1.9751339185704533,
+      "shell_hull_area_m2": 1.8489556857247043
+    },
+    {
+      "part": "vertical",
+      "station_m": 8,
+      "axis": 2,
+      "bounds_max_delta_m": 0.012746901028691582,
+      "reference_hull_area_m2": 0.825220416388256,
+      "shell_hull_area_m2": 0.7727587855756229
+    },
+    {
+      "part": "vertical",
+      "station_m": 10,
+      "axis": 2,
+      "bounds_max_delta_m": 0.017626636116951033,
+      "reference_hull_area_m2": 0.4133598442131748,
+      "shell_hull_area_m2": 0.3866100760750031
+    },
+    {
+      "part": "vertical",
+      "station_m": 11,
+      "axis": 2,
+      "bounds_max_delta_m": 0.002511716503640571,
+      "reference_hull_area_m2": 0.26029148400995444,
+      "shell_hull_area_m2": 0.24381129672954774
+    }
+  ],
+  "max_section_bounds_delta_m": 0.29815153821797935,
+  "self_intersections": "kernel Boolean construction validity; independent exhaustive triangle-pair proof NOT_RUN",
+  "engineering_status": "NOT_VALIDATED",
+  "gpu_compute": false
+}

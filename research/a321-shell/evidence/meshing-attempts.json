@@ -1,0 +1,63 @@
+[
+  {
+    "name": "cpu-mesh.log",
+    "bytes": 2462,
+    "sha256": "143ff3169065e28410fc50f2808d884946cf45a7d1e1658410ee20055d97f090",
+    "tail": [
+      "Info    : Reconstructing mesh...",
+      "Info    :  - Creating surface mesh",
+      "Info    :  - Identifying boundary edges",
+      "Info    :  - Recovering boundary",
+      "Error   : PLC Error:  A segment and a facet intersect at point",
+      "Traceback (most recent call last):",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-shell\\cpu_mesh.py\", line 83, in <module>",
+      "    main()",
+      "    ~~~~^^",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-shell\\cpu_mesh.py\", line 61, in main",
+      "    gmsh.model.mesh.generate(3)",
+      "    ~~~~~~~~~~~~~~~~~~~~~~~~^^^",
+      "  File \"C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\cpu-mesh-e1e1ebe0e3ad19a6\\Lib\\site-packages\\gmsh.py\", line 2189, in generate",
+      "    raise Exception(logger.getLastError())",
+      "Exception: PLC Error:  A segment and a facet intersect at point"
+    ]
+  },
+  {
+    "name": "cpu-mesh-r2.log",
+    "bytes": 49177111,
+    "sha256": "46878692853caf9ea50395cf151354ae3ab8ea56088343c236cf67601312558a",
+    "tail": [
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 20.7052",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 30.5578",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 45.3367",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 67.505",
+      "Warning : Tolerance too large - aborting partitioning",
+      "Info    :  - Level 20326 partition with 4 triangles split in 2 parts because poincare characteristic 2 is not 0",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 1.03",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 1.045",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 1.0675",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 1.10125",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 1.15187",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 1.22781",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 1.34172",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 1.51258",
+      "Warning : Partitioning face 1 with 4 triangles that all have the same partition - changing tolerance to 1.76887"
+    ]
+  },
+  {
+    "name": "meshpy.log",
+    "bytes": 651,
+    "sha256": "0819eb9577fdf011f918332e68820c14d4b45831a541b4f285acc108506c171c",
+    "tail": [
+      "Installed 4 packages in 3.91s",
+      "Traceback (most recent call last):",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-shell\\meshpy_trial.py\", line 59, in <module>",
+      "    mesh = tet.build(info, options=tet.Options(\"pq1.4a100YQ\"), verbose=False)",
+      "    ^^^^^^",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-shell\\meshpy_trial.py\", line 46, in main",
+      "    [4, 5, 6, 7],",
+      "  File \"C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\meshpy-trial-bd2e127111efc3b0\\Lib\\site-packages\\meshpy\\tet.py\", line 102, in write_vtk",
+      "    import pyvtk",
+      "ModuleNotFoundError: No module named 'pyvtk'"
+    ]
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "status": "PLAN_ONLY_NOT_EXECUTED",
+  "geometry": "R2 airframe-only symmetric derivative",
+  "normalization": "both mirrored wing hull planforms integrated across Y including covered root; NOT OEM wing reference",
+  "reference_area_m2": 122.78891577003135,
+  "mean_aerodynamic_chord_m": 4.299174877740741,
+  "span_m": 32.58000183105469,
+  "speed_m_s": 30.0,
+  "density_kg_m3": 1.225,
+  "nu_m2_s": 1.46e-05,
+  "temperature_K": 288.15,
+  "alpha_deg": 2,
+  "beta_deg": 0,
+  "velocity_m_s": [
+    29.981724810572874,
+    0,
+    1.0469849010750292
+  ],
+  "drag_axis": [
+    0.9993908270190958,
+    0,
+    0.03489949670250097
+  ],
+  "lift_axis": [
+    -0.03489949670250097,
+    0,
+    0.9993908270190958
+  ],
+  "dynamic_pressure_Pa": 551.25,
+  "reynolds_mac": 8833920.981659057,
+  "wall_resolved_estimate": {
+    "Cf_flatplate": 0.0030641562257127564,
+    "u_tau_m_s": 1.1742530824190927,
+    "yplus1_centroid_distance_m": 1.2433435533268832e-05,
+    "first_layer_thickness_estimate_m": 2.4866871066537665e-05,
+    "note": "a priori correlation, not solved y+; expensive at full scale"
+  },
+  "recommended_next": "CPU prism/layer-capable meshing and independent ofgpu mesh gate; do not run current sliver tet mesh",
+  "model_proposal": "lowmach coupled kOmegaSST; wall treatment and actual achieved layer spacing jointly reviewed",
+  "boundary_proposal": {
+    "inlet": "fixed U,k,omega; p zeroGradient; T fixed",
+    "outlet": "p=0 kinematic reference, U zeroGradient with backflow policy review",
+    "side_top_bottom": "farfield/slip approximation with inflow consistency review; no physical ground",
+    "aircraft": "noSlip, zeroGradient p, isothermal/adiabatic irrelevant-energy choice locked"
+  },
+  "gpu_compute_authorized": false,
+  "gpu_solver_executed": false
+}

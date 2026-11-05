@@ -1,0 +1,311 @@
+{
+  "method": "held-out midpoint sections + evenly indexed vertex-to-triangle proximity; not Hausdorff or curvature proof",
+  "parts": [
+    {
+      "part": "fuselage",
+      "holdout_sections": [
+        {
+          "station_m": 0.3739720529737419,
+          "bounds_max_delta_m": 0.011014176516979557,
+          "convex_area_relative_delta": -0.021983230146626398
+        },
+        {
+          "station_m": 4.3523406180269895,
+          "bounds_max_delta_m": 0.002119814999931524,
+          "convex_area_relative_delta": -0.001656191469552648
+        },
+        {
+          "station_m": 8.330709183080236,
+          "bounds_max_delta_m": 0.0008382198626255555,
+          "convex_area_relative_delta": -0.00034036013736038484
+        },
+        {
+          "station_m": 12.309077748133484,
+          "bounds_max_delta_m": 0.0007026791604656246,
+          "convex_area_relative_delta": -0.0006293511911568128
+        },
+        {
+          "station_m": 16.287446313186734,
+          "bounds_max_delta_m": 0.0008805394188022841,
+          "convex_area_relative_delta": -0.0004946373761189893
+        },
+        {
+          "station_m": 20.26581487823998,
+          "bounds_max_delta_m": 0.0004394050982707842,
+          "convex_area_relative_delta": -0.0006459051799450055
+        },
+        {
+          "station_m": 24.24418344329323,
+          "bounds_max_delta_m": 0.00061905335738488,
+          "convex_area_relative_delta": -0.0007101336454016227
+        },
+        {
+          "station_m": 28.222552008346476,
+          "bounds_max_delta_m": 0.0007278320860555354,
+          "convex_area_relative_delta": -0.0003602635029924528
+        },
+        {
+          "station_m": 32.20092057339972,
+          "bounds_max_delta_m": 0.0008794045508540016,
+          "convex_area_relative_delta": -0.0007281175443935028
+        },
+        {
+          "station_m": 36.179289138452965,
+          "bounds_max_delta_m": 0.0003221332215046502,
+          "convex_area_relative_delta": -0.0006058266736937989
+        },
+        {
+          "station_m": 40.15765770350622,
+          "bounds_max_delta_m": 0.0005135029000676861,
+          "convex_area_relative_delta": 7.842737859209414e-05
+        },
+        {
+          "station_m": 44.13602626855946,
+          "bounds_max_delta_m": 0.004723993997900244,
+          "convex_area_relative_delta": -0.01846494191801773
+        }
+      ],
+      "holdout_bounds_max_m": 0.011014176516979557,
+      "sample_reference_to_shell": {
+        "count": 2500,
+        "p95_m": 0.029709291231896463,
+        "max_m": 0.08633869986191037
+      },
+      "sample_shell_to_reference": {
+        "count": 2500,
+        "p95_m": 0.0007992739324911665,
+        "max_m": 0.8103637650889587
+      }
+    },
+    {
+      "part": "wing",
+      "holdout_sections": [
+        {
+          "station_m": 0.4296316030401932,
+          "bounds_max_delta_m": 0.00013350156861235973,
+          "convex_area_relative_delta": -0.0005279481715229073
+        },
+        {
+          "station_m": 1.8012527327688113,
+          "bounds_max_delta_m": 0.00011979495054026401,
+          "convex_area_relative_delta": -0.0005277731409860653
+        },
+        {
+          "station_m": 3.17287386249743,
+          "bounds_max_delta_m": 0.0002469759063425947,
+          "convex_area_relative_delta": -0.0004194085174303863
+        },
+        {
+          "station_m": 4.544494992226048,
+          "bounds_max_delta_m": 0.00021541087876686404,
+          "convex_area_relative_delta": -0.0004194688750259745
+        },
+        {
+          "station_m": 5.9161161219546665,
+          "bounds_max_delta_m": 0.00018390490912922886,
+          "convex_area_relative_delta": -0.0004193891223527313
+        },
+        {
+          "station_m": 7.287737251683285,
+          "bounds_max_delta_m": 0.000361753381169283,
+          "convex_area_relative_delta": -0.00036306371079564137
+        },
+        {
+          "station_m": 8.83081102262798,
+          "bounds_max_delta_m": 0.0001483372178769926,
+          "convex_area_relative_delta": -0.00042884833186207505
+        },
+        {
+          "station_m": 10.05835291587428,
+          "bounds_max_delta_m": 0.0001354889166780282,
+          "convex_area_relative_delta": -0.0004181050692609878
+        },
+        {
+          "station_m": 11.574053282085217,
+          "bounds_max_delta_m": 0.00011980107851705668,
+          "convex_area_relative_delta": -0.00041789067430297866
+        },
+        {
+          "station_m": 12.945674411813835,
+          "bounds_max_delta_m": 0.00010532961371367833,
+          "convex_area_relative_delta": -0.000417740195829297
+        },
+        {
+          "station_m": 14.48874818275853,
+          "bounds_max_delta_m": 0.00021386545800439194,
+          "convex_area_relative_delta": -0.00038380714113050995
+        },
+        {
+          "station_m": 15.860369312487148,
+          "bounds_max_delta_m": 7.511264675663654e-05,
+          "convex_area_relative_delta": -0.00041558925133100555
+        }
+      ],
+      "holdout_bounds_max_m": 0.000361753381169283,
+      "sample_reference_to_shell": {
+        "count": 2500,
+        "p95_m": 0.0007319988537840402,
+        "max_m": 0.15675631610985416
+      },
+      "sample_shell_to_reference": {
+        "count": 2500,
+        "p95_m": 7.641795034266825e-07,
+        "max_m": 0.0010717898715577037
+      }
+    },
+    {
+      "part": "horizontal",
+      "holdout_sections": [
+        {
+          "station_m": 0.24794444066002252,
+          "bounds_max_delta_m": 0.00020385043984472162,
+          "convex_area_relative_delta": -0.0008228724903600604
+        },
+        {
+          "station_m": 0.7418333219800676,
+          "bounds_max_delta_m": 0.00019241037727546484,
+          "convex_area_relative_delta": -0.000823048325668152
+        },
+        {
+          "station_m": 1.2357222033001123,
+          "bounds_max_delta_m": 0.00018093589446088743,
+          "convex_area_relative_delta": -0.0008230662210825246
+        },
+        {
+          "station_m": 1.7296110846201573,
+          "bounds_max_delta_m": 0.00016859589735407354,
+          "convex_area_relative_delta": -0.000814931353185222
+        },
+        {
+          "station_m": 2.3222777422042116,
+          "bounds_max_delta_m": 0.0001557143987884757,
+          "convex_area_relative_delta": -0.0008209162559281724
+        },
+        {
+          "station_m": 2.8161666235242566,
+          "bounds_max_delta_m": 0.0001439379193524104,
+          "convex_area_relative_delta": -0.0008195409461517755
+        },
+        {
+          "station_m": 3.3100555048443017,
+          "bounds_max_delta_m": 0.00013176153986282912,
+          "convex_area_relative_delta": -0.000818672953463162
+        },
+        {
+          "station_m": 3.8039443861643467,
+          "bounds_max_delta_m": 0.00012238386428009562,
+          "convex_area_relative_delta": -0.0008333883154582056
+        },
+        {
+          "station_m": 4.3966110437484005,
+          "bounds_max_delta_m": 0.0001055274512022919,
+          "convex_area_relative_delta": -0.0008169523466251549
+        },
+        {
+          "station_m": 4.890499925068447,
+          "bounds_max_delta_m": 9.343096540526119e-05,
+          "convex_area_relative_delta": -0.0008144990369046701
+        },
+        {
+          "station_m": 5.3843888063884915,
+          "bounds_max_delta_m": 8.154386295089466e-05,
+          "convex_area_relative_delta": -0.0008112066405896456
+        },
+        {
+          "station_m": 5.977055463972546,
+          "bounds_max_delta_m": 6.74615051963201e-05,
+          "convex_area_relative_delta": -0.0008172268421792195
+        }
+      ],
+      "holdout_bounds_max_m": 0.00020385043984472162,
+      "sample_reference_to_shell": {
+        "count": 2500,
+        "p95_m": 0.0007078393487805169,
+        "max_m": 0.002179879716522629
+      },
+      "sample_shell_to_reference": {
+        "count": 2500,
+        "p95_m": 6.57182597607166e-06,
+        "max_m": 0.004109709047192042
+      }
+    },
+    {
+      "part": "vertical",
+      "holdout_sections": [
+        {
+          "station_m": 5.728394367540387,
+          "bounds_max_delta_m": 0.0002463490005406854,
+          "convex_area_relative_delta": -0.0008230644182947167
+        },
+        {
+          "station_m": 6.183183102621159,
+          "bounds_max_delta_m": 0.0251116058764822,
+          "convex_area_relative_delta": 0.007217373691606577
+        },
+        {
+          "station_m": 6.728929584718086,
+          "bounds_max_delta_m": 0.00018973560871546336,
+          "convex_area_relative_delta": -0.0008231734660241186
+        },
+        {
+          "station_m": 7.3656338138311686,
+          "bounds_max_delta_m": 0.00016842081579673818,
+          "convex_area_relative_delta": -0.0008232296994516997
+        },
+        {
+          "station_m": 7.911380295928096,
+          "bounds_max_delta_m": 0.00015613281379356359,
+          "convex_area_relative_delta": -0.0008229910852177724
+        },
+        {
+          "station_m": 8.36616903100887,
+          "bounds_max_delta_m": 0.00014588703389029067,
+          "convex_area_relative_delta": -0.0008230515982479147
+        },
+        {
+          "station_m": 9.00287326012195,
+          "bounds_max_delta_m": 0.00013154686935404336,
+          "convex_area_relative_delta": -0.000823118498497144
+        },
+        {
+          "station_m": 9.548619742218879,
+          "bounds_max_delta_m": 0.00011925442913761353,
+          "convex_area_relative_delta": -0.0008231406536368668
+        },
+        {
+          "station_m": 10.024443675403864,
+          "bounds_max_delta_m": 0.00010853894657568419,
+          "convex_area_relative_delta": -0.0008231637085913679
+        },
+        {
+          "station_m": 10.640112706412733,
+          "bounds_max_delta_m": 9.46613429022719e-05,
+          "convex_area_relative_delta": -0.0008230757163618652
+        },
+        {
+          "station_m": 11.094901441493505,
+          "bounds_max_delta_m": 8.443661557415438e-05,
+          "convex_area_relative_delta": -0.0008235083497142304
+        },
+        {
+          "station_m": 11.731605670606587,
+          "bounds_max_delta_m": 6.913250332052367e-05,
+          "convex_area_relative_delta": -0.0008230387894122559
+        }
+      ],
+      "holdout_bounds_max_m": 0.0251116058764822,
+      "sample_reference_to_shell": {
+        "count": 2500,
+        "p95_m": 0.0012389931595527199,
+        "max_m": 0.028901657869044202
+      },
+      "sample_shell_to_reference": {
+        "count": 2500,
+        "p95_m": 8.69271171976371e-07,
+        "max_m": 0.008049736250024187
+      }
+    }
+  ],
+  "engineering_status": "NOT_VALIDATED",
+  "gpu_compute": false
+}

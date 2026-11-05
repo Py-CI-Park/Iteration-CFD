@@ -1,0 +1,31 @@
+{
+  "file": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-shell\\artifacts\\shell-r2\\A321_AIRFRAME_SHELL_R2.blend",
+  "surface": {
+    "topology_scope": "edge-incidence-only; closed_oriented is not a full manifold proof",
+    "vertex_manifoldness": "UNMEASURED",
+    "vertices": 64768,
+    "triangles": 129532,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_edges": 0,
+    "degenerate_triangles": 0,
+    "duplicate_triangles": 0,
+    "area_m2": 798.0541683779012,
+    "signed_volume_m3": 504.66135158409384,
+    "bounds_m": [
+      [
+        0.0,
+        -16.290000915527344,
+        1.9500000476837158
+      ],
+      [
+        44.5099983215332,
+        16.290000915527344,
+        11.960000038146973
+      ]
+    ],
+    "closed_oriented": true
+  },
+  "native_saved": false,
+  "gpu_compute": false
+}

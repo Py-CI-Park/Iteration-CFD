@@ -4,6 +4,9 @@ CPU-only A321 research scripts added 2026-11-04 are individually classified in
 [`research/a321-preflight/PROVENANCE.md`](../research/a321-preflight/PROVENANCE.md).
 They do not change solver numerics or introduce GPU execution.
 
+The 2026-11-05 aerodynamic shell derivation and CPU meshing adapters are listed in
+[`research/a321-shell/PROVENANCE.md`](../research/a321-shell/PROVENANCE.md).
+
 meteor-cfd is source-available under the Prosperity Public License 3.0.0
 (see ../LICENSE). This file is the per-file record that
 [`../LICENSING.md`](../LICENSING.md) §6 phase 4 calls for: for each source
@@ -23,7 +26,7 @@ Three categories, and nothing falls outside them:
 **No file in this tree was written from GPL-licensed source.** The numerical
 core that was is gone; see `LICENSING.md` for what was removed and why.
 
-**Three files are licensed GPL-2.0-or-later, not under the Prosperity licence:**
+**Blender API adapter exceptions, GPL-2.0-or-later, not under the Prosperity licence:**
 `../tools/promo/scene.py`, `../tools/promo/sim_geom.py` and
 `../tools/promo/render.py`. They import
 Blender's Python API (`bpy`), and Blender treats a script that uses its API as
@@ -31,6 +34,13 @@ GPL. They are written here from no GPL source (their rows below say so) and run
 as separate programs inside Blender; they are aggregated with meteor-cfd, not
 linked into it. The licence is outbound only. See
 [`../tools/promo/LICENSE-NOTICE.md`](../tools/promo/LICENSE-NOTICE.md).
+
+The same separate-program outbound classification applies to the research adapters
+`../research/a321-shell/export_reference.py`, `blender_shell.py`, `reopen_shell.py`,
+and the inherited `../research/a321-preflight/inventory.py`, `prepare_surface.py`,
+`extract_wing.py`, `reopen_candidate.py`. They are original bpy orchestration,
+not copied GPL solver implementation. See the research
+[`LICENSE-NOTICE.md`](../research/a321-shell/LICENSE-NOTICE.md).
 
 ## What "carried over" means, and why it is not a hole in the audit
 

@@ -1,0 +1,52 @@
+{
+  "source_sha256": "1fd3cfd08b1dbf5e5f2fb288caf9846ad149ff8839a37cc2e4c2c8074bc1073c",
+  "source_inventory": "../a321-preflight/evidence/native-inventory.json",
+  "method": "saved native world bounds of named sharklets",
+  "objects": [
+    {
+      "name": "Sharklet_PORT",
+      "collections": [
+        "07_Wings"
+      ],
+      "visible": true,
+      "vertices": 4144,
+      "polygons": 8060,
+      "bounds": [
+        [
+          24.5,
+          -17.899999618530273,
+          4.384364604949951
+        ],
+        [
+          27.719999313354492,
+          -16.290000915527344,
+          6.912829399108887
+        ]
+      ]
+    },
+    {
+      "name": "Sharklet_STARBOARD",
+      "collections": [
+        "07_Wings"
+      ],
+      "visible": true,
+      "vertices": 4144,
+      "polygons": 8060,
+      "bounds": [
+        [
+          24.5,
+          16.290000915527344,
+          4.384364604949951
+        ],
+        [
+          27.719999313354492,
+          17.899999618530273,
+          6.912829399108887
+        ]
+      ]
+    }
+  ],
+  "ymin": -17.899999618530273,
+  "ymax": 17.899999618530273,
+  "span_m": 35.79999923706055
+}

@@ -1,0 +1,248 @@
+{
+  "study": "A321_AERO_SHELL_20261105",
+  "source_sha256": "1fd3cfd08b1dbf5e5f2fb288caf9846ad149ff8839a37cc2e4c2c8074bc1073c",
+  "source_unchanged": true,
+  "source_uploaded": false,
+  "files": [
+    {
+      "path": "artifacts/cpu-mesh-r1/mesh-surface.stl",
+      "bytes": 264884,
+      "sha256": "94eba22db2e84e2a28295169ce92812ffe3e44d8abfdbfb2e8470cd193e574bd",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/cpu-mesh-r2/mesh-surface.stl",
+      "bytes": 546484,
+      "sha256": "0c38fb187b0145a2b594fdffba598bebe441833c1161f09aa065d59c1f56b894",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/cpu-mesh-r2.log",
+      "bytes": 49177111,
+      "sha256": "46878692853caf9ea50395cf151354ae3ab8ea56088343c236cf67601312558a",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/cpu-mesh.log",
+      "bytes": 2462,
+      "sha256": "143ff3169065e28410fc50f2808d884946cf45a7d1e1658410ee20055d97f090",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/ego-report.png",
+      "bytes": 196338,
+      "sha256": "bb2d67eecc3ad14ad7706a493fc664904d33b07199cd971853559a67806bc925",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/meshpy-r1/boundary.npz",
+      "bytes": 500773,
+      "sha256": "8ebe22103bb817e418d97fbbc732e193a0d82e39e3424159496d50d7062f87da",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/meshpy-r1/fluid.npz",
+      "bytes": 11204939,
+      "sha256": "883cb434cad843b5e1520c7ba09915318abaece70613605261e8b1da02c3e831",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/meshpy-r1/fluid.vtk",
+      "bytes": 33122590,
+      "sha256": "f4274de3ce29fd9b1bb90b8e123e89f5ced8af745a2b1ed8ed681165ef498308",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/meshpy.log",
+      "bytes": 651,
+      "sha256": "0819eb9577fdf011f918332e68820c14d4b45831a541b4f285acc108506c171c",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/overview.png",
+      "bytes": 285681,
+      "sha256": "404d839320a12057f24da97b4a01ffce20435c1d21e6af67f721638f9ff6ddad",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/reference/fuselage.npz",
+      "bytes": 1422433,
+      "sha256": "01d01704124cfc261032716fbc102c939e466785ad79345ba4f97d63c82c7659",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/reference/horizontal.npz",
+      "bytes": 41808,
+      "sha256": "e883ec4bbb4c21549fd6b6d6669e5f01e1e71eceda4144b46205dabf4d904a86",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/reference/vertical.npz",
+      "bytes": 46175,
+      "sha256": "c1f8b35462104279f533e956e622b65894e7f888fef9105cd66b5f9e0b596c57",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/reference/wing.npz",
+      "bytes": 244828,
+      "sha256": "b8723fae1b53fee755b8b1ce1120a645520a87682c0978198d2cc1acafe72f4c",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/sections-r2.png",
+      "bytes": 172020,
+      "sha256": "7180d5b16537c75762c4bc759a3183b510775dee3c09c093d69354436b688ea8",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/A321_AIRFRAME_SHELL_R1.blend",
+      "bytes": 4906657,
+      "sha256": "49e28e917b92c438ff6d3c6eb5eb8fd164a9926ec74c1743d8e3feecc157a6ad",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/A321_AIRFRAME_SHELL_R1.stl",
+      "bytes": 6310184,
+      "sha256": "8611df489ea1b92b8155f4c91c55d08b78fb5800d2a0e36c9b7cec0e1c31cf70",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/blender-export.stl",
+      "bytes": 6310184,
+      "sha256": "c03366193adaf41d3b0cdfd6879ac8100c8a11de02bfe37eb1de7240b4b3de63",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/fuselage.stl",
+      "bytes": 2329684,
+      "sha256": "7b46a5b23f7715a15b53635255956f5650e33c52e21ef847149863d573c64652",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/horizontal-port.stl",
+      "bytes": 614484,
+      "sha256": "8b029719056ca0dc8e291c445b56b21690c8348f736350a35a7b2d56aa79f28f",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/horizontal.stl",
+      "bytes": 614484,
+      "sha256": "a27d271017c01c23530c647f9646652701842dccc031698e1661db41e17874e5",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/reopened.stl",
+      "bytes": 6310184,
+      "sha256": "c03366193adaf41d3b0cdfd6879ac8100c8a11de02bfe37eb1de7240b4b3de63",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/shell.npz",
+      "bytes": 1048724,
+      "sha256": "d87be437bcf948e9e738003f8fd0abefab33c421a5a40c86a872215102b34a0c",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/vertical.stl",
+      "bytes": 691284,
+      "sha256": "c85235ad14b91334388ff4d9a0f99dfe78569312cb9feeb7f6445a3c1063c576",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/wing-port.stl",
+      "bytes": 1228884,
+      "sha256": "26e2ff8715be0379f3b512d2cf07a3f6a57e3dcba0ca7a1296ec66b013f9892b",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r1/wing.stl",
+      "bytes": 1228884,
+      "sha256": "4356a91a633d3c048a39224ec1f263d40ca53ac8f8c2592b646dbdaa842b87cd",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/A321_AIRFRAME_SHELL_R2.blend",
+      "bytes": 5035724,
+      "sha256": "c01787ba72e5d6d47cc2f28a76eddb9087adcf484ec48dbadac38bcf9cf561c7",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/A321_AIRFRAME_SHELL_R2.stl",
+      "bytes": 6476684,
+      "sha256": "0edc96a61d78740ec106f8583ca377f1c8e0ae7c2049d63380e4a373e75b3aa0",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/blender-export.stl",
+      "bytes": 6476684,
+      "sha256": "3cb3d9a5a7901a4fb6cc570aa7fb75ca40f6f265f03b929e8300afe52e3890ee",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/fuselage.stl",
+      "bytes": 2329684,
+      "sha256": "9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/horizontal-port.stl",
+      "bytes": 643284,
+      "sha256": "e1aee1c7efb11da27d2d7c246dc4dcc0f35ba732568466039d3963a60dc28709",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/horizontal.stl",
+      "bytes": 643284,
+      "sha256": "94b34576f4f994acf27c7255d0c1af2029d6de9c4ebc66d2353fae9430240a3e",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/reopened.stl",
+      "bytes": 6476684,
+      "sha256": "3cb3d9a5a7901a4fb6cc570aa7fb75ca40f6f265f03b929e8300afe52e3890ee",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/shell.npz",
+      "bytes": 1047347,
+      "sha256": "b6c7cdd7fcf6acafcee791a4b0cfa1b4e7666f598d222d261afd84fd48915b49",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/vertical.stl",
+      "bytes": 729684,
+      "sha256": "6cfc20121dbcc4772bb04b8cb10934494660e9803a003313844cda8ac022bc18",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/wing-port.stl",
+      "bytes": 1280084,
+      "sha256": "c6a62a62cc0a9d4ffc8aefd824b4aa796a4d5f8678898dbb854c4831b6637698",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r2/wing.stl",
+      "bytes": 1280084,
+      "sha256": "041d9257d25e9a73bd5cbafb04d96bd40c354ae25467868b258f61a2f77c0d20",
+      "publish_intended": false
+    },
+    {
+      "path": "models/A321_AIRFRAME_SHELL_R2.blend",
+      "bytes": 5035724,
+      "sha256": "c01787ba72e5d6d47cc2f28a76eddb9087adcf484ec48dbadac38bcf9cf561c7",
+      "publish_intended": true
+    },
+    {
+      "path": "models/A321_AIRFRAME_SHELL_R2.stl",
+      "bytes": 6476684,
+      "sha256": "0edc96a61d78740ec106f8583ca377f1c8e0ae7c2049d63380e4a373e75b3aa0",
+      "publish_intended": true
+    }
+  ],
+  "blender_reexport_byte_identical": true,
+  "gpu_compute_executed": false,
+  "solver_executed": false,
+  "volume_mesh_executed": "CPU MeshPy/TetGen",
+  "public_fork": "https://github.com/Py-CI-Park/Iteration-CFD",
+  "branch": "codex/a321-aero-shell-20261105"
+}

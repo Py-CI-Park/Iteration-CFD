@@ -1,0 +1,11 @@
+const fs=await import('node:fs/promises');
+const task=await taskSpace(10);
+const page=task.page('p1');
+const tabs=await task.tabs();
+const win=await task.cdp('Browser.getWindowForTarget',{targetId:tabs.find(t=>t.label==='p1').targetId});
+await task.cdp('Browser.setWindowBounds',{windowId:win.windowId,bounds:{windowState:'normal'}});
+await page.cdp('Page.bringToFront');
+const record=await page.evaluate(()=>({url:location.href,title:document.title,text:document.body.innerText}));
+await fs.writeFile('D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-shell/evidence/nasa-browser-20261105.json',JSON.stringify({...record,accessed_at:new Date().toISOString()},null,2));
+console.log({title:record.title,chars:record.text.length});
+console.log(await page.snapshot());

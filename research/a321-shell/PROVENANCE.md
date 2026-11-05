@@ -1,0 +1,9 @@
+# Shell research provenance
+
+All new Python and browser scripts are original research orchestration and measurement, written 2026-11-05. No solver numerics changed; no third-party GPL implementation copied or consulted. Blender/Gmsh/MeshPy are invoked as separate programs or through published APIs. Manifold, numpy/scipy/trimesh/matplotlib provide geometry/kernel/data primitives.
+
+The three bpy scripts (`export_reference.py`, `blender_shell.py`, `reopen_shell.py`) follow this repository's Blender adapter GPL-2.0-or-later outbound classification, as specified in `LICENSE-NOTICE.md` and `rust/PROVENANCE.md`. Original authorship and outbound licence are separate properties. This classification does not link a GPL CFD implementation into the solver.
+
+`export_reference.py`: exact pinned Blender-coordinate boundary. `profiles.py`, `reconstruct.py`: independently authored triangle-plane crossings, convex/radial/chord sampling, loft triangulation and kernel union orchestration. `blender_shell.py`, `reopen_shell.py`: native authoring/readback. `audit_shell.py`, `test_topology.py`: vertex-link and stored STL audit. `cpu_mesh.py`, `meshpy_trial.py`: documented external CPU mesher calls. `mesh_readback.py`: independent saved-tet quality and VTK output. `plan_case.py`: explicit research normalizations and a priori wall estimate. `visualize_shell.py`: actual triangle mesh and section plots. `package_results.py`: exact derivative custody. `build_report.py`: fixed local report generator. Browser scripts: Ego Lite research/QA receipts.
+
+The generated model is a new symmetric/convex-envelope derivative of the user's locally supplied Aircraft-Workbench G1B research native. No OEM identity or physical accuracy is asserted. Public push is specifically requested by the user; source native, reference NPZ, large CPU volume mesh and full logs remain local. Their SHA/size inventory is committed. `models/` contains only new R2 derivative `.blend/.stl`.
