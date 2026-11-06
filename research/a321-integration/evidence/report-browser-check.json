@@ -1,0 +1,23 @@
+{
+  "title": "A321 Studio·경계층·GPU 진단",
+  "fixFirst": true,
+  "images": [
+    {
+      "url": "http://127.0.0.1:8771/evidence/studio-r2.png",
+      "loaded": true
+    },
+    {
+      "url": "http://127.0.0.1:8771/evidence/studio-r3.png",
+      "loaded": true
+    },
+    {
+      "url": "http://127.0.0.1:8771/evidence/span-r2.png",
+      "loaded": true
+    },
+    {
+      "url": "http://127.0.0.1:8771/evidence/r2-r3-comparison.png",
+      "loaded": true
+    }
+  ],
+  "at": "2026-11-06T12:20:23.422Z"
+}

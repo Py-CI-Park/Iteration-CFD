@@ -1,0 +1,32 @@
+{
+  "r3_surface": {
+    "vertices": 64763,
+    "triangles": 129522,
+    "watertight": true,
+    "vertex_link_failures": 0,
+    "kernel_status": "Error.NoError",
+    "components": 1,
+    "volume_m3": 504.8608243561819
+  },
+  "layer_capture": {
+    "requested_layers": 5,
+    "minimum_8_layer_coverage": 0.0,
+    "nominal_first_m": 0.001,
+    "achieved_scale_min": 2.320193057953086e-06,
+    "achieved_scale_median": 0.013904482347306318,
+    "full_nominal_area_fraction": 0.0,
+    "area_fraction_apriori_yplus_le1": 0.9446759137510946,
+    "note": "a priori only; collapsed nanometre layers are failure, not high resolution success"
+  },
+  "max_absolute_closure_m2": 2.4070991579715096e-07,
+  "tet_min_volume_m3": 1.1373731636776335e-13,
+  "prism_min_volume_m3": 1.9410203330042672e-17,
+  "faces_nonorth_quantiles_deg": [
+    37.15640169032042,
+    81.3270423114676,
+    89.60874197981448
+  ],
+  "status": "FIX_FIRST",
+  "ofgpu_gate": "NOT_RUN",
+  "solver_run": false
+}

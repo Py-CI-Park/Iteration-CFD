@@ -1,0 +1,10 @@
+{
+  "prisms": 647610,
+  "quadrature_samples_each": 6,
+  "minimum_jacobian_m3": -2.039191333075336e-11,
+  "nonpositive_sample_prisms": 20,
+  "samples_with_sign_change_prisms": 20,
+  "scope": "6 samples per prism, not continuous Jacobian proof",
+  "status": "FIX_FIRST",
+  "solver_run": false
+}

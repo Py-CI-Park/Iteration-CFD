@@ -1,0 +1,310 @@
+{
+  "study": "A321_STUDIO_LAYERS_20261106",
+  "branch": "codex/a321-aero-shell-20261105",
+  "base": "6d4bfed29618a5755898dbb9cd8fcd4d4e62656a",
+  "source_sha256": "1fd3cfd08b1dbf5e5f2fb288caf9846ad149ff8839a37cc2e4c2c8074bc1073c",
+  "source_unchanged": true,
+  "source_uploaded": false,
+  "files": [
+    {
+      "path": "models/A321_AIRFRAME_SHELL_R3.blend",
+      "bytes": 2699114,
+      "sha256": "bbeff0e0c85ebaf76f7b81f5b98a9f283b4be1e13cad004dbb81705d535f7b97",
+      "publish_intended": true
+    },
+    {
+      "path": "models/A321_AIRFRAME_SHELL_R3.stl",
+      "bytes": 6476184,
+      "sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+      "publish_intended": true
+    },
+    {
+      "path": "artifacts/audit-polymesh.log",
+      "bytes": 1108,
+      "sha256": "810e2451465bbe22125feba99c29614bcf85b6a473bf81b60982ac28c32f67a2",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/control-tets/tetgen-tmpfile_skipped.face",
+      "bytes": 508,
+      "sha256": "51b2b5d852cddcf14c054dd673e2b6cf27abe3cea7598fc483e88fcd4bd908e5",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/control-tets/tetgen-tmpfile_skipped.node",
+      "bytes": 1071220,
+      "sha256": "f71830f2944e3e9c794d5062f0986891ad881540499002ccff46b0bde3ed8dc4",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/control-tets.log",
+      "bytes": 999,
+      "sha256": "a3c4252f62cc288e6e3606586f88337db1f40117454a0adaa14f6815dd8e7a16",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/convert-fast.log",
+      "bytes": 1202,
+      "sha256": "164de738527d66289fa7e584984aeffc41fd71748ffdcdd20803440870302078",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/convert-reference.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r3/layer-outer.stl",
+      "bytes": 1541984,
+      "sha256": "701e786fb472a1875fa0ce7544b06c4a77d2257f5959d0d183441b1fd5ade1ad",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r3/remeshed.stl",
+      "bytes": 1541984,
+      "sha256": "e691abb78ca42bf36136270b08eef742b2d94aab2862e451c7ce744e5650a6a9",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r3/surface.npz",
+      "bytes": 264473,
+      "sha256": "9f7e4de4a558f4446d45b11727ac2a845815c57b1567ef5ac4af2d56e63139b5",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r4/layer-outer.stl",
+      "bytes": 1541984,
+      "sha256": "71cefac7bc9086e08c4f38320a47c34e5c47ccb2c3f2f5afcba4f30f108dcba9",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r4/remeshed.stl",
+      "bytes": 1541984,
+      "sha256": "e691abb78ca42bf36136270b08eef742b2d94aab2862e451c7ce744e5650a6a9",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r4/surface.npz",
+      "bytes": 264473,
+      "sha256": "9f7e4de4a558f4446d45b11727ac2a845815c57b1567ef5ac4af2d56e63139b5",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/audited-cell-geometry.npz",
+      "bytes": 24526213,
+      "sha256": "a9131d79b71145ef53160b28955eb92be112a7fb3a12e194099db8bdb82f154d",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/case/constant/polyMesh/boundary",
+      "bytes": 1774,
+      "sha256": "b97f7a22bf2ae7e216547fa666d3b422600b50cc6e5970f3e0574596d346044f",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/case/constant/polyMesh/faces",
+      "bytes": 55927157,
+      "sha256": "f3ec30f1ecfbeab97167439d17250b8fb3a0918f3006d7393c5d1ae292382ee4",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/case/constant/polyMesh/neighbour",
+      "bytes": 13744486,
+      "sha256": "5bf7a6ff92d6fba564c576a78c34e8f941b9fe74d2938e3d55db5c57e95116b3",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/case/constant/polyMesh/owner",
+      "bytes": 14459062,
+      "sha256": "6b7e23eb6a3ada4f7605a3ce6aec9ccae78b2cb93d8d7fb5d626e99914b1b933",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/case/constant/polyMesh/points",
+      "bytes": 23132350,
+      "sha256": "0e448fd08fb5274b0b8f22072a0cf358314c3ecef22dfe81160e95c7ef0821c3",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/face-data.npz",
+      "bytes": 134700361,
+      "sha256": "4e5950e8ecd03c6a4af46f381fddda5a47ea8d87dc9889bb9811b743467c43ab",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/hybrid.npz",
+      "bytes": 15409766,
+      "sha256": "e1f0bd62000dee9beba6808e3551daaa55e4daaa065a0b4734038a012d061ae6",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/layer-outer.stl",
+      "bytes": 6476184,
+      "sha256": "33f6c96f9be52d40949a730481f0dbde4d091e335c21adcef20328e4478e4280",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/remeshed.stl",
+      "bytes": 6476184,
+      "sha256": "4cb2af622d0abaf6ec499cb29a6916f2746444997611176ee1cd60aa18602549",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/hybrid-r5/surface.npz",
+      "bytes": 1046360,
+      "sha256": "5a9be2f596b163d561026efd38c69cea71a3b0aa711d1725542dd486317b02f2",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/layer-mesh-r2.log",
+      "bytes": 509,
+      "sha256": "a681fe6a523e0dee973bc2c85a2141fcf2119961fabd7f69c96e94ad4a541aba",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/layer-mesh-r3.log",
+      "bytes": 963,
+      "sha256": "46c77fd6367a319367e60b938fba7ef3efbed87b36699859167170df47d32dcd",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/layer-mesh-r4.log",
+      "bytes": 54,
+      "sha256": "bbcc900b787a87f119e87ed003f286aef54652bb25e7ead0bcf3f00353c28cdc",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/layer-mesh-r5.log",
+      "bytes": 432,
+      "sha256": "7a136cb4c2f50317a9bcaa1be7924072360de475c5a81c1fa40f05832b68f87b",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/layer-mesh.log",
+      "bytes": 1183,
+      "sha256": "5b2022fef09c592cbdce32346f8833f4f9e5b2f1f1f272ece59e7e7e1ec2b6a8",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/r2-reference-polymesh/hybrid.npz",
+      "bytes": 11205123,
+      "sha256": "b19d5cec2342c80a7be32e74374bb91e3a5316f55c4adf96795bc0d73e0e42ac",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/r3-reopened.stl",
+      "bytes": 6476184,
+      "sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/readback-contract-final.log",
+      "bytes": 808,
+      "sha256": "c9b291fc9f04e03e50763768088406ebeb62c138a1dce55bc8a2de1dcdcc46d5",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/readback-contract.log",
+      "bytes": 724,
+      "sha256": "5c917f1333fa133045c676e87dcabc8b4f8373f4128efd42f01e8f15ab4bf56f",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/remesh-30k/surface.npz",
+      "bytes": 1003001,
+      "sha256": "4c08171c86d0fcf0f90ac49e19cd79cb4770cd0e1c2480d57cd77f5d5ad3635e",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/remesh-30k/surface.stl",
+      "bytes": 2998634,
+      "sha256": "197b49c15118b9aa383519148bb1c149b120757c88138f1c81a9b3796477a94a",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/remesh-30k-repair/surface.npz",
+      "bytes": 696073,
+      "sha256": "b48a283a6a2395014756f5fd543991c089f41c9062a96dfa626d56e0c6fc6643",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/remesh-30k-repair/surface.stl",
+      "bytes": 2998734,
+      "sha256": "af3f5ba4981eb35631718203aa9e60e28e3115c27bcfc6321ead18c8de4f42d1",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r3/A321_AIRFRAME_SHELL_R3.stl",
+      "bytes": 6476184,
+      "sha256": "f5a9640480e1b6a8239c28182681d09c7cb2c2811663fd51f3dad632970706f0",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r3/fuselage.stl",
+      "bytes": 2329684,
+      "sha256": "9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r3/horizontal.stl",
+      "bytes": 643284,
+      "sha256": "94b34576f4f994acf27c7255d0c1af2029d6de9c4ebc66d2353fae9430240a3e",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r3/shell.npz",
+      "bytes": 1045971,
+      "sha256": "e0494e164928d1bf67a684e1ce7abf7492411ed84acaf388395c634e0a737f20",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r3/vertical.stl",
+      "bytes": 729684,
+      "sha256": "6cfc20121dbcc4772bb04b8cb10934494660e9803a003313844cda8ac022bc18",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/shell-r3/wing.stl",
+      "bytes": 1280084,
+      "sha256": "b23c8eab3652f581df5a4e058485a9c62085eab38b2c7cea90169e19a0ed3317",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/studio.stderr.log",
+      "bytes": 150,
+      "sha256": "6f218ab529a7ef8883abc992c01e814a03d2a455710df047fc7115ba2368c64c",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/studio.stdout.log",
+      "bytes": 2564,
+      "sha256": "24f20a7bf7973bb020158f117cb7521831c5a016ab813016e4949d59ca2a89ce",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/surface-trial.log",
+      "bytes": 293,
+      "sha256": "a2d84208ba116b17c8f7d8b4f98561799b1548282d07344400ab04f91784b6a8",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/tetgen-failure-root/tetgen-tmpfile_skipped.face",
+      "bytes": 1184,
+      "sha256": "e9a21aa9c25d558ffcfd592f24d527e4fb8be23fd68e9fb0a18fa889c46c748f",
+      "publish_intended": false
+    },
+    {
+      "path": "artifacts/tetgen-failure-root/tetgen-tmpfile_skipped.node",
+      "bytes": 1075011,
+      "sha256": "068e78a91fa175f8439f20ea6f7668e99ea99031f5a6106e10630cdae78dbd23",
+      "publish_intended": false
+    }
+  ],
+  "r3_native_reexport_byte_identical": true,
+  "gpu_memory_diagnostic_executed": true,
+  "gpu_arithmetic_kernel_executed": false,
+  "aircraft_solver_executed": false,
+  "mesh_status": "FIX_FIRST",
+  "overall_status": "PARTIAL"
+}

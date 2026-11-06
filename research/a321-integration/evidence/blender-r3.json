@@ -1,0 +1,31 @@
+{
+  "blender": "5.2.2 LTS",
+  "surface": {
+    "topology_scope": "edge-incidence-only; closed_oriented is not a full manifold proof",
+    "vertex_manifoldness": "UNMEASURED",
+    "vertices": 64763,
+    "triangles": 129522,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_edges": 0,
+    "degenerate_triangles": 0,
+    "duplicate_triangles": 0,
+    "area_m2": 797.448137791056,
+    "signed_volume_m3": 504.8608243561819,
+    "bounds_m": [
+      [
+        0.0,
+        -16.290000915527344,
+        1.9500000476837158
+      ],
+      [
+        44.5099983215332,
+        16.290000915527344,
+        11.960000038146973
+      ]
+    ],
+    "closed_oriented": true
+  },
+  "gpu_compute": false,
+  "render": false
+}

@@ -1,0 +1,19 @@
+{
+  "status": "HYBRID_GENERATED_QUALITY_PENDING",
+  "surface_triangles": 129522,
+  "surface_vertices": 64763,
+  "prism_cells": 647610,
+  "tet_cells": 213555,
+  "layers": 5,
+  "heights_m": [
+    0.0,
+    0.001,
+    0.0023,
+    0.00399,
+    0.006187,
+    0.0090431
+  ],
+  "seconds": 7.915097399963997,
+  "gpu_compute": false,
+  "warning": "vertex-normal extrusion; quality/fidelity/collision tests required before any solver"
+}

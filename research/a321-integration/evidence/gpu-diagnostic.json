@@ -1,0 +1,15 @@
+{
+  "gpu": "NVIDIA GeForce RTX 4080 SUPER\u0000                                                                                                  ",
+  "requested_uuid": "GPU-2147afeb-b9fc-c7f5-398b-d5d00a3a5a90",
+  "device_logical_index": 0,
+  "total_bytes": 17170956288,
+  "free_before_bytes": 15794700288,
+  "scratch_allocation_bytes": 1073741824,
+  "verified_roundtrip_bytes": 67108864,
+  "roundtrip_equal": true,
+  "free_after_release_bytes": 15794700288,
+  "context_release_attempted": true,
+  "scope": "driver allocation +64MiB HtoD/DtoH, no arithmetic kernel or aircraft solver",
+  "solver_executed": false,
+  "cuda_kernel_executed": false
+}

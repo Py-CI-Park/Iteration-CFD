@@ -7,6 +7,10 @@ They do not change solver numerics or introduce GPU execution.
 The 2026-11-05 aerodynamic shell derivation and CPU meshing adapters are listed in
 [`research/a321-shell/PROVENANCE.md`](../research/a321-shell/PROVENANCE.md).
 
+The 2026-11-06 Studio integration, local R3 repair, failed hybrid layer/polyMesh
+trials and bounded CUDA memory diagnostics are classified in
+[`research/a321-integration/PROVENANCE.md`](../research/a321-integration/PROVENANCE.md).
+
 meteor-cfd is source-available under the Prosperity Public License 3.0.0
 (see ../LICENSE). This file is the per-file record that
 [`../LICENSING.md`](../LICENSING.md) §6 phase 4 calls for: for each source
@@ -41,6 +45,9 @@ and the inherited `../research/a321-preflight/inventory.py`, `prepare_surface.py
 `extract_wing.py`, `reopen_candidate.py`. They are original bpy orchestration,
 not copied GPL solver implementation. See the research
 [`LICENSE-NOTICE.md`](../research/a321-shell/LICENSE-NOTICE.md).
+
+The same exception includes `../research/a321-integration/blender_r3.py` and
+`../research/a321-integration/reopen_r3.py` (SPDX headers on each separate adapter).
 
 ## What "carried over" means, and why it is not a hole in the audit
 

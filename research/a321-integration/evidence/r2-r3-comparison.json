@@ -1,0 +1,12 @@
+[
+  {
+    "candidate": "R2 baseline",
+    "minimum_trailing_dx_dy": -6.4300616329257245,
+    "maximum_trailing_dx_dy": 6.722945314834089
+  },
+  {
+    "candidate": "R3 trial",
+    "minimum_trailing_dx_dy": -6.216376114596749e-14,
+    "maximum_trailing_dx_dy": 0.2876629010197647
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "vertices": 29998,
+  "triangles": 59971,
+  "watertight": false,
+  "winding": true,
+  "kernel_status": "Error.NotManifold",
+  "edge_min_m": 0.004303797869127108,
+  "edge_p01_m": 0.12280949730685306,
+  "status": "REJECTED",
+  "gpu_compute": false,
+  "fidelity_check": "NOT_RUN"
+}

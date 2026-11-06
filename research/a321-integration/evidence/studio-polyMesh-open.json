@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-06T12:09:39.547Z",
+  "response": {
+    "ok": true,
+    "status": 200,
+    "statusText": "OK",
+    "url": "http://127.0.0.1:5183/api/datasets/open",
+    "headers": {
+      "access-control-allow-origin": "http://127.0.0.1:5183",
+      "cache-control": "no-store",
+      "connection": "close",
+      "content-length": "104",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Fri, 06 Nov 2026 12:09:39 GMT",
+      "vary": "Origin"
+    },
+    "body": "{\"datasetId\":\"c465dea9fc36de1cca243af18efbe29049980e73\",\"status\":\"loading\",\"manifest\":null,\"error\":null}"
+  }
+}

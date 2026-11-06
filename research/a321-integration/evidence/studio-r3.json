@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-06T11:58:42.514Z",
+  "response": {
+    "ok": true,
+    "status": 200,
+    "statusText": "OK",
+    "url": "http://127.0.0.1:5183/api/geometry/open",
+    "headers": {
+      "access-control-allow-origin": "http://127.0.0.1:5183",
+      "cache-control": "no-store",
+      "connection": "close",
+      "content-length": "1062",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Fri, 06 Nov 2026 11:58:42 GMT",
+      "vary": "Origin"
+    },
+    "body": "{\"id\":\"f140a8651a51fffe\",\"info\":{\"id\":\"f140a8651a51fffe\",\"path\":\"research/a321-integration/models/A321_AIRFRAME_SHELL_R3.stl\",\"format\":\"stl-binary\",\"triangleCount\":129334,\"vertexCount\":64669,\"bounds\":{\"min\":[0,-16.290000915527344,1.9500000476837158],\"max\":[44.5099983215332,16.290000915527344,11.960000038146973]},\"area\":797.4481377907304,\"volume\":504.8608243561626,\"closed\":true,\"openEdges\":0,\"solids\":[{\"name\":\"solid_0\",\"first\":0,\"count\":129334,\"bounds\":{\"min\":[0,-16.290000915527344,1.9500000476837158],\"max\":[44.5099983215332,16.290000915527344,11.960000038146973]},\"area\":797.4481377907304,\"volume\":504.8608243561626,\"closed\":true,\"openEdges\":0,\"tag\":null,\"material\":null,\"cadVolume\":null}],\"readMs\":240,\"warnings\":[\"dropped 188 degenerate triangle(s) while welding\"],\"source\":null,\"blobs\":{\"positions\":{\"key\":\"positions\",\"dtype\":\"f32\",\"count\":64669,\"components\":3,\"bytes\":776028},\"indices\":{\"key\":\"indices\",\"dtype\":\"u32\",\"count\":129334,\"components\":3,\"bytes\":1552008},\"normals\":{\"key\":\"normals\",\"dtype\":\"f32\",\"count\":64669,\"components\":3,\"bytes\":776028}}}}"
+  }
+}

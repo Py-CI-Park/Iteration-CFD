@@ -1,0 +1,9 @@
+{
+  "before_triangles": 59971,
+  "after_triangles": 59973,
+  "added_caps": 2,
+  "watertight": false,
+  "kernel_status": "Error.NotManifold",
+  "status": "REJECTED",
+  "gpu_compute": false
+}

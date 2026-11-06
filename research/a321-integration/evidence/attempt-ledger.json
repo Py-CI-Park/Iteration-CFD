@@ -1,0 +1,155 @@
+[
+  {
+    "path": "audit-polymesh.log",
+    "sha256": "810e2451465bbe22125feba99c29614bcf85b6a473bf81b60982ac28c32f67a2",
+    "tail": [
+      "{\"polyMesh\": \"D:\\\\Chanil_Park\\\\Project\\\\Programming\\\\Iteration-CFD-a321-preflight\\\\research\\\\a321-integration\\\\artifacts\\\\hybrid-r5\\\\case\\\\constant\\\\polyMesh\", \"points\": 388964, \"faces\": 2111280, \"internal_faces\": 1980990, \"cells\": 861165, \"prisms\": 647610, \"tets\": 213555, \"points_readback_exact\": true, \"fluid_components\": 1, \"nonpositive_cells\": 0, \"min_volume_m3\": 1.9410203330042672e-17, \"total_volume_m3\": 2339495.139175644, \"max_relative_closure\": 3.3415641594049017, \"max_nonorth_deg\": 90.81677661059531, \"faces_nonorth_gt70\": 374933, \"bad_face_samples\": [0, 1, 2, 3, 4, 100002, 100004, 100008, 100009, 100012, 200000, 200001, 200003, 200004, 200005], \"layers\": 5, \"first_layer_thickness_min_m\": 2.320193057953086e-09, \"first_layer_thickness_median_m\": 1.3904482347306319e-05, \"first_layer_thickness_max_m\": 4.033511113494607e-05, \"total_stack_min_m\": 2.0981737842375554e-08, \"total_stack_median_m\": 0.00012573962431492578, \"status\": \"FIX_FIRST\", \"ofgpu_gate\": \"NOT_RUN\", \"solver_executed\": false, \"note\": \"five thin trial prism layers do not establish useful boundary-layer capture; no solved y+\"}"
+    ]
+  },
+  {
+    "path": "control-tets.log",
+    "sha256": "a3c4252f62cc288e6e3606586f88337db1f40117454a0adaa14f6815dd8e7a16",
+    "tail": [
+      "Installed 6 packages in 9.76s",
+      "Traceback (most recent call last):",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\mesh_no_layers.py\", line 35, in <module>",
+      "    if __name__=='__main__':main()",
+      "                            ~~~~^^",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\mesh_no_layers.py\", line 29, in main",
+      "    result=tet.build(info,options=tet.Options('pq1.4a100YQ'),verbose=False)",
+      "  File \"C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\mesh-no-layers-1565e47cc39a1a82\\Lib\\site-packages\\meshpy\\tet.py\", line 191, in build",
+      "    return tetrahedralize(mesh_info, options)",
+      "  File \"C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\mesh-no-layers-1565e47cc39a1a82\\Lib\\site-packages\\meshpy\\tet.py\", line 160, in tetrahedralize",
+      "    internals.tetrahedralize(options, mesh_info, mesh)",
+      "    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "RuntimeError: TetGen runtime error code 3"
+    ]
+  },
+  {
+    "path": "convert-fast.log",
+    "sha256": "164de738527d66289fa7e584984aeffc41fd71748ffdcdd20803440870302078",
+    "tail": [
+      "Traceback (most recent call last):",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\convert_fast.py\", line 101, in <module>",
+      "    if __name__=='__main__':main()",
+      "                            ~~~~^^",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\convert_fast.py\", line 97, in main",
+      "    (ROOT/'evidence/polyMesh-quality.json').write_text(json.dumps(record,indent=2),encoding='utf8')",
+      "                                                       ~~~~~~~~~~^^^^^^^^^^^^^^^^^",
+      "  File \"C:\\Python\\64\\Python31313\\Lib\\json\\__init__.py\", line 242, in dumps",
+      "    **kw).encode(obj)",
+      "          ~~~~~~^^^^^",
+      "  File \"C:\\Python\\64\\Python31313\\Lib\\json\\encoder.py\", line 202, in encode",
+      "    chunks = self.iterencode(o, _one_shot=True)",
+      "  File \"C:\\Python\\64\\Python31313\\Lib\\json\\encoder.py\", line 263, in iterencode",
+      "    return _iterencode(o, 0)",
+      "  File \"C:\\Python\\64\\Python31313\\Lib\\json\\encoder.py\", line 182, in default",
+      "    raise TypeError(f'Object of type {o.__class__.__name__} '",
+      "                    f'is not JSON serializable')",
+      "TypeError: Object of type int64 is not JSON serializable"
+    ]
+  },
+  {
+    "path": "convert-reference.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tail": []
+  },
+  {
+    "path": "layer-mesh-r2.log",
+    "sha256": "a681fe6a523e0dee973bc2c85a2141fcf2119961fabd7f69c96e94ad4a541aba",
+    "tail": [
+      "Downloading networkx (2.0MiB)",
+      " Downloading networkx",
+      "Installed 1 package in 3.33s",
+      "Traceback (most recent call last):",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\layer_mesh.py\", line 121, in <module>",
+      "    main()",
+      "    ~~~~^^",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\layer_mesh.py\", line 42, in main",
+      "    raise RuntimeError(\"REMESH_NOT_CLOSED_ORIENTED\")",
+      "RuntimeError: REMESH_NOT_CLOSED_ORIENTED"
+    ]
+  },
+  {
+    "path": "layer-mesh-r3.log",
+    "sha256": "46c77fd6367a319367e60b938fba7ef3efbed87b36699859167170df47d32dcd",
+    "tail": [
+      "SURFACE 15421 vertices 30838 triangles",
+      "TETGEN_START",
+      "Traceback (most recent call last):",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\layer_mesh.py\", line 122, in <module>",
+      "    main()",
+      "    ~~~~^^",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\layer_mesh.py\", line 84, in main",
+      "    result = tet.build(info, options=tet.Options(\"pq1.4a100YQ\"), verbose=False)",
+      "  File \"C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\layer-mesh-2642211cf852217e\\Lib\\site-packages\\meshpy\\tet.py\", line 191, in build",
+      "    return tetrahedralize(mesh_info, options)",
+      "  File \"C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\layer-mesh-2642211cf852217e\\Lib\\site-packages\\meshpy\\tet.py\", line 160, in tetrahedralize",
+      "    internals.tetrahedralize(options, mesh_info, mesh)",
+      "    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "RuntimeError: TetGen runtime error code 3"
+    ]
+  },
+  {
+    "path": "layer-mesh-r4.log",
+    "sha256": "bbcc900b787a87f119e87ed003f286aef54652bb25e7ead0bcf3f00353c28cdc",
+    "tail": [
+      "SURFACE 15421 vertices 30838 triangles",
+      "TETGEN_START"
+    ]
+  },
+  {
+    "path": "layer-mesh-r5.log",
+    "sha256": "7a136cb4c2f50317a9bcaa1be7924072360de475c5a81c1fa40f05832b68f87b",
+    "tail": [
+      "SURFACE 64763 vertices 129522 triangles",
+      "TETGEN_START",
+      "{\"status\": \"HYBRID_GENERATED_QUALITY_PENDING\", \"surface_triangles\": 129522, \"surface_vertices\": 64763, \"prism_cells\": 647610, \"tet_cells\": 213555, \"layers\": 5, \"heights_m\": [0.0, 0.001, 0.0023, 0.00399, 0.006187, 0.0090431], \"seconds\": 7.915097399963997, \"gpu_compute\": false, \"warning\": \"vertex-normal extrusion; quality/fidelity/collision tests required before any solver\"}"
+    ]
+  },
+  {
+    "path": "layer-mesh.log",
+    "sha256": "5b2022fef09c592cbdce32346f8833f4f9e5b2f1f1f272ece59e7e7e1ec2b6a8",
+    "tail": [
+      "Installed 37 packages in 38.90s",
+      "Traceback (most recent call last):",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\layer_mesh.py\", line 78, in <module>",
+      "    facets = np.vstack((faces, far_faces + n))",
+      "                        ^^^^^^",
+      "  File \"D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\layer_mesh.py\", line 34, in main",
+      "    clustering = pyacvd.Clustering(source)",
+      "    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "  File \"C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\layer-mesh-2642211cf852217e\\Lib\\site-packages\\trimesh\\repair.py\", line 181, in fix_normals",
+      "    fix_winding(mesh)",
+      "    ~~~~~~~~~~~^^^^^^",
+      "  File \"C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\layer-mesh-2642211cf852217e\\Lib\\site-packages\\trimesh\\repair.py\", line 48, in fix_winding",
+      "    graph_all = nx.from_edgelist(mesh.face_adjacency)",
+      "                ^^^^^^^^^^^^^^^^",
+      "  File \"C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\layer-mesh-2642211cf852217e\\Lib\\site-packages\\trimesh\\exceptions.py\", line 35, in __getattribute__",
+      "    raise exc_type(*exc_args)",
+      "ModuleNotFoundError: No module named 'networkx'"
+    ]
+  },
+  {
+    "path": "readback-contract-final.log",
+    "sha256": "c9b291fc9f04e03e50763768088406ebeb62c138a1dce55bc8a2de1dcdcc46d5",
+    "tail": [
+      "{\"all_face_cell_incidence_exact\": true, \"boundary_names_types_ranges_checked\": true, \"boundary_contiguous_complete\": true, \"outer_patch_coordinate_planes_checked\": true, \"aircraft_wall_face_membership_exact\": true, \"expected_patch_counts_checked\": true, \"patches\": [{\"name\": \"inlet\", \"type\": \"patch\", \"count\": 128, \"start\": 1980990}, {\"name\": \"outlet\", \"type\": \"patch\", \"count\": 128, \"start\": 1981118}, {\"name\": \"yMin\", \"type\": \"patch\", \"count\": 128, \"start\": 1981246}, {\"name\": \"yMax\", \"type\": \"patch\", \"count\": 128, \"start\": 1981374}, {\"name\": \"zMin\", \"type\": \"patch\", \"count\": 128, \"start\": 1981502}, {\"name\": \"zMax\", \"type\": \"patch\", \"count\": 128, \"start\": 1981630}, {\"name\": \"wall_aircraft\", \"type\": \"wall\", \"count\": 129522, \"start\": 1981758}], \"mesh_quality_status\": \"FIX_FIRST\", \"solver_run\": false}"
+    ]
+  },
+  {
+    "path": "readback-contract.log",
+    "sha256": "5c917f1333fa133045c676e87dcabc8b4f8373f4128efd42f01e8f15ab4bf56f",
+    "tail": [
+      "{\"all_face_cell_incidence_exact\": true, \"boundary_names_types_ranges_checked\": true, \"boundary_contiguous_complete\": true, \"outer_patch_coordinate_planes_checked\": true, \"patches\": [{\"name\": \"inlet\", \"type\": \"patch\", \"count\": 128, \"start\": 1980990}, {\"name\": \"outlet\", \"type\": \"patch\", \"count\": 128, \"start\": 1981118}, {\"name\": \"yMin\", \"type\": \"patch\", \"count\": 128, \"start\": 1981246}, {\"name\": \"yMax\", \"type\": \"patch\", \"count\": 128, \"start\": 1981374}, {\"name\": \"zMin\", \"type\": \"patch\", \"count\": 128, \"start\": 1981502}, {\"name\": \"zMax\", \"type\": \"patch\", \"count\": 128, \"start\": 1981630}, {\"name\": \"wall_aircraft\", \"type\": \"wall\", \"count\": 129522, \"start\": 1981758}], \"mesh_quality_status\": \"FIX_FIRST\", \"solver_run\": false}"
+    ]
+  },
+  {
+    "path": "surface-trial.log",
+    "sha256": "a2d84208ba116b17c8f7d8b4f98561799b1548282d07344400ab04f91784b6a8",
+    "tail": [
+      "Installed 36 packages in 8.45s",
+      "{\"vertices\": 29998, \"triangles\": 59971, \"watertight\": false, \"winding\": true, \"kernel_status\": \"Error.NotManifold\", \"edge_min_m\": 0.004303797869127108, \"edge_p01_m\": 0.12280949730685306, \"status\": \"REJECTED\", \"gpu_compute\": false, \"fidelity_check\": \"NOT_RUN\"}"
+    ]
+  }
+]
