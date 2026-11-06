@@ -1,0 +1,16 @@
+const task=await taskSpace(12), p=task.page("p1");
+const base="D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence";
+const tabs=await task.tabs();
+const {windowId}=await task.cdp("Browser.getWindowForTarget",{targetId:tabs.find(t=>t.label==="p1").targetId});
+await task.cdp("Browser.setWindowBounds",{windowId,bounds:{windowState:"normal"}});
+await p.cdp("Page.bringToFront");
+const row=path=>'loc=css:[data-path="'+path+'"]';
+const dir=async path=>{await p.waitForSelector(row(path));await p.click(row(path));};
+await dir("research");
+await dir("research/a321-integration");
+await dir("research/a321-integration/models");
+const model="research/a321-integration/models/A321_AIRFRAME_SHELL_R3.stl";
+await p.dblclick(row(model));
+await p.waitForFunction(path=>document.body.innerText.includes(path)&&[...document.querySelectorAll("canvas")].some(c=>c.clientWidth>200),model);
+console.log(await p.evaluate(()=>({active:document.querySelector('[aria-selected="true"][role="tab"]')?.textContent,canvas:[...document.querySelectorAll("canvas")].map(c=>[c.clientWidth,c.clientHeight])})));
+await p.screenshot({path:base+"/studio-20261107-r3.png"});

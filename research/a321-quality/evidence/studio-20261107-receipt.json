@@ -1,0 +1,161 @@
+{
+  "domain": {
+    "backend": "webgpu",
+    "datasetId": "67752d5896916e7c0a97843d7db5ba82c96beebe",
+    "datasetName": "snappy-03",
+    "source": "polymesh",
+    "geometryFidelity": "exact",
+    "cellCount": 462113,
+    "bounds": {
+      "min": [
+        -45.00000000000001,
+        -65.00000000000001,
+        -45.00000000000001
+      ],
+      "max": [
+        135.00000000000003,
+        65.00000000000001,
+        55.00000000000002
+      ]
+    },
+    "field": null,
+    "component": null,
+    "range": null,
+    "warp": null,
+    "colormap": "turbo",
+    "representation": "wireframe",
+    "time": null,
+    "layers": [],
+    "camera": {
+      "position": [
+        45.000000000000014,
+        384.47616526226165,
+        5.0003845359361305
+      ],
+      "target": [
+        45.000000000000014,
+        0,
+        5.000000000000007
+      ],
+      "projection": "perspective"
+    },
+    "patches": {
+      "visible": "all",
+      "hidden": []
+    },
+    "loading": false,
+    "message": "polyMesh is not a structured lattice: slices, iso-surfaces and streamlines are unavailable"
+  },
+  "aircraft": {
+    "backend": "webgpu",
+    "datasetId": "67752d5896916e7c0a97843d7db5ba82c96beebe",
+    "datasetName": "snappy-03",
+    "source": "polymesh",
+    "geometryFidelity": "exact",
+    "cellCount": 462113,
+    "bounds": {
+      "min": [
+        -45.00000000000001,
+        -65.00000000000001,
+        -45.00000000000001
+      ],
+      "max": [
+        135.00000000000003,
+        65.00000000000001,
+        55.00000000000002
+      ]
+    },
+    "field": null,
+    "component": null,
+    "range": null,
+    "warp": null,
+    "colormap": "turbo",
+    "representation": "surfaceEdges",
+    "time": null,
+    "layers": [],
+    "camera": {
+      "position": [
+        49,
+        35,
+        38
+      ],
+      "target": [
+        22.000000000000004,
+        0,
+        6
+      ],
+      "projection": "perspective"
+    },
+    "patches": {
+      "visible": [
+        "aircraft"
+      ],
+      "hidden": [
+        "inlet",
+        "outlet",
+        "yMin",
+        "yMax",
+        "zMin",
+        "zMax"
+      ]
+    },
+    "loading": false,
+    "message": "polyMesh is not a structured lattice: slices, iso-surfaces and streamlines are unavailable"
+  },
+  "wing": {
+    "backend": "webgpu",
+    "datasetId": "67752d5896916e7c0a97843d7db5ba82c96beebe",
+    "datasetName": "snappy-03",
+    "source": "polymesh",
+    "geometryFidelity": "exact",
+    "cellCount": 462113,
+    "bounds": {
+      "min": [
+        -45.00000000000001,
+        -65.00000000000001,
+        -45.00000000000001
+      ],
+      "max": [
+        135.00000000000003,
+        65.00000000000001,
+        55.00000000000002
+      ]
+    },
+    "field": null,
+    "component": null,
+    "range": null,
+    "warp": null,
+    "colormap": "turbo",
+    "representation": "surfaceEdges",
+    "time": null,
+    "layers": [],
+    "camera": {
+      "position": [
+        25,
+        12.999999999999998,
+        14.000000000000002
+      ],
+      "target": [
+        22.8,
+        7.999999999999999,
+        3.9
+      ],
+      "projection": "perspective"
+    },
+    "patches": {
+      "visible": [
+        "aircraft"
+      ],
+      "hidden": [
+        "inlet",
+        "outlet",
+        "yMin",
+        "yMax",
+        "zMin",
+        "zMax"
+      ]
+    },
+    "loading": false,
+    "message": "polyMesh is not a structured lattice: slices, iso-surfaces and streamlines are unavailable"
+  }
+}

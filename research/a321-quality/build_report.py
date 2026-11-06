@@ -4,7 +4,7 @@
 # dependencies = ["markdown"]
 # ///
 # How to run: uv run build_report.py; static local research report.
-"""Render the current Korean findings without external scripts or generated flow imagery."""
+"""Render the overview and the preserved detailed study without external scripts."""
 
 from __future__ import annotations
 
@@ -13,18 +13,31 @@ from pathlib import Path
 import markdown
 
 
+def render(root: Path) -> str:
+    """Render the overview and unchanged detailed study in one navigable document."""
+    overview = (root / "PROGRESS_KO.md").read_text(encoding="utf8")
+    archive = (root / "README_KO.md").read_text(encoding="utf8")
+    extensions = ["tables", "fenced_code", "attr_list"]
+    body = markdown.markdown(overview, extensions=extensions)
+    detail = markdown.markdown("#" + archive, extensions=extensions)
+    return (
+        '<!doctype html>\n<html lang="ko"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        "<title>A321 공력 해석 준비 · R3 · GPU 보류</title>"
+        '<link rel="stylesheet" href="report.css"></head><body>'
+        '<nav aria-label="보고서 목차"><a href="#progress">진행률</a>'
+        '<a href="#gallery">Studio 화면</a><a href="#next">남은 단계</a>'
+        '<a href="#history">이전 연구</a><a href="#upstream">상위 업데이트</a>'
+        '<a href="#detail">상세 원문</a></nav>'
+        f'<main>{body}<section class="archive" aria-labelledby="detail">'
+        f"{detail}</section></main></body></html>\n"
+    )
+
+
 def main() -> None:
-    """Generate a readable report using only measured local evidence."""
+    """Generate the static report next to its source Markdown and evidence."""
     root = Path(__file__).resolve().parent
-    body = markdown.markdown(
-        (root / "README_KO.md").read_text(encoding="utf8"),
-        extensions=["tables", "fenced_code"],
-    )
-    style = "body{font:17px/1.7 system-ui,sans-serif;max-width:1150px;margin:45px auto;padding:0 24px;background:#111923;color:#dce6f2}h1,h2{color:#9de1ec}h2{margin-top:45px}a{color:#80c7ff}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #3a4a60;padding:8px;text-align:left}pre{overflow:auto;background:#202d3e;padding:16px}img{max-width:100%;background:white}code{overflow-wrap:anywhere}strong{color:#ffc979}"
-    (root / "report.html").write_text(
-        f'<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A321 계산 격자 — 수치 PASS · GPU HOLD</title><style>{style}</style><body>{body}</body></html>',
-        encoding="utf8",
-    )
+    (root / "report.html").write_text(render(root), encoding="utf8", newline="\n")
     print(root / "report.html")
 
 

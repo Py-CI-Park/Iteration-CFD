@@ -1,0 +1,13 @@
+const task=await taskSpace(12), p=task.page("p1");
+const base="D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence";
+const row=path=>'loc=css:[data-path="'+path+'"]';
+const dir=async path=>{await p.waitForSelector(row(path));await p.click(row(path));};
+const path="research/a321-quality/artifacts/snappy-03";
+await dir("research/a321-quality");
+await dir("research/a321-quality/artifacts");
+await dir(path);
+await p.dblclick(row(path+"/calculation-wall-v5.stl"));
+await p.waitForFunction(file=>document.body.innerText.includes(file)&&[...document.querySelectorAll("canvas")].some(c=>c.clientWidth>200),path+"/calculation-wall-v5.stl");
+await p.screenshot({path:base+"/studio-20261107-wall.png"});
+await p.click(row(path),{button:"right"});
+console.log((await p.snapshot()).split("\n").filter(s=>s.includes("뷰어")).slice(0,15));

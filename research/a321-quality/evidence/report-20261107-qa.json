@@ -1,0 +1,174 @@
+{
+  "desktop": {
+    "title": "A321 공력 해석 준비 · R3 · GPU 보류",
+    "overviewRows": 8,
+    "sections": [
+      {
+        "href": "#progress",
+        "found": true
+      },
+      {
+        "href": "#gallery",
+        "found": true
+      },
+      {
+        "href": "#next",
+        "found": true
+      },
+      {
+        "href": "#history",
+        "found": true
+      },
+      {
+        "href": "#upstream",
+        "found": true
+      },
+      {
+        "href": "#detail",
+        "found": true
+      }
+    ],
+    "tables": 6,
+    "images": [
+      {
+        "src": "evidence/studio-20261107-r3.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-wall.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-domain.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-airframe-grid.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-wing.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/mesh-section.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/mesh-section.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-calculation-wall.png",
+        "loaded": true
+      }
+    ],
+    "layoutWidth": 3413,
+    "viewport": 3428,
+    "links": [
+      "http://127.0.0.1:8776/a321-preflight/report.html",
+      "http://127.0.0.1:8776/a321-shell/report.html",
+      "http://127.0.0.1:8776/a321-integration/report.html",
+      "http://127.0.0.1:8776/a321-layers/report.html"
+    ]
+  },
+  "mobile": {
+    "title": "A321 공력 해석 준비 · R3 · GPU 보류",
+    "overviewRows": 8,
+    "sections": [
+      {
+        "href": "#progress",
+        "found": true
+      },
+      {
+        "href": "#gallery",
+        "found": true
+      },
+      {
+        "href": "#next",
+        "found": true
+      },
+      {
+        "href": "#history",
+        "found": true
+      },
+      {
+        "href": "#upstream",
+        "found": true
+      },
+      {
+        "href": "#detail",
+        "found": true
+      }
+    ],
+    "tables": 6,
+    "images": [
+      {
+        "src": "evidence/studio-20261107-r3.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-wall.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-domain.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-airframe-grid.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-wing.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/mesh-section.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/mesh-section.png",
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-calculation-wall.png",
+        "loaded": true
+      }
+    ],
+    "layoutWidth": 390,
+    "viewport": 390,
+    "links": [
+      "http://127.0.0.1:8776/a321-preflight/report.html",
+      "http://127.0.0.1:8776/a321-shell/report.html",
+      "http://127.0.0.1:8776/a321-integration/report.html",
+      "http://127.0.0.1:8776/a321-layers/report.html"
+    ]
+  },
+  "links": [
+    {
+      "url": "http://127.0.0.1:8776/a321-preflight/report.html",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8776/a321-shell/report.html",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8776/a321-integration/report.html",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8776/a321-layers/report.html",
+      "status": 200
+    }
+  ],
+  "final": {
+    "title": "A321 공력 해석 준비 · R3 · GPU 보류",
+    "rows": 8,
+    "loadedImages": 8,
+    "imageCount": 8,
+    "hasSourceSets": true,
+    "hasArchive": true
+  }
+}
