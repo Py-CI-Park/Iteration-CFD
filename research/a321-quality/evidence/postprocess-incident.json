@@ -1,0 +1,10 @@
+{
+  "affected_candidates":["snappy-04","snappy-05"],
+  "observed_error":"ePar: command not found",
+  "reason":"operator edited the running Bash script; subsequent execution resumed at an invalid script byte offset",
+  "scope":"after completed snappyHexMesh, before reconstructParMesh; source R3 and snappy-03 unchanged",
+  "lost_log":"the original decomposePar preparation log was replaced by the shell error; not reconstructed as evidence",
+  "recovery":"new frozen function-body script runs reconstruction and checks only; native generation logs and processor meshes preserved",
+  "solver_run":false,
+  "gpu_compute":false
+}

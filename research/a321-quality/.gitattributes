@@ -8,3 +8,4 @@
 evidence/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 # Preserve the exact raw dictionary EOF captured and hashed after execution.
 evidence/snappy-03-inputs/** whitespace=blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+evidence/hotspot-inputs/** whitespace=blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol

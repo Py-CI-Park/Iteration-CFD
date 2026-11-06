@@ -1,0 +1,16 @@
+{
+  "health": {
+    "ok": true,
+    "version": "2.0.0",
+    "mode": "demo"
+  },
+  "openStatus": 200,
+  "readStatus": 200,
+  "id": "67752d5896916e7c0a97843d7db5ba82c96beebe",
+  "source": "polymesh",
+  "cells": 462113,
+  "points": 553581,
+  "fields": 0,
+  "times": 0,
+  "solverExecuted": false
+}

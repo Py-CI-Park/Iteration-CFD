@@ -1,0 +1,20 @@
+const task=await taskSpace(13),p=task.page("p1");
+const fs=await import("node:fs/promises");
+const base="D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence";
+const {windowId}=await task.cdp("Browser.getWindowForTarget",{targetId:(await task.tabs()).find(t=>t.label==="p1").targetId});
+await task.cdp("Browser.setWindowBounds",{windowId,bounds:{windowState:"normal"}});
+await p.cdp("Page.bringToFront");
+const volume=await p.evaluate(async()=>{
+ const {getViewerApi}=await import("/src/viewer/api/viewerApi.ts");const api=getViewerApi();
+ const r=await api.execute({type:"load",path:"research/a321-quality/artifacts/snappy-04",field:"none"});
+ if(!r.ok)throw Error(JSON.stringify(r.error));
+ await api.execute({type:"setRepresentation",mode:"surfaceEdges",patches:["aircraft"]});
+ await api.execute({type:"setCamera",position:[49,35,38],target:[22,0,6],projection:"perspective"});
+ return api.getState();
+});
+if(volume.cellCount!==935120||volume.field!==null||volume.source!=="polymesh")throw Error(JSON.stringify(volume));
+await p.screenshot({path:base+"/studio-snappy04-grid.png"});
+await p.evaluate(async()=>{const {getViewerApi}=await import("/src/viewer/api/viewerApi.ts");await getViewerApi().execute({type:"setCamera",position:[25,13,14],target:[22.8,8,3.9],projection:"perspective"});});
+await p.screenshot({path:base+"/studio-snappy04-wing.png"});
+await fs.writeFile(base+"/studio-hotspot-20261107.json",JSON.stringify({volume,diagnosticSurface:{status:"REJECTED_UNSUPPORTED_VTU",reason:"Reader requires appended raw polyhedron VTU, not ASCII triangles; no color-map evidence accepted"},solverExecuted:false},null,2)+"\n");
+console.log({source:volume.source,cells:volume.cellCount,field:volume.field});

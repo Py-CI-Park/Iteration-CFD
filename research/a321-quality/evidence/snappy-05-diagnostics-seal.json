@@ -1,0 +1,53 @@
+{
+  "candidate": "snappy-05",
+  "post_generation_snapshot": true,
+  "not_original_launch_freeze": true,
+  "mesh": {
+    "points": "37f002c0e2a075f1e7b727e3d4260e479a2101c3a113d224e50ba85bae449d5d",
+    "faces": "d510f8bc58c6e3eaca8bbb9c4a9d27ae13b1bf62130912e93ad5877805a5fe64",
+    "owner": "6a5f60ac4f2839d5cf806921e802e3efea6114ea59ed9722265ef9a0fd507709",
+    "neighbour": "949cc569b87db3b0c91e8ec390b51c1f998c0fdf629545d3fe915f6d6e781acb",
+    "boundary": "cc320f5f547be36ee3d5aff3ddfd37b9f16b9c5c20fc91d48d954adf83c33ac2"
+  },
+  "inputs": {
+    "constant/polyMesh/sets/underdeterminedCells": "2d6becc136562e3b9ee60585be19075b2eeb8393e7ae333446a0690db543adc7",
+    "constant/polyMesh/sets/concaveCells": "4ca6e7a811f49b4d598addaee76fb1f95f26cec88f71b90c6ad531dd8242bad9",
+    "constant/polyMesh/sets/lowWeightFaces": "1d698f864e75ae9d1db56cfa112a9318d2863f3bfe48558ce60e6cdbed36baf7",
+    "processor0/constant/polyMesh/boundary": "a4b6801b18ed97d93a77ab93c6b6cd10e63acffd7ae403ebd5bf5eb08ba90dbe",
+    "processor0/constant/polyMesh/faceProcAddressing": "9a5471e324a635c16da723c0a251e286c986d5935210e6e12874bf6590c6dad6",
+    "processor0/0/nSurfaceLayers": "732eb4f7b2fca86c50c5605d402d07a3219065dd5a7abe4521deb0f9e119efba",
+    "processor0/0/thickness": "903fd8f450c37f361866bd7b119abe1504d07042c4a6755f8b44c0e4d5e8118f",
+    "processor1/constant/polyMesh/boundary": "acacf95de46f15f8202af7c34fb1c18db822cbcede76fba9885509b0e09b72d0",
+    "processor1/constant/polyMesh/faceProcAddressing": "65611dcf64ea5a4f90020d368e6c4e2c7ba0aff663abdbc71a69aaf9a9afafcf",
+    "processor1/0/nSurfaceLayers": "c7f51fbb8cf98510d962b4a4f73ab70674dac1c4cfdfa5743edf4f5e7a2a8822",
+    "processor1/0/thickness": "44270a069e29c61a94e891df652f708318a9f7a5e1bd9d4f089737efdbf2470b",
+    "processor2/constant/polyMesh/boundary": "09d944e0bc7b259efc2a9c1d30387e5996076272b41eb20e8858638e1885f964",
+    "processor2/constant/polyMesh/faceProcAddressing": "d68af54b53bc7e730b8640c3a15ad794ab4d8c37396699fe1eb35b5f5ffa74ab",
+    "processor2/0/nSurfaceLayers": "fe9dc0beb50d3e43f8c6aadcfbb6f374bb4480fc1e0386d299e5f3766b52da42",
+    "processor2/0/thickness": "2b7912b0f191609eeee1a14674ee847c799ab37844e0c584eb47add11e0d21c7",
+    "processor3/constant/polyMesh/boundary": "20acfaa246fba5e0a64010e5a5766bbf4e9b8eeee7235afe739ead6dc53fda18",
+    "processor3/constant/polyMesh/faceProcAddressing": "00aaf1d8ab938e1ab35d02899ec93dfaa0775e3d00d8cfb8f868eb294604346c",
+    "processor3/0/nSurfaceLayers": "84b5a28b70fc724324ec86f03f2b82369a0f99e20cee860f1c72268c95ae9313",
+    "processor3/0/thickness": "52917efed2d2ff43cf98475b071abc7820e3013460d62f6f3db0da6773b645a2",
+    "processor4/constant/polyMesh/boundary": "114f7c05fb2308a11ad9337b9e6f2b34288fd063893df192c5330d574474499a",
+    "processor4/constant/polyMesh/faceProcAddressing": "d6291c702380082968b3805e85f4753bb0fc7f89ff0f905a77d661fe7aa774d0",
+    "processor4/0/nSurfaceLayers": "818c1cb3a11bdecec1bdbe77d20c5352834e42e6984a704d80be6ac6876c7cbb",
+    "processor4/0/thickness": "64b08b259af6fb746bdd3bf626e3741f48249923bc06fe079f5d003e83c76629",
+    "processor5/constant/polyMesh/boundary": "c65bd339d35248481fc3e563a384703de3757faf36bf76a8cc55ad36cc6ffff8",
+    "processor5/constant/polyMesh/faceProcAddressing": "8e3fd5a51f4395941b7df7af5ac5e66aebf237daafd5498d69c51dcb97031634",
+    "processor5/0/nSurfaceLayers": "440fd6f287a60454842d2712e57a47dde18d85af42e27cfb864018bab5cb3e19",
+    "processor5/0/thickness": "aa2a6e673d54f736dc60dc3505d7502c7c6925aceaafce477849e65e488dda0e",
+    "processor6/constant/polyMesh/boundary": "7a1fdc2ea08c08ebea472c9ac63849e515cdc33adb738845130bff191f2a5247",
+    "processor6/constant/polyMesh/faceProcAddressing": "8dad8acc0859ee8e3bc40987515dd095354b20396f92240cc8c02afa976bf86f",
+    "processor6/0/nSurfaceLayers": "d99d95703fdf52c64841f25457d6746e6bb856b33d6f3bf7c7adcab932770f77",
+    "processor6/0/thickness": "d31aee7f68dadeb5b674378ed183ee0e6af0c61d16dd44239cadd68f5dc98886",
+    "processor7/constant/polyMesh/boundary": "e7083459c30551616eb6a9e52aec5775c5e74a4e5d95250e9149098a6b78996a",
+    "processor7/constant/polyMesh/faceProcAddressing": "48b59e59dddad0ea52aad61bf7fa4ef455948666df7235e80c903ccab28ea1c7",
+    "processor7/0/nSurfaceLayers": "6a7fcb4a92987e37d250a6c36be1b00afbad9a16699448936157740cd9deffa5",
+    "processor7/0/thickness": "c008427c699788b220bb2a4c2137c8a7ff3244917bbee63a5374afe7feb46dce"
+  },
+  "external_check_log": {
+    "path": "log.checkMesh-extended",
+    "sha256": "bae623ce04a446f6665c91b849a1eaf1ba58b86cafb0da4032ca94e3da52165c"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "candidate": "snappy-04",
+  "source_volume_cells": 935120,
+  "wall_polygons": 57556,
+  "display_triangles": 238868,
+  "field": "native_layer_count",
+  "sha256": "a166cffc79ae3186c255339f7c600679bf43666c75e47124fbc447308f4a1f87",
+  "range": [
+    0.0,
+    8.0
+  ],
+  "warning": "SURFACE_DIAGNOSTIC_NOT_PRESSURE_OR_SOLVER_SOLUTION",
+  "mesh": {
+    "points": "a36ecb583a2729b111f9175df8db60c5cc269b9d434ba3d86e9d10db004d008a",
+    "faces": "b0fceca534348f33fd96b4587fea1fec8ddae17309b26dd8583a1ec99dd19b26",
+    "owner": "8e2d9749ae8bdf831cbcabfd1040fbac3fe1e8fa34a104843e41d366af3161a9",
+    "neighbour": "cf07659e3981be44082d009a261b1359f004e80fe6dc3bf9ecd97ed8b8bdf1cf",
+    "boundary": "9871898f12005b14959766f77015aafde4d018fbf48816458bd9aae535dfa7e5"
+  },
+  "status": "REJECTED_UNSUPPORTED_ASCII_TRIANGLE_VTU",
+  "reader_error": "Only appended raw polyhedron VTU accepted by current reader; original volume fallback has no native_layer_count"
+}

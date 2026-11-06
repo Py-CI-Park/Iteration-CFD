@@ -1,0 +1,13 @@
+{
+  "legacy_post_run_snapshot": true,
+  "sha256": {
+    "constant\\triSurface\\aircraft.stl": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+    "system\\blockMeshDict": "b4ccb0f2d93077c036e03b1f96afe13cbf5c634fdd4dac5dba721b6b1d532ebd",
+    "system\\controlDict": "a32c9f780c7eb579b6065007b64cdd8c345b977a7b43fe3b558fdcbd232ab4a7",
+    "system\\decomposeParDict": "702c029b98acaf304d3ec624905335301c187f323deb22242f2694e83efa170b",
+    "system\\fvSchemes": "1ca96c0c187c6a2a1a4ed854d2f942b5d2ac2d588c6fc8f46106155bcaaa4ff9",
+    "system\\fvSolution": "dd1a1b770d13a911d031f624948a6d03a7436d77bb21151276cb45b4cbfa084f",
+    "system\\snappyHexMeshDict": "e39bccb6655d13312abf0790b2e1bdf98635d38499a2c7aa92532c5e65d36411",
+    "system\\surfaceFeatureExtractDict": "616001e40bd63941fa69c015d8d13a4d6f2b90cf038f2325465748677ed5c1d4"
+  }
+}

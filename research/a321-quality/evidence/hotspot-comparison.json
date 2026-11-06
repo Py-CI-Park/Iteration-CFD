@@ -1,0 +1,342 @@
+{
+  "trials": [
+    {
+      "candidate": "snappy-03",
+      "cells": 462113,
+      "faces": 1473152,
+      "angle_deg": 66.20395548110358,
+      "relative_closure": 8.259122599322682e-15,
+      "counts": [
+        14798,
+        29759,
+        2624
+      ],
+      "covered_area_percent": 33.267510422912096,
+      "cell_failure_rates_percent": [
+        3.202247069439726,
+        6.439766896841249
+      ],
+      "low_weight_fraction_all_faces_percent": 0.17812147015379268,
+      "full_8_layer_faces": 33,
+      "bins": [
+        {
+          "x_m": [
+            0,
+            12
+          ],
+          "wall_area_m2": 136.8143021808488,
+          "missing_area_m2": 136.8143021808488,
+          "missing_percent": 100.0,
+          "failures": [
+            0,
+            1549,
+            0
+          ]
+        },
+        {
+          "x_m": [
+            12,
+            20
+          ],
+          "wall_area_m2": 135.72557321609938,
+          "missing_area_m2": 122.8935857073979,
+          "missing_percent": 90.54563763877375,
+          "failures": [
+            229,
+            2796,
+            261
+          ]
+        },
+        {
+          "x_m": [
+            20,
+            26
+          ],
+          "wall_area_m2": 245.33864590436875,
+          "missing_area_m2": 84.3944275603917,
+          "missing_percent": 34.39915764159229,
+          "failures": [
+            8303,
+            14355,
+            1456
+          ]
+        },
+        {
+          "x_m": [
+            26,
+            33
+          ],
+          "wall_area_m2": 88.03516246849736,
+          "missing_area_m2": 88.03516246849736,
+          "missing_percent": 100.0,
+          "failures": [
+            0,
+            1394,
+            0
+          ]
+        },
+        {
+          "x_m": [
+            33,
+            39
+          ],
+          "wall_area_m2": 71.53169956747784,
+          "missing_area_m2": 65.7960630669675,
+          "missing_percent": 91.98168569292869,
+          "failures": [
+            124,
+            1186,
+            123
+          ]
+        },
+        {
+          "x_m": [
+            39,
+            45
+          ],
+          "wall_area_m2": 117.20065897860812,
+          "missing_area_m2": 32.35354637909641,
+          "missing_percent": 27.60525978356631,
+          "failures": [
+            6142,
+            7973,
+            784
+          ]
+        }
+      ],
+      "standard": "PASS",
+      "extended": "FAIL",
+      "illegal_faces": 0,
+      "cpu_status": "NAMED_CPU_GATES_PASS",
+      "shape_sample_max_m": 0.04630788041381358
+    },
+    {
+      "candidate": "snappy-04",
+      "cells": 935120,
+      "faces": 2908719,
+      "angle_deg": 66.202013263564,
+      "relative_closure": 8.891919257206641e-15,
+      "counts": [
+        28086,
+        38769,
+        3114
+      ],
+      "covered_area_percent": 42.59782141102342,
+      "cell_failure_rates_percent": [
+        3.0034647959620155,
+        4.145885020104371
+      ],
+      "low_weight_fraction_all_faces_percent": 0.10705743662416342,
+      "full_8_layer_faces": 380,
+      "bins": [
+        {
+          "x_m": [
+            0,
+            12
+          ],
+          "wall_area_m2": 136.81533141119797,
+          "missing_area_m2": 136.6339307094114,
+          "missing_percent": 99.86741200718114,
+          "failures": [
+            10,
+            1575,
+            11
+          ]
+        },
+        {
+          "x_m": [
+            12,
+            20
+          ],
+          "wall_area_m2": 134.36031935322228,
+          "missing_area_m2": 103.0683288949623,
+          "missing_percent": 76.71039291295826,
+          "failures": [
+            1314,
+            4795,
+            297
+          ]
+        },
+        {
+          "x_m": [
+            20,
+            26
+          ],
+          "wall_area_m2": 245.6913811560928,
+          "missing_area_m2": 44.03871911868126,
+          "missing_percent": 17.92440537045235,
+          "failures": [
+            20544,
+            18606,
+            1805
+          ]
+        },
+        {
+          "x_m": [
+            26,
+            33
+          ],
+          "wall_area_m2": 89.05395359547099,
+          "missing_area_m2": 80.79120713276332,
+          "missing_percent": 90.72163993948958,
+          "failures": [
+            128,
+            2460,
+            29
+          ]
+        },
+        {
+          "x_m": [
+            33,
+            39
+          ],
+          "wall_area_m2": 71.58276086195698,
+          "missing_area_m2": 63.292583207312,
+          "missing_percent": 88.41875117022646,
+          "failures": [
+            161,
+            1960,
+            147
+          ]
+        },
+        {
+          "x_m": [
+            39,
+            45
+          ],
+          "wall_area_m2": 117.16054508667855,
+          "missing_area_m2": 28.329846706216006,
+          "missing_percent": 24.180364375444668,
+          "failures": [
+            5929,
+            8658,
+            825
+          ]
+        }
+      ],
+      "standard": "PASS",
+      "extended": "FAIL",
+      "illegal_faces": 0,
+      "cpu_status": "NAMED_CPU_GATES_PASS",
+      "shape_sample_max_m": 0.046308655586335096
+    },
+    {
+      "candidate": "snappy-05",
+      "cells": 400549,
+      "faces": 1282201,
+      "angle_deg": 77.96880144743422,
+      "relative_closure": 9.598083286119946e-15,
+      "counts": [
+        861,
+        22204,
+        1304
+      ],
+      "covered_area_percent": 8.919687929515117,
+      "cell_failure_rates_percent": [
+        0.2149549742977763,
+        5.543391694898752
+      ],
+      "low_weight_fraction_all_faces_percent": 0.10170012345958239,
+      "full_8_layer_faces": 0,
+      "bins": [
+        {
+          "x_m": [
+            0,
+            12
+          ],
+          "wall_area_m2": 136.8143021808488,
+          "missing_area_m2": 136.8143021808488,
+          "missing_percent": 100.0,
+          "failures": [
+            0,
+            1549,
+            0
+          ]
+        },
+        {
+          "x_m": [
+            12,
+            20
+          ],
+          "wall_area_m2": 135.72557321609938,
+          "missing_area_m2": 135.72557321609938,
+          "missing_percent": 100.0,
+          "failures": [
+            0,
+            2587,
+            0
+          ]
+        },
+        {
+          "x_m": [
+            20,
+            26
+          ],
+          "wall_area_m2": 245.33864590436878,
+          "missing_area_m2": 193.01014454017997,
+          "missing_percent": 78.6709096843283,
+          "failures": [
+            594,
+            9854,
+            928
+          ]
+        },
+        {
+          "x_m": [
+            26,
+            33
+          ],
+          "wall_area_m2": 88.03516246849736,
+          "missing_area_m2": 88.03516246849736,
+          "missing_percent": 100.0,
+          "failures": [
+            0,
+            1392,
+            0
+          ]
+        },
+        {
+          "x_m": [
+            33,
+            39
+          ],
+          "wall_area_m2": 71.53169956747784,
+          "missing_area_m2": 71.53169956747784,
+          "missing_percent": 100.0,
+          "failures": [
+            0,
+            1035,
+            0
+          ]
+        },
+        {
+          "x_m": [
+            39,
+            45
+          ],
+          "wall_area_m2": 117.2006589786081,
+          "missing_area_m2": 98.64921322397596,
+          "missing_percent": 84.17121037005585,
+          "failures": [
+            267,
+            5281,
+            376
+          ]
+        }
+      ],
+      "standard": "PASS",
+      "extended": "FAIL",
+      "illegal_faces": 168,
+      "cpu_status": "FIX_FIRST",
+      "shape_sample_max_m": 0.04630788041381358
+    }
+  ],
+  "next_research_candidate": "snappy-04",
+  "baseline_preserved": "snappy-03",
+  "promotion": "RESEARCH_ONLY_NOT_ENGINEERING_ACCEPTANCE",
+  "coverage_change_percentage_points": 9.330310988111322,
+  "cell_cost_ratio": 2.0235743205666146,
+  "warning": "Failure rates use different refined meshes and do not prove physical error reduction. Counts may overlap.",
+  "gpu_solver_run": false,
+  "global_approval": "FIX_FIRST_GPU_HOLD"
+}

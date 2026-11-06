@@ -1,0 +1,32 @@
+const task=await taskSpace(13),p=task.page("p1");
+const base="D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence";
+const fs=await import("node:fs/promises");
+const {windowId}=await task.cdp("Browser.getWindowForTarget",{targetId:(await task.tabs()).find(t=>t.label==="p1").targetId});
+await task.cdp("Browser.setWindowBounds",{windowId,bounds:{windowState:"normal"}});
+await p.cdp("Page.bringToFront");
+const rows=await p.evaluate(()=>[...document.querySelectorAll('[data-path="research/a321-quality/artifacts/snappy-04"]')].map(n=>({path:n.getAttribute("data-path"),expanded:n.getAttribute("aria-expanded")})));
+if(rows.length!==1)throw Error(JSON.stringify(rows));
+await p.click('loc=css:[data-path="research/a321-quality/artifacts/snappy-04"]',{button:"right"});
+console.log((await p.snapshot()).split("\n").filter(s=>s.includes("뷰어")));
+await p.click('loc=role:button[name="3D 뷰어로 열기"]');
+await p.waitForFunction(()=>document.body.innerText.includes("935,120"),undefined,{timeout:30000});
+const volume=await p.evaluate(async()=>{
+ const {getViewerApi}=await import("/src/viewer/api/viewerApi.ts");const api=getViewerApi();
+ await api.execute({type:"setRepresentation",mode:"surfaceEdges",patches:["aircraft"]});
+ await api.execute({type:"setCamera",position:[49,35,38],target:[22,0,6],projection:"perspective"});
+ return api.getState();
+});
+await p.screenshot({path:base+"/studio-snappy04-grid.png"});
+const layers=await p.evaluate(async()=>{
+ const {getViewerApi}=await import("/src/viewer/api/viewerApi.ts");const api=getViewerApi();
+ const r=await api.execute({type:"load",path:"research/a321-quality/artifacts/snappy-04/native-layer-diagnostic.vtu",field:"native_layer_count"});
+ if(!r.ok)return r;
+ await api.execute({type:"setField",field:"native_layer_count",range:[0,8],colormap:"turbo"});
+ await api.execute({type:"setRepresentation",mode:"surface",patches:"all"});
+ await api.execute({type:"setCamera",position:[49,35,38],target:[22,0,6],projection:"perspective"});
+ return {ok:true,state:api.getState()};
+});
+if(!layers.ok)throw Error(JSON.stringify(layers));
+await p.screenshot({path:base+"/studio-snappy04-layers.png"});
+await fs.writeFile(base+"/studio-hotspot-20261107.json",JSON.stringify({volume,diagnosticSurface:layers},null,2)+"\n");
+console.log({volumeCells:volume.cellCount,diagnosticField:layers.state.field,displayTriangles:layers.state.cellCount});

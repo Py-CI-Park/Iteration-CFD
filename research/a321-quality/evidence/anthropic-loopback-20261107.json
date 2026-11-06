@@ -1,0 +1,1 @@
+{"method":"POST","path":"/v1/messages?beta=true","stream":true,"beta":true,"fallbacks":"default","thinking":"adaptive","dummyCredentialOnly":true,"status":"PASS_LOCAL_FIXTURE","toolDecoded":true,"toolExecuted":false,"liveOpenCodex":false,"externalRequest":false}

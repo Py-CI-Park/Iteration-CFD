@@ -21,5 +21,6 @@ figure { margin: 0; border: 1px solid #d6e2ef; border-radius: 12px; overflow: hi
 figure img { width: 100%; display: block; border-bottom: 1px solid #d6e2ef; }
 figcaption { padding: 10px 14px; font-size: .91rem; }
 .archive { margin-top: 16px; border-top: 1px dashed #9bb1c8; padding-top: 14px; }
+summary { cursor: pointer; font-weight: 700; padding: .6rem 0; color: #12549c; }
 @media(max-width: 650px) { .gallery { grid-template-columns: 1fr; } table { font-size: .8rem; } th,td { padding: .32rem; } }
 @media print { main { border: 0; width: 100%; padding: 0; } nav { display: none; } figure { break-inside: avoid; } }

@@ -1,0 +1,63 @@
+{
+  "volume": {
+    "backend": "webgpu",
+    "datasetId": "0b5851ce7d7df12768abefb66aff9d4060443c7d",
+    "datasetName": "snappy-04",
+    "source": "polymesh",
+    "geometryFidelity": "exact",
+    "cellCount": 935120,
+    "bounds": {
+      "min": [
+        -45.00000000000001,
+        -65.00000000000001,
+        -45.00000000000001
+      ],
+      "max": [
+        135.00000000000003,
+        65.00000000000001,
+        55.00000000000002
+      ]
+    },
+    "field": null,
+    "component": null,
+    "range": null,
+    "warp": null,
+    "colormap": "turbo",
+    "representation": "surfaceEdges",
+    "time": null,
+    "layers": [],
+    "camera": {
+      "position": [
+        49,
+        35,
+        38
+      ],
+      "target": [
+        22.000000000000004,
+        0,
+        6
+      ],
+      "projection": "perspective"
+    },
+    "patches": {
+      "visible": [
+        "aircraft"
+      ],
+      "hidden": [
+        "inlet",
+        "outlet",
+        "yMin",
+        "yMax",
+        "zMin",
+        "zMax"
+      ]
+    },
+    "loading": false,
+    "message": "field \"none\" not found; showing geometry only. Available: none"
+  },
+  "diagnosticSurface": {
+    "status": "REJECTED_UNSUPPORTED_VTU",
+    "reason": "Reader requires appended raw polyhedron VTU, not ASCII triangles; no color-map evidence accepted"
+  },
+  "solverExecuted": false
+}

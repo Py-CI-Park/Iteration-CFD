@@ -1,0 +1,74 @@
+{
+  "check": {
+    "title": "A321 공력 해석 준비 · R3 · GPU 보류",
+    "images": 12,
+    "loaded": true,
+    "ids": [
+      "progress",
+      "hotspot-map",
+      "trials",
+      "studio",
+      "gpu",
+      "api",
+      "next",
+      "history",
+      "prior-report",
+      "prior-progress",
+      "prior-gallery",
+      "prior-next",
+      "prior-history",
+      "prior-upstream",
+      "prior-detail",
+      "detail"
+    ],
+    "anchors": [
+      {
+        "id": "#progress",
+        "exists": true
+      },
+      {
+        "id": "#hotspot-map",
+        "exists": true
+      },
+      {
+        "id": "#trials",
+        "exists": true
+      },
+      {
+        "id": "#studio",
+        "exists": true
+      },
+      {
+        "id": "#gpu",
+        "exists": true
+      },
+      {
+        "id": "#api",
+        "exists": true
+      },
+      {
+        "id": "#next",
+        "exists": true
+      },
+      {
+        "id": "#history",
+        "exists": true
+      },
+      {
+        "id": "#detail",
+        "exists": true
+      }
+    ],
+    "rows": 8,
+    "prior": true,
+    "detail": true,
+    "texts": [
+      true,
+      true
+    ]
+  },
+  "mobile": {
+    "width": 390,
+    "scroll": 390
+  }
+}

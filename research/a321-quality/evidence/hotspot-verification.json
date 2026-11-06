@@ -1,0 +1,32 @@
+{
+  "base_head":"1e08cbd02a9cc7af5800259d949aa68ebe9b7371",
+  "branch":"codex/a321-aero-shell-20261105",
+  "baseline":"snappy-03 preserved, R3 source unchanged",
+  "tests":{
+    "full_command":"uv run --with numpy --with scipy --with trimesh --with meshpy --with matplotlib --with typer --with pydantic --with pytest pytest research/a321-quality -q",
+    "parent_final_output":"28 passed in 15.46s",
+    "independent_focused_output":"4 passed in 3.91 s",
+    "lint":"All checks passed",
+    "format":"passed on current study Python files"
+  },
+  "mapping":{
+    "baseline_sets_replayed_on_copy":true,
+    "baseline_set_ids_identical":true,
+    "wall_addressing":"signed one-based mapping, bijective across all 8 processor patches",
+    "diagnostics":"35 inputs per candidate sealed post-generation and verified before/after",
+    "center_data":"NPZ digest matches the numeric audit or baseline artifact manifest"
+  },
+  "reviews":{
+    "goal":"SCOPED_PASS",
+    "code":"SCOPED_PASS",
+    "security":"SCOPED_PASS",
+    "QA":"SCOPED_PASS",
+    "context":"SCOPED_PASS",
+    "limit":"read-only review and independent focused tests; parent performed actual meshing, recovery, GPU memory test and browser work"
+  },
+  "gpu":{"allocation_bytes":1073741824,"verified_bytes":67108864,"device":"RTX 4080 SUPER fixed UUID","roundtrip":"PASS","kernel_run":false,"CFD_solver_run":false},
+  "API":{"studio_read":"PASS_REAL_LOCAL","SDK_stream_tools":"PASS_SYNTHETIC_LOOPBACK","live_OpenCodex":"NOT_TESTED","provider_config_changed":false},
+  "next_research_candidate":"snappy-04",
+  "complete_engineering_acceptance":false,
+  "CFD_GPU_HOLD":true
+}

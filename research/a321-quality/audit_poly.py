@@ -17,7 +17,7 @@ from typing import Final
 import numpy as np
 import trimesh
 import typer
-from custody import require_unchanged, snapshot_mesh, trial_directory
+from custody import digest, require_unchanged, snapshot_mesh, trial_directory
 from poly_geometry import cell_geometry
 from poly_io import read_faces, read_labels, read_patches, read_points
 from scipy.sparse import coo_matrix
@@ -129,15 +129,17 @@ def main(case: Path = ROOT / "artifacts/snappy-01", run_id: str = "v5") -> None:
     }
     require_unchanged(case, before)
     surface.export(case / f"calculation-wall-{run_id}.stl")
-    (ROOT / "evidence" / f"{case.name}-audit-{run_id}.json").write_text(
-        json.dumps(record, indent=2), encoding="utf8"
-    )
+    centers_path = case / f"audited-geometry-{run_id}.npz"
     np.savez_compressed(
-        case / f"audited-geometry-{run_id}.npz",
+        centers_path,
         centers=c,
         volume=volume,
         nonorth=angles,
         relative_closure=relative,
+    )
+    record["audited_geometry_sha256"] = digest(centers_path)
+    (ROOT / "evidence" / f"{case.name}-audit-{run_id}.json").write_text(
+        json.dumps(record, indent=2), encoding="utf8"
     )
     print(json.dumps(record))
 
