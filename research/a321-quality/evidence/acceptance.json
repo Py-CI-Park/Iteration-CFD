@@ -1,0 +1,31 @@
+{
+  "reference_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "results": [
+    {
+      "candidate": "snappy-03",
+      "cell_family": "hex_dominant_polyhedra_not_tetrahedra",
+      "cpu_status": "NAMED_CPU_GATES_PASS",
+      "standard_checkMesh": "PASS",
+      "extended_checkMesh": "FAIL",
+      "final_native_illegal_faces": 0,
+      "last_extrusion_face_counts": [
+        "29595",
+        "51685",
+        "57.260326980748765"
+      ],
+      "layer_summary_columns": "faces, mean_layers_over_all_wall_faces, mean_total_thickness_m, percent_of_requested_thickness",
+      "layer_summary": [
+        "51685",
+        "1.44",
+        "0.00748",
+        "45.4"
+      ],
+      "max_nonorth_deg": 66.20395548110358,
+      "max_relative_closure": 8.259122599322682e-15,
+      "engineering_status": "NOT_VALIDATED_GPU_HOLD",
+      "gpu_solver_run": false
+    }
+  ],
+  "all_geometry_or_aerodynamics_pass": false,
+  "gpu_solver_run": false
+}

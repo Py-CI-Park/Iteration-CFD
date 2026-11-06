@@ -1,0 +1,10 @@
+const task=await taskSpace(8);const p=task.page('p1');
+await p.click('loc=css:[data-path="research/a321-quality/artifacts/snappy-03"]',{button:'right'});
+await p.click('loc=role:button[name="새로 고침"]');
+await p.waitForSelector('loc=css:[data-path="research/a321-quality/artifacts/snappy-03/calculation-wall-v5.stl"]',{state:'visible'});
+await p.dblclick('loc=css:[data-path="research/a321-quality/artifacts/snappy-03/calculation-wall-v5.stl"]');
+await p.waitForFunction(()=>document.body.innerText.includes('research/a321-quality/artifacts/snappy-03/calculation-wall-v5.stl'));
+await p.screenshot({path:'D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence/studio-calculation-wall.png'});
+const report=task.page('p2');await report.reload({waitUntil:'domcontentloaded'});
+console.log(await report.evaluate(()=>({title:document.title,v5:document.body.innerText.includes('v5'),numeric66:document.body.innerText.includes('66.203955'),images:[...document.images].every(n=>n.complete&&n.naturalWidth>0)})));
+await report.screenshot({path:'D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence/report.png'});

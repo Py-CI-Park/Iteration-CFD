@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "status": 200,
+  "statusText": "OK",
+  "url": "http://127.0.0.1:5183/api/datasets/67752d5896916e7c0a97843d7db5ba82c96beebe",
+  "headers": {
+    "cache-control": "no-store",
+    "connection": "close",
+    "content-length": "2128",
+    "content-type": "application/json; charset=utf-8",
+    "date": "Fri, 06 Nov 2026 14:37:56 GMT",
+    "vary": "Origin"
+  },
+  "body": "{\"id\":\"67752d5896916e7c0a97843d7db5ba82c96beebe\",\"name\":\"snappy-03\",\"path\":\"research/a321-quality/artifacts/snappy-03\",\"source\":\"polymesh\",\"geometryFidelity\":\"exact\",\"units\":{\"length\":\"m\"},\"bounds\":{\"min\":[-45.00000000000001,-65.00000000000001,-45.00000000000001],\"max\":[135.00000000000003,65.00000000000001,55.00000000000002]},\"up\":\"z\",\"cellCount\":462113,\"pointCount\":553581,\"grid\":null,\"surface\":{\"patches\":[{\"name\":\"inlet\",\"type\":\"patch\",\"triStart\":0,\"triCount\":2992,\"color\":[0.7909999999999999,0.44899999999999995,0.44899999999999995]},{\"name\":\"outlet\",\"type\":\"patch\",\"triStart\":2992,\"triCount\":2992,\"color\":[0.44899999999999995,0.7909999999999999,0.5487956]},{\"name\":\"yMin\",\"type\":\"patch\",\"triStart\":5984,\"triCount\":4080,\"color\":[0.6485912000000001,0.44899999999999995,0.7909999999999999]},{\"name\":\"yMax\",\"type\":\"patch\",\"triStart\":10064,\"triCount\":4080,\"color\":[0.7909999999999999,0.7483868,0.44899999999999995]},{\"name\":\"zMin\",\"type\":\"patch\",\"triStart\":14144,\"triCount\":5280,\"color\":[0.44899999999999995,0.7338175999999997,0.7909999999999999]},{\"name\":\"zMax\",\"type\":\"patch\",\"triStart\":19424,\"triCount\":5280,\"color\":[0.7909999999999999,0.44899999999999995,0.6340219999999994]},{\"name\":\"aircraft\",\"type\":\"wall\",\"triStart\":24704,\"triCount\":112132,\"color\":[0.5342263999999999,0.7909999999999999,0.44899999999999995]}],\"positions\":{\"key\":\"surface.positions\",\"dtype\":\"f32\",\"count\":264910,\"components\":3,\"bytes\":3178920},\"normals\":{\"key\":\"surface.normals\",\"dtype\":\"f32\",\"count\":264910,\"components\":3,\"bytes\":3178920},\"indices\":{\"key\":\"surface.indices\",\"dtype\":\"u32\",\"count\":136836,\"components\":3,\"bytes\":1642032},\"cellOfTri\":{\"key\":\"surface.cellOfTri\",\"dtype\":\"u32\",\"count\":136836,\"components\":1,\"bytes\":547344},\"triangleCount\":136836,\"vertexCount\":264910,\"pointOfVertex\":{\"key\":\"surface.pointOfVertex\",\"dtype\":\"u32\",\"count\":264910,\"components\":1,\"bytes\":1059640}},\"fields\":[],\"times\":[],\"meta\":{\"caseName\":\"snappy-03\",\"model\":\"\",\"turbulence\":\"\",\"cellCount\":462113,\"rootKind\":\"foamCase\",\"caseJsonc\":\"\",\"seriesKind\":\"none\"},\"warnings\":[\"polyMesh is not a structured lattice: slices, iso-surfaces and streamlines are unavailable\"]}"
+}

@@ -1,0 +1,15 @@
+{
+  "procedure":"review-work five independent lanes with scoped recheck",
+  "initial_verdict":"FIX_FIRST",
+  "lanes":[
+    {"lane":"goal_constraints","reviewer":"Hilbert","implementation_and_custody":"SCOPED_PASS","engineering":"PARTIAL_FIX_FIRST_GPU_HOLD"},
+    {"lane":"code_quality","reviewer":"Franklin","guard_and_math":"SCOPED_PASS","independently_executed_tests":13,"worst_v4_face_area_vector_comparison_deg":66.2039554811,"engineering":"PARTIAL_FIX_FIRST_GPU_HOLD"},
+    {"lane":"security_custody","reviewer":"Dewey","initial_race_finding":"fixed with before/after frozen five-file snapshot; regression and actual fresh v5 audit","recheck":"SCOPED_PASS_STATIC","engineering":"PARTIAL_FIX_FIRST_GPU_HOLD"},
+    {"lane":"hands_on_QA","reviewer":"Dirac","implementation":"SCOPED_PASS","independently_executed_tests":23,"final_parent_tests":24,"engineering":"PARTIAL_FIX_FIRST_GPU_HOLD"},
+    {"lane":"provenance_context","reviewer":"Einstein","implementation_and_reporting":"SCOPED_PASS","engineering":"PARTIAL_FIX_FIRST_GPU_HOLD"}
+  ],
+  "execution_boundaries":"reviewers read saved browser evidence; live Ego operations and final v5 audit performed by parent. No reviewer mesh regeneration, GPU or solver execution.",
+  "v5_note":"same corrected numerical values as v4, with pre-read and pre-publication byte identity verification added; old receipts retained",
+  "remaining":["extended mesh checks fail 3 categories","area layer coverage 33.2675 percent","shape tolerance and feature acceptance unproven","no tetrahedral successor acceptance","no global overlap proof or solved y+"],
+  "all_engineering_pass":false
+}

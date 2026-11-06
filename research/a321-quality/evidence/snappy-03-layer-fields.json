@@ -1,0 +1,26 @@
+{
+  "candidate": "snappy-03",
+  "wall_faces": 51685,
+  "layer_count_histogram": {
+    "0.0": 22090,
+    "1.0": 9802,
+    "2.0": 6895,
+    "3.0": 5595,
+    "4.0": 3888,
+    "5.0": 2207,
+    "6.0": 923,
+    "7.0": 252,
+    "8.0": 33
+  },
+  "faces_with_layers": 29595,
+  "face_coverage_percent": 57.260326980748765,
+  "area_coverage_percent": 33.267510422912096,
+  "mean_layers_face_weighted": 1.442004450033859,
+  "mean_layers_area_weighted": 0.8256413715023855,
+  "native_thickness_min_on_layered_faces_m": 0.0008347654984719804,
+  "native_thickness_median_on_layered_faces_m": 0.016223235581065497,
+  "interpretation": "nSurfaceLayers/thickness are native mesher diagnostic fields; not flow solution or solved y+",
+  "actual_first_layer_distribution": "NOT_DERIVED_FROM_NATIVE_TOTAL_THICKNESS",
+  "gpu_compute": false,
+  "solver_run": false
+}

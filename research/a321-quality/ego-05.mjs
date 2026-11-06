@@ -1,0 +1,10 @@
+const task=await taskSpace(8);const p=task.page('p1');const fs=await import('node:fs/promises');
+await p.waitForFunction(()=>document.body.innerText.includes('research/a321-quality/artifacts/snappy-03/calculation-wall-v4.stl'));
+const tabs=await task.tabs();const windowInfo=await task.cdp('Browser.getWindowForTarget',{targetId:tabs.find(n=>n.label==='p1').targetId});
+await task.cdp('Browser.setWindowBounds',{windowId:windowInfo.windowId,bounds:{windowState:'normal'}});await p.cdp('Page.bringToFront');
+await p.screenshot({path:'D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence/studio-calculation-wall.png'});
+const result=await p.fetch('/api/datasets/67752d5896916e7c0a97843d7db5ba82c96beebe');
+await fs.writeFile('D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence/studio-snappy03-status.json',JSON.stringify(result,null,2));
+console.log(result.body.slice(0,2600));
+await p.click('loc=css:[data-path="research/a321-quality/artifacts/snappy-03"]',{button:'right'});
+console.log((await p.snapshot()).slice(-6000));

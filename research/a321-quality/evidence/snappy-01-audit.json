@@ -1,0 +1,52 @@
+{
+  "candidate": "snappy-01",
+  "cell_family": "hex_dominant_polyhedra, not tetrahedra",
+  "cells": 461667,
+  "points": 553088,
+  "faces": 1471753,
+  "max_face_arity": 9,
+  "internal_faces": 1407716,
+  "fluid_components": 1,
+  "nonpositive_volumes": 0,
+  "min_volume_m3": 3.798110377527354e-06,
+  "max_nonorth_deg": 64.92435342703553,
+  "faces_nonorth_gt70": 0,
+  "max_relative_closure": 7.890203219774286e-15,
+  "max_absolute_closure_m2": 6.9266052383741096e-15,
+  "wall_faces": 51685,
+  "wall_closed": false,
+  "wall_winding": true,
+  "wall_volume_m3": 503.90341160375874,
+  "reference_volume_m3": 504.8608243561819,
+  "sampled_surface_distance": [
+    {
+      "direction": "R3_to_calculation",
+      "samples": 12000,
+      "max_m": 0.04639011713448656,
+      "p95_m": 0.004357459200633284
+    },
+    {
+      "direction": "calculation_to_R3",
+      "samples": 12000,
+      "max_m": 0.028532078973931566,
+      "p95_m": 0.004340215454663476
+    }
+  ],
+  "reference_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "thresholds": {
+    "nonorth_deg": 70,
+    "relative_closure": 1e-10
+  },
+  "geometry_gate": true,
+  "boundary_layer_coverage": "SEE_EXTERNAL_LAYER_LOG_AND_FIELDS",
+  "solved_y_plus": "NOT_MEASURED",
+  "solver_run": false,
+  "gpu_compute": false,
+  "polyMesh_sha256": {
+    "boundary": "b82008ebaaa9ccbfe2880309d66cfe7e5ca7bafc0ebe6c432549d406f9999873",
+    "faces": "46ed5523bd515e11e7a0989efef34dab7eb6b92ae4ac7c71b09889ed7dad2977",
+    "neighbour": "1ce4bfa72891702313518c2a762b1a5b9bec0e15aac8b0b0d4cc1753ab586d4e",
+    "owner": "0c6dd6d098c140c3cd96b322b099fbf9e45b4c9dd677f9bb48b4208399b556dc",
+    "points": "f33a76a79b65189ecffd5707bb029a3cfe8f8ded87596eca1e515d1f0b7869c9"
+  }
+}

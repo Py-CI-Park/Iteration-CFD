@@ -1,0 +1,70 @@
+{
+  "platform": "Windows-11-10.0.26300-SP0",
+  "python": "3.13.5",
+  "meaning": "observed script environment cache, includes header revisions, not an invented historical launch log",
+  "environments": [
+    {
+      "script_cache": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\audit-poly-2d594d3be4554833",
+      "packages": {
+        "annotated-doc": "0.0.5",
+        "annotated-types": "0.8.0",
+        "colorama": "0.4.6",
+        "markdown-it-py": "4.2.0",
+        "mdurl": "0.1.2",
+        "numpy": "2.5.4",
+        "pydantic": "2.14.3",
+        "pydantic_core": "2.50.4",
+        "Pygments": "2.21.0",
+        "rich": "15.0.0",
+        "rtree": "1.4.1",
+        "scipy": "1.18.1",
+        "shellingham": "1.5.4",
+        "trimesh": "5.2.0",
+        "typer": "0.28.0",
+        "typing_extensions": "4.16.0",
+        "typing-inspection": "0.4.5"
+      }
+    },
+    {
+      "script_cache": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\netgen-clean-c024523555dd72e6",
+      "packages": {
+        "manifold3d": "3.5.4",
+        "netgen-mesher": "6.2.2608",
+        "netgen_occt": "7.8.1",
+        "numpy": "2.5.4",
+        "trimesh": "5.2.0"
+      }
+    },
+    {
+      "script_cache": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\layer-fields-32e653c7ecc8fb7c",
+      "packages": {
+        "annotated-doc": "0.0.5",
+        "colorama": "0.4.6",
+        "markdown-it-py": "4.2.0",
+        "mdurl": "0.1.2",
+        "numpy": "2.5.4",
+        "Pygments": "2.21.0",
+        "rich": "15.0.0",
+        "shellingham": "1.5.4",
+        "typer": "0.28.0"
+      }
+    },
+    {
+      "script_cache": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\plot-quality-e6176fa844c2e76c",
+      "packages": {
+        "contourpy": "1.4.0",
+        "cycler": "0.12.1",
+        "fonttools": "4.68.0",
+        "kiwisolver": "1.5.1",
+        "matplotlib": "3.11.2",
+        "numpy": "2.5.4",
+        "packaging": "26.3",
+        "pillow": "13.0.0",
+        "pyparsing": "3.3.3",
+        "python-dateutil": "4.0.0",
+        "trimesh": "5.2.0",
+        "tzdata": "2026.6"
+      }
+    }
+  ]
+}

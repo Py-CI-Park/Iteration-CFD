@@ -1,0 +1,55 @@
+{
+  "candidate": "snappy-03",
+  "cell_family": "hex_dominant_polyhedra, not tetrahedra",
+  "cells": 462113,
+  "points": 553581,
+  "faces": 1473152,
+  "max_face_arity": 9,
+  "internal_faces": 1409115,
+  "fluid_components": 1,
+  "nonpositive_volumes": 0,
+  "min_volume_m3": 3.840634151839204e-06,
+  "max_nonorth_deg": 66.20395548110358,
+  "faces_nonorth_gt70": 0,
+  "max_relative_closure": 8.259122599322682e-15,
+  "max_absolute_closure_m2": 7.157003301279545e-15,
+  "wall_faces": 51685,
+  "wall_closed": true,
+  "raw_wall_edge_incidence_closed": true,
+  "cell_geometry_method": "signed triangle tetrahedral moments; arithmetic face-center fan defines warped face surface",
+  "wall_winding": true,
+  "wall_volume_m3": 503.9068219299456,
+  "reference_volume_m3": 504.8608243561819,
+  "sampled_surface_distance": [
+    {
+      "direction": "R3_to_calculation",
+      "samples": 12000,
+      "max_m": 0.04630788041381358,
+      "p95_m": 0.004312135335197493
+    },
+    {
+      "direction": "calculation_to_R3",
+      "samples": 12000,
+      "max_m": 0.034639960264832625,
+      "p95_m": 0.004299811363864068
+    }
+  ],
+  "reference_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "thresholds": {
+    "nonorth_deg": 70,
+    "relative_closure": 1e-10
+  },
+  "nonorth_closure_gate": true,
+  "boundary_layer_coverage": "SEE_EXTERNAL_LAYER_LOG_AND_FIELDS",
+  "solved_y_plus": "NOT_MEASURED",
+  "solver_run": false,
+  "gpu_compute": false,
+  "polyMesh_sha256": {
+    "points": "6236c05fd41f34d074764eee50d8fc891d818e9d50f8653885ae93c1e9ae9517",
+    "faces": "f1c95069bbe16213f80a2b675014cb54325ee9bd5e607782158cfbe7f541de72",
+    "owner": "a98f1085b8fea46245862c8d4de32bd84e34ff418f4b6b18b1b056b84c37c039",
+    "neighbour": "d28499731f25ed7a9524f2ab0e4d37996ec78f7bb66f909e9744d2af354687d7",
+    "boundary": "2513d8ae630431879c49e8ad6894ceb21fefa03d443744116884fa15ea369177"
+  },
+  "mesh_unchanged_during_audit": true
+}

@@ -1,0 +1,23 @@
+{
+  "scope":"CPU meshing research and implementation guards; not full engineering acceptance",
+  "base_head":"c5295b03bb71d13a3435846df769fb942322043b",
+  "branch":"codex/a321-aero-shell-20261105",
+  "checks":[
+    {"command":"uv run --with numpy --with trimesh --with pydantic --with pytest python -m pytest research/a321-quality -q","exit_code":0,"parent_output":"24 passed in 11.91s"},
+    {"command":"independent QA pytest before last snapshot regression","exit_code":0,"output":"23 passed in 24.38s","scope":"independent QA did not rerun later-added mutation regression"},
+    {"command":"uvx ruff check research/a321-quality","exit_code":0,"output":"All checks passed!"},
+    {"command":"uvx ruff format --check research/a321-quality","exit_code":0,"scope":"final study Python files"},
+    {"command":"wsl -d Ubuntu -- bash research/a321-quality/guard_tests.sh (absolute WSL path used)","exit_code":0,"receipt":"guard-tests.json"},
+    {"command":"uv run research/a321-quality/audit_poly.py --case <study artifacts/snappy-03> --run-id v5","exit_code":0,"receipt":"snappy-03-audit-v5.json","mesh_unchanged_during_audit":true},
+    {"command":"uv run research/a321-quality/package_quality.py","exit_code":0,"receipt":"acceptance.json","binding":"candidate, fixed R3 SHA, all five current polyMesh hashes required"}
+  ],
+  "numeric_result":{"max_nonorth_deg":66.20395548110358,"max_relative_closure":8.259122599322682e-15,"thresholds":{"max_nonorth_deg":70,"max_relative_closure":1e-10},"status":"NAMED_CPU_GATES_PASS"},
+  "external_checks":{"native_final_illegal_faces":0,"standard":"PASS","extended":"FAIL: 3 checks"},
+  "browser":{"engine":"Ego Lite","space":8,"dataset":"67752d5896916e7c0a97843d7db5ba82c96beebe","cells":462113,"points":553581,"patches":7,"reader_manifest_complete":true,"rendered_geometry_and_dataset":true},
+  "engineering_status":"PARTIAL_FIX_FIRST_GPU_HOLD",
+  "tetrahedral_success":false,
+  "boundary_layer_complete":false,
+  "shape_fidelity_accepted":false,
+  "gpu_solver_run":false,
+  "third_party_AI_API":"NOT_USED"
+}

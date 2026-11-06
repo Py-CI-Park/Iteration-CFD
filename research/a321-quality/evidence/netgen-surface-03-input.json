@@ -1,0 +1,11 @@
+{
+  "kernel": "Error.NoError",
+  "vertices": 25991,
+  "triangles": 51978,
+  "closed": true,
+  "winding": true,
+  "min_edge_m": 3.9735979842848404e-05,
+  "operation_tolerance_m": 0.0005,
+  "geometry_fidelity": "NOT_YET_MEASURED",
+  "gpu_compute": false
+}

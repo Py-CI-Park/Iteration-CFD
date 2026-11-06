@@ -1,0 +1,11 @@
+const task=await taskSpace(8);const p=task.page('p1');const fs=await import('node:fs/promises');
+const r=await p.fetch('/api/datasets/open',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:'research/a321-quality/artifacts/snappy-03'})});
+console.log(r.body);await fs.writeFile('D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence/studio-snappy03-open.json',JSON.stringify(r,null,2));
+await p.click('loc=css:[data-path="research/a321-quality"]');
+await p.waitForSelector('loc=css:[data-path="research/a321-quality/artifacts"]',{state:'visible'});
+await p.click('loc=css:[data-path="research/a321-quality/artifacts"]');
+await p.waitForSelector('loc=css:[data-path="research/a321-quality/artifacts/snappy-03"]',{state:'visible'});
+await p.click('loc=css:[data-path="research/a321-quality/artifacts/snappy-03"]');
+await p.waitForSelector('loc=css:[data-path="research/a321-quality/artifacts/snappy-03/calculation-wall-v4.stl"]',{state:'visible'});
+await p.dblclick('loc=css:[data-path="research/a321-quality/artifacts/snappy-03/calculation-wall-v4.stl"]');
+console.log((await p.snapshot()).slice(-3200));

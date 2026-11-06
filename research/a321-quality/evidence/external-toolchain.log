@@ -1,0 +1,6 @@
+libopenfoam	1912.200626-2build3
+openfoam	1912.200626-2build3
+ef4a6bd7c5b9f45d1f7886d7fd7e8acacc48dbd4f04375237f55112ebf4585a8  /usr/bin/checkMesh
+3e7c244708d81a1e7eb86de6e00f5e07d05df4285c84611c978e81282be28a8b  /usr/bin/snappyHexMesh
+7e5c42c7e46821e1bc6736a9ab0da0a33e5ac0adb6c2623ea4879667089a9fcb  /usr/bin/blockMesh
+Linux 6.6.87.2-microsoft-standard-WSL2

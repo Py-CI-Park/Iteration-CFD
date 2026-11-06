@@ -1,0 +1,137 @@
+[
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\constant\\polyMesh\\boundary",
+    "bytes": 1727,
+    "sha256": "2513d8ae630431879c49e8ad6894ceb21fefa03d443744116884fa15ea369177"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\constant\\polyMesh\\cellZones",
+    "bytes": 876,
+    "sha256": "f3ec1850b17284b3056587e7b0bcc398b523f80f3e51891cfc5a931b38165b54"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\constant\\polyMesh\\faces",
+    "bytes": 45114640,
+    "sha256": "f1c95069bbe16213f80a2b675014cb54325ee9bd5e607782158cfbe7f541de72"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\constant\\polyMesh\\faceZones",
+    "bytes": 876,
+    "sha256": "1a3fc3f2f2c7f76c597df378690ccbf4b8a8013456e58f0c87dcf4ecaca5220f"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\constant\\polyMesh\\neighbour",
+    "bytes": 9542092,
+    "sha256": "d28499731f25ed7a9524f2ab0e4d37996ec78f7bb66f909e9744d2af354687d7"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\constant\\polyMesh\\owner",
+    "bytes": 9943712,
+    "sha256": "a98f1085b8fea46245862c8d4de32bd84e34ff418f4b6b18b1b056b84c37c039"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\constant\\polyMesh\\points",
+    "bytes": 32794745,
+    "sha256": "6236c05fd41f34d074764eee50d8fc891d818e9d50f8653885ae93c1e9ae9517"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\constant\\polyMesh\\pointZones",
+    "bytes": 877,
+    "sha256": "a4a6a2dcd51a046ec166f12f8fb6f70d0cc21e238dc6ae1d1db90effcf542a29"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\calculation-wall-v5.stl",
+    "bytes": 10775184,
+    "sha256": "c260a65ea962901999e18fd6c0243ada3958e62af6216da8e71afe0a52680b60"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\audited-geometry-v5.npz",
+    "bytes": 26797663,
+    "sha256": "ad8ec27cc5ae2fb9bef82ff422bff5201986ef2938c1974c28e19ea47577c354"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\evidence\\snappy-03-audit-v5.json",
+    "bytes": 1993,
+    "sha256": "4e0a030e1d2b381d5b5ca808643b85cb30e0a416a3994e29def6b8bc61fe1afa"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\input-manifest.json",
+    "bytes": 867,
+    "sha256": "e435b51559e6c45b06ef1a4e42e24fb850e138d065ec71a1619ce2b32b3af776"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\log.blockMesh",
+    "bytes": 2851,
+    "sha256": "471e34fe4cb04629d28a6b8bd28563fcbda1af1bf63ee8c443fdb1874239ca3c"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\log.checkMesh-extended",
+    "bytes": 6174,
+    "sha256": "899a23e13f5a12c3c8076af64088a0ca8c57be24e37bb7e018897c571ae7f63c"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\log.checkMesh-standard",
+    "bytes": 4075,
+    "sha256": "e8eab39bee7b0e83d9033952db2e0d1ad8d19262c49ed99f5ca323a204e61771"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\log.decompose",
+    "bytes": 4410,
+    "sha256": "06074337b1defddc6e26b19743ec55b706f900ac0ba3ef6dd48d5737daec27c7"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\log.features",
+    "bytes": 2716,
+    "sha256": "09bb5f38af3304374bae79dbcca6c6a81b232ba573d5cb92ee936694e6eabaf7"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\log.reconstruct",
+    "bytes": 6766,
+    "sha256": "89a07a8e1149a1355aec9949e40d7f3bfb28004a06f00158cd2884c55639c474"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\log.snappy",
+    "bytes": 244443,
+    "sha256": "762e8e702b164a5dd6dcacf3845d7f5dd29cecbde12856dfc332c819b9bf0655"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\system\\blockMeshDict",
+    "bytes": 553,
+    "sha256": "b4ccb0f2d93077c036e03b1f96afe13cbf5c634fdd4dac5dba721b6b1d532ebd"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\system\\controlDict",
+    "bytes": 352,
+    "sha256": "a32c9f780c7eb579b6065007b64cdd8c345b977a7b43fe3b558fdcbd232ab4a7"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\system\\decomposeParDict",
+    "bytes": 184,
+    "sha256": "702c029b98acaf304d3ec624905335301c187f323deb22242f2694e83efa170b"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\system\\fvSchemes",
+    "bytes": 298,
+    "sha256": "1ca96c0c187c6a2a1a4ed854d2f942b5d2ac2d588c6fc8f46106155bcaaa4ff9"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\system\\fvSolution",
+    "bytes": 88,
+    "sha256": "dd1a1b770d13a911d031f624948a6d03a7436d77bb21151276cb45b4cbfa084f"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\system\\snappyHexMeshDict",
+    "bytes": 1543,
+    "sha256": "e39bccb6655d13312abf0790b2e1bdf98635d38499a2c7aa92532c5e65d36411"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\snappy-03\\system\\surfaceFeatureExtractDict",
+    "bytes": 205,
+    "sha256": "616001e40bd63941fa69c015d8d13a4d6f2b90cf038f2325465748677ed5c1d4"
+  },
+  {
+    "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\evidence\\external-toolchain.log",
+    "bytes": 359,
+    "sha256": "16684b79069dd3ebce20ac4ea9de242bfaf1dd8ea2f5d012519d9485b736f50f"
+  }
+]

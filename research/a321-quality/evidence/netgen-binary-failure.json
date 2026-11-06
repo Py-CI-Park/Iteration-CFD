@@ -1,0 +1,9 @@
+{
+ "trial":"netgen-surface-01",
+ "source_format":"R3 binary STL",
+ "result":"REJECTED_EMPTY_SURFACE",
+ "observed":"many STL Triangle degenerated diagnostics and nonsensical repeated coordinates; zero output faces",
+ "cause":"UNDER_INVESTIGATION: loader format mismatch suspected, not confirmed",
+ "gpu_compute":false,
+ "solver_run":false
+}

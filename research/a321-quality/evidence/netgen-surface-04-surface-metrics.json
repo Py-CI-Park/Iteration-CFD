@@ -1,0 +1,26 @@
+{
+  "surface": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\artifacts\\netgen-surface-04\\surface.stl",
+  "vertices": 28042,
+  "triangles": 56080,
+  "closed": false,
+  "winding": true,
+  "components": 1,
+  "minimum_triangle_angle_deg": 0.002053196976713882,
+  "minimum_edge_m": 3.948770255735403e-06,
+  "distances": [
+    {
+      "direction": "reference_to_candidate",
+      "samples": 12000,
+      "max_m": 0.03629562528992188,
+      "p95_m": 0.003350486212533842
+    },
+    {
+      "direction": "candidate_to_reference",
+      "samples": 12000,
+      "max_m": 0.031972197782106006,
+      "p95_m": 0.0032953351732931463
+    }
+  ],
+  "gpu_compute": false,
+  "solver_run": false
+}
