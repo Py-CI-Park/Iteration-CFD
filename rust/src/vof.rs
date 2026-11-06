@@ -26,7 +26,8 @@
 //!     §7.5 - body forces on faces
 //!   ofgpu `SPEC-LIT.md` §20 (all five subsections) and §22 (the tests),
 //!     together with §2.4, §3, §4, §5.1 and §5.4, which the assembly here is
-//!     built out of.
+//!     built out of; §120.14, the VOF-family boundary conditions this
+//!     solver rewrites once per time step.
 //! No GPL-licensed source was consulted.
 //!
 //! # What this module owns
@@ -134,6 +135,7 @@ use cudarc::driver::{CudaFunction, PushKernelArg};
 
 use crate::device::{cfg_for, DevBuf, Gpu, KernelSet};
 use crate::error::{Error, Result};
+use crate::field::vof_family::{self, VofFamilyKind};
 use crate::field::{BcKind, GpuScalarField, GpuSurfaceScalarField, GpuVectorField};
 use crate::field_ops::{self, FieldKernels};
 use crate::fv::{self, FvKernels};
@@ -329,6 +331,13 @@ pub struct VofControls {
     /// Print nothing; the driver does the printing. Kept so a caller can ask
     /// for the continuity error without paying for it in a timed run.
     pub report_continuity: bool,
+
+    /// `-forceSplitDouble` (SPEC-LIT 120.7). Single build only: form the
+    /// internal-face force `phib - |Sf| snGrad(p_rgh)` in f64 and round once
+    /// (`vofForceFluxSplit64`), so the gravity and pressure terms cancel
+    /// before any f32 rounding at a large density jump. Off by default; the
+    /// f64 build ignores it, and so does a run with the Marangoni model on.
+    pub force_split_double: bool,
 }
 
 impl Default for VofControls {
@@ -353,6 +362,7 @@ impl Default for VofControls {
             max_co: 0.0,
             max_delta_t: Scalar::INFINITY,
             report_continuity: true,
+            force_split_double: false,
         }
     }
 }
@@ -469,6 +479,9 @@ struct VofKernels {
     phi_hbya_boundary: CudaFunction,
     force_flux: CudaFunction,
     force_flux_boundary: CudaFunction,
+    /// `vofForceFluxSplit64`, compiled under `single` only (SPEC-LIT 120.7).
+    #[cfg(feature = "single")]
+    force_flux_split64: CudaFunction,
     correct_flux: CudaFunction,
     correct_flux_boundary: CudaFunction,
     correct_velocity: CudaFunction,
@@ -519,6 +532,8 @@ impl VofKernels {
             phi_hbya_boundary: m.func("momPhiHbyABoundary")?,
             force_flux: m.func("momForceFlux")?,
             force_flux_boundary: m.func("momForceFluxBoundary")?,
+            #[cfg(feature = "single")]
+            force_flux_split64: v.func("vofForceFluxSplit64")?,
             correct_flux: m.func("momCorrectFlux")?,
             correct_flux_boundary: m.func("momCorrectFluxBoundary")?,
             correct_velocity: m.func("momCorrectVelocity")?,
@@ -858,6 +873,11 @@ impl<'m> Vof<'m> {
     pub fn initialise(&mut self, gpu: &Gpu) -> Result<()> {
         let m = self.m;
 
+        // SPEC-LIT 120.14: the VOF-family triples from the initial alpha,
+        // before any face is evaluated and before the pinning test reads
+        // `p_rgh`'s `fr`.
+        self.refresh_vof_family(gpu)?;
+
         field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.alpha, m)?;
         field_ops::correct_boundary_conditions_vector(gpu, &self.fldk, &mut self.u, m)?;
         field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.p_rgh, m)?;
@@ -895,11 +915,110 @@ impl<'m> Vof<'m> {
         // The face values first: this reads `U.bf`, and a field that has been
         // written through `u_mut` but never evaluated carries whatever its
         // file's `value` entry held - which for a `zeroGradient` patch is
-        // nothing at all.
+        // nothing at all. SPEC-LIT 120.14: a VOF-family velocity is written
+        // from the initial alpha first, so the first step's inlet flux is
+        // the condition's and not its seed's.
+        self.refresh_vof_family(gpu)?;
         field_ops::correct_boundary_conditions_vector(gpu, &self.fldk, &mut self.u, self.m)?;
 
         let Self { fvk, phi, u, m, .. } = self;
         fv::interpolate_vector_flux(gpu, fvk, phi, u, m)
+    }
+
+    /// SPEC-LIT 120.14: rewrite the triples of every VOF-family patch from
+    /// the CURRENT phase fraction - (120.14a) on `alpha` from its cells, then
+    /// `alpha`'s faces re-evaluated, then (120.14b)/(120.14c) on `U` and
+    /// (120.14d) on `p_rgh` from those faces (and `p_rgh`'s mixture density
+    /// refreshed to them). On the host: each field carrying a rule is
+    /// downloaded, rewritten on the rule's faces only and uploaded. A run
+    /// with no rule returns at once and changes nothing, bit for bit.
+    ///
+    /// [`Vof::step`] calls it once per step, before the boundary values are
+    /// evaluated; [`Vof::initialise_flux_from_velocity`] and
+    /// [`Vof::initialise`] call it first. Calling it again with nothing
+    /// moved rewrites the same numbers.
+    pub fn refresh_vof_family(&mut self, gpu: &Gpu) -> Result<()> {
+        let (has_a, has_u, has_p) = (
+            !self.alpha.vof_rules.is_empty(),
+            !self.u.vof_rules.is_empty(),
+            !self.p_rgh.vof_rules.is_empty(),
+        );
+        if !(has_a || has_u || has_p) {
+            return Ok(());
+        }
+        let m = self.m;
+
+        if has_a {
+            let cells = gpu.download(&self.alpha.f)?;
+            let mut fr = gpu.download(&self.alpha.fr)?;
+            let mut rv = gpu.download(&self.alpha.ref_value)?;
+            let mut rg = gpu.download(&self.alpha.ref_grad)?;
+            for r in &self.alpha.vof_rules {
+                vof_family::variable_height_alpha(r, &cells, &mut fr, &mut rv, &mut rg);
+            }
+            gpu.write(&mut self.alpha.fr, &fr)?;
+            gpu.write(&mut self.alpha.ref_value, &rv)?;
+            gpu.write(&mut self.alpha.ref_grad, &rg)?;
+            field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.alpha, m)?;
+        }
+        if !(has_u || has_p) {
+            return Ok(());
+        }
+        let alpha_b = gpu.download(&self.alpha.bf)?;
+
+        if has_u {
+            let cells = gpu.download(&self.u.f)?;
+            let mut fr = gpu.download(&self.u.fr)?;
+            let mut rv = gpu.download(&self.u.ref_value)?;
+            let mut rg = gpu.download(&self.u.ref_grad)?;
+            for r in &self.u.vof_rules {
+                match r.kind {
+                    VofFamilyKind::VariableHeightFlowRateInletVelocity { .. } => {
+                        vof_family::variable_height_inlet_velocity(r, &alpha_b, &mut fr, &mut rv, &mut rg)
+                    }
+                    VofFamilyKind::OutletPhaseMeanVelocity { .. } => {
+                        vof_family::outlet_phase_mean_velocity(r, &alpha_b, &cells, &mut fr, &mut rv, &mut rg)
+                    }
+                    _ => {
+                        return Err(Error::Config(format!(
+                            "Vof::refresh_vof_family: patch {} of U carries a scalar VOF-family rule (SPEC-LIT 120.14)",
+                            r.patch
+                        )))
+                    }
+                }
+            }
+            gpu.write(&mut self.u.fr, &fr)?;
+            gpu.write(&mut self.u.ref_value, &rv)?;
+            gpu.write(&mut self.u.ref_grad, &rg)?;
+        }
+
+        if has_p {
+            // `rho_f` of (120.14d) is the mixture density of the face's
+            // CURRENT alpha - the value `update_properties` writes (§20.3).
+            self.update_properties(gpu)?;
+            let rho_b = gpu.download(&self.rho.bf)?;
+            let mut fr = gpu.download(&self.p_rgh.fr)?;
+            let mut rv = gpu.download(&self.p_rgh.ref_value)?;
+            let mut rg = gpu.download(&self.p_rgh.ref_grad)?;
+            for r in &self.p_rgh.vof_rules {
+                vof_family::phase_hydrostatic_pressure(
+                    r,
+                    self.props.g,
+                    &alpha_b,
+                    &rho_b,
+                    &mut fr,
+                    &mut rv,
+                    &mut rg,
+                );
+            }
+            gpu.write(&mut self.p_rgh.fr, &fr)?;
+            gpu.write(&mut self.p_rgh.ref_value, &rv)?;
+            gpu.write(&mut self.p_rgh.ref_grad, &rg)?;
+            // A phase-weighted Dirichlet fixes the level only where the
+            // phase is: the reference level follows it.
+            self.pinned = !self.pressure_has_a_dirichlet(gpu)?;
+        }
+        Ok(())
     }
 
     /// Does any boundary face give `p_rgh` a value rather than a gradient?
@@ -956,6 +1075,22 @@ impl<'m> Vof<'m> {
         }
 
         Ok(())
+    }
+
+    /// SPEC-LIT 120.7's `rho_f`: the mixture density of every boundary face,
+    /// from the face's `alpha` - the value the solver's own
+    /// [`Self::update_properties`] writes there. `alpha`'s boundary
+    /// conditions are evaluated first, so a case whose `alpha` file carries
+    /// anything but `zeroGradient` still reads the faces it will be solved
+    /// with. The setup of a `p_rgh` carrying one of the buoyant pressure
+    /// names calls this and hands the slice to
+    /// `field_setup::PrghInputs::rho_b` - call it after `alpha` and `U` are
+    /// set up and before [`Self::initialise`].
+    pub fn boundary_density(&mut self, gpu: &Gpu) -> Result<Vec<Scalar>> {
+        let m = self.m;
+        field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.alpha, m)?;
+        self.update_properties(gpu)?;
+        gpu.download(&self.rho.bf)
     }
 
     /// `rho_phi = rho2 phi + (rho1 - rho2) alpha_phi` (§20.3).
@@ -1702,6 +1837,7 @@ impl<'m> Vof<'m> {
                 sn_grad_alpha,
                 kappa_f,
                 &u.fr,
+                &u.bc_kind,
                 g,
                 m,
             )?;
@@ -1741,6 +1877,7 @@ impl<'m> Vof<'m> {
                     .arg(&m.b_cf)
                     .arg(&m.b_kind)
                     .arg(&self.u.fr)
+                    .arg(&self.u.bc_kind)
                     .arg(&g.x)
                     .arg(&g.y)
                     .arg(&g.z)
@@ -1788,7 +1925,16 @@ impl<'m> Vof<'m> {
             )?;
         }
 
-        if nif > 0 {
+        // SPEC-LIT 120.7, `forceSplitDouble`: under `single` only, the
+        // internal faces' force may be formed in f64 and rounded once.
+        let split64 = cfg!(feature = "single")
+            && self.ctrl.force_split_double
+            && self.marangoni.is_none();
+
+        if nif > 0 && split64 {
+            #[cfg(feature = "single")]
+            self.launch_force_flux_split64(gpu)?;
+        } else if nif > 0 {
             let nl = nif as Label;
             let f = self.vk.force_flux.clone();
             unsafe {
@@ -1813,6 +1959,7 @@ impl<'m> Vof<'m> {
                     .arg(&self.sn_grad_p.bf)
                     .arg(&m.b_kind)
                     .arg(&self.u.fr)
+                    .arg(&self.u.bc_kind)
                     .arg(&nl)
                     .launch(cfg_for(nbf))?;
             }
@@ -1820,6 +1967,60 @@ impl<'m> Vof<'m> {
 
         let Self { fvk, force, force_flux, .. } = self;
         fv::fvc_reconstruct(gpu, fvk, force, force_flux, m)
+    }
+
+    /// `vofForceFluxSplit64` on the internal faces (SPEC-LIT 120.7,
+    /// `forceSplitDouble`). The kernel reads the non-orthogonal correction of
+    /// `|Sf| snGrad(p_rgh)` alone from `force_flux.f`, so it is built there
+    /// first, from a zeroed buffer and the `grad_p` that
+    /// [`Vof::update_force`] has just formed. The correction also adds into
+    /// `force_flux.bf`, which `momForceFluxBoundary` then overwrites whole.
+    #[cfg(feature = "single")]
+    fn launch_force_flux_split64(&mut self, gpu: &Gpu) -> Result<()> {
+        let m = self.m;
+        let nif = m.n_internal_faces;
+
+        gpu.fill_zero(&mut self.force_flux.f)?;
+        if self.ctrl.sn_grad.applies() {
+            let Self { fvk, force_flux, p_rgh, grad_p, ctrl, .. } = self;
+            fv::sn_grad_flux_correction(
+                gpu,
+                fvk,
+                force_flux,
+                p_rgh,
+                &m.mag_sf,
+                &m.b_mag_sf,
+                grad_p,
+                ctrl.sn_grad,
+                m,
+            )?;
+        }
+
+        let g = self.props.g;
+        let sigma = self.props.sigma;
+        let nl = nif as Label;
+        let f = self.vk.force_flux_split64.clone();
+        unsafe {
+            gpu.stream()
+                .launch_builder(&f)
+                .arg(&mut self.force_flux.f)
+                .arg(&self.rho.f)
+                .arg(&self.p_rgh.f)
+                .arg(&self.sn_grad_alpha.f)
+                .arg(&self.kappa_f.f)
+                .arg(&m.cf)
+                .arg(&m.delta_coeffs)
+                .arg(&m.mag_sf)
+                .arg(&m.owner)
+                .arg(&m.neighbour)
+                .arg(&g.x)
+                .arg(&g.y)
+                .arg(&g.z)
+                .arg(&sigma)
+                .arg(&nl)
+                .launch(cfg_for(nif))?;
+        }
+        Ok(())
     }
 
     // ---- momentum ---------------------------------------------------------
@@ -2165,6 +2366,7 @@ impl<'m> Vof<'m> {
                     .arg(&m.b_nbr_cell)
                     .arg(&m.b_kind)
                     .arg(&self.u.fr)
+                    .arg(&self.u.bc_kind)
                     .arg(&nbl)
                     .launch(cfg_for(nbf))?;
             }
@@ -2284,6 +2486,7 @@ impl<'m> Vof<'m> {
                     .arg(&self.sn_grad_p.bf)
                     .arg(&m.b_kind)
                     .arg(&self.u.fr)
+                    .arg(&self.u.bc_kind)
                     .arg(&nl)
                     .launch(cfg_for(nbf))?;
             }
@@ -2337,6 +2540,9 @@ impl<'m> Vof<'m> {
         field_ops::update_inlet_outlet_vector(gpu, &self.fldk, &mut self.u, &self.phi)?;
         field_ops::update_inlet_outlet_scalar(gpu, &self.fldk, &mut self.p_rgh, &self.phi)?;
         field_ops::update_inlet_outlet_scalar(gpu, &self.fldk, &mut self.alpha, &self.phi)?;
+        // SPEC-LIT 120.14: the VOF-family triples follow the alpha the last
+        // step left, once per step, before the faces are evaluated.
+        self.refresh_vof_family(gpu)?;
         field_ops::correct_boundary_conditions_vector(gpu, &self.fldk, &mut self.u, m)?;
         field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.p_rgh, m)?;
 
@@ -3673,6 +3879,7 @@ mod tests {
     ///    A scheme that has diffused the disc into a blur fails 3 while
     ///    passing 1 and 2, which is why all three are here.
     #[test]
+    // f32 (F32-17): the analytic rotation flux leaves 7e-12, an exact-zero check
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn zalesaks_rotating_slotted_disc_stays_bounded_and_keeps_its_slot() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -4123,6 +4330,7 @@ mod tests {
     /// `f_M` is a force density in N/m³. Getting that wrong would show up
     /// here as a factor of `rho`, not as a subtlety.
     #[test]
+    // f32 (F32-17): the tangential force sum misses 1.5e-4 N by 2.8e-5 relative
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_flat_interface_feels_the_slope_times_its_area() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -4369,6 +4577,8 @@ mod tests {
     /// this test reports is a ratio against this solver's own spurious
     /// currents rather than against a threshold picked to pass.
     #[test]
+    // f32 (VAL-81): the alpha Courant number overflows (9e27) in f32, the step refused
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_marangoni_source_reaches_the_momentum_equation_and_drives_flow() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
 
@@ -4559,6 +4769,8 @@ mod tests {
     ///   along the interface - the classic spurious interface current - and
     ///   must stay bounded rather than growing step on step.
     #[test]
+    // f32 (VAL-81): the alpha Courant number reaches 1.7e18 in f32, the step refused
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_static_drop_has_the_laplace_pressure_jump() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
 
@@ -4822,7 +5034,6 @@ mod tests {
     /// residual proportional to the interpolation error at the interface, and
     /// the momentum equation would answer it with velocity.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_mass_flux_is_consistent_with_the_density_it_advects() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
 
@@ -4907,7 +5118,7 @@ mod tests {
         println!("  mass consistency: worst residual {worst:e} against a scale of {scale:e}");
         assert!(scale > 0.0, "nothing moved, so nothing was tested");
         assert!(
-            worst < 1e-10 * scale.max(1.0),
+            (worst as f64) < crate::precision::roundoff_tol(1e-10) * scale.max(1.0) as f64,
             "d(rho)/dt + div(rho phi) = {worst:e}, which is not round-off"
         );
 
@@ -4928,12 +5139,11 @@ mod tests {
     ///
     /// **What this asserts, and what it does not.** Martin & Moyce photographed
     /// the surge front of exactly this experiment and tabulated `Z = z/a`
-    /// against a dimensionless time. Their table is NOT transcribed here,
-    /// because nobody working on this file has the paper in front of them, and
-    /// a table of numbers attributed to a 1952 experiment and actually
-    /// remembered would be worse than no table at all. What the test prints is
-    /// the solver's own `Z(T)` in those variables, so a reader who does have
-    /// the paper can lay one on the other.
+    /// against a dimensionless time. Their table is NOT in this test: it is
+    /// the answer key `reference/martin_moyce_1952/surge_front.csv` (SPEC-LIT
+    /// §145.1), and the comparison against it is `ofgpu-validate`'s Gate 145-A
+    /// (§145.2). What the test prints is the solver's own `Z(T)`, with `T`
+    /// WITHOUT the key's factor `n = 2^(1/2)` (145.2).
     ///
     /// What it *asserts* is three things that are true independently of any
     /// experiment:

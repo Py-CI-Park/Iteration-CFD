@@ -36,6 +36,12 @@
 //! * [`cht`] - conjugate heat transfer: solid regions, anisotropic
 //!   conduction, contact resistance, and the concatenated thermal mesh whose
 //!   fluid/solid interface is a cyclic couple with a zero transform
+//! * [`chem`] - NASA seven-coefficient species thermochemistry read from
+//!   CHEMKIN THERMO records, and the ideal-gas mixture (SPEC-LIT §128)
+//! * [`compressible`] - the pressure-based all-speed compressible solver of
+//!   SPEC-LIT §122-§127; so far its host answer keys (`exact`, §127.2)
+//! * [`comm`] - the SPMD transport: the `Comm` trait, and `ThreadComm`, which
+//!   runs N ranks as N threads in one process (SPEC-LIT §138)
 //! * [`blockgen`] - a structured mesh generator, so test cases need no OpenFOAM
 //! * [`reference`] - an independent CPU transcription used only to validate
 //!
@@ -50,6 +56,7 @@ pub mod adapt;
 pub mod automesher;
 pub mod decompose;
 pub mod device;
+pub mod distflow;
 pub mod distsolve;
 pub mod error;
 pub mod exactsum;
@@ -70,8 +77,14 @@ pub mod models;
 pub mod parcels;
 pub mod potential_flow;
 pub mod restart;
+pub mod rigid_body;
 pub mod rheology;
 pub mod cht;
+pub mod chem;
+pub mod dust;
+pub mod compressible;
+pub mod comm;
+pub mod amg;
 pub mod dcmetrics;
 pub mod fan;
 pub mod psychro;
@@ -80,8 +93,10 @@ pub mod energy;
 pub mod radiation;
 pub mod s2s;
 pub mod precon;
+pub mod precision;
 pub mod pressure;
 pub mod properties;
+pub mod function1;
 pub mod scalar_transport;
 pub mod simple;
 pub mod solid;
@@ -100,6 +115,7 @@ pub mod blockgen;
 pub mod io;
 pub mod reference;
 pub mod surface;
+pub mod tetmesh;
 
 /// The CUDA-graph capture gate of SPEC-LIT §81: every module that puts work
 /// on the device is gated, excused by name, or fails the registry check.
@@ -118,8 +134,8 @@ pub use device::{cfg_for, DevBuf, Gpu, Graph, KernelSet, BLOCK};
 pub use error::{Error, Result};
 pub use field::{BcKind, GpuScalarField, GpuSurfaceScalarField, GpuVectorField};
 pub use ldu::{CsrPattern, GpuCsrMatrix, GpuLduMatrix};
-pub use mesh::{GpuMesh, HostMesh, MeshReport, PatchInfo, PatchKind};
-pub use types::{Tensor, Vec3};
+pub use mesh::{GpuMesh, Geom64, HostMesh, MeshReport, PatchInfo, PatchKind};
+pub use types::{DVec3, Tensor, Vec3};
 
 /// Compiled device code for every kernel unit, embedded at build time.
 ///
@@ -135,6 +151,13 @@ pub mod kernels {
 pub type Scalar = f32;
 #[cfg(not(feature = "single"))]
 pub type Scalar = f64;
+
+/// The accumulator type of every device reduction and its per-block partials:
+/// `f64` in BOTH builds, mirroring `ofacc` in `cuda/ofgpu_device.cuh`
+/// (SPEC-LIT §118.1). In the f64 build it is [`Scalar`], so every reduction
+/// there is unchanged.
+pub type Acc = f64;
+const _: () = assert!(std::mem::size_of::<Acc>() == 8);
 
 /// A positive floor far below any physical quantity and far above the bottom
 /// of [`Scalar`]'s range: `1e-300` in f64, `1e-30` in f32, each about 10^8

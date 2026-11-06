@@ -89,7 +89,9 @@ use crate::solver::{SolverKernels, SolverPerformance, SolverWorkspace};
 use crate::{Label, Scalar};
 
 use super::cartesian::{self, CartesianGrid, SideBc, SIDE_NAMES};
-use super::{residual_norm, PressureBackend, SystemProbe};
+#[cfg(not(feature = "single"))]
+use super::residual_norm;
+use super::{PressureBackend, SystemProbe};
 
 // --------------------------------------------------------------------------
 //  Precision plumbing. cuFFT is typed on f32/f64 concretely, `Scalar` is not.
@@ -1064,7 +1066,9 @@ impl PressureBackend for FftBackend {
         ]);
         self.kernels = Some(PressureKernels::new(gpu)?);
 
-        if self.report_residuals {
+        // Under `single` the refinement of SPEC-LIT §118.12 needs both
+        // whether or not anyone reads the residuals.
+        if self.report_residuals || cfg!(feature = "single") {
             self.solk = Some(SolverKernels::new(gpu)?);
             self.resw = Some(SolverWorkspace::for_mesh(gpu, m)?);
         }
@@ -1082,10 +1086,8 @@ impl PressureBackend for FftBackend {
         a: &GpuLduMatrix,
         m: &GpuMesh,
     ) -> Result<SolverPerformance> {
-        let mut perf = SolverPerformance { n_iterations: 1, converged: true, ..Default::default() };
-
         if a.n_cells == 0 {
-            return Ok(perf);
+            return Ok(SolverPerformance { n_iterations: 1, converged: true, ..Default::default() });
         }
 
         // ---- what is the matrix, really? ---------------------------------
@@ -1139,14 +1141,52 @@ impl PressureBackend for FftBackend {
             }
         }
 
-        // ---- initial residual, if anyone is going to look at it ----------
-        if self.report_residuals {
-            if let (Some(k), Some(w)) = (self.solk.as_ref(), self.resw.as_mut()) {
-                perf.initial_residual = residual_norm(gpu, k, w, p, a, m)?;
-            }
-        }
+        // ---- the direct solve, or under `single` its refinement ----------
+        #[cfg(not(feature = "single"))]
+        {
+            let mut perf =
+                SolverPerformance { n_iterations: 1, converged: true, ..Default::default() };
 
-        // ---- transform, divide, transform back ---------------------------
+            // ---- initial residual, if anyone is going to look at it ------
+            if self.report_residuals {
+                if let (Some(k), Some(w)) = (self.solk.as_ref(), self.resw.as_mut()) {
+                    perf.initial_residual = residual_norm(gpu, k, w, p, a, m)?;
+                }
+            }
+
+            self.transform(gpu, p, &a.source)?;
+
+            if self.report_residuals {
+                if let (Some(k), Some(w)) = (self.solk.as_ref(), self.resw.as_mut()) {
+                    perf.final_residual = residual_norm(gpu, k, w, p, a, m)?;
+                }
+            }
+            Ok(perf)
+        }
+        #[cfg(feature = "single")]
+        {
+            self.solve_refined(gpu, p, a, m)
+        }
+    }
+
+    #[cfg(feature = "single")]
+    fn refined_solution(&self) -> Option<&DevBuf<f64>> {
+        FftBackend::refined_solution(self)
+    }
+}
+
+impl FftBackend {
+    /// Transform, divide, transform back: `out = A^-1 rhs` by the three
+    /// axis transforms the last [`PressureBackend::solve`] planned. The
+    /// f64 build calls it with `rhs = a.source`, the launches of the
+    /// direct solve unchanged; under `single` the refinement calls it on
+    /// the scaled correction system (SPEC-LIT §118.12).
+    fn transform(
+        &mut self,
+        gpu: &Gpu,
+        out: &mut DevBuf<Scalar>,
+        rhs: &DevBuf<Scalar>,
+    ) -> Result<()> {
         let (nx, ny, nz) = {
             let g = self.grid()?;
             (g.nx, g.ny, g.nz)
@@ -1181,7 +1221,7 @@ impl PressureBackend for FftBackend {
             gpu.stream()
                 .launch_builder(&f)
                 .arg(&mut w.u)
-                .arg(&a.source)
+                .arg(rhs)
                 .arg(cell_of)
                 .arg(&nl)
                 .launch(cfg_for(total))?;
@@ -1215,19 +1255,138 @@ impl PressureBackend for FftBackend {
         unsafe {
             gpu.stream()
                 .launch_builder(&f)
-                .arg(&mut *p)
+                .arg(&mut *out)
                 .arg(&w.u)
                 .arg(cell_of)
                 .arg(&nl)
                 .launch(cfg_for(total))?;
         }
 
-        if self.report_residuals {
-            if let (Some(k), Some(w)) = (self.solk.as_ref(), self.resw.as_mut()) {
-                perf.final_residual = residual_norm(gpu, k, w, p, a, m)?;
-            }
-        }
+        Ok(())
+    }
+}
 
+// ==========================================================================
+//  Under `single`: the direct solve, refined - SPEC-LIT §118.12
+// ==========================================================================
+
+#[cfg(feature = "single")]
+impl FftBackend {
+    /// The double solution of the last solve (SPEC-LIT §118.12): what the
+    /// selector compares and what a caller that wants the solve's own
+    /// answer reads. `single` only.
+    pub fn refined_solution(&self) -> Option<&DevBuf<f64>> {
+        self.resw.as_ref().and_then(|w| w.refined_solution())
+    }
+
+    /// Transform solves the last solve made - its outer refinement steps.
+    pub fn ir_outer_steps(&self) -> usize {
+        self.resw.as_ref().map_or(0, |w| w.ir_outer_steps())
+    }
+
+    /// The kernels and the workspace are taken out for the duration - the
+    /// transform needs `&mut self` - and put back on EVERY return path.
+    fn solve_refined(
+        &mut self,
+        gpu: &Gpu,
+        p: &mut DevBuf<Scalar>,
+        a: &GpuLduMatrix,
+        m: &GpuMesh,
+    ) -> Result<SolverPerformance> {
+        let missing = || Error::Config("cuFFT backend: setup() was not called".into());
+        let k = self.solk.take().ok_or_else(missing)?;
+        let Some(mut w) = self.resw.take() else {
+            self.solk = Some(k);
+            return Err(missing());
+        };
+        let out = self.refine_loop(gpu, p, a, m, &k, &mut w);
+        self.solk = Some(k);
+        self.resw = Some(w);
+        out
+    }
+
+    /// SPEC-LIT (118.4.1)-(118.4.9) with the transform solve as the method
+    /// of (118.4.6): `d = A^-1 btilde` in float, every residual in double. A
+    /// direct solve has no tolerance, so `T = 0` and the loop runs to the
+    /// double floor: it stops when `R = 0`, when a correction no longer
+    /// halves `R` (the floor, or a float solve that does not contract), or
+    /// after `IR_MAX_OUTER` steps. It is converged at `R = 0`, or when the
+    /// stop is the floor after at least one step that did contract.
+    fn refine_loop(
+        &mut self,
+        gpu: &Gpu,
+        p: &mut DevBuf<Scalar>,
+        a: &GpuLduMatrix,
+        m: &GpuMesh,
+        k: &SolverKernels,
+        w: &mut SolverWorkspace,
+    ) -> Result<SolverPerformance> {
+        use crate::precision::{ir_verdict, IrVerdict};
+        use crate::solver;
+
+        let n = a.n_cells;
+        let SolverWorkspace { ir, partials, .. } = w;
+        let ir = ir
+            .as_mut()
+            .ok_or_else(|| Error::Config("cuFFT backend: no refinement state".into()))?;
+        ir.outer_steps = 0;
+
+        // (118.4.1) x^0 = fl64(p); (118.4.2) sum x and N; (118.4.3) R_0.
+        solver::widen(gpu, k, &mut ir.x_hi, p, n)?;
+        let c = solver::sum64_stage1(gpu, k, partials, &ir.x_hi, n)?;
+        solver::sum2_to64(gpu, k, &mut ir.scal.slice_mut(0..1), partials, c, 0.0)?;
+        let c = solver::norm_factor64_stage1(
+            gpu,
+            k,
+            partials,
+            &ir.x_hi,
+            &ir.scal,
+            1.0 / (n as f64),
+            a,
+            m,
+        )?;
+        solver::sum2_to64(gpu, k, &mut ir.scal.slice_mut(1..2), partials, c, f64::MIN_POSITIVE)?;
+        let c = solver::residual64_sum_stage1(gpu, k, partials, &ir.x_hi, a, m)?;
+        solver::sum2_to64(gpu, k, &mut ir.scal.slice_mut(2..3), partials, c, 0.0)?;
+        let host = gpu.download(&ir.scal)?;
+        let (norm, r_0) = (host[1], host[2]);
+        let mut r_k = r_0;
+        let mut r_prev: Option<f64> = None;
+        let mut outer: usize = 0;
+
+        let verdict = loop {
+            // (118.4.8) with T = 0, no sweep budget and no minimum.
+            match ir_verdict(r_k, r_prev, 0.0, 0, 0, usize::MAX, outer) {
+                IrVerdict::Continue => {}
+                v => break v,
+            }
+            // (118.4.5) btilde = fl32(r/R_k); (118.4.6) d = A^-1 btilde.
+            solver::scaled_residual64(gpu, k, &mut ir.b_in, &ir.x_hi, a, m, 1.0 / r_k)?;
+            self.transform(gpu, &mut ir.d, &ir.b_in)?;
+            // (118.4.7) x += R_k·fl64(d).
+            solver::axpy_widen64(gpu, k, &mut ir.x_hi, &ir.d, r_k, n)?;
+            outer += 1;
+            // (118.4.3) the step's one host read.
+            let c = solver::residual64_sum_stage1(gpu, k, partials, &ir.x_hi, a, m)?;
+            solver::sum2_to64(gpu, k, &mut ir.scal.slice_mut(2..3), partials, c, 0.0)?;
+            r_prev = Some(r_k);
+            r_k = gpu.download(&ir.scal)?[2];
+        };
+
+        // (118.4.9) the stored field.
+        solver::narrow(gpu, k, p, &ir.x_hi, n)?;
+        ir.outer_steps = outer;
+
+        let mut perf = SolverPerformance {
+            n_iterations: outer,
+            converged: verdict == IrVerdict::Converged
+                || (verdict == IrVerdict::Stagnated && outer >= 2),
+            ..Default::default()
+        };
+        if self.report_residuals {
+            perf.initial_residual = (r_0 / norm) as Scalar;
+            perf.final_residual = (r_k / norm) as Scalar;
+        }
         Ok(perf)
     }
 }
@@ -1265,7 +1424,6 @@ mod tests {
     /// The pairs really are inverses, to the factor 2n FFTW's conventions
     /// leave behind. If this fails, every scaling downstream is wrong.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn each_transform_pair_round_trips_to_two_n() {
         for n in 1..=9 {
             for p in PAIRS {
@@ -1273,7 +1431,7 @@ mod tests {
                 let back = transform_ref(p.inverse(), &transform_ref(p.forward(), &x));
                 let want: Vec<Scalar> = x.iter().map(|v| v * 2.0 * n as Scalar).collect();
                 assert!(
-                    max_diff(&back, &want) < 1e-11 * (n as Scalar),
+                    ((max_diff(&back, &want)) as f64) < crate::precision::roundoff_tol(1e-11) * n as f64,
                     "{p:?} n={n}: {back:?} vs {want:?}"
                 );
             }
@@ -1330,7 +1488,6 @@ mod tests {
     /// and compared; a continuous wavenumber would land at discretisation
     /// error instead, which for this `n` is percent-level.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_transform_solve_is_the_exact_inverse_of_the_matrix() {
         for n in [1usize, 2, 3, 8, 9, 16] {
             for p in PAIRS {
@@ -1355,7 +1512,7 @@ mod tests {
                 let scale = direct.iter().fold(0.0f64, |m, v| m.max(v.abs())).max(1e-12);
                 for i in 0..n {
                     assert!(
-                        (x[i] - direct[i]).abs() < 1e-10 * scale,
+                        (x[i] - direct[i]).abs() < crate::precision::roundoff_tol(1e-10) * scale,
                         "{p:?} n={n} i={i}: transform {} vs direct {}",
                         x[i],
                         direct[i]
@@ -1476,7 +1633,6 @@ mod tests {
     /// because a wrong transform produces a smooth, plausible, wrong pressure
     /// field.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn every_transform_matches_the_direct_reference() {
         let Some(gpu) = gpu() else { return };
         let k = match PressureKernels::new(&gpu) {
@@ -1496,7 +1652,7 @@ mod tests {
                         let want = transform_ref(t, line);
                         let scale = want.iter().fold(0.0 as Scalar, |m, v| m.max(v.abs())).max(1.0);
                         assert!(
-                            max_diff(&got[b], &want) < 1e-10 * scale,
+                            ((max_diff(&got[b], &want)) as f64) < crate::precision::roundoff_tol(1e-10) * scale as f64,
                             "{t:?} n={n} line {b}: got {:?} want {want:?}",
                             got[b]
                         );
@@ -1509,7 +1665,6 @@ mod tests {
     /// Forward then inverse on the device returns `2n` times the input, which
     /// is the property the `1/(8 nx ny nz)` in `presDivideEigen` relies on.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_device_pair_round_trips_to_two_n() {
         let Some(gpu) = gpu() else { return };
         let k = match PressureKernels::new(&gpu) {
@@ -1527,7 +1682,7 @@ mod tests {
                         line.iter().map(|v| v * 2.0 * n as Scalar).collect();
                     let scale = want.iter().fold(0.0 as Scalar, |m, v| m.max(v.abs())).max(1.0);
                     assert!(
-                        max_diff(&back[b], &want) < 1e-10 * scale,
+                        ((max_diff(&back[b], &want)) as f64) < crate::precision::roundoff_tol(1e-10) * scale as f64,
                         "{p:?} n={n} line {b}"
                     );
                 }

@@ -34,13 +34,19 @@
 //!     in `crate::wallfunctions`/`cuda/wallfunctions.cu`, this module only
 //!     owns the wall-BC wiring - which faces, and where in [`Energy::correct`]
 //!     the triple gets rewritten)
+//!   M. S. Day, J. B. Bell, *Combust. Theory Model.* 4 (2000) 535-556, DOI
+//!     10.1088/1364-7830/4/4/309, eqs. (3) and (7) - the mixture molar mass
+//!     in the equation of state and the molar-change term of the divergence
+//!     constraint, SPEC-LIT 133.2 and 133.10 ([`GasMixture`],
+//!     [`GasState::update_density_mixture`])
 //! No GPL-licensed source was consulted.
 //!
 //! # What lives here, and what does not
 //!
 //! * [`GasProperties`] / [`GasState`] - S25: the ideal-gas density
 //!   `rho = p0/(R_s T)` and the thermodynamic pressure `p0(t)`, sealed or
-//!   open.
+//!   open; with a [`GasMixture`], `rho = p0 W_mix(Y)/(R T)` and the
+//!   constraint's molar-change term (SPEC-LIT 133.10).
 //! * [`EnergySources`] - S18/S26: the registry every volumetric heat source
 //!   pushes into - a heater, a porous zone, the dispersed phase's convective
 //!   exchange. This module sums what is registered; it does not know how any
@@ -153,7 +159,7 @@ use crate::mesh::GpuMesh;
 use crate::solver::{self, SolverKernels, SolverPerformance, SolverWorkspace};
 use crate::timescheme::{Ddt, DdtScheme, TimeKernels};
 use crate::wallfunctions::{ThermalWallData, WallFunctionCoeffs};
-use crate::{Label, Scalar, Vec3};
+use crate::{Acc, Label, Scalar, Vec3};
 
 // ==========================================================================
 //  §37  The turbulent Prandtl number: constant, or Kays-Crawford
@@ -427,6 +433,8 @@ struct EnergyKernels {
     k_eff_kays_crawford: CudaFunction,
     target_divergence: CudaFunction,
     fixed_flux: CudaFunction,
+    /// SPEC-LIT 120.8 - the thermal wall family's triple rewrite.
+    thermal_wall: CudaFunction,
 }
 
 impl EnergyKernels {
@@ -438,6 +446,7 @@ impl EnergyKernels {
             k_eff_kays_crawford: k.func("energyKEffKaysCrawford")?,
             target_divergence: k.func("energyTargetDivergence")?,
             fixed_flux: k.func("energyFixedFluxTemperature")?,
+            thermal_wall: k.func("energyThermalWall")?,
         })
     }
 
@@ -598,11 +607,260 @@ impl EnergyKernels {
         }
         Ok(())
     }
+
+    /// SPEC-LIT 120.8's thermal-wall rewrite, on the `n` listed faces. The
+    /// five parameter arrays and `sigma` are f64 in both builds - the host
+    /// uploaded them widened once - and the kernel is
+    /// [`ThermalFace::triple`](crate::cht::ambient::ThermalFace::triple)'s
+    /// device twin, in the same operation order.
+    #[allow(clippy::too_many_arguments)]
+    fn thermal_wall(
+        &self,
+        gpu: &Gpu,
+        fr: &mut DevBuf<Scalar>,
+        ref_value: &mut DevBuf<Scalar>,
+        ref_grad: &mut DevBuf<Scalar>,
+        tb: &DevBuf<Scalar>,
+        psi: &DevBuf<Scalar>,
+        b_face_cells: &DevBuf<Label>,
+        k_eff_wall: &DevBuf<Scalar>,
+        b_delta_coeffs: &DevBuf<Scalar>,
+        phi_conv_b: &DevBuf<Scalar>,
+        b_mag_sf: &DevBuf<Scalar>,
+        face: &DevBuf<Label>,
+        h: &DevBuf<f64>,
+        t_inf: &DevBuf<f64>,
+        eps: &DevBuf<f64>,
+        r_layers: &DevBuf<f64>,
+        q_in: &DevBuf<f64>,
+        advective: &DevBuf<Label>,
+        sigma: f64,
+        n: usize,
+    ) -> Result<()> {
+        if n == 0 {
+            return Ok(());
+        }
+        let nl = n as Label;
+        unsafe {
+            gpu.stream()
+                .launch_builder(&self.thermal_wall)
+                .arg(fr)
+                .arg(ref_value)
+                .arg(ref_grad)
+                .arg(tb)
+                .arg(psi)
+                .arg(b_face_cells)
+                .arg(k_eff_wall)
+                .arg(b_delta_coeffs)
+                .arg(phi_conv_b)
+                .arg(b_mag_sf)
+                .arg(face)
+                .arg(h)
+                .arg(t_inf)
+                .arg(eps)
+                .arg(r_layers)
+                .arg(q_in)
+                .arg(advective)
+                .arg(&sigma)
+                .arg(&nl)
+                .launch(cfg_for(n))?;
+        }
+        Ok(())
+    }
 }
 
 // ==========================================================================
 //  §25  Gas state - rho(p0, T) and the p0(t) ODE
 // ==========================================================================
+
+/// The members of a reacting gas and their molar masses - SPEC-LIT 133.10.
+///
+/// The solved members `k` in the order their mass-fraction fields are handed
+/// to [`GasState::update_density_mixture`], and the inert remainder `N` that
+/// closes them (§19, `Y_N = 1 - Σ_k Y_k`). (133.19):
+///
+/// ```text
+/// 1/W = 1/W_N + Σ_k Y_k (1/W_k - 1/W_N)
+/// ```
+///
+/// which is (133.3)'s `Σ_m Y_m/W_m` with the inert's fraction written out,
+/// and equals it while `Σ_k Y_k <= 1` (where §19's clip of `Y_N` at zero is
+/// idle; [`crate::species::Species::max_sum_error`] measures when it is not).
+#[derive(Debug, Clone, PartialEq)]
+pub struct GasMixture {
+    names: Vec<String>,
+    w: Vec<f64>,
+    inert: String,
+    w_inert: f64,
+}
+
+impl GasMixture {
+    /// `solved` as `(name, W)` and the inert `(name, W)`, `W` in kg/mol.
+    /// A molar mass that is not finite and positive is refused, naming the
+    /// member.
+    pub fn new(solved: &[(&str, f64)], inert: (&str, f64)) -> Result<Self> {
+        for (name, w) in solved.iter().chain(std::iter::once(&inert)) {
+            if !(*w > 0.0) || !w.is_finite() {
+                return Err(Error::Config(format!(
+                    "gas mixture: the molar mass of \"{name}\" is {w} kg/mol; (133.3) \
+                     needs a finite positive W for every member (SPEC-LIT 133.10)"
+                )));
+            }
+        }
+        Ok(Self {
+            names: solved.iter().map(|(n, _)| (*n).to_string()).collect(),
+            w: solved.iter().map(|(_, w)| *w).collect(),
+            inert: inert.0.to_string(),
+            w_inert: inert.1,
+        })
+    }
+
+    /// The solved members' names, in field order.
+    pub fn names(&self) -> &[String] {
+        &self.names
+    }
+
+    pub fn inert_name(&self) -> &str {
+        &self.inert
+    }
+
+    pub fn n_solved(&self) -> usize {
+        self.names.len()
+    }
+
+    /// `1/W_k - 1/W_N`, mol/kg: member `k`'s coefficient in (133.19) and
+    /// in (133.21)'s molar sum.
+    pub fn coefficient(&self, k: usize) -> f64 {
+        1.0 / self.w[k] - 1.0 / self.w_inert
+    }
+
+    /// (133.19) on the host from the solved fractions `y`, mol/kg - the
+    /// formula [`GasState::update_density_mixture`] evaluates on the device,
+    /// in the same order.
+    pub fn inverse_molar_mass(&self, y: &[f64]) -> f64 {
+        let mut acc = 1.0 / self.w_inert;
+        for (k, yk) in y.iter().enumerate().take(self.n_solved()) {
+            acc += self.coefficient(k) * yk;
+        }
+        acc
+    }
+}
+
+/// The two domain integrals of SPEC-LIT (133.22)'s sealed `p0` ODE, f64 in
+/// both builds: [`Energy::constraint_integrals`] forms them from the last
+/// [`Energy::update_target_divergence`] on a [`GasState`] with a mixture,
+/// and [`GasState::advance_p0_mixture`] takes them.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ConstraintIntegrals {
+    /// `∫ D dV`, m3/s: (133.21)'s dilatation without its `dp0/dt` term.
+    pub dilatation: f64,
+    /// `∫ (1/γ) dV`, m3, with `1/γ_c = 1 - R_s,c/cp_c`.
+    pub inv_gamma_volume: f64,
+}
+
+/// `cuda/energy.cu`'s (133.19)-(133.20) kernels.
+struct MixKernels {
+    fill: CudaFunction,
+    axpy: CudaFunction,
+    density: CudaFunction,
+    round: CudaFunction,
+}
+
+impl MixKernels {
+    /// `acc[..len] = v`.
+    fn fill(&self, gpu: &Gpu, acc: &mut DevBuf<Acc>, v: Acc, len: usize) -> Result<()> {
+        let nl = len as Label;
+        unsafe {
+            gpu.stream().launch_builder(&self.fill).arg(acc).arg(&v).arg(&nl).launch(cfg_for(len))?;
+        }
+        Ok(())
+    }
+
+    /// `acc[..len] += a x`.
+    fn axpy(&self, gpu: &Gpu, acc: &mut DevBuf<Acc>, x: &DevBuf<Scalar>, a: Acc, len: usize) -> Result<()> {
+        let nl = len as Label;
+        unsafe {
+            gpu.stream()
+                .launch_builder(&self.axpy)
+                .arg(acc)
+                .arg(x)
+                .arg(&a)
+                .arg(&nl)
+                .launch(cfg_for(len))?;
+        }
+        Ok(())
+    }
+
+    /// (133.19) into `acc[..len]`: `1/W_N`, then each member `k`'s
+    /// `(1/W_k - 1/W_N) Y_k` from `y(k)`, in member order.
+    fn inv_w<'a>(
+        &self,
+        gpu: &Gpu,
+        table: &GasMixture,
+        acc: &mut DevBuf<Acc>,
+        y: impl Fn(usize) -> &'a DevBuf<Scalar>,
+        len: usize,
+    ) -> Result<()> {
+        self.fill(gpu, acc, 1.0 / table.w_inert, len)?;
+        for k in 0..table.n_solved() {
+            self.axpy(gpu, acc, y(k), table.coefficient(k), len)?;
+        }
+        Ok(())
+    }
+
+    /// (133.20): `rho[..len] = (p0/R)/(T (1/W))`.
+    fn density(
+        &self,
+        gpu: &Gpu,
+        rho: &mut DevBuf<Scalar>,
+        t: &DevBuf<Scalar>,
+        inv_w: &DevBuf<Acc>,
+        p0_over_r: Acc,
+        len: usize,
+    ) -> Result<()> {
+        let nl = len as Label;
+        unsafe {
+            gpu.stream()
+                .launch_builder(&self.density)
+                .arg(rho)
+                .arg(t)
+                .arg(inv_w)
+                .arg(&p0_over_r)
+                .arg(&nl)
+                .launch(cfg_for(len))?;
+        }
+        Ok(())
+    }
+
+    /// `out[..len] = acc`, rounded once.
+    fn round(&self, gpu: &Gpu, out: &mut DevBuf<Scalar>, acc: &DevBuf<Acc>, len: usize) -> Result<()> {
+        let nl = len as Label;
+        unsafe {
+            gpu.stream().launch_builder(&self.round).arg(out).arg(acc).arg(&nl).launch(cfg_for(len))?;
+        }
+        Ok(())
+    }
+}
+
+/// A [`GasState`]'s mixture: the table, its kernels and the buffers
+/// (133.19)-(133.21) are formed in.
+struct MixState {
+    table: GasMixture,
+    k: MixKernels,
+    /// `[n_cells]` (133.19) at the current level, in `Acc`.
+    inv_w: DevBuf<Acc>,
+    /// `[n_cells]` the same, rounded to the build's scalar - what
+    /// [`Energy`]'s `rho* cp` under backward divides by.
+    inv_w_s: DevBuf<Scalar>,
+    /// `[max(n_cells, n_boundary_faces)]` (133.19) of the other three
+    /// levels, one at a time.
+    scratch: DevBuf<Acc>,
+    /// `[n_cells]` `Σ_k (1/W_k - 1/W_N) S_k`, mol/(m3 s), as last set.
+    mol: DevBuf<Acc>,
+    /// Whether [`GasState::update_density_mixture`] has run since
+    /// [`GasState::use_mixture`].
+    formed: bool,
+}
 
 /// `rho = p0/(R_s T)` on the device, and the thermodynamic pressure `p0(t)`
 /// on the host - SPEC-LIT S25. `rho` carries its own old time levels so that
@@ -623,6 +881,9 @@ pub struct GasState<'m> {
 
     rho: GpuScalarField,
     fldk: FieldKernels,
+    /// SPEC-LIT 133.10: `None` is §25's one gas of constant `W`, and every
+    /// launch it ran before CHR-11.
+    mix: Option<MixState>,
 }
 
 impl<'m> GasState<'m> {
@@ -651,6 +912,7 @@ impl<'m> GasState<'m> {
             dp0dt: 0.0,
             rho: GpuScalarField::zeros(gpu, m, "rho")?,
             fldk: FieldKernels::new(gpu)?,
+            mix: None,
         })
     }
 
@@ -708,12 +970,25 @@ impl<'m> GasState<'m> {
     /// - two existing, already-tested launches per level cost less than a new
     /// one to save them.
     pub fn update_density(&mut self, gpu: &Gpu, t: &GpuScalarField) -> Result<()> {
+        if self.mix.is_some() {
+            return Err(Error::Config(
+                "GasState::update_density on a gas with a mixture: its rho is \
+                 p0 W_mix(Y)/(R T), so call GasState::update_density_mixture with \
+                 the members' mass fractions (SPEC-LIT 133.10)"
+                    .to_string(),
+            ));
+        }
         let n = self.m.n_cells;
         let nbf = self.m.n_boundary_faces;
         let rs = self.props.r_s();
 
-        field_ops::set_field(gpu, &self.fldk, &mut self.rho.f, self.p0 / rs, n)?;
-        field_ops::divide_field(gpu, &self.fldk, &mut self.rho.f, &t.f, n)?;
+        // SPEC-LIT 139.10 (PAR-14): the cell values over the ghost cells too,
+        // from `T`'s exchanged halo - a part's processor faces interpolate
+        // rho from both sides (`interpolate_linear`'s processor-face pass).
+        // A whole mesh has no ghosts: `n_local` is `n`, the same launch.
+        let nl = self.m.n_local();
+        field_ops::set_field(gpu, &self.fldk, &mut self.rho.f, self.p0 / rs, nl)?;
+        field_ops::divide_field(gpu, &self.fldk, &mut self.rho.f, &t.f, nl)?;
 
         field_ops::set_field(gpu, &self.fldk, &mut self.rho.bf, self.p0 / rs, nbf)?;
         field_ops::divide_field(gpu, &self.fldk, &mut self.rho.bf, &t.bf, nbf)?;
@@ -747,6 +1022,15 @@ impl<'m> GasState<'m> {
     /// law no longer makes sense, almost always a `dt` far larger than the
     /// heat input can be integrated explicitly at.
     pub fn advance_p0(&mut self, total_q: Scalar, dt: Scalar) -> Result<Scalar> {
+        if self.mix.is_some() {
+            return Err(Error::Config(
+                "GasState::advance_p0 on a gas with a mixture: (25.2)'s (gamma-1)/V \
+                 integral(Q) holds for one constant W only, so advance p0 with \
+                 GasState::advance_p0_mixture and Energy::constraint_integrals \
+                 (SPEC-LIT 133.10)"
+                    .to_string(),
+            ));
+        }
         if !(dt >= 0.0) || !dt.is_finite() {
             return Err(Error::Config(format!(
                 "GasState::advance_p0: dt is {dt}"
@@ -786,6 +1070,222 @@ impl<'m> GasState<'m> {
             }
         }
         Ok(self.p0)
+    }
+
+    /// Give this gas a mixture - SPEC-LIT 133.10. From here on its `rho` is
+    /// (133.20), formed by [`Self::update_density_mixture`] (and
+    /// [`Self::update_density`] is refused), its sealed `p0` advances by
+    /// (133.22) through [`Self::advance_p0_mixture`] (and [`Self::advance_p0`]
+    /// is refused), and [`Energy::update_target_divergence`] forms (133.21).
+    /// The molar-change sum starts at zero.
+    pub fn use_mixture(&mut self, gpu: &Gpu, table: GasMixture) -> Result<()> {
+        let k = KernelSet::new(gpu, crate::kernels::ENERGY)?;
+        // SPEC-LIT 139.1: the cell buffers carry the halo (`n_local`); the
+        // scratch is at least n_local AND face-sized, whichever is bigger.
+        let n_local = self.m.n_local().max(1);
+        let n_any = n_local.max(self.m.n_boundary_faces).max(1);
+        self.mix = Some(MixState {
+            table,
+            k: MixKernels {
+                fill: k.func("energyFillAcc")?,
+                axpy: k.func("energyAxpyAcc")?,
+                density: k.func("energyMixtureDensity")?,
+                round: k.func("energyRoundAcc")?,
+            },
+            inv_w: gpu.zeros(n_local)?,
+            inv_w_s: gpu.zeros(n_local)?,
+            scratch: gpu.zeros(n_any)?,
+            mol: gpu.zeros(n_local)?,
+            formed: false,
+        });
+        Ok(())
+    }
+
+    /// The mixture [`Self::use_mixture`] gave, if any.
+    pub fn mixture(&self) -> Option<&GasMixture> {
+        self.mix.as_ref().map(|x| &x.table)
+    }
+
+    /// `(1/W, Σ_k (1/W_k - 1/W_N) S_k)` per cell in `Acc`, for
+    /// [`Energy::update_target_divergence`]'s (133.21); `None` without a
+    /// mixture. Refused before the first [`Self::update_density_mixture`].
+    fn mixture_cells(&self) -> Result<Option<(&DevBuf<Acc>, &DevBuf<Acc>)>> {
+        match &self.mix {
+            None => Ok(None),
+            Some(x) if !x.formed => Err(Error::Config(
+                "the gas mixture's 1/W has not been formed: call \
+                 GasState::update_density_mixture before the target divergence \
+                 (SPEC-LIT 133.10)"
+                    .to_string(),
+            )),
+            Some(x) => Ok(Some((&x.inv_w, &x.mol))),
+        }
+    }
+
+    /// The current level's (133.19), rounded, when this gas has a formed
+    /// mixture: what `rho* cp` under backward divides by.
+    fn mixture_inv_w_scalar(&self) -> Option<&DevBuf<Scalar>> {
+        self.mix.as_ref().filter(|x| x.formed).map(|x| &x.inv_w_s)
+    }
+
+    /// (133.19)-(133.20): `1/W` from the solved members' mass fractions `ys`
+    /// (in [`GasMixture::names`] order) and `rho = p0/(R T (1/W))`, on every
+    /// cell and boundary face at the current level and on the cells at the
+    /// two old levels, each level from its own `T`, `Y` and `p0` - the levels
+    /// [`Self::update_density`] refreshes, with the members' own old levels
+    /// in place of a constant `W`. Every sum and quotient is formed in `Acc`
+    /// and rounded once. Refused by name: no mixture, a field count other
+    /// than the table's, a field shorter than the mesh.
+    pub fn update_density_mixture(
+        &mut self,
+        gpu: &Gpu,
+        t: &GpuScalarField,
+        ys: &[&GpuScalarField],
+    ) -> Result<()> {
+        let (n, nbf) = (self.m.n_cells, self.m.n_boundary_faces);
+        let r = Acc::from(self.props.r_universal);
+        let (p0, p0_0, p0_00) = (Acc::from(self.p0), Acc::from(self.p0_0), Acc::from(self.p0_00));
+        let GasState { mix, rho, .. } = self;
+        let Some(x) = mix.as_mut() else {
+            return Err(Error::Config(
+                "GasState::update_density_mixture on a gas without a mixture: call \
+                 GasState::use_mixture first (SPEC-LIT 133.10)"
+                    .to_string(),
+            ));
+        };
+        if ys.len() != x.table.n_solved() {
+            return Err(Error::Config(format!(
+                "GasState::update_density_mixture: {} mass-fraction fields for the {} \
+                 solved members {:?} of the mixture (SPEC-LIT 133.10)",
+                ys.len(),
+                x.table.n_solved(),
+                x.table.names
+            )));
+        }
+        for (y, name) in ys.iter().zip(&x.table.names) {
+            if y.f.len() < n || y.f0.len() < n || y.f00.len() < n || y.bf.len() < nbf {
+                return Err(Error::Config(format!(
+                    "GasState::update_density_mixture: the field of \"{name}\" is not on \
+                     this mesh ({n} cells, {nbf} boundary faces) (SPEC-LIT 133.10)"
+                )));
+            }
+        }
+        let MixState { table, k, inv_w, inv_w_s, scratch, formed, .. } = x;
+        if n > 0 {
+            k.inv_w(gpu, table, inv_w, |m| &ys[m].f, n)?;
+            k.density(gpu, &mut rho.f, &t.f, inv_w, p0 / r, n)?;
+            k.round(gpu, inv_w_s, inv_w, n)?;
+            k.inv_w(gpu, table, scratch, |m| &ys[m].f0, n)?;
+            k.density(gpu, &mut rho.f0, &t.f0, scratch, p0_0 / r, n)?;
+            k.inv_w(gpu, table, scratch, |m| &ys[m].f00, n)?;
+            k.density(gpu, &mut rho.f00, &t.f00, scratch, p0_00 / r, n)?;
+        }
+        if nbf > 0 {
+            k.inv_w(gpu, table, scratch, |m| &ys[m].bf, nbf)?;
+            k.density(gpu, &mut rho.bf, &t.bf, scratch, p0 / r, nbf)?;
+        }
+        *formed = true;
+        Ok(())
+    }
+
+    /// (133.21)'s molar sum `Σ_k (1/W_k - 1/W_N) S_k` per cell, mol/(m3 s),
+    /// from each solved member's net mass source `S_k = W_k omega_k - div
+    /// Γ_k` in kg/(m3 s), in [`GasMixture::names`] order; the inert's
+    /// `S_N = -Σ_k S_k` is the closure the coefficient already holds. Held
+    /// until the next call (zero after [`Self::use_mixture`]). A reaction
+    /// source of §19's constant-density equation is `(Y* - Y°)/dt` in 1/s and
+    /// is multiplied by `rho` before it comes here. Refused by name: no
+    /// mixture, a count other than the table's, a buffer shorter than the
+    /// mesh.
+    pub fn set_molar_change(&mut self, gpu: &Gpu, sources: &[&DevBuf<Scalar>]) -> Result<()> {
+        let n = self.m.n_cells;
+        let Some(x) = self.mix.as_mut() else {
+            return Err(Error::Config(
+                "GasState::set_molar_change on a gas without a mixture: call \
+                 GasState::use_mixture first (SPEC-LIT 133.10)"
+                    .to_string(),
+            ));
+        };
+        if sources.len() != x.table.n_solved() {
+            return Err(Error::Config(format!(
+                "GasState::set_molar_change: {} sources for the {} solved members {:?} \
+                 of the mixture (SPEC-LIT 133.10)",
+                sources.len(),
+                x.table.n_solved(),
+                x.table.names
+            )));
+        }
+        for (src, name) in sources.iter().zip(&x.table.names) {
+            if src.len() < n {
+                return Err(Error::Config(format!(
+                    "GasState::set_molar_change: the source of \"{name}\" has {} cells, the \
+                     mesh has {n} (SPEC-LIT 133.10)",
+                    src.len()
+                )));
+            }
+        }
+        if n == 0 {
+            return Ok(());
+        }
+        let MixState { table, k, mol, .. } = x;
+        k.fill(gpu, mol, 0.0, n)?;
+        for (m, src) in sources.iter().enumerate() {
+            k.axpy(gpu, mol, src, table.coefficient(m), n)?;
+        }
+        Ok(())
+    }
+
+    /// (133.22): one explicit-Euler step of the sealed `p0` ODE
+    ///
+    /// ```text
+    /// dp0/dt = p0 ∫ D dV / ∫ (1/γ) dV      sealed;   dp0/dt = 0   open
+    /// ```
+    ///
+    /// from [`Energy::constraint_integrals`], in f64, `p0` rounded once.
+    /// Returns `dp0/dt` in f64; [`Self::dp0dt`] holds it rounded. With one
+    /// constant `W` and `γ = cp/(cp - R/W)` it is (25.2)'s `(γ-1)/V ∫Q`.
+    /// Refused by name: no mixture, a non-finite integral, a `∫ (1/γ) dV`
+    /// that is not positive, and a `p0` that leaves the positive reals.
+    pub fn advance_p0_mixture(&mut self, c: ConstraintIntegrals, dt: Scalar) -> Result<f64> {
+        if self.mix.is_none() {
+            return Err(Error::Config(
+                "GasState::advance_p0_mixture on a gas without a mixture: its p0 \
+                 advances by GasState::advance_p0 (SPEC-LIT 25.2, 133.10)"
+                    .to_string(),
+            ));
+        }
+        if !(dt >= 0.0) || !dt.is_finite() {
+            return Err(Error::Config(format!("GasState::advance_p0_mixture: dt is {dt}")));
+        }
+        if !c.dilatation.is_finite() || !(c.inv_gamma_volume > 0.0) || !c.inv_gamma_volume.is_finite() {
+            return Err(Error::Config(format!(
+                "GasState::advance_p0_mixture: the constraint integrals are {} m3/s and {} \
+                 m3; (133.22) needs finite values and a positive volume integral of 1/gamma \
+                 (SPEC-LIT 133.10)",
+                c.dilatation, c.inv_gamma_volume
+            )));
+        }
+        match self.domain {
+            DomainKind::Open => {
+                self.dp0dt = 0.0;
+                Ok(0.0)
+            }
+            DomainKind::Sealed => {
+                let p0 = Acc::from(self.p0);
+                let rate = p0 * c.dilatation / c.inv_gamma_volume;
+                let next = (p0 + rate * Acc::from(dt)) as Scalar;
+                if !(next > 0.0) || !next.is_finite() {
+                    return Err(Error::Config(format!(
+                        "GasState::advance_p0_mixture: p0 advanced to {next}, which is not a \
+                         usable absolute pressure - dt is probably too large for an explicit \
+                         step (SPEC-LIT 133.10)"
+                    )));
+                }
+                self.p0 = next;
+                self.dp0dt = rate as Scalar;
+                Ok(rate)
+            }
+        }
     }
 
     /// Rotate `p0^{n-2} <- p0^{n-1} <- p0`, in that order - SPEC-LIT S13.3,
@@ -901,7 +1401,8 @@ pub fn refuse_above_low_mach(r: &MachReport, when: &str) -> Result<()> {
              (p~ << p0), and at M = 0.3 the isentropic density ratio \
              rho/rho0 = (1 + 0.2 M^2)^-2.5 is already 0.956, a 4.4 % density \
              change. The run stops (SPEC-LIT §93.6); -permissive continues \
-             with a warning",
+             with a warning. ofgpu-compressible solves this flow with the \
+             full gas law (SPEC-LIT §122-§127)",
             r.max, r.cell_of_max, when, LOW_MACH_LIMIT
         )));
     }
@@ -912,7 +1413,8 @@ pub fn refuse_above_low_mach(r: &MachReport, when: &str) -> Result<()> {
              SPEC-LIT §25's premise M << 1 no longer holds (at M = 0.3 \
              rho/rho0 = 0.956 already, a 4.4 % density change) and the \
              acoustic filtering is unjustified - continuing because \
-             -permissive was given (SPEC-LIT §93.6)",
+             -permissive was given (SPEC-LIT §93.6); ofgpu-compressible \
+             solves this flow with the full gas law (SPEC-LIT §122-§127)",
             r.max, r.cell_of_max, when, LOW_MACH_LIMIT
         ),
     );
@@ -931,9 +1433,10 @@ pub fn refuse_above_low_mach(r: &MachReport, when: &str) -> Result<()> {
 /// any of them - which is the whole point (the module doc's hook that keeps
 /// those models out of this file).
 pub struct EnergySources {
-    /// `[n_cells]` W/m3, explicit - `q'''_c`, `-div(q_r)`, ...
+    /// `[n_local]` W/m3, explicit - `q'''_c`, `-div(q_r)`, ... (SPEC-LIT
+    /// 139.1: `n_cells + n_halo`, launched over the `n` owned cells).
     q: DevBuf<Scalar>,
-    /// `[n_cells]` W/(m3 K), implicit sink, `<= 0` per cell (Patankar S4.2).
+    /// `[n_local]` W/(m3 K), implicit sink, `<= 0` per cell (Patankar S4.2).
     /// The caller guarantees the sign; nothing here can check it without a
     /// device-side reduction on every registration, which would turn a
     /// cheap accumulate into a synchronising one.
@@ -947,35 +1450,137 @@ pub struct EnergySources {
     /// value in `src/solver.rs`, duplicated here because that constant is
     /// private to its module and this is the only other reduction in the
     /// crate that does not already own a [`crate::solver::SolverWorkspace`].
-    partials: DevBuf<Scalar>,
+    partials: DevBuf<Acc>,
+
+    /// **SPEC-LIT 133.9.** The two meters CHR-10b's chemistry terms are
+    /// registered through, `[n_cells]` W/m3 each: the split step's heat
+    /// release (133.16) and the species-enthalpy diffusion (133.17). Each
+    /// registration adds into `q` AND into its meter, so the solver sees one
+    /// `Q` (S25.1's) and [`Energy::assembly_budget`] can say how much of it
+    /// was which. `None` until [`EnergySources::use_meters`] is called; a
+    /// registry without meters runs exactly the launches it ran before.
+    meters: Option<[DevBuf<Scalar>; 2]>,
+
+    /// **SPEC-LIT 137.4.** `[n_cells]` scratch for (137.4)'s
+    /// `Q_c = q_c + sp_c T_c`: `constraint_q` writes it when a sink is
+    /// live, so the target divergence and the power balance read the
+    /// sink-coupled source without overwriting `q` itself.
+    q_div: DevBuf<Scalar>,
+    /// `sp` carries a registered implicit sink (SPEC-LIT 137.4).
+    sink_live: bool,
+    /// `q_div` holds a current `sp*T + q` (SPEC-LIT 137.4).
+    q_div_valid: bool,
 
     n: usize,
+
+    /// SPEC-LIT 139.1: the buffer length the cell fields have -
+    /// `n_cells + n_halo`. Launches count `n` owned cells only.
+    n_local: usize,
 }
 
 const REDUCE_PARTIALS: usize = 1024;
 
+/// Which of [`EnergySources`]'s meters a registration goes to (SPEC-LIT
+/// 133.9), and its index in `meters`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Meter {
+    /// (133.16), the split step's `Q_chem`.
+    HeatRelease = 0,
+    /// (133.17), `-Σ_m Γ_m . grad h_m`.
+    EnthalpyDiffusion = 1,
+}
+
 impl EnergySources {
     pub fn new(gpu: &Gpu, m: &GpuMesh) -> Result<Self> {
         let n = m.n_cells;
-        let one = |k: usize| k.max(1);
+        let n_local = m.n_local().max(1);
         Ok(Self {
-            q: gpu.zeros(one(n))?,
-            sp: gpu.zeros(one(n))?,
+            q: gpu.zeros(n_local)?,
+            sp: gpu.zeros(n_local)?,
             fldk: FieldKernels::new(gpu)?,
             ek: EnergyKernels::new(gpu)?,
             solk: SolverKernels::new(gpu)?,
             dot_out: gpu.zeros(1)?,
             partials: gpu.zeros(REDUCE_PARTIALS)?,
+            meters: None,
+            q_div: gpu.zeros(n_local)?,
+            sink_live: false,
+            q_div_valid: false,
             n,
+            n_local,
         })
     }
 
-    /// Zero both accumulators. Call once at the top of every outer iteration,
-    /// before the sources and radiation register - otherwise a source from
-    /// two iterations ago is still being added in.
+    /// Zero both accumulators, and the meters when there are any. Call once
+    /// at the top of every outer iteration, before the sources and radiation
+    /// register - otherwise a source from two iterations ago is still being
+    /// added in.
     pub fn clear(&mut self, gpu: &Gpu) -> Result<()> {
         field_ops::set_field(gpu, &self.fldk, &mut self.q, 0.0, self.n)?;
-        field_ops::set_field(gpu, &self.fldk, &mut self.sp, 0.0, self.n)
+        field_ops::set_field(gpu, &self.fldk, &mut self.sp, 0.0, self.n)?;
+        if let Some(meters) = &mut self.meters {
+            for m in meters.iter_mut() {
+                field_ops::set_field(gpu, &self.fldk, m, 0.0, self.n)?;
+            }
+        }
+        // A cleared registry has no sink in `sp` and no current `q_div`
+        // (SPEC-LIT 137.4); the next `constraint_q` reads plain `q`.
+        self.sink_live = false;
+        self.q_div_valid = false;
+        Ok(())
+    }
+
+    /// **SPEC-LIT 133.9.** Give the registry its two meters, zeroed: the
+    /// heat release and the species-enthalpy diffusion. Allocates once
+    /// (SPEC-LIT §81); a second call keeps the meters it has.
+    pub fn use_meters(&mut self, gpu: &Gpu) -> Result<()> {
+        if self.meters.is_none() {
+            // SPEC-LIT 139.1: cell buffers, so they carry the halo like the
+            // accumulators they mirror.
+            self.meters = Some([gpu.zeros(self.n_local)?, gpu.zeros(self.n_local)?]);
+        }
+        Ok(())
+    }
+
+    fn register_metered(&mut self, gpu: &Gpu, which: Meter, contribution: &DevBuf<Scalar>) -> Result<()> {
+        let who = match which {
+            Meter::HeatRelease => "register_heat_release",
+            Meter::EnthalpyDiffusion => "register_enthalpy_diffusion",
+        };
+        self.check_len(contribution, who)?;
+        let Some(meters) = &mut self.meters else {
+            return Err(Error::Config(format!(
+                "EnergySources::{who}: the registry has no meters; call use_meters once \
+                 before the loop (SPEC-LIT 133.9)"
+            )));
+        };
+        self.ek.accumulate(gpu, &mut meters[which as usize], contribution, self.n)?;
+        self.ek.accumulate(gpu, &mut self.q, contribution, self.n)
+    }
+
+    /// `q += contribution` and the heat-release meter `+= contribution`,
+    /// W/m3: the split chemistry step's (133.16), SPEC-LIT 133.9. Refused
+    /// by name without [`Self::use_meters`].
+    pub fn register_heat_release(&mut self, gpu: &Gpu, contribution: &DevBuf<Scalar>) -> Result<()> {
+        self.register_metered(gpu, Meter::HeatRelease, contribution)
+    }
+
+    /// `q += contribution` and the enthalpy-diffusion meter `+=
+    /// contribution`, W/m3: (133.17), SPEC-LIT 133.9. Refused by name
+    /// without [`Self::use_meters`].
+    pub fn register_enthalpy_diffusion(&mut self, gpu: &Gpu, contribution: &DevBuf<Scalar>) -> Result<()> {
+        self.register_metered(gpu, Meter::EnthalpyDiffusion, contribution)
+    }
+
+    /// The heat-release meter (SPEC-LIT 133.9), or `None` without meters.
+    pub fn heat_release(&self) -> Option<&DevBuf<Scalar>> {
+        self.meters.as_ref().map(|m| &m[Meter::HeatRelease as usize])
+    }
+
+    /// The species-enthalpy-diffusion meter (SPEC-LIT 133.9), or `None`
+    /// without meters.
+    pub fn enthalpy_diffusion(&self) -> Option<&DevBuf<Scalar>> {
+        self.meters.as_ref().map(|m| &m[Meter::EnthalpyDiffusion as usize])
     }
 
     fn check_len(&self, contribution: &DevBuf<Scalar>, who: &str) -> Result<()> {
@@ -1005,7 +1610,9 @@ impl EnergySources {
     /// against either.
     pub fn register_implicit_sink(&mut self, gpu: &Gpu, contribution: &DevBuf<Scalar>) -> Result<()> {
         self.check_len(contribution, "register_implicit_sink")?;
-        self.ek.accumulate(gpu, &mut self.sp, contribution, self.n)
+        self.ek.accumulate(gpu, &mut self.sp, contribution, self.n)?;
+        self.sink_live = true;
+        Ok(())
     }
 
     pub fn q(&self) -> &DevBuf<Scalar> {
@@ -1016,6 +1623,25 @@ impl EnergySources {
         &self.sp
     }
 
+    /// **SPEC-LIT 137.4.** The source term the energy constraint reads:
+    /// `q` alone while no implicit sink is registered - no launch, the
+    /// same buffer [`Self::q`] hands back - and (137.4)'s
+    /// `Q_c = q_c + sp_c T_c` in scratch once one is. A sink enters the
+    /// matrix through the `sp*T` diagonal and the right-hand side through
+    /// `q`, so the divergence that sizes the pressure equation and the
+    /// power balance must see both halves at the T they are coupled to,
+    /// not `q` alone. `clear` drops both halves.
+    pub fn constraint_q(&mut self, gpu: &Gpu, t: &DevBuf<Scalar>) -> Result<&DevBuf<Scalar>> {
+        if !self.sink_live {
+            return Ok(&self.q);
+        }
+        field_ops::copy_field(gpu, &self.fldk, &mut self.q_div, &self.sp, self.n)?;
+        field_ops::multiply_field(gpu, &self.fldk, &mut self.q_div, t, self.n)?;
+        field_ops::add_field(gpu, &self.fldk, &mut self.q_div, &self.q, self.n)?;
+        self.q_div_valid = true;
+        Ok(&self.q_div)
+    }
+
     /// `integral(Q) dV` over the whole domain, in watts - SPEC-LIT S25.2's
     /// `integral(Q) dV` and exactly what [`GasState::advance_p0`] wants for
     /// `total_q`. One reduction, one 8-byte transfer.
@@ -1023,7 +1649,10 @@ impl EnergySources {
         if self.n == 0 {
             return Ok(0.0);
         }
-        solver::device_dot(gpu, &self.solk, &mut self.dot_out, &self.q, &m.v, &mut self.partials, self.n)?;
+        // The same source the constraint reads (SPEC-LIT 137.4): with a
+        // sink live, the last `constraint_q`'s `q_div`, else plain `q`.
+        let q = if self.q_div_valid { &self.q_div } else { &self.q };
+        solver::device_dot(gpu, &self.solk, &mut self.dot_out, q, &m.v, &mut self.partials, self.n)?;
         Ok(gpu.download(&self.dot_out)?[0])
     }
 }
@@ -1153,6 +1782,17 @@ struct ConductivityCurve {
     k: GpuScalarField,
     /// `k` interpolated linearly onto every face.
     k_face: GpuSurfaceScalarField,
+}
+
+/// SPEC-LIT 133.8 (CHR-10a): a per-cell `cp`, J/(kg K), in place of
+/// [`GasProperties::cp`] in the ddt row (133.13) and the convection row
+/// (133.14). Set by [`Energy::set_cp_field`]; `None` is the constant path.
+struct CpField {
+    /// `cp` per cell (`f`) and per boundary face (`bf`).
+    cp: GpuScalarField,
+    /// (133.14)'s `cp_f`: `cp` interpolated linearly onto every face, once,
+    /// when the field is set.
+    cp_face: GpuSurfaceScalarField,
 }
 
 /// What [`Energy`] needs in order to run over SPEC-LIT §47.4's concatenated
@@ -1366,6 +2006,66 @@ pub struct EnergyBudget {
     /// [`Self::bounded_correction_prescribed_w`] is what the pinned
     /// (singular) pressure equation's compatibility fix-up absorbed.
     pub target_divergence_w: f64,
+
+    /// **SPEC-LIT 133.9**, the heat-release meter: `-Sum_c Q_chem,c V_c`,
+    /// the part of [`Self::sources_w`] the split chemistry step registered
+    /// through [`EnergySources::register_heat_release`] (133.16). Zero on a
+    /// registry without meters.
+    pub heat_release_w: f64,
+    /// **SPEC-LIT 133.9**, the enthalpy-diffusion meter: `-Sum_c Q_hd,c
+    /// V_c`, the part of [`Self::sources_w`] registered through
+    /// [`EnergySources::register_enthalpy_diffusion`] (133.17). Zero on a
+    /// registry without meters.
+    pub enthalpy_diffusion_w: f64,
+}
+
+/// SPEC-LIT 120.8's device half: the thermal faces' parameters, uploaded ONCE
+/// by [`Energy::set_thermal_walls`] - f64 in both builds, so no per-iteration
+/// cast can drift - and rewritten per lump by
+/// [`Energy::advance_lumped_masses`] through the two host mirrors.
+struct DeviceThermalWalls {
+    /// The faces, as flattened boundary-face indices, in the order
+    /// [`crate::field_setup::thermal_walls`] produced.
+    face: DevBuf<Label>,
+    /// The same list on the host - `(120.8g)`'s area mean indexes it.
+    face_host_list: Vec<Label>,
+    h: DevBuf<f64>,
+    t_inf: DevBuf<f64>,
+    eps: DevBuf<f64>,
+    r_layers: DevBuf<f64>,
+    q_in: DevBuf<f64>,
+    advective: DevBuf<Label>,
+    n: usize,
+    /// Host mirrors of `h` and `t_inf`, face order - what
+    /// [`Energy::advance_lumped_masses`] rewrites and re-uploads.
+    h_host: Vec<f64>,
+    t_inf_host: Vec<f64>,
+}
+
+impl DeviceThermalWalls {
+    /// A face position's flattened boundary-face index, host side - the
+    /// lumps' `(120.8g)` area mean reads it.
+    fn face_host(&self, i: usize) -> usize {
+        self.face_host_list[i] as usize
+    }
+}
+
+/// SPEC-LIT 120.8's host half of one `lumpedMassTemperature` patch: the two
+/// f64 levels (120.8g) rotates, and whether the first step has run (the seed
+/// holds `t_n = t_nm1 = t0` until then).
+struct ThermalLump {
+    mass_cp: f64,
+    /// The patch area, summed in f64 - (120.8g)'s `A`.
+    area: f64,
+    t0: f64,
+    t_n: f64,
+    t_nm1: f64,
+    started: bool,
+    /// POSITIONS in [`DeviceThermalWalls`]' face list, face order - mapped
+    /// once by [`Energy::set_thermal_walls`] from the lump's boundary faces.
+    faces: Vec<usize>,
+    /// Each face's area, in the same order.
+    areas: Vec<f64>,
 }
 
 pub struct Energy<'m> {
@@ -1438,6 +2138,18 @@ pub struct Energy<'m> {
     ffq_faces: Option<DevBuf<Label>>,
     ffq_n: usize,
 
+    /// SPEC-LIT 120.8's thermal faces - the device buffers
+    /// [`Self::set_thermal_walls`] uploads. `None` until then, the same
+    /// "nothing to do" convention as [`Self::ffq_faces`].
+    thermal: Option<DeviceThermalWalls>,
+    /// SPEC-LIT 120.8's `lumpedMassTemperature` patches, host side - the
+    /// two f64 levels (120.8g) rotates, and whether the first step has run.
+    thermal_lumps: Vec<ThermalLump>,
+    /// SPEC-LIT 120.8: whether [`Self::advance_lumped_masses`] has run for
+    /// the step about to be solved - [`Self::correct`] refuses a lump whose
+    /// coefficients were never set.
+    lumps_ready: bool,
+
     /// SPEC-LIT §59's retarget onto §47.4's concatenated thermal mesh.
     ///
     /// `None` until [`Self::attach_conjugate`] is called, and that is the
@@ -1452,6 +2164,39 @@ pub struct Energy<'m> {
     /// SPEC-LIT §100.10: the fluid's conductivity curve. `None` is the
     /// constant `props.k` and every bit that path produced before.
     k_curve: Option<ConductivityCurve>,
+
+    /// SPEC-LIT 133.8: the per-cell `cp` of the ddt and convection rows.
+    /// `None` is the constant `props.cp` and every bit that path produced
+    /// before.
+    cp_field: Option<CpField>,
+
+    /// SPEC-LIT 133.10: the (133.21) launch and its (133.22) partial sums,
+    /// built the first time [`Self::update_target_divergence`] meets a gas
+    /// with a mixture. `None` until then.
+    mix: Option<MixConstraint>,
+
+    /// SPEC-LIT 139.5 (PAR-11): `T`'s solve through a part's SPMD Krylov.
+    /// `None` keeps [`crate::solver::solve`], and every launch this module
+    /// ever made, bit for bit.
+    route: Option<Box<dyn crate::momentum::ComponentRoute + 'm>>,
+    /// SPEC-LIT 139.5: `T`'s halo + boundary evaluation on a part, over
+    /// [`crate::distflow::RankCtx`]. `None` keeps the rank-local
+    /// `correct_boundary_conditions` this module always ran.
+    exchange: Option<Box<dyn crate::distflow::FlowExchange + 'm>>,
+}
+
+/// [`Energy`]'s half of SPEC-LIT 133.10: `energyMixtureConstraint`, the
+/// constant `cp` it reads without a field, and the per-block sums of
+/// `D V` and `V/γ` the last launch left.
+struct MixConstraint {
+    constraint: CudaFunction,
+    /// `[1]`: `props.cp`, read at stride 0 when no `cp` field is set.
+    cp_one: DevBuf<Scalar>,
+    part_d: DevBuf<Acc>,
+    part_g: DevBuf<Acc>,
+    /// How many partials the last launch wrote; zero when the last target
+    /// divergence was not a mixture's.
+    nparts: usize,
 }
 
 impl<'m> Energy<'m> {
@@ -1459,10 +2204,12 @@ impl<'m> Energy<'m> {
         ctrl.validate()?;
         props.validate()?;
 
-        let n = m.n_cells;
         let nif = m.n_internal_faces;
         let nbf = m.n_boundary_faces;
         let one = |k: usize| k.max(1);
+        // SPEC-LIT 139.1: the cell buffers carry the halo (`n_local`); the
+        // face buffers stay face-sized.
+        let n_local = m.n_local();
 
         let scheme = reconcile_ddt(ctrl.ddt.reconciled(ctrl.steady))?;
 
@@ -1486,10 +2233,10 @@ impl<'m> Energy<'m> {
             a: GpuLduMatrix::new(gpu, m)?,
             ws: SolverWorkspace::for_mesh(gpu, m)?,
 
-            rho_cp: gpu.zeros(one(n))?,
-            rho_cp0: gpu.zeros(one(n))?,
-            rho_cp00: gpu.zeros(one(n))?,
-            t_star: gpu.zeros(one(n))?,
+            rho_cp: gpu.zeros(one(n_local))?,
+            rho_cp0: gpu.zeros(one(n_local))?,
+            rho_cp00: gpu.zeros(one(n_local))?,
+            t_star: gpu.zeros(one(n_local))?,
 
             rho_face: GpuSurfaceScalarField::zeros(gpu, m, "rhoTf")?,
             nut_face: GpuSurfaceScalarField::zeros(gpu, m, "nutTf")?,
@@ -1498,21 +2245,28 @@ impl<'m> Energy<'m> {
 
             phi_conv: GpuSurfaceScalarField::zeros(gpu, m, "phiEnergy")?,
             cond_flux: GpuSurfaceScalarField::zeros(gpu, m, "qCondEnergy")?,
-            cond_div: gpu.zeros(one(n))?,
+            cond_div: gpu.zeros(one(n_local))?,
 
             w: gpu.zeros(one(nif))?,
             bw: gpu.zeros(one(nbf))?,
-            grad_t: gpu.zeros(one(n))?,
+            grad_t: gpu.zeros(one(n_local))?,
 
-            dp0dt_su: gpu.zeros(one(n))?,
-            target_div: gpu.zeros(one(n))?,
+            dp0dt_su: gpu.zeros(one(n_local))?,
+            target_div: gpu.zeros(one(n_local))?,
 
             wall: WallFunctionCoeffs::default(),
             twd: None,
             ffq_faces: None,
             ffq_n: 0,
+            thermal: None,
+            thermal_lumps: Vec::new(),
+            lumps_ready: false,
             cht: None,
             k_curve: None,
+            cp_field: None,
+            mix: None,
+            route: None,
+            exchange: None,
         })
     }
 
@@ -1576,6 +2330,88 @@ impl<'m> Energy<'m> {
     /// `energyFixedFluxTemperature` follows.
     pub fn k_eff_wall(&self) -> &DevBuf<Scalar> {
         &self.k_eff_face.bf
+    }
+
+    /// `phi_conv = cp rho_f phi` - S26's mass flux this equation convects
+    /// with, which (120.8h)'s Danckwerts inlet reads at its face (SPEC-LIT
+    /// 120.8). Rebuilt by [`Self::update_conv_flux`] at the top of every
+    /// [`Self::correct`].
+    pub fn conv_flux(&self) -> &GpuSurfaceScalarField {
+        &self.phi_conv
+    }
+
+    /// SPEC-LIT 133.8 (CHR-10a): from the next [`Self::correct`] on, the ddt
+    /// row (133.13) and the convection row (133.14) weigh with this `cp`,
+    /// J/(kg K): `cells` holds one value per cell and `boundary` one per
+    /// boundary face (the face value (133.14) uses there). Both are copied,
+    /// so the caller may overwrite its buffers; the face `cp_f` is
+    /// interpolated here, once. A value that is not finite and positive, or a
+    /// buffer shorter than the mesh, is refused by name and leaves the field
+    /// as it was.
+    ///
+    /// What still reads [`GasProperties::cp`], as SPEC-LIT 133.8 states:
+    /// `k_eff`'s turbulent part (S26, both `Pr_t` models), S25.1's target
+    /// divergence and the S29.3 thermal wall function.
+    pub fn set_cp_field(&mut self, gpu: &Gpu, cells: &DevBuf<Scalar>, boundary: &DevBuf<Scalar>) -> Result<()> {
+        let m = self.m;
+        let (n, nbf) = (m.n_cells, m.n_boundary_faces);
+        for (what, buf, want) in [("cells", cells, n), ("boundary faces", boundary, nbf)] {
+            if buf.len() < want {
+                return Err(Error::Config(format!(
+                    "Energy::set_cp_field: the cp field holds {} {what}, the mesh has {want} \
+                     (SPEC-LIT 133.8)",
+                    buf.len()
+                )));
+            }
+        }
+        let host_c = gpu.download(cells)?;
+        let host_b = gpu.download(boundary)?;
+        for (what, vals) in [("cell", &host_c[..n]), ("boundary face", &host_b[..nbf])] {
+            if let Some(i) = vals.iter().position(|&c| !(c.is_finite() && c > 0.0)) {
+                return Err(Error::Config(format!(
+                    "Energy::set_cp_field: the cp field is {} at {what} {i}; cp must be finite \
+                     and positive, J/(kg K) (SPEC-LIT 133.8)",
+                    vals[i]
+                )));
+            }
+        }
+        let mut f = CpField {
+            cp: GpuScalarField::zeros(gpu, m, "cpField")?,
+            cp_face: GpuSurfaceScalarField::zeros(gpu, m, "cpFieldf")?,
+        };
+        field_ops::copy_field(gpu, &self.fldk, &mut f.cp.f, cells, n)?;
+        field_ops::copy_field(gpu, &self.fldk, &mut f.cp.bf, boundary, nbf)?;
+        fv::interpolate_linear(gpu, &self.fvk, &mut f.cp_face, &f.cp, m)?;
+        self.cp_field = Some(f);
+        Ok(())
+    }
+
+    /// SPEC-LIT 133.8: back to the constant [`GasProperties::cp`].
+    pub fn clear_cp_field(&mut self) {
+        self.cp_field = None;
+    }
+
+    /// SPEC-LIT 133.8: the per-cell `cp` [`Self::set_cp_field`] last set
+    /// (cells in `f`, boundary faces in `bf`), or `None` on the constant
+    /// path.
+    pub fn cp_field(&self) -> Option<&GpuScalarField> {
+        self.cp_field.as_ref().map(|f| &f.cp)
+    }
+
+    /// **SPEC-LIT 133.9**: the weight `w_c` of (133.16), `[n_cells]` J/(m3
+    /// K) - the ddt row's current-level `rho cp`, refreshed from `gas` and
+    /// the `cp` this equation holds exactly as [`Self::correct`] refreshes
+    /// it: `rho_c cp_c` (or `rho_c props.cp`), and (133.13)'s `rho* cp`
+    /// under backward. A heat release `w (T* - T°)/dt` on this weight makes
+    /// the Euler row of a cell with no flux and `rho^n = rho^(n-1)` land on
+    /// `T*`, which is (132.10)'s `Q_chem` in the equation's own currency.
+    ///
+    /// Call after the step is opened (time levels advanced) and after any
+    /// [`Self::set_cp_field`] of this step, before [`Self::correct`]; the
+    /// refresh `correct` runs then rewrites the same values.
+    pub fn heat_release_weight(&mut self, gpu: &Gpu, gas: &GasState) -> Result<&DevBuf<Scalar>> {
+        self.refresh_rho_cp(gpu, gas)?;
+        Ok(&self.rho_cp)
     }
 
     /// SPEC-LIT §100.10: the molecular conductivity becomes the curve `p`,
@@ -1755,6 +2591,275 @@ impl<'m> Energy<'m> {
         let padded = if list.is_empty() { vec![0 as Label] } else { list };
         self.ffq_faces = Some(gpu.upload(&padded)?);
         Ok(())
+    }
+
+    /// Wire SPEC-LIT 120.8's thermal family onto the faces and lumps
+    /// [`crate::field_setup::thermal_walls`] reads from `T`'s OWN patch types
+    /// - the same S15.5 discipline [`Self::set_fixed_flux_walls`] follows.
+    /// The per-face `h`/`Ta`/`eps`/`R_l`/`q_in` go up as f64 buffers in BOTH
+    /// builds, widened once, so the kernel never casts per iteration (SPEC-LIT
+    /// 118.2).
+    ///
+    /// **Call this after [`Self::attach_conjugate`] and before the first
+    /// [`Self::correct`]** - the interface check needs the conjugate mesh
+    /// attached, exactly as the two setters above need it (SPEC-LIT 47.6: a
+    /// face carries ONE condition).
+    ///
+    /// A `lumpedMassTemperature` lump is refused on a steady run (no `a_n`),
+    /// and a lumped step is refused at [`Self::correct`] until
+    /// [`Self::advance_lumped_masses`] has run for it. Empty walls store
+    /// nothing and every later call is a no-op, like the two setters above.
+    pub fn set_thermal_walls(&mut self, gpu: &Gpu, walls: &crate::cht::ambient::ThermalWalls) -> Result<()> {
+        let nbf = self.m.n_boundary_faces;
+        for f in &walls.faces {
+            if f.bf >= nbf {
+                return Err(Error::Config(format!(
+                    "Energy::set_thermal_walls: face {} is not a boundary face of \
+                     this mesh ({} faces) (SPEC-LIT 120.8)",
+                    f.bf, nbf
+                )));
+            }
+        }
+        let mut flags = vec![false; nbf];
+        for f in &walls.faces {
+            flags[f.bf] = true;
+        }
+        self.check_not_interface(&flags, "SPEC-LIT 120.8's thermal walls")?;
+        if !walls.lumps.is_empty() && self.ddt.scheme == DdtScheme::SteadyState {
+            return Err(Error::Config(format!(
+                "Energy::set_thermal_walls: `lumpedMassTemperature` needs the \
+                 energy equation's own ddt row `a_n T^{{n+1}} + a_0 T^n + a_00 \
+                 T^{{n-1}}` and this Energy is steady, so `a_n` is zero \
+                 (SPEC-LIT 120.8)"
+            )));
+        }
+        for l in &walls.lumps {
+            let area: f64 = l.area.iter().sum();
+            if l.faces.len() != l.area.len() || !(area > 0.0) || !area.is_finite() {
+                return Err(Error::Config(format!(
+                    "Energy::set_thermal_walls: `lumpedMassTemperature` on {} has {} \
+                     faces and {} areas summing to {area} - the areas have to match \
+                     the faces and sum to something finite and positive (SPEC-LIT \
+                     120.8)",
+                    l.patch,
+                    l.faces.len(),
+                    l.area.len()
+                )));
+            }
+        }
+        // A lump names its faces by boundary-face index; the per-step film
+        // is written at that face's POSITION in the face list, mapped here
+        // once. A lump face with no thermal face has nowhere to go.
+        let mut position: Vec<Option<usize>> = vec![None; nbf];
+        for (i, f) in walls.faces.iter().enumerate() {
+            position[f.bf].get_or_insert(i);
+        }
+        let mut lump_positions: Vec<Vec<usize>> = Vec::with_capacity(walls.lumps.len());
+        for l in &walls.lumps {
+            let mut at = Vec::with_capacity(l.faces.len());
+            for &bf in &l.faces {
+                match position.get(bf).copied().flatten() {
+                    Some(i) => at.push(i),
+                    None => {
+                        return Err(Error::Config(format!(
+                            "Energy::set_thermal_walls: `lumpedMassTemperature` on {} \
+                             names boundary face {bf}, which is not a thermal face of \
+                             this set - each of a lump's faces must also be one of the \
+                             set's faces (SPEC-LIT 120.8)",
+                            l.patch
+                        )));
+                    }
+                }
+            }
+            lump_positions.push(at);
+        }
+        if walls.faces.is_empty() && walls.lumps.is_empty() {
+            return Ok(());
+        }
+
+        let face: Vec<Label> = walls.faces.iter().map(|f| f.bf as Label).collect();
+        let h: Vec<f64> = walls.faces.iter().map(|f| f.h).collect();
+        let t_inf: Vec<f64> = walls.faces.iter().map(|f| f.t_inf).collect();
+        let eps: Vec<f64> = walls.faces.iter().map(|f| f.emissivity).collect();
+        let r_layers: Vec<f64> = walls.faces.iter().map(|f| f.r_layers).collect();
+        let q_in: Vec<f64> = walls.faces.iter().map(|f| f.q_in).collect();
+        let advective: Vec<Label> =
+            walls.faces.iter().map(|f| Label::from(f.advective)).collect();
+        let n = face.len();
+        self.thermal = Some(DeviceThermalWalls {
+            face: gpu.upload(&face)?,
+            face_host_list: face,
+            h: gpu.upload(&h)?,
+            t_inf: gpu.upload(&t_inf)?,
+            eps: gpu.upload(&eps)?,
+            r_layers: gpu.upload(&r_layers)?,
+            q_in: gpu.upload(&q_in)?,
+            advective: gpu.upload(&advective)?,
+            n,
+            h_host: h,
+            t_inf_host: t_inf,
+        });
+        self.thermal_lumps = walls
+            .lumps
+            .iter()
+            .zip(lump_positions)
+            .map(|(l, faces)| ThermalLump {
+                mass_cp: l.mass_cp,
+                area: l.area.iter().sum(),
+                t0: l.t0,
+                t_n: 0.0,
+                t_nm1: 0.0,
+                started: false,
+                faces,
+                areas: l.area.clone(),
+            })
+            .collect();
+        self.lumps_ready = false;
+        Ok(())
+    }
+
+    /// SPEC-LIT 120.8: rewrite every thermal face's `(fr, refValue, refGrad)`
+    /// by [`crate::cht::ambient::ThermalFace::triple`] from the CURRENT conductance -
+    /// a no-op without faces. Reads `self.k_eff_face.bf`, so it MUST run
+    /// after [`Self::update_k_eff`]; and it reads `self.phi_conv.bf`, so the
+    /// [`Self::correct`] launch runs right after [`Self::update_conv_flux`],
+    /// which is what makes (120.8h) read the flux it is assembled with. Both
+    /// launches sit inside the captured region of
+    /// `the_energy_correction_replays_bitwise`.
+    pub fn refresh_thermal_walls(&mut self, gpu: &Gpu) -> Result<()> {
+        let Some(tw) = &self.thermal else {
+            return Ok(());
+        };
+        if tw.n == 0 {
+            return Ok(());
+        }
+        let sigma = crate::radiation::SIGMA_SB as f64;
+        let Self { ek, t, m, k_eff_face, phi_conv, thermal, .. } = self;
+        let tw = thermal.as_ref().expect("checked above");
+        ek.thermal_wall(
+            gpu,
+            &mut t.fr,
+            &mut t.ref_value,
+            &mut t.ref_grad,
+            &t.bf,
+            &t.f,
+            &m.b_face_cells,
+            &k_eff_face.bf,
+            &m.b_delta_coeffs,
+            &phi_conv.bf,
+            &m.b_mag_sf,
+            &tw.face,
+            &tw.h,
+            &tw.t_inf,
+            &tw.eps,
+            &tw.r_layers,
+            &tw.q_in,
+            &tw.advective,
+            sigma,
+            tw.n,
+        )
+    }
+
+    /// SPEC-LIT 120.8's ONE host round trip per time step: record each
+    /// lump's `T_m` by (120.8g) - the CURRENT area mean of `T_b` - rotate
+    /// its two f64 levels, and upload the step's area-shared `H` and
+    /// `T_ref` onto the lump's faces' mirrors. Call it once per transient
+    /// step, after the step is opened and before its first [`Self::correct`]
+    /// - never once per outer corrector. A no-op without lumps.
+    pub fn advance_lumped_masses(&mut self, gpu: &Gpu) -> Result<()> {
+        if self.thermal_lumps.is_empty() {
+            return Ok(());
+        }
+        // The energy equation's OWN ddt row, exactly as `add_ddt` assembles
+        // it - Euler, or `backward` from its Euler first step (SPEC-LIT
+        // 105.16-105.17).
+        let c = self.ddt.state.coeffs(self.ddt.scheme)?;
+        let (a_n, a_0, a_00) = (c.a_n as f64, c.a_0 as f64, c.a_00 as f64);
+        if a_n == 0.0 {
+            return Err(Error::Config(format!(
+                "Energy::advance_lumped_masses: the ddt row's `a_n` is zero, so \
+                 (120.8g)'s `H = m cp a_n / A` has nothing to divide by - a \
+                 `lumpedMassTemperature` patch needs a transient step (SPEC-LIT \
+                 120.8)"
+            )));
+        }
+        // (120.8g) reads the faces the PREVIOUS solve left; one download for
+        // every lump, and none at all before the first step has solved.
+        let bf_values: Vec<Scalar> = if self.thermal_lumps.iter().any(|l| l.started) {
+            gpu.download(&self.t.bf)?
+        } else {
+            Vec::new()
+        };
+        let Some(tw) = &mut self.thermal else {
+            return Err(Error::Config(
+                "Energy::advance_lumped_masses: lumps are wired but no thermal \
+                 faces were set (SPEC-LIT 120.8)"
+                    .to_string(),
+            ));
+        };
+        for lump in &mut self.thermal_lumps {
+            if lump.started {
+                let (mut sa, mut sb) = (0.0f64, 0.0f64);
+                for (k, &fi) in lump.faces.iter().enumerate() {
+                    let bf = tw.face_host(fi);
+                    sa += lump.areas[k];
+                    sb += lump.areas[k] * (bf_values[bf] as f64);
+                }
+                let t_new = sb / sa;
+                lump.t_nm1 = lump.t_n;
+                lump.t_n = t_new;
+            } else {
+                lump.started = true;
+                lump.t_n = lump.t0;
+                lump.t_nm1 = lump.t0;
+            }
+            let (h, t_ref) = crate::cht::ambient::lump_coefficients(
+                lump.mass_cp,
+                lump.area,
+                a_n,
+                a_0,
+                a_00,
+                lump.t_n,
+                lump.t_nm1,
+            );
+            for &fi in &lump.faces {
+                tw.h_host[fi] = h;
+                tw.t_inf_host[fi] = t_ref;
+            }
+        }
+        gpu.write(&mut tw.h, &tw.h_host)?;
+        gpu.write(&mut tw.t_inf, &tw.t_inf_host)?;
+        self.lumps_ready = true;
+        Ok(())
+    }
+
+    /// Each lump's CURRENT area mean of `T_b` - (120.8g)'s right-hand side,
+    /// as the faces stand this instant. Between corrections.
+    pub fn lumped_mass_temperatures(&self, gpu: &Gpu) -> Result<Vec<f64>> {
+        if self.thermal_lumps.is_empty() {
+            return Ok(Vec::new());
+        }
+        let Some(tw) = &self.thermal else {
+            return Err(Error::Config(
+                "Energy::lumped_mass_temperatures: lumps are wired but no thermal \
+                 faces were set (SPEC-LIT 120.8)"
+                    .to_string(),
+            ));
+        };
+        let bf_values = gpu.download(&self.t.bf)?;
+        Ok(self
+            .thermal_lumps
+            .iter()
+            .map(|l| {
+                let (mut sa, mut sb) = (0.0f64, 0.0f64);
+                for (k, &fi) in l.faces.iter().enumerate() {
+                    let bf = tw.face_host(fi);
+                    sa += l.areas[k];
+                    sb += l.areas[k] * (bf_values[bf] as f64);
+                }
+                sb / sa
+            })
+            .collect())
     }
 
     /// Advance the ddt scheme's own time-step bookkeeping - call ONCE per
@@ -2066,7 +3171,14 @@ impl<'m> Energy<'m> {
     /// Evaluate the boundary faces and seed both old time levels from the
     /// initial field - call once, before the first [`GasState::update_density`].
     pub fn initialise(&mut self, gpu: &Gpu) -> Result<()> {
-        field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.t, self.m)?;
+        // SPEC-LIT 139.5: the part's halo + boundary evaluation when an
+        // exchange is set, the rank-local call otherwise.
+        match self.exchange.as_deref_mut() {
+            Some(x) => x.field(gpu, &self.fldk, &mut self.t, self.m)?,
+            None => {
+                field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.t, self.m)?
+            }
+        }
         field_ops::seed_old_time(gpu, &self.fldk, &mut self.t)
     }
 
@@ -2091,8 +3203,40 @@ impl<'m> Energy<'m> {
             field_ops::add_field(gpu, &self.fldk, &mut self.t_star, &self.t.f0, n)?;
             field_ops::add_field(gpu, &self.fldk, &mut self.t_star, &self.t.f0, n)?;
             for level in [&mut self.rho_cp, &mut self.rho_cp0, &mut self.rho_cp00] {
-                field_ops::set_field(gpu, &self.fldk, level, cp * gas.p0() / rs, n)?;
+                // (133.20) at T*: `(p0/R) cp / ((1/W) T*)`, the current level's
+                // 1/W, as (133.13) takes the cp field as last set.
+                if let Some(iw) = gas.mixture_inv_w_scalar() {
+                    field_ops::set_field(gpu, &self.fldk, level, gas.p0() / gas.props().r_universal, n)?;
+                    field_ops::divide_field(gpu, &self.fldk, level, iw, n)?;
+                    match &self.cp_field {
+                        None => field_ops::scale_field(gpu, &self.fldk, level, cp, n)?,
+                        Some(f) => field_ops::multiply_field(gpu, &self.fldk, level, &f.cp.f, n)?,
+                    }
+                    field_ops::divide_field(gpu, &self.fldk, level, &self.t_star, n)?;
+                    continue;
+                }
+                match &self.cp_field {
+                    None => field_ops::set_field(gpu, &self.fldk, level, cp * gas.p0() / rs, n)?,
+                    // (133.13) under backward: `(p0/R_s) cp_c / T*_c`.
+                    Some(f) => {
+                        field_ops::set_field(gpu, &self.fldk, level, gas.p0() / rs, n)?;
+                        field_ops::multiply_field(gpu, &self.fldk, level, &f.cp.f, n)?;
+                    }
+                }
                 field_ops::divide_field(gpu, &self.fldk, level, &self.t_star, n)?;
+            }
+            return self.blend_rho_cp(gpu);
+        }
+
+        // (133.13): `rho_c cp_c` on all three levels, the field as last set.
+        if let Some(f) = &self.cp_field {
+            for (level, rho) in [
+                (&mut self.rho_cp, &gas.rho().f),
+                (&mut self.rho_cp0, &gas.rho().f0),
+                (&mut self.rho_cp00, &gas.rho().f00),
+            ] {
+                field_ops::copy_field(gpu, &self.fldk, level, rho, n)?;
+                field_ops::multiply_field(gpu, &self.fldk, level, &f.cp.f, n)?;
             }
             return self.blend_rho_cp(gpu);
         }
@@ -2266,6 +3410,19 @@ impl<'m> Energy<'m> {
     fn update_conv_flux(&mut self, gpu: &Gpu, phi: &GpuSurfaceScalarField) -> Result<()> {
         let m = self.m;
         let cp = self.props.cp;
+
+        // (133.14): `phi_m,f = cp_f rho_f phi_f`, `cp_f` interpolated once
+        // when the field was set.
+        if let Some(f) = &self.cp_field {
+            let (nif, nbf) = (m.n_internal_faces, m.n_boundary_faces);
+            field_ops::copy_field(gpu, &self.fldk, &mut self.phi_conv.f, &phi.f, nif)?;
+            field_ops::multiply_field(gpu, &self.fldk, &mut self.phi_conv.f, &self.rho_face.f, nif)?;
+            field_ops::multiply_field(gpu, &self.fldk, &mut self.phi_conv.f, &f.cp_face.f, nif)?;
+            field_ops::copy_field(gpu, &self.fldk, &mut self.phi_conv.bf, &phi.bf, nbf)?;
+            field_ops::multiply_field(gpu, &self.fldk, &mut self.phi_conv.bf, &self.rho_face.bf, nbf)?;
+            field_ops::multiply_field(gpu, &self.fldk, &mut self.phi_conv.bf, &f.cp_face.bf, nbf)?;
+            return self.mask_conv_flux(gpu);
+        }
 
         field_ops::copy_field(gpu, &self.fldk, &mut self.phi_conv.f, &phi.f, m.n_internal_faces)?;
         field_ops::multiply_field(gpu, &self.fldk, &mut self.phi_conv.f, &self.rho_face.f, m.n_internal_faces)?;
@@ -2480,7 +3637,9 @@ impl<'m> Energy<'m> {
     fn assembly_budget_impl(&mut self, gpu: &Gpu, gas: &GasState) -> Result<EnergyBudget> {
         let m = self.m;
         let n = m.n_cells;
-        let mut apsi: DevBuf<Scalar> = gpu.zeros(n)?;
+        // SPEC-LIT 139.1: `apsi` mirrors `t.f`, so it carries the halo too;
+        // its halo tail stays zero and the sums read owned cells only.
+        let mut apsi: DevBuf<Scalar> = gpu.zeros(m.n_local())?;
 
         const STAGES: [AssemblyStage; 7] = [
             AssemblyStage::Ddt,
@@ -2539,10 +3698,17 @@ impl<'m> Energy<'m> {
         let mut phi_vol = GpuSurfaceScalarField::zeros(gpu, m, "phiVolBudget")?;
         field_ops::copy_field(gpu, &self.fldk, &mut phi_vol.f, &self.phi_conv.f, m.n_internal_faces)?;
         field_ops::divide_field(gpu, &self.fldk, &mut phi_vol.f, &self.rho_face.f, m.n_internal_faces)?;
-        field_ops::scale_field(gpu, &self.fldk, &mut phi_vol.f, 1.0 / self.props.cp, m.n_internal_faces)?;
+        match &self.cp_field {
+            None => field_ops::scale_field(gpu, &self.fldk, &mut phi_vol.f, 1.0 / self.props.cp, m.n_internal_faces)?,
+            // SPEC-LIT 133.8: (133.14)'s own `cp_f`.
+            Some(f) => field_ops::divide_field(gpu, &self.fldk, &mut phi_vol.f, &f.cp_face.f, m.n_internal_faces)?,
+        }
         field_ops::copy_field(gpu, &self.fldk, &mut phi_vol.bf, &self.phi_conv.bf, m.n_boundary_faces)?;
         field_ops::divide_field(gpu, &self.fldk, &mut phi_vol.bf, &self.rho_face.bf, m.n_boundary_faces)?;
-        field_ops::scale_field(gpu, &self.fldk, &mut phi_vol.bf, 1.0 / self.props.cp, m.n_boundary_faces)?;
+        match &self.cp_field {
+            None => field_ops::scale_field(gpu, &self.fldk, &mut phi_vol.bf, 1.0 / self.props.cp, m.n_boundary_faces)?,
+            Some(f) => field_ops::divide_field(gpu, &self.fldk, &mut phi_vol.bf, &f.cp_face.bf, m.n_boundary_faces)?,
+        }
 
         self.a.zero(gpu)?;
         fv::fvm_div_bounded_correction(gpu, &self.fvk, &mut self.a, m, &phi_vol, 1.0)?;
@@ -2550,24 +3716,55 @@ impl<'m> Energy<'m> {
         let rho = gpu.download(&gas.rho().f)?;
         let vol = gpu.download(&m.v)?;
         let tdiv = gpu.download(&self.target_div)?;
-        let cpf = f64::from(self.props.cp);
+        // SPEC-LIT 133.8: the cell's own `cp_c` with a field, else `props.cp`.
+        let cpc: Vec<f64> = match &self.cp_field {
+            None => vec![f64::from(self.props.cp); n],
+            Some(f) => gpu.download(&f.cp.f)?.into_iter().map(f64::from).collect(),
+        };
         let prescribed: f64 = (0..n)
-            .map(|i| cpf * f64::from(rho[i]) * f64::from(t[i]) * f64::from(vdiag[i]))
+            .map(|i| cpc[i] * f64::from(rho[i]) * f64::from(t[i]) * f64::from(vdiag[i]))
             .sum();
         let target_w: f64 = -(0..n)
             .map(|i| {
-                cpf * f64::from(rho[i]) * f64::from(t[i]) * f64::from(vol[i]) * f64::from(tdiv[i])
+                cpc[i] * f64::from(rho[i]) * f64::from(t[i]) * f64::from(vol[i]) * f64::from(tdiv[i])
             })
             .sum::<f64>();
 
-        let inv_cp = 1.0 / f64::from(self.props.cp);
-        let net_mass: f64 = -diag.iter().map(|&d| f64::from(d)).sum::<f64>() * inv_cp;
-        let l1_mass: f64 = diag.iter().map(|&d| f64::from(d).abs()).sum::<f64>() * inv_cp;
-        let max_mass: f64 = diag
-            .iter()
-            .map(|&d| f64::from(d).abs())
-            .fold(0.0f64, f64::max)
-            * inv_cp;
+        // SPEC-LIT 133.9: a meter's `-Sum_c q_c V_c`, in the sign of the
+        // assembled left-hand side, as `sources_w` carries the whole `q`.
+        let metered = |meter: Option<&DevBuf<Scalar>>| -> Result<f64> {
+            let Some(q) = meter else { return Ok(0.0) };
+            let q = gpu.download(q)?;
+            Ok(-(0..n).map(|i| f64::from(q[i]) * f64::from(vol[i])).sum::<f64>())
+        };
+
+        let (net_mass, l1_mass, max_mass) = match &self.cp_field {
+            None => {
+                let inv_cp = 1.0 / f64::from(self.props.cp);
+                let net_mass: f64 = -diag.iter().map(|&d| f64::from(d)).sum::<f64>() * inv_cp;
+                let l1_mass: f64 = diag.iter().map(|&d| f64::from(d).abs()).sum::<f64>() * inv_cp;
+                let max_mass: f64 = diag
+                    .iter()
+                    .map(|&d| f64::from(d).abs())
+                    .fold(0.0f64, f64::max)
+                    * inv_cp;
+                (net_mass, l1_mass, max_mass)
+            }
+            // SPEC-LIT 133.8: `cp_f` varies from face to face, so no one
+            // number divides the diagonal back to kg/s. The same pass on the
+            // mass flux `rho_f phi_f = phi_vol rho_f` does, exactly.
+            Some(_) => {
+                field_ops::multiply_field(gpu, &self.fldk, &mut phi_vol.f, &self.rho_face.f, m.n_internal_faces)?;
+                field_ops::multiply_field(gpu, &self.fldk, &mut phi_vol.bf, &self.rho_face.bf, m.n_boundary_faces)?;
+                self.a.zero(gpu)?;
+                fv::fvm_div_bounded_correction(gpu, &self.fvk, &mut self.a, m, &phi_vol, 1.0)?;
+                let mdiag = gpu.download(&self.a.diag)?;
+                let net_mass: f64 = -mdiag.iter().map(|&d| f64::from(d)).sum::<f64>();
+                let l1_mass: f64 = mdiag.iter().map(|&d| f64::from(d).abs()).sum::<f64>();
+                let max_mass: f64 = mdiag.iter().map(|&d| f64::from(d).abs()).fold(0.0f64, f64::max);
+                (net_mass, l1_mass, max_mass)
+            }
+        };
 
         Ok(EnergyBudget {
             ddt_w: cum[0],
@@ -2585,6 +3782,8 @@ impl<'m> Energy<'m> {
             bounded_correction_prescribed_w: prescribed,
             bounded_correction_residual_w: direct - prescribed,
             target_divergence_w: target_w,
+            heat_release_w: metered(self.sources.heat_release())?,
+            enthalpy_diffusion_w: metered(self.sources.enthalpy_diffusion())?,
         })
     }
 
@@ -2631,11 +3830,19 @@ impl<'m> Energy<'m> {
         // idempotent and `correct` runs it again.
         self.prepare_coefficients(gpu, nut, k, nu, gas)?;
         self.update_conduction_source(gpu)?;
+        if let Some((inv_w, mol)) = gas.mixture_cells()? {
+            return self.mixture_target_divergence(gpu, gas, inv_w, mol);
+        }
+        if let Some(mx) = &mut self.mix {
+            mx.nparts = 0;
+        }
         let inv_gamma_p0 = 1.0 / (self.props.gamma * gas.p0());
+        // (137.4)'s `Q = q + sp*T` when a sink is live (SPEC-LIT 137.4).
+        let q = self.sources.constraint_q(gpu, &self.t.f)?;
         self.ek.target_divergence(
             gpu,
             &mut self.target_div,
-            self.sources.q(),
+            q,
             &self.cond_div,
             &gas.rho().f,
             &self.t.f,
@@ -2644,6 +3851,99 @@ impl<'m> Energy<'m> {
             gas.dp0dt(),
             n,
         )
+    }
+
+    /// SPEC-LIT (133.21) on every cell, for a gas with a mixture:
+    ///
+    /// ```text
+    /// D_c = Q_c R_s,c/(cp_c p0) + (R T_c/p0) Σ_k (1/W_k - 1/W_N) S_k,c,   R_s,c = R (1/W)_c
+    /// (div u)_target,c = D_c - (1/γ_c) (dp0/dt)/p0,                        1/γ_c = 1 - R_s,c/cp_c
+    /// ```
+    ///
+    /// with `Q` §26.1's two halves as [`Self::update_target_divergence`]
+    /// has them, `cp_c` the field when one is set (else `props.cp`), `R` and
+    /// `p0` the gas's, and `dp0/dt` its lagged value. The same launch leaves
+    /// the per-block sums of `D V` and `V/γ` that
+    /// [`Self::constraint_integrals`] totals.
+    fn mixture_target_divergence(
+        &mut self,
+        gpu: &Gpu,
+        gas: &GasState,
+        inv_w: &DevBuf<Acc>,
+        mol: &DevBuf<Acc>,
+    ) -> Result<()> {
+        let n = self.m.n_cells;
+        let (cfg, nparts) = solver::reduce_geometry(n);
+        if self.mix.is_none() {
+            let k = KernelSet::new(gpu, crate::kernels::ENERGY)?;
+            self.mix = Some(MixConstraint {
+                constraint: k.func("energyMixtureConstraint")?,
+                cp_one: gpu.upload(&[self.props.cp])?,
+                part_d: gpu.zeros(nparts)?,
+                part_g: gpu.zeros(nparts)?,
+                nparts: 0,
+            });
+        }
+        let Energy { mix, cp_field, sources, cond_div, t, target_div, m, .. } = self;
+        let mx = mix.as_mut().expect("built above");
+        if mx.part_d.len() < nparts {
+            mx.part_d = gpu.zeros(nparts)?;
+            mx.part_g = gpu.zeros(nparts)?;
+        }
+        let (cp, stride): (&DevBuf<Scalar>, Label) = match cp_field {
+            Some(f) => (&f.cp.f, 1),
+            None => (&mx.cp_one, 0),
+        };
+        let r = Acc::from(gas.props().r_universal);
+        let p0 = Acc::from(gas.p0());
+        let dp0dt = Acc::from(gas.dp0dt());
+        let nl = n as Label;
+        // (137.4)'s `Q = q + sp*T` when a sink is live (SPEC-LIT 137.4).
+        let q = sources.constraint_q(gpu, &t.f)?;
+        unsafe {
+            gpu.stream()
+                .launch_builder(&mx.constraint)
+                .arg(&mut *target_div)
+                .arg(&mut mx.part_d)
+                .arg(&mut mx.part_g)
+                .arg(q)
+                .arg(&*cond_div)
+                .arg(&t.f)
+                .arg(inv_w)
+                .arg(mol)
+                .arg(cp)
+                .arg(&stride)
+                .arg(&m.v)
+                .arg(&r)
+                .arg(&p0)
+                .arg(&dp0dt)
+                .arg(&nl)
+                .launch(cfg)?;
+        }
+        mx.nparts = nparts;
+        Ok(())
+    }
+
+    /// SPEC-LIT (133.22)'s two integrals, `∫ D dV` and `∫ (1/γ) dV`, from
+    /// the last [`Self::update_target_divergence`]: the per-block sums of
+    /// its launch, read back and totalled on the host in block order, in
+    /// f64 in both builds. Refused by name when that target divergence was
+    /// not a mixture's.
+    pub fn constraint_integrals(&self, gpu: &Gpu) -> Result<ConstraintIntegrals> {
+        let Some(mx) = self.mix.as_ref().filter(|x| x.nparts > 0) else {
+            return Err(Error::Config(
+                "Energy::constraint_integrals: the last target divergence was not a \
+                 mixture's; call Energy::update_target_divergence on a GasState with \
+                 GasState::use_mixture first (SPEC-LIT 133.10)"
+                    .to_string(),
+            ));
+        };
+        let d = gpu.download(&mx.part_d)?;
+        let g = gpu.download(&mx.part_g)?;
+        Ok(ConstraintIntegrals {
+            dilatation: d[..mx.nparts].iter().sum(),
+            inv_gamma_volume: g[..mx.nparts].iter().sum(),
+        })
     }
 
     /// [`Self::update_target_divergence`] with SPEC-LIT S77.6's volumetric
@@ -2757,6 +4057,9 @@ impl<'m> Energy<'m> {
         self.update_k_eff(gpu, nut, gas, nu)?;
         self.update_thermal_wall(gpu, k, &gas.rho().f, nu)?;
         self.update_fixed_flux(gpu)?;
+        // SPEC-LIT 120.8's thermal family, off the `k_eff` and the triple
+        // the two rewrites above have just rebuilt - a no-op without faces.
+        self.refresh_thermal_walls(gpu)?;
         // SPEC-LIT §47.2's triple on both sides of every interface, from the
         // conductance `update_k_eff` has just rebuilt. A no-op on the
         // single-region path, where it does not even evaluate its guard's
@@ -2843,11 +4146,33 @@ impl<'m> Energy<'m> {
         if n == 0 {
             return Ok(SolverPerformance::default());
         }
+        // SPEC-LIT 139.5: a conjugate stack attached SINCE `set_exchange`
+        // would run `update_conjugate_interface`'s rank-local boundary
+        // evaluation across a part's processor faces.
+        if self.exchange.is_some() && self.cht.is_some() {
+            return Err(Error::Config(
+                "distflow: a conjugate stack was attached to a decomposed \
+                 Energy - the interface update has no exchange yet (PAR-11)"
+                    .to_string(),
+            ));
+        }
+        // SPEC-LIT 120.8: a lumped step is assembled from the coefficients
+        // `advance_lumped_masses` uploaded for THIS step; solving with the
+        // seed triple instead would freeze the lump at its `T_m^0`.
+        if !self.thermal_lumps.is_empty() && !self.lumps_ready {
+            return Err(Error::Config(format!(
+                "Energy::correct: a `lumpedMassTemperature` patch is wired but \
+                 advance_lumped_masses has not run for this step - call it once \
+                 per time step, after the step is opened and before the first \
+                 correct (SPEC-LIT 120.8)"
+            )));
+        }
 
         field_ops::store_old_time(gpu, &self.fldk, &mut self.t)?;
 
         self.prepare_coefficients(gpu, nut, k, nu, gas)?;
         self.update_conv_flux(gpu, phi)?;
+        self.refresh_thermal_walls(gpu)?;
 
         let alpha = self.ctrl.t_relax;
         let sc = self.ctrl.t_solver;
@@ -2859,9 +4184,21 @@ impl<'m> Energy<'m> {
             ldu_ops::relax(gpu, &self.lduk, &mut self.a, m, &self.t.f, alpha)?;
             ldu_ops::add_boundary_contributions(gpu, &self.lduk, &mut self.a, m)?;
 
-            perf = solver::solve(gpu, &self.solk, &mut self.t.f, &self.a, m, &mut self.ws, &sc)?;
+            // SPEC-LIT 139.5: the solve through the part's SPMD Krylov when
+            // a route is set, the rank-local `solver::solve` otherwise -
+            // the same launches, whichever way.
+            perf = match self.route.as_deref_mut() {
+                Some(r) => r.solve_component(gpu, &mut self.t.f, &self.a, m, &sc)?,
+                None => solver::solve(gpu, &self.solk, &mut self.t.f, &self.a, m, &mut self.ws, &sc)?,
+            };
 
-            field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.t, m)?;
+            // SPEC-LIT 139.5: the halo, then the boundary evaluation - or,
+            // serially, exactly the `correct_boundary_conditions` call this
+            // module always made.
+            match self.exchange.as_deref_mut() {
+                Some(x) => x.field(gpu, &self.fldk, &mut self.t, m)?,
+                None => field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.t, m)?,
+            }
         }
 
         // SPEC-LIT §47.2: the interface triple assembled with was built from
@@ -2880,6 +4217,64 @@ impl<'m> Energy<'m> {
 }
 
 // ==========================================================================
+//  The decomposed seams - SPEC-LIT 139.5 (PAR-11)
+// ==========================================================================
+
+impl<'m> Energy<'m> {
+    /// SPEC-LIT 139.5 (PAR-11): `T`'s solve through a part's SPMD Krylov;
+    /// `None` = [`crate::solver::solve`] as today.
+    pub fn set_route(&mut self, route: Option<Box<dyn crate::momentum::ComponentRoute + 'm>>) {
+        self.route = route;
+    }
+
+    /// SPEC-LIT 139.5: `T`'s halo + boundary evaluation on a part. Refusals
+    /// ([`Error::Config`], message starts `distflow: `), checked only when
+    /// `x` is `Some`: a convection scheme that needs a far-cell gradient,
+    /// a snGrad / corrector count that needs one too, and the conjugate
+    /// stack - gradients have no halo on the flow path yet.
+    pub fn set_exchange(&mut self, x: Option<Box<dyn crate::distflow::FlowExchange + 'm>>) -> Result<()> {
+        if let Some(_) = &x {
+            match self.ctrl.div_scheme.scheme {
+                DivScheme::Upwind | DivScheme::Central => {}
+                other => {
+                    return Err(Error::Config(format!(
+                        "distflow: divScheme {other:?} needs a cell gradient \
+                         at the far cell of a face, and gradients have no \
+                         halo on the thermal path yet (PAR-11); a decomposed \
+                         Energy runs upwind or central convection only"
+                    )));
+                }
+            }
+            if self.ctrl.sn_grad != SnGradScheme::Uncorrected
+                || self.ctrl.n_non_orth_correctors > 0
+            {
+                return Err(Error::Config(format!(
+                    "distflow: snGrad {:?} with {} non-orthogonal corrector(s) \
+                     adds the correction at the far cell of a face; a \
+                     decomposed Energy runs snGrad uncorrected and zero \
+                     correctors only",
+                    self.ctrl.sn_grad, self.ctrl.n_non_orth_correctors
+                )));
+            }
+            if self.cht.is_some() {
+                return Err(Error::Config(
+                    "distflow: a decomposed Energy cannot run the conjugate \
+                     stack - the interface update has no exchange yet (PAR-11)"
+                        .to_string(),
+                ));
+            }
+        }
+        self.exchange = x;
+        Ok(())
+    }
+
+    /// True when a decomposed run's exchange is set.
+    pub fn has_exchange(&self) -> bool {
+        self.exchange.is_some()
+    }
+}
+
+// ==========================================================================
 //  Tests
 // ==========================================================================
 
@@ -2889,7 +4284,7 @@ mod tests {
     use crate::field::BcKind;
     use crate::wallfunctions::thermal_wall_ref_grad;
     use crate::mesh::{HostMesh, PatchKind};
-    use crate::momentum::BuoyancyCoeffs;
+    use crate::momentum::{BuoyancyCoeffs, BuoyancyForm};
 
     fn gpu() -> Option<crate::Gpu> {
         crate::Gpu::new(0).ok()
@@ -2940,7 +4335,7 @@ mod tests {
 
         let hot = MachReport { max: 0.31, cell_of_max: 7, volume_mean: 0.2 };
         let e = refuse_above_low_mach(&hot, "step 12").unwrap_err().to_string();
-        for wanted in ["0.31", "cell 7", "step 12", "0.3", "§25", "-permissive"] {
+        for wanted in ["0.31", "cell 7", "step 12", "0.3", "§25", "-permissive", "ofgpu-compressible"] {
             assert!(e.contains(wanted), "{wanted:?} not in {e}");
         }
 
@@ -2999,7 +4394,6 @@ mod tests {
     /// the free-stream value, approached FROM ABOVE at the rate S37.2
     /// derives - `Pr_t = Pr_t_inf (1 + 1/(6 sqrt(Pr_t_inf) C Pe_t)) + O(Pe_t^-2)`.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn kays_crawford_at_large_peclet_approaches_the_free_stream_value_from_above() {
         let (c, p_inf) = (KAYS_CRAWFORD_C, 0.85 as Scalar);
         for pe_t in [1e3 as Scalar, 1e4, 1e5, 1e6] {
@@ -3009,7 +4403,7 @@ mod tests {
             // The next term is O(Pe_t^-2), so the first-order estimate has to
             // agree to better than that.
             assert!(
-                (got - want).abs() < 10.0 / (pe_t * pe_t),
+                ((got - want).abs() as f64) < crate::precision::roundoff_tol(10.0 / (pe_t * pe_t) as f64),
                 "Pe_t = {pe_t}: {got} against the asymptote {want}"
             );
         }
@@ -3020,6 +4414,7 @@ mod tests {
     /// SPEC-LIT S37.2. Checked against the literature form everywhere the
     /// literature form is still trustworthy.
     #[test]
+    // f32 (F32-17): the f32-evaluated form disagrees by 2.1e-4, past the 1e-5 cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_rearranged_form_reproduces_the_literature_form() {
         let (c, p_inf) = (0.3_f64, 0.85_f64);
@@ -3145,6 +4540,7 @@ mod tests {
     /// unmodified for the low-Mach solver's velocity/pressure system (the
     /// module doc's first *DESIGN* note).
     #[test]
+    // f32 (F32-17): relative disagreement 1.14e-5 at T=294 exceeds the 1e-5 cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn buoyancy_matches_the_density_ratio_at_any_deltat() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -3162,6 +4558,7 @@ mod tests {
             g: crate::Vec3::new(0.0, 0.0, -9.81),
             t_ref,
             t_min: 1.0,
+            form: BuoyancyForm::DensityRatio,
         };
 
         // Small, moderate and large delta-T/T, including the large ratio
@@ -3542,7 +4939,6 @@ mod tests {
     /// asymmetry once (S26.1); this test is the guard against the second
     /// time.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_target_divergence_takes_the_mass_source_and_takes_the_heat_through_q() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
 
@@ -3625,7 +5021,8 @@ mod tests {
         for c in 0..N {
             let want = plain[c] + q[c] / (rho[c] * props.cp * t[c]);
             assert!(
-                (hot[c] - want).abs() <= 1e-12 * want.abs(),
+                (hot[c] - want).abs() as f64
+                    <= crate::precision::roundoff_tol(1e-12) * want.abs() as f64,
                 "cell {c}: the registry's heat did not reach the divergence: {} vs {want}",
                 hot[c]
             );
@@ -3642,7 +5039,7 @@ mod tests {
         let cool = (plain[0] - hot[0]).abs();
         let want = H_V / (props.cp * t[0]);
         assert!(
-            (cool / d[0] - want).abs() <= 1e-9 * want,
+            ((cool / d[0] - want).abs() as f64) <= crate::precision::roundoff_tol(1e-9) * want as f64,
             "the contraction/expansion ratio is {} and h_v/(cp T) is {want}",
             cool / d[0]
         );
@@ -3665,7 +5062,6 @@ mod tests {
     /// `k_eff` cannot pass by accident. The second case also checks the field
     /// CELL BY CELL against the laplacian matrix's own operator.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_conduction_source_telescopes_to_the_boundary_heat() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
 
@@ -3714,7 +5110,7 @@ mod tests {
             let flux = g.download(&e.cond_flux.f)?;
             let scale = flux.iter().map(|v| f64::from(*v).abs()).fold(1.0f64, f64::max);
             assert!(
-                q_cond.abs() < 1e-10 * scale,
+                q_cond.abs() < crate::precision::roundoff_tol(1e-10) * scale,
                 "adiabatic box: integral(div(k_eff grad T)) dV = {q_cond}, \
                  face-flux scale {scale}"
             );
@@ -3769,7 +5165,7 @@ mod tests {
             let want = f64::from(q_w) * area;
             let got = f64::from(e.total_conduction_q(&g)?);
             assert!(
-                (got - want).abs() < 1e-9 * want.abs(),
+                (got - want).abs() < crate::precision::roundoff_tol(1e-9) * want.abs(),
                 "fixed-flux wall: integral(div(k_eff grad T)) dV = {got}, want q_w*A = {want}"
             );
 
@@ -3802,7 +5198,8 @@ mod tests {
                 let from_matrix = -(f64::from(at_h[c]) - f64::from(b_h[c])) / f64::from(hm.v[c]);
                 let from_flux = f64::from(cond[c]);
                 assert!(
-                    (from_matrix - from_flux).abs() <= 1e-9 * (1.0 + from_matrix.abs()),
+                    (from_matrix - from_flux).abs()
+                        <= crate::precision::roundoff_tol(1e-9) * (1.0 + from_matrix.abs()),
                     "cell {c}: explicit div(k_eff grad T) {from_flux} against the \
                      laplacian matrix's own {from_matrix}"
                 );
@@ -4046,7 +5443,6 @@ mod tests {
     /// `-q_w/k_eff_wall`, with the turbulent `k_eff_wall` this test's
     /// nonzero `nut` implies, not the molecular `props.k` alone.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn fixed_flux_temperature_reproduces_q_through_the_assembled_equation() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
 
@@ -4111,6 +5507,7 @@ mod tests {
     /// better than the tolerance checked here - it stands in for the
     /// semi-infinite solid the closed form assumes.
     #[test]
+    // f32 (F32-17): the observed refinement ratio 2.72 vs 3 is an order statement
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn one_d_transient_conduction_matches_erf_at_second_order() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -4380,6 +5777,45 @@ mod tests {
         Ok(())
     }
 
+    /// SPEC-LIT 137.4: with a sink live, `constraint_q` is (137.4)'s
+    /// `Q = q + sp*T` exactly - the buffer `total_q` integrates too - and
+    /// with no sink it is `q` itself, bitwise the same numbers.
+    #[test]
+    fn constraint_q_reads_the_sink() -> Result<()> {
+        let Some(g) = gpu() else { return Ok(()) };
+        let hm = slab(3, 0.1);
+        let m = crate::GpuMesh::upload(&g, &hm)?;
+        let mut s = EnergySources::new(&g, &m)?;
+        let q = g.upload(&vec![1.0 as Scalar, 2.0, 3.0])?;
+        let sp = g.upload(&vec![-1.0 as Scalar, -2.0, -0.5])?;
+        let t = g.upload(&vec![10.0 as Scalar, 20.0, 30.0])?;
+        s.register_explicit(&g, &q)?;
+        s.register_implicit_sink(&g, &sp)?;
+        let qc = g.download(s.constraint_q(&g, &t)?)?;
+        for (i, want) in [-9.0 as Scalar, -38.0, -12.0].into_iter().enumerate() {
+            assert_eq!(qc[i].to_bits(), want.to_bits(), "cell {i}");
+        }
+        // The power balance integrates the same buffer, over the cell
+        // volumes, to the same watts.
+        let v = g.download(&m.v)?;
+        let want: Scalar = qc.iter().zip(v).map(|(qv, vv)| qv * vv).sum();
+        let total = s.total_q(&g, &m)?;
+        assert!(
+            (total - want).abs() <= 1e-12 * want.abs(),
+            "total_q {total}, wanted {want}"
+        );
+
+        // A cleared registry: no sink, no launch, `q` itself bitwise.
+        s.clear(&g)?;
+        s.register_explicit(&g, &q)?;
+        let got = g.download(s.constraint_q(&g, &t)?)?;
+        let plain = g.download(s.q())?;
+        for (i, (a, b)) in got.iter().zip(plain).enumerate() {
+            assert_eq!(a.to_bits(), b.to_bits(), "cell {i}");
+        }
+        Ok(())
+    }
+
     // ----------------------------------------------------------------------
     //  §13.4 contract
     // ----------------------------------------------------------------------
@@ -4500,7 +5936,6 @@ mod tests {
         }
 
         #[test]
-        #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
         fn a_flat_conductivity_curve_gives_the_constant_k_eff_and_the_constant_field() -> Result<()> {
             let Some(g) = gpu() else { return Ok(()) };
 

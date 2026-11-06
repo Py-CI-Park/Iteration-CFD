@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { z } from 'zod'
-import { BINARIES, ChatRequestSchema, DEFAULT_SESSION_SETTINGS, LlmSettingsPatchSchema, ONTOLOGY, PIPELINES, MESH_PRESETS, MODELS, type LlmStateView, type Principal, type ServerHello, type StartRunRequest } from '@cfd/shared'
+import { BINARIES, ChatRequestSchema, DEFAULT_SESSION_SETTINGS, LlmSettingsPatchSchema, ONTOLOGY, PIPELINES, MESH_PRESETS, MODELS, RunPrecisionSchema, UiCommandSchema, type LlmStateView, type Principal, type ServerHello, type StartRunRequest } from '@cfd/shared'
 import type { AgentService } from '../agent/types.js'
 import type { LlmSettingsHandle } from '../agent/llmSettings.js'
 import type { ServerConfig } from '../config.js'
@@ -16,6 +16,9 @@ import { isQueryFailure, runOntologyQuery, type OntologyQuery, type QueryFailure
 import { whereSchema } from '../tools/ontology.js'
 import { geometryService } from '../tools/geometry.js'
 import { geometryEdit, geometryImportStep } from '../tools/geomTool.js'
+import { geometryStlBoolean } from '../tools/geometryBoolean.js'
+import { readBoundaryTable, setPatchAt } from '../tools/guiBoundary.js'
+import { validateCaseBuffer } from '../tools/guiCase.js'
 import type { ToolContext, ToolResult } from '../tools/context.js'
 import type { CaseSchema } from '../registry/schema.js'
 import { readCaseJsonc } from '../formats/casejsonc.js'
@@ -58,6 +61,14 @@ const GeometryEditSchema = z.object({
   path: z.string(),
   ops: z.string(), // JSON TEXT of the ops array
   out: z.string(),
+  overwrite: z.boolean().nullable().default(null),
+})
+const GeometryBooleanSchema = z.object({
+  path: z.string(),
+  op: z.enum(['fuse', 'cut', 'common']),
+  a: z.string(),
+  b: z.string(),
+  out: z.string().nullable().default(null),
   overwrite: z.boolean().nullable().default(null),
 })
 
@@ -109,10 +120,25 @@ const StartRunSchema = z.object({
   positionals: z.array(z.string()).default([]),
   label: z.string().nullable().default(null),
   sessionId: z.string().nullable().default(null),
+  /** F32-19: double (default) or single, the f32 build in rust/target/single/release. */
+  precision: RunPrecisionSchema.nullable().default(null),
 })
 
 const FsWriteSchema = z.object({ path: z.string(), content: z.string(), baseHash: z.string().nullable().default(null) })
+const CaseValidateSchema = z.object({ path: z.string(), content: z.string() })
+const CasePatchSchema = z.object({ path: z.string(), edit: z.unknown() })
 const DatasetOpenSchema = z.object({ path: z.string(), timeIndex: z.union([z.number().int(), z.literal('last')]).nullable().default(null), field: z.string().nullable().default(null), region: z.string().nullable().default(null).describe('Region of a multi-region root (regions.json, regions/<name>/, or a .cht.jsonc); null = the first region that has something to open') })
+const Vec3Schema = z.tuple([z.number(), z.number(), z.number()])
+const DatasetCutSchema = z.object({ origin: Vec3Schema, normal: Vec3Schema })
+const DatasetLocateSchema = z.object({ point: Vec3Schema })
+const DatasetIsoSchema = z.object({ field: z.string(), timeIndex: z.number().int().nonnegative(), values: z.array(z.number()).min(1) })
+const DatasetStreamSchema = z.object({
+  field: z.string(),
+  timeIndex: z.number().int().nonnegative(),
+  seeds: z.array(z.number()).min(3),
+  direction: z.enum(['forward', 'backward', 'both']).default('both'),
+  maxLength: z.number().positive().nullable().default(null),
+})
 const GeometryOpenSchema = z.object({ path: z.string() })
 const GeometrySaveSchema = z.object({
   path: z.string(),
@@ -164,7 +190,7 @@ export function registerApiRoutes(router: Router, deps: ApiDeps): Router {
     deps.hub.broadcast({ t: 'llm.changed', llm: view })
     return view
   })
-  router.get('/api/registry', () => ({ binaries: BINARIES, pipelines: PIPELINES, models: MODELS, pickLists: schema.pickLists, meshPresets: MESH_PRESETS }))
+  router.get('/api/registry', () => ({ binaries: BINARIES, pipelines: PIPELINES, models: MODELS, pickLists: schema.pickLists, caseBlocks: schema.blocks, meshPresets: MESH_PRESETS }))
   router.get('/api/schema/case-1.json', ({ res }) => {
     res.writeHead(200, { 'content-type': 'application/schema+json; charset=utf-8', 'cache-control': 'no-cache' })
     res.end(schema.text)
@@ -190,6 +216,33 @@ export function registerApiRoutes(router: Router, deps: ApiDeps): Router {
     const out = await writeWorkspaceFile(root, body)
     deps.hub.broadcast({ t: 'fs.changed', paths: [out.path] })
     return out
+  })
+  // save_case's check (STU-05): the buffer lives in the browser's editor, so
+  // the window posts its text here; nothing is written, the findings go to
+  // the Problems list as case_validate's do.
+  router.post('/api/case/validate', async (rc) => {
+    const body = await rc.json(CaseValidateSchema)
+    const r = await validateCaseBuffer(body, httpToolContext(deps, root))
+    if (!r.ok) throw toolHttpError(r)
+    return r.data
+  })
+  // The studio's Boundary editor (STU-07b): its table, and the operator's
+  // set_patch on the case it shows - the same plan and case_edit as
+  // gui_control's set_patch; the operator's own press asks no approval card.
+  router.get('/api/case/boundary', async ({ query }) => {
+    const p = query.get('path')
+    if (!p) throw new HttpError(400, 'path is required')
+    const r = await readBoundaryTable(p, httpToolContext(deps, root))
+    if (!r.ok) throw toolHttpError(r)
+    return r.data
+  })
+  router.post('/api/case/patch', async (rc) => {
+    const body = await rc.json(CasePatchSchema)
+    const cmd = UiCommandSchema.safeParse(body.edit)
+    if (!cmd.success || cmd.data.type !== 'set_patch') throw new HttpError(400, 'edit must be one set_patch command', { code: 'INVALID' })
+    const r = await setPatchAt(cmd.data, body.path, httpToolContext(deps, root))
+    if (!r.ok) throw toolHttpError(r)
+    return r.data
   })
   router.get('/api/fs/search', async ({ query }) => {
     const q = query.get('q') ?? ''
@@ -279,6 +332,47 @@ export function registerApiRoutes(router: Router, deps: ApiDeps): Router {
     res.end(buf)
     return RESPONDED
   })
+  // An exact plane cut of a non-lattice polyMesh (SPEC-LIT §148.1); the answer names the two blobs.
+  router.post('/api/datasets/:id/cut', async (ctx) => {
+    const body = await ctx.json(DatasetCutSchema)
+    if (!datasets.get(ctx.params.id)) throw new HttpError(404, `no such dataset: ${ctx.params.id}`)
+    try {
+      return await datasets.cut(ctx.params.id, body)
+    } catch (err) {
+      throw new HttpError(400, err instanceof Error ? err.message : String(err))
+    }
+  })
+  // The iso-surfaces of a cell field on a non-lattice polyMesh (SPEC-LIT §148.2); the answer names the three blobs.
+  router.post('/api/datasets/:id/iso', async (ctx) => {
+    const body = await ctx.json(DatasetIsoSchema)
+    if (!datasets.get(ctx.params.id)) throw new HttpError(404, `no such dataset: ${ctx.params.id}`)
+    try {
+      return await datasets.iso(ctx.params.id, body)
+    } catch (err) {
+      throw new HttpError(400, err instanceof Error ? err.message : String(err))
+    }
+  })
+
+  // The streamlines of a cell vector field on a non-lattice polyMesh (SPEC-LIT §148.3); the answer names the three blobs.
+  router.post('/api/datasets/:id/streamlines', async (ctx) => {
+    const body = await ctx.json(DatasetStreamSchema)
+    if (!datasets.get(ctx.params.id)) throw new HttpError(404, `no such dataset: ${ctx.params.id}`)
+    try {
+      return await datasets.streamlines(ctx.params.id, body)
+    } catch (err) {
+      throw new HttpError(400, err instanceof Error ? err.message : String(err))
+    }
+  })
+  // The cell of a polyMesh that holds a point (docs/17 STU-13); `cell` null is a miss, not an error.
+  router.post('/api/datasets/:id/locate', async (ctx) => {
+    const body = await ctx.json(DatasetLocateSchema)
+    if (!datasets.get(ctx.params.id)) throw new HttpError(404, `no such dataset: ${ctx.params.id}`)
+    try {
+      return await datasets.locate(ctx.params.id, body.point)
+    } catch (err) {
+      throw new HttpError(400, err instanceof Error ? err.message : String(err))
+    }
+  })
   router.delete('/api/datasets/:id', ({ params }) => {
     datasets.evict(params.id)
     return { evicted: params.id }
@@ -343,6 +437,13 @@ export function registerApiRoutes(router: Router, deps: ApiDeps): Router {
     const body = await rc.json(GeometryEditSchema)
     const r = await geometryEdit.run(body, httpToolContext(deps, root))
     if (!r.ok) throw toolHttpError(r)
+    return r.data
+  })
+  router.post('/api/geometry/boolean', async (rc) => {
+    const body = await rc.json(GeometryBooleanSchema)
+    const r = await geometryStlBoolean.run(body, httpToolContext(deps, root))
+    if (!r.ok) throw toolHttpError(r)
+    deps.hub.broadcast({ t: 'fs.changed', paths: [(r.data as { path: string }).path] })
     return r.data
   })
   router.get('/api/results', ({ query }) => {

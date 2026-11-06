@@ -49,6 +49,7 @@ use crate::solid::bc::PatchBcs;
 use crate::solid::bc::CompBc;
 use crate::solid::Material;
 use crate::solid::materials::Bonds;
+use crate::types::{to_dvec3, to_vec3};
 use crate::{Label, Scalar, Tensor, Vec3};
 use std::f64::consts::FRAC_PI_2;
 
@@ -95,15 +96,17 @@ pub fn annulus(nr: usize, n_theta: usize, nz: usize, r_in: Scalar, r_out: Scalar
     };
     let mut raw = blockgen::raw_mesh(&spec)?;
     for p in raw.points.iter_mut() {
-        let cut90 = (p.y - FRAC_PI_2 as Scalar).abs() < 1e-12;
-        let cut0 = p.y.abs() < 1e-12;
-        *p = Vec3::new(p.x * p.y.cos(), p.x * p.y.sin(), p.z);
+        let q = to_vec3(*p);
+        let cut90 = (q.y - FRAC_PI_2 as Scalar).abs() < 1e-12;
+        let cut0 = q.y.abs() < 1e-12;
+        let mut q = Vec3::new(q.x * q.y.cos(), q.x * q.y.sin(), q.z);
         if cut90 {
-            p.x = 0.0;
+            q.x = 0.0;
         }
         if cut0 {
-            p.y = 0.0;
+            q.y = 0.0;
         }
+        *p = to_dvec3(q);
     }
     let mesh = build_host_mesh(&raw)?;
     Ok(Annulus { mesh, raw, r_in, r_out, length: r_out - r_in })
@@ -528,6 +531,7 @@ mod tests {
     /// the 2.5:1 ratio's own (`l = 0.5`, `n_x = (l * n_y / 2c)`), the only
     /// span whose `20 x 8` cells are the cubes the volume check names.
     #[test]
+    // f32 (F32-16): Hooke sigma_xx 3.3% of scale in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_cantilever_closed_form_is_hooke_consistent_and_in_equilibrium() {
         let exact = CantileverExact::new(CANTILEVER_E, CANTILEVER_NU, 1.0, CANTILEVER_C, CANTILEVER_P);
@@ -584,7 +588,6 @@ mod tests {
     /// total volume is the quarter annulus's times the length, and the six
     /// patches carry the sizes the three index directions dictate.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_annulus_is_a_closed_quarter_ring() {
         let a = annulus(6, 12, 2, 0.5, 1.0).expect("annulus");
         let r = a.mesh.check();
@@ -600,7 +603,7 @@ mod tests {
             r.max_non_orth_deg
         );
         let want = std::f64::consts::FRAC_PI_4 as Scalar * (1.0 - 0.25) * a.length;
-        let dv = (r.total_volume - want).abs() / want;
+        let dv = (r.total_volume - want as f64).abs() / want as f64;
         println!("annulus: V={:.6} exact={:.6} rel={:.3e}", r.total_volume, want, dv);
         assert!(dv <= 0.01, "total volume off by {dv:e} relative");
         let got: Vec<(&str, usize, &str)> = a
@@ -627,6 +630,7 @@ mod tests {
     /// profile is named for. A form that fails these is mis-transcribed,
     /// whatever the book says.
     #[test]
+    // f32 (F32-16): central-difference equilibrium noise over 1e-5 cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_thick_cylinder_closed_form_is_in_equilibrium() {
         let (ri, ro) = (0.5, 1.0);
@@ -668,7 +672,6 @@ mod tests {
     /// patches real `patch`es, the mesh closed with volume everywhere - and
     /// an `a1` between two faces is refused by name.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_bimetal_strip_splits_on_a_face() {
         let (m, low, high) = bimetal_strip(48, 8, 0.06, 0.01, 0.005).expect("strip");
         assert_eq!(low.len(), 192, "cells below the bond line");

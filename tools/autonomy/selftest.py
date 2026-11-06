@@ -19,7 +19,7 @@ patches, invariance, schema and speed), then preflight.py --selftest (the L0 che
 (the L1 setup rules: the worked example, the §D.3 window and fit_growth, R-DOM,
 R-PLANE on cubep and corpus boxes, R-CURV, R-GAP and R-FEAT, the R-BUDGET
 predictor and ladder, setup on five corpus rows against preflight and -dryRun,
-the whitelist, the records, determinism and the CLI), then remedies.py --selftest (the L2 remedies: the table, diagnose, the 31 probe fixtures and 35 sequences, box_sphere CAPABILITY-LIMITED after 1 try, the static scan, 600 single steps and 300 loops, the synthetic outcomes, the records, determinism, the veto and the CLI), then explain.py --selftest (the explanations: 53 templates and the static rule-id scan, the fixture records, rows and timestamps, the moved measurements, three golden geometries, the campaign summary and Clopper-Pearson, the audit, determinism, the CLI and the optimiser records that end a geometry), then campaign.py --selftest (the campaign
+the whitelist, the records, determinism and the CLI), then remedies.py --selftest (the L2 remedies: the table, diagnose, the 31 probe fixtures and 35 sequences, box_sphere CAPABILITY-LIMITED after 1 try, the static scan, 600 single steps and 300 loops, the synthetic outcomes, the records, determinism, the veto and the CLI), then explain.py --selftest (the explanations: 53 templates and the static rule-id scan, the fixture records, rows and timestamps, the moved measurements, three golden geometries, the campaign summary and Clopper-Pearson, the audit, determinism, the CLI, the optimiser records that end a geometry and the seed-1 fixture of them), then campaign.py --selftest (the campaign
 runner: the modes, the two baselines, the sealed split, observe, a fake rules
 campaign, replay, the veto and the ablations, the hooks, the PID runner and
 RAM admission, the audit sample and the comparator, resume, and a live
@@ -27,7 +27,7 @@ campaign through the CLI), then baseline.py --selftest (the baselines: the refus
 L3 prior: the null policy and the features, the scaler and the abstention distance, the
 vote, the bank, the remedy path, the G-PRIOR gate on an oracle campaign and its disabled
 branch, the 2026-09-26 rule in the bank, the edge class and the whole-path rule, the hook
-seam, a live rules+prior campaign, the shipped prior disabled by the user's decision, the check and the CLI), then optimise.py --selftest
+seam, a live rules+prior campaign, the shipped prior disabled by its gate file, the check and the CLI, the gate-driven ship rule of AUT-11), then optimise.py --selftest
 (the L4 optimiser: the config rebuild, the knob features, the cross-fitted ensemble, the Sobol pool and the pick,
 the hook seam, the refinement rounds on two oracle campaigns and the disabled branch, the refit on
 new rows and its gate, a live rules+opt campaign, the
@@ -39,7 +39,13 @@ tuning rows: the sample, the config rebuild, the seal, the verdicts, a
 scripted run and one live R-PLANE row), then aml.py --selftest (the AM-L tuning
 re-measure report: the subset, the before table against baseline's groups,
 the drop causes, F3e, integrity, the target and R-CURV, the report, check,
-ledger and CLI), then
+ledger and CLI), then costbound.py --selftest (the AUT-06 lower bound: the
+hand-counted boxes F0-F5, the ancestor-only balance control, the
+192-triangle box, the 4096-centre ray test, the refusals, the recorded
+E-1-004 inputs and the byte-identical two-row report), then
+projection.py --selftest (the AUT-12 go / no-go: k* and the bar, the
+scaled McNemar, a GO and a NO-GO hand case, the L5 NO-GO 177/420 > 23,
+determinism and the CLI), then
 sensitivity.py --selftest
 (the G-PILOT builder: the 12 geometries, the 288+3 jobs and their whitelist
 edits, R-WIN, the verdict function, a live small-cube run, resume and the
@@ -86,10 +92,11 @@ def main():
               ("corpus/gen_thin.py", 7), ("corpus/inject.py", 7),
               ("corpus/gate.py", 7), ("corpus/split.py", 7),
               ("features.py", 11), ("preflight.py", 12), ("rules.py", 14),
-              ("remedies.py", 13), ("explain.py", 14),
+              ("remedies.py", 13), ("explain.py", 15),
               ("campaign.py", 13), ("baseline.py", 9), ("prior.py", 12),
               ("optimise.py", 11), ("evaluate.py", 8), ("rescore.py", 6),
-              ("lreplay.py", 6), ("aml.py", 7))
+              ("lreplay.py", 6), ("aml.py", 7), ("costbound.py", 7),
+              ("projection.py", 5))
     total = n_ok + s_ok
     outs = [p.stdout, q.stdout]
     for rel, min_ok in corpus:

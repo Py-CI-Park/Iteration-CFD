@@ -3,13 +3,14 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages'
-import type { ChatResponse } from '@cfd/shared'
+import type { ChatResponse, UiState } from '@cfd/shared'
 import { createAttachmentStore } from '../attachments/store.js'
 import { setSchemaValidator, structuralValidate } from '../tools/case.js'
 import { closeOntologyHandles, ontologyHandle } from '../ontology/handle.js'
 import type { LlmClient } from './llm.js'
 import { createMockLlm } from './mockLlm.js'
 import { activeTurnWarning, createAgentService } from './service.js'
+import { getMeshDraft } from '../tools/guiMesh.js'
 import { fakeClient, fakeDatasets, fakeHub, fakeRuns, makeWorkspace, type FakeHub, type FakeRuns, type TempWorkspace } from './test-fakes.js'
 import { until } from './test-util.js'
 import type { AgentService } from './types.js'
@@ -53,6 +54,36 @@ describe('agent service', () => {
     expect(agent.getSessionState(state.id)).toBeNull()
     expect(hub.of('session.deleted').at(-1)?.sessionId).toBe(state.id)
     expect(await agent.handleClientMessage(client, { t: 'ping', ts: 1 })).toBe(false)
+  })
+
+  it('session.new takes the locale the frame carries', async () => {
+    const client = fakeClient()
+    await agent.handleClientMessage(client, { t: 'session.new', locale: 'ko' })
+    const state = client.of('session.state')[0].session
+    expect(state.settings.locale).toBe('ko')
+    expect(state.title).toBe('새 대화')
+  })
+
+  it("a bare session.new falls back to the window's reported locale, then to en", async () => {
+    const ko = fakeClient()
+    ko.uiState = { locale: 'ko' } as unknown as UiState
+    await agent.handleClientMessage(ko, { t: 'session.new' })
+    expect(ko.of('session.state')[0].session.settings.locale).toBe('ko')
+    const bare = fakeClient()
+    await agent.handleClientMessage(bare, { t: 'session.new' })
+    expect(bare.of('session.state')[0].session.settings.locale).toBe('en')
+  })
+
+  it("session.open creates in the frame's locale and leaves an existing session alone", async () => {
+    const a = fakeClient()
+    await agent.handleClientMessage(a, { t: 'session.open', sessionId: null, locale: 'ko' })
+    const created = a.of('session.state')[0].session
+    expect(created.settings.locale).toBe('ko')
+    const b = fakeClient()
+    await agent.handleClientMessage(b, { t: 'session.open', sessionId: created.id, locale: 'en' })
+    const opened = b.of('session.state')[0].session
+    expect(opened.id).toBe(created.id)
+    expect(opened.settings.locale).toBe('ko')
   })
 
   it('runs a user message turn with attachments and remembers approvals for the session', async () => {
@@ -146,6 +177,24 @@ describe('agent service', () => {
     const state = agent.getSessionState(id)!
     expect(state.runs).toHaveLength(1)
     expect(state.messages.at(-1)?.blocks[0]).toMatchObject({ kind: 'text' })
+  })
+
+  it('the Mesh dialog frames edit the session draft and answer one mesh.status (STU-06b)', async () => {
+    const client = fakeClient()
+    await agent.handleClientMessage(client, { t: 'session.new' })
+    const id = client.of('session.state')[0].session.id
+    hub.clear()
+    const before = client.of('mesh.status').length
+    await agent.handleClientMessage(client, { t: 'mesh.start', sessionId: id })
+    expect(client.of('mesh.status').slice(before)).toEqual([{ t: 'mesh.status', sessionId: id, action: 'start', ok: false, code: 'NO_MESH_DRAFT', error: expect.stringContaining('no mesh draft'), runId: null }])
+    await agent.handleClientMessage(client, { t: 'mesh.draft', sessionId: id, edit: { type: 'open_mesh_dialog', preset: 'cavity', cells: [8, 8, 1], outputDir: 'cases/cav' } })
+    expect(client.of('mesh.status').at(-1)).toEqual({ t: 'mesh.status', sessionId: id, action: 'draft', ok: true, code: null, error: null, runId: null })
+    expect(getMeshDraft(id)).toMatchObject({ mode: 'preset', preset: 'cavity', cells: [8, 8, 1], outputDir: 'cases/cav' })
+    // The window is shown the whole draft, as gui_control's open_mesh_dialog shows it.
+    expect(hub.uiCalls.at(-1)).toMatchObject({ type: 'open_mesh_dialog', preset: 'cavity', cells: [8, 8, 1], outputDir: 'cases/cav' })
+    await agent.handleClientMessage(client, { t: 'mesh.draft', sessionId: id, edit: { type: 'open_mesh_dialog', cells: 8 } })
+    expect(client.of('mesh.status').at(-1)).toMatchObject({ action: 'draft', ok: false, code: 'CELLS_2D' })
+    expect(getMeshDraft(id)?.cells).toEqual([8, 8, 1])
   })
 
   it('notifyRunEnded appends a run notice and starts a turn when idle', async () => {

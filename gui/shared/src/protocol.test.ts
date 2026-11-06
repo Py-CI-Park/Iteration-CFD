@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CHAT_TIMEOUT_MAX_MS, ChatRequestSchema, ClientMsgSchema, GpuStateSchema, REST, RunInfoSchema, ServerMsgSchema, activeTurnWarning, type ClientMsg, type ServerMsg, type UiState } from './protocol.js'
+import { CHAT_TIMEOUT_MAX_MS, ChatRequestSchema, ClientMsgSchema, DEFAULT_RUN_PRECISION, GpuStateSchema, REST, RUN_PRECISIONS, RunInfoSchema, ServerMsgSchema, activeTurnWarning, type ClientMsg, type ServerMsg, type UiState } from './protocol.js'
 
 // A wire frame must survive JSON.stringify -> parse -> zod parse unchanged:
 // that is exactly the path every message takes in the browser and the server.
@@ -59,6 +59,16 @@ describe('ui bridge frames', () => {
     expect(roundTripClient(okResult)).toEqual(okResult)
     const host: ServerMsg = { t: 'host', host: { cpu: 12.5, memUsedGb: 9.2, memTotalGb: 32, ts: 1_760_000_000_000 } }
     expect(roundTripServer(host)).toEqual(host)
+  })
+
+  it('session.new and session.open carry an optional locale', () => {
+    const open: ClientMsg = { t: 'session.open', sessionId: null, locale: 'ko' }
+    expect(roundTripClient(open)).toEqual(open)
+    const fresh: ClientMsg = { t: 'session.new', locale: 'ko' }
+    expect(roundTripClient(fresh)).toEqual(fresh)
+    expect(ClientMsgSchema.safeParse({ t: 'session.new' }).success).toBe(true)
+    expect(ClientMsgSchema.safeParse({ t: 'session.open', sessionId: 's_1' }).success).toBe(true)
+    expect(ClientMsgSchema.safeParse({ t: 'session.new', locale: 'fr' }).success).toBe(false)
   })
 
   it('round-trips the six geometry commands', () => {
@@ -153,6 +163,13 @@ describe('run info provenance', () => {
     expect(RunInfoSchema.parse(round).endWord).toBe('refused')
     expect(RunInfoSchema.safeParse({ ...legacyRunInfo, endWord: 'timeout' }).success).toBe(false)
     expect(RunInfoSchema.safeParse({ ...legacyRunInfo, endWord: null }).success).toBe(false)
+  })
+  it('F32-19: a legacy record has no precision (it ran double); single round-trips and anything else is refused', () => {
+    expect(RunInfoSchema.parse(legacyRunInfo).precision).toBeUndefined()
+    expect(DEFAULT_RUN_PRECISION).toBe('double')
+    expect(RUN_PRECISIONS).toEqual(['double', 'single'])
+    expect(RunInfoSchema.parse(JSON.parse(JSON.stringify({ ...legacyRunInfo, precision: 'single' }))).precision).toBe('single')
+    expect(RunInfoSchema.safeParse({ ...legacyRunInfo, precision: 'half' }).success).toBe(false)
   })
 })
 

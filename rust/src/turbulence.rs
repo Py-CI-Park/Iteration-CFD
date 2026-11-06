@@ -77,11 +77,13 @@ use crate::ldu::GpuLduMatrix;
 use crate::ldu_ops::{add_boundary_contributions, relax, LduKernels};
 use crate::timescheme::Ddt;
 use crate::mesh::{GpuMesh, HostMesh};
+use crate::momentum::BuoyancyForm;
 use crate::solver::{
     device_max_mag, SolverControls, SolverKernels, SolverPerformance,
     SolverWorkspace,
 };
 use crate::wallfunctions::{constrain_wall_cells, WallData, WallFunctionCoeffs};
+use crate::wallfunctions::mark_wall_cells;
 use crate::{Label, Scalar, Tensor, Vec3};
 
 /// Read from `system/`; defined in [`crate::io::case`] because that is where
@@ -163,10 +165,16 @@ pub struct TurbKernels {
     wall_distance: CudaFunction,
 
     buoyancy_production: CudaFunction,
+    /// SPEC-LIT §121.6 - the Boussinesq twin of `buoyancy_production`.
+    buoyancy_production_boussinesq: CudaFunction,
     add_buoyancy_k: CudaFunction,
     add_buoyancy_epsilon: CudaFunction,
     add_buoyancy_omega: CudaFunction,
     add_buoyancy_omega_cell: CudaFunction,
+
+    /// SPEC-LIT 139.6 (PAR-12) - the blended diffusivity of a decomposed
+    /// run's processor faces, interpolated as an internal face is.
+    gamma_coupled_cell: CudaFunction,
 }
 
 impl TurbKernels {
@@ -208,10 +216,13 @@ impl TurbKernels {
             wall_distance: k.func("turbWallDistance")?,
 
             buoyancy_production: k.func("turbBuoyancyProduction")?,
+            buoyancy_production_boussinesq: k.func("turbBuoyancyProductionBoussinesq")?,
             add_buoyancy_k: k.func("turbAddBuoyancyToK")?,
             add_buoyancy_epsilon: k.func("turbAddBuoyancyToEpsilon")?,
             add_buoyancy_omega: k.func("turbAddBuoyancyToOmega")?,
             add_buoyancy_omega_cell: k.func("turbAddBuoyancyToOmegaCell")?,
+
+            gamma_coupled_cell: k.func("turbGammaCoupledCell")?,
         })
     }
 }
@@ -225,6 +236,19 @@ fn expect_len<T>(buf: &DevBuf<T>, want: usize, what: &str) -> Result<()> {
             buf.len()
         )))
     }
+}
+
+/// SPEC-LIT 139.5 (PAR-11): `nut.f` may be the bare `n_cells` buffer a
+/// serial run always had, or the 139.1 halo-carrying cell buffer
+/// (`n_local`) a decomposed `ScalarTransport` carries - RasCore's own `nut`
+/// has carried the halo since 139.1. Both index exactly the cells the
+/// kernels read: owned cells on the internal faces, `bf` on the boundary
+/// ones, so the halo room is admitted and never read.
+fn expect_nut_cells(nut_f: &DevBuf<Scalar>, m: &GpuMesh) -> Result<()> {
+    if nut_f.len() == m.n_local() {
+        return Ok(());
+    }
+    expect_len(nut_f, m.n_cells, "nut.f")
 }
 
 // ==========================================================================
@@ -249,7 +273,7 @@ pub fn face_diffusivity(
 ) -> Result<()> {
     expect_len(gamma, m.n_internal_faces, "gamma")?;
     expect_len(b_gamma, m.n_boundary_faces, "b_gamma")?;
-    expect_len(&nut.f, m.n_cells, "nut.f")?;
+    expect_nut_cells(&nut.f, m)?;
     expect_len(&nut.bf, m.n_boundary_faces, "nut.bf")?;
 
     if m.n_internal_faces > 0 {
@@ -320,7 +344,7 @@ pub fn face_diffusivity_affine(
 ) -> Result<()> {
     expect_len(gamma, m.n_internal_faces, "gamma")?;
     expect_len(b_gamma, m.n_boundary_faces, "b_gamma")?;
-    expect_len(&nut.f, m.n_cells, "nut.f")?;
+    expect_nut_cells(&nut.f, m)?;
     expect_len(&nut.bf, m.n_boundary_faces, "nut.bf")?;
 
     if m.n_internal_faces > 0 {
@@ -388,9 +412,17 @@ pub fn face_diffusivity_cell(
 ) -> Result<()> {
     expect_len(gamma, m.n_internal_faces, "gamma")?;
     expect_len(b_gamma, m.n_boundary_faces, "b_gamma")?;
-    expect_len(&nut.f, m.n_cells, "nut.f")?;
+    expect_nut_cells(&nut.f, m)?;
     expect_len(&nut.bf, m.n_boundary_faces, "nut.bf")?;
-    expect_len(r_sigma, m.n_cells, "r_sigma")?;
+    // SPEC-LIT 139.6 (PAR-12): on a part the multiplier may be the
+    // exchanged `n_local` room (RasCore::assemble_transport_blended passes
+    // it); this pass reads owned cells only - a part's internal faces join
+    // two owned cells - and the processor faces read the room's halo in
+    // face_diffusivity_coupled_cell. A whole mesh has `n_local == n_cells`
+    // and passes what it always passed.
+    if r_sigma.len() != m.n_local() {
+        expect_len(r_sigma, m.n_cells, "r_sigma")?;
+    }
 
     if m.n_internal_faces > 0 {
         let n = m.n_internal_faces;
@@ -430,6 +462,62 @@ pub fn face_diffusivity_cell(
         }
     }
 
+    Ok(())
+}
+
+/// SPEC-LIT 139.6 (PAR-12): the blended `Gamma_eff·|Sf|` on the LISTED
+/// boundary faces - a decomposed run's processor faces - interpolated as an
+/// INTERNAL face is, from the two cells the face couples.
+///
+/// [`face_diffusivity_cell`]'s boundary pass (`turbGammaBoundaryCell`) takes
+/// the OWNER's `rSigma`; on a processor face the other cell belongs to another
+/// rank and carries its own blending factor, so where the factor varies (SST's
+/// `F1`) the owner-only value is wrong at O(1e-3), not round-off. This is
+/// `turbGammaInternalCell`'s expression evaluated over the listed faces, the
+/// neighbour's `nut` and `r_sigma` read at the halo cell the exchange has
+/// filled. `r_sigma` is therefore the `n_local` HALO-CARRYING buffer, not the
+/// `n_cells` one the internal pass reads - and the caller runs this AFTER
+/// [`face_diffusivity_cell`], overwriting the processor faces' entries only.
+///
+/// k-epsilon's constant sigma makes the owner-only value algebraically equal
+/// to the interpolated one, so nothing calls this there.
+#[allow(clippy::too_many_arguments)]
+pub fn face_diffusivity_coupled_cell(
+    gpu: &Gpu,
+    k: &TurbKernels,
+    b_gamma: &mut DevBuf<Scalar>,
+    nut: &GpuScalarField,
+    r_sigma: &DevBuf<Scalar>,
+    faces: &DevBuf<Label>,
+    n_faces: usize,
+    m: &GpuMesh,
+    nu: Scalar,
+) -> Result<()> {
+    expect_len(b_gamma, m.n_boundary_faces, "b_gamma")?;
+    expect_nut_cells(&nut.f, m)?;
+    expect_len(r_sigma, m.n_local(), "r_sigma")?;
+    if n_faces == 0 {
+        return Ok(());
+    }
+    expect_len(faces, n_faces, "faces")?;
+
+    let nl = n_faces as Label;
+    let f = k.gamma_coupled_cell.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(b_gamma)
+            .arg(&nut.f)
+            .arg(r_sigma)
+            .arg(&m.b_face_cells)
+            .arg(&m.b_nbr_cell)
+            .arg(&m.b_weights)
+            .arg(&m.b_mag_sf)
+            .arg(faces)
+            .arg(&nu)
+            .arg(&nl)
+            .launch(cfg_for(n_faces))?;
+    }
     Ok(())
 }
 
@@ -543,7 +631,7 @@ pub fn nut_boundary(
         return Ok(());
     }
     expect_len(&nut.bf, n, "nut.bf")?;
-    expect_len(&nut.f, m.n_cells, "nut.f")?;
+    expect_nut_cells(&nut.f, m)?;
 
     let nl = n as Label;
     let f = kern.nut_boundary.clone();
@@ -710,7 +798,16 @@ pub struct BuoyancyProduction {
     /// Absolute-temperature floor for the `1/T` in the term. Not a physical
     /// constant - a guard, so a zero in the temperature field announces itself
     /// as a wrong answer rather than as a NaN.
+    ///
+    /// Only the density-ratio form reads it: (121.6) has no divide and no
+    /// floor, so a Boussinesq [`Self::form`] ignores it entirely.
     pub t_min: Scalar,
+    /// Which density law the term follows - SPEC-LIT §17 or §121.6. The
+    /// default `DensityRatio` divides by the local `T` behind the floor
+    /// `t_min`; `Boussinesq { beta }` evaluates
+    /// `G_b = beta (nu_t/Pr_t) g·grad(T)`, which reads no temperature at
+    /// all, so `t_min` is unused under it.
+    pub form: BuoyancyForm,
 }
 
 impl Default for BuoyancyProduction {
@@ -721,6 +818,7 @@ impl Default for BuoyancyProduction {
             c3: C3Mode::default(),
             epsilon_stable_branch: false,
             t_min: 1.0,
+            form: BuoyancyForm::DensityRatio,
         }
     }
 }
@@ -745,6 +843,16 @@ impl BuoyancyProduction {
                 return Err(Error::Config(format!("C3 is {v}")));
             }
         }
+        // SPEC-LIT §121.6: `Momentum::new` refuses a non-finite beta by name
+        // for the same reason - there is no floor downstream to catch it.
+        if let BuoyancyForm::Boussinesq { beta } = self.form {
+            if !beta.is_finite() {
+                return Err(Error::Config(format!(
+                    "beta is {beta}; the Boussinesq thermal expansion \
+                     coefficient must be finite (SPEC-LIT §121.6)"
+                )));
+            }
+        }
         Ok(())
     }
 }
@@ -758,6 +866,14 @@ impl BuoyancyProduction {
 /// The sign is the whole point: with `g` pointing down and `grad(T)` up -
 /// stable stratification - `g·grad(T) < 0` and `G_b < 0`, so buoyancy
 /// destroys turbulence. `tests::buoyancy_production_sign` pins it.
+///
+/// SPEC-LIT §121.6 offers the Boussinesq form
+/// `G_b = beta (nu_t/Pr_t) g·grad(T)` beside it, selected by `b.form`:
+/// `DensityRatio` launches §17's kernel with its argument list unchanged -
+/// `t` and the floor `t_min` included - so every existing run is bit for bit
+/// what it always was; `Boussinesq { beta }` launches
+/// `turbBuoyancyProductionBoussinesq`, which takes `beta` instead and does
+/// not read `t` at all. Both compute `C_3` the same way, bit for bit.
 #[allow(clippy::too_many_arguments)]
 pub fn buoyancy_production(
     gpu: &Gpu,
@@ -778,27 +894,54 @@ pub fn buoyancy_production(
     let (mode, c3c) = b.c3.as_args();
     let r_prt = 1.0 / b.prt;
     let (gx, gy, gz) = (b.g.x, b.g.y, b.g.z);
-    let t_min = b.t_min;
 
-    let f = kern.buoyancy_production.clone();
-    unsafe {
-        gpu.stream()
-            .launch_builder(&f)
-            .arg(gb)
-            .arg(c3)
-            .arg(nut)
-            .arg(grad_t)
-            .arg(t)
-            .arg(u)
-            .arg(&gx)
-            .arg(&gy)
-            .arg(&gz)
-            .arg(&r_prt)
-            .arg(&mode)
-            .arg(&c3c)
-            .arg(&t_min)
-            .arg(&nl)
-            .launch(cfg_for(n))?;
+    match b.form {
+        BuoyancyForm::DensityRatio => {
+            // SPEC-LIT §17, the launch exactly as it has always been.
+            let t_min = b.t_min;
+            let f = kern.buoyancy_production.clone();
+            unsafe {
+                gpu.stream()
+                    .launch_builder(&f)
+                    .arg(gb)
+                    .arg(c3)
+                    .arg(nut)
+                    .arg(grad_t)
+                    .arg(t)
+                    .arg(u)
+                    .arg(&gx)
+                    .arg(&gy)
+                    .arg(&gz)
+                    .arg(&r_prt)
+                    .arg(&mode)
+                    .arg(&c3c)
+                    .arg(&t_min)
+                    .arg(&nl)
+                    .launch(cfg_for(n))?;
+            }
+        }
+        BuoyancyForm::Boussinesq { beta } => {
+            // SPEC-LIT §121.6 - same G_b buffer, same C_3, no `t`.
+            let f = kern.buoyancy_production_boussinesq.clone();
+            unsafe {
+                gpu.stream()
+                    .launch_builder(&f)
+                    .arg(gb)
+                    .arg(c3)
+                    .arg(nut)
+                    .arg(grad_t)
+                    .arg(u)
+                    .arg(&gx)
+                    .arg(&gy)
+                    .arg(&gz)
+                    .arg(&r_prt)
+                    .arg(&beta)
+                    .arg(&mode)
+                    .arg(&c3c)
+                    .arg(&nl)
+                    .launch(cfg_for(n))?;
+            }
+        }
     }
     Ok(())
 }
@@ -1218,8 +1361,16 @@ pub fn ls_grad_grad_u_mag_sqr(
     m: &GpuMesh,
 ) -> Result<()> {
     let n = m.n_cells;
-    expect_len(out, n, "out")?;
-    expect_len(grad_u, n, "grad_u")?;
+    // The PAR-09 room (SPEC-LIT 139.6): the per-cell buffers of the SST
+    // blend allocate at `n_local` on a part, and the kernels thread the `n`
+    // owned cells only, so the room is admitted and never read. A whole
+    // mesh has `n_local == n_cells` and passes what it always passed.
+    if out.len() < n {
+        expect_len(out, n, "out")?;
+    }
+    if grad_u.len() < n {
+        expect_len(grad_u, n, "grad_u")?;
+    }
     if n == 0 {
         return Ok(());
     }
@@ -1362,8 +1513,16 @@ pub fn strain_rate_mag(
     if n == 0 {
         return Ok(());
     }
-    expect_len(out, n, "out")?;
-    expect_len(grad_u, n, "grad_u")?;
+    // The PAR-09 room (SPEC-LIT 139.6): the per-cell buffers of the SST
+    // blend allocate at `n_local` on a part, and the kernels thread the `n`
+    // owned cells only, so the room is admitted and never read. A whole
+    // mesh has `n_local == n_cells` and passes what it always passed.
+    if out.len() < n {
+        expect_len(out, n, "out")?;
+    }
+    if grad_u.len() < n {
+        expect_len(grad_u, n, "grad_u")?;
+    }
 
     let nl = n as Label;
     let f = kern.strain_rate.clone();
@@ -1394,8 +1553,16 @@ pub fn vorticity_mag(
     if n == 0 {
         return Ok(());
     }
-    expect_len(out, n, "out")?;
-    expect_len(grad_u, n, "grad_u")?;
+    // The PAR-09 room (SPEC-LIT 139.6): the per-cell buffers of the SST
+    // blend allocate at `n_local` on a part, and the kernels thread the `n`
+    // owned cells only, so the room is admitted and never read. A whole
+    // mesh has `n_local == n_cells` and passes what it always passed.
+    if out.len() < n {
+        expect_len(out, n, "out")?;
+    }
+    if grad_u.len() < n {
+        expect_len(grad_u, n, "grad_u")?;
+    }
 
     let nl = n as Label;
     let f = kern.vorticity.clone();
@@ -1428,8 +1595,16 @@ pub fn grad_frobenius(
     if n == 0 {
         return Ok(());
     }
-    expect_len(out, n, "out")?;
-    expect_len(grad_u, n, "grad_u")?;
+    // The PAR-09 room (SPEC-LIT 139.6): the per-cell buffers of the SST
+    // blend allocate at `n_local` on a part, and the kernels thread the `n`
+    // owned cells only, so the room is admitted and never read. A whole
+    // mesh has `n_local == n_cells` and passes what it always passed.
+    if out.len() < n {
+        expect_len(out, n, "out")?;
+    }
+    if grad_u.len() < n {
+        expect_len(grad_u, n, "grad_u")?;
+    }
 
     let nl = n as Label;
     let f = kern.grad_frobenius.clone();
@@ -1555,6 +1730,27 @@ pub struct RasCore<'m> {
     /// Two one-element landing pads for the convergence reduction.
     red_a: DevBuf<Scalar>,
     red_b: DevBuf<Scalar>,
+
+    // The decomposed seams - SPEC-LIT 139.6 (PAR-12). Both `Option`s are
+    // `None` for every serial run, where each new arm is the call this core
+    // has always made; a decomposed model is handed its
+    // [`FlowExchange`](crate::distflow::FlowExchange) and
+    // [`ComponentRoute`](crate::momentum::ComponentRoute) through
+    // [`Self::set_exchange`] / [`Self::set_route`].
+    /// The rank's field exchange, when the model runs on a part.
+    exchange: Option<Box<dyn crate::distflow::FlowExchange + 'm>>,
+    /// The part's SPMD Krylov route for every equation this core solves.
+    route: Option<Box<dyn crate::momentum::ComponentRoute + 'm>>,
+    /// `[n_proc_faces]` the part's processor boundary faces, ascending - the
+    /// faces whose diffusivity is interpolated as an internal face's is.
+    proc_faces: Option<DevBuf<Label>>,
+    /// `proc_faces`' length, kept because the time loop must not allocate and
+    /// the launcher needs a count.
+    n_proc_faces: usize,
+    /// `[n_local]` the diffusivity multiplier with its halo filled by the
+    /// exchange, rebuilt from the model's owned `r_sigma` each blended
+    /// assembly.
+    r_sigma_halo: Option<DevBuf<Scalar>>,
 }
 
 impl<'m> RasCore<'m> {
@@ -1578,7 +1774,14 @@ impl<'m> RasCore<'m> {
         // A degenerate mesh still gets one-element buffers: a zero-length
         // device allocation is an error, and every launcher returns early on
         // `n == 0` so nothing reads them.
-        let nc = mesh.n_cells.max(1);
+        //
+        // The PAR-09 room (SPEC-LIT 139.6, PAR-12): the per-cell buffers of
+        // the equation assembly are `n_local` long, because the `fvc_`/`fvm_`
+        // calls they feed expect the room on a part; the kernels thread
+        // owned cells only, so the room is admitted and never read. A whole
+        // mesh has `n_local == n_cells`, so a serial run allocates and
+        // launches exactly what it always did.
+        let nc = mesh.n_local().max(1);
         let nif = mesh.n_internal_faces.max(1);
         let nbf = mesh.n_boundary_faces.max(1);
 
@@ -1646,6 +1849,12 @@ impl<'m> RasCore<'m> {
             diff: gpu.zeros(nc)?,
             red_a: gpu.zeros(1)?,
             red_b: gpu.zeros(1)?,
+
+            exchange: None,
+            route: None,
+            proc_faces: None,
+            n_proc_faces: 0,
+            r_sigma_halo: None,
         })
     }
 
@@ -1737,6 +1946,23 @@ impl<'m> RasCore<'m> {
         t: &GpuScalarField,
         u: &GpuVectorField,
     ) -> Result<bool> {
+        // SPEC-LIT 139.6 (PAR-12): `G_b` reads `grad(T)`, and a decomposed
+        // run has no T gradient across the cut - the gradient pass reads
+        // `t.bf` and the neighbour cells' values at the far cell of every
+        // face, none of which the exchange of PAR-12 moves. A driver that
+        // attached buoyancy AFTER `set_exchange` is refused here, the same
+        // rule `set_exchange` states for one attached before. Without a
+        // buoyancy attached the call is the serial no-op it always was.
+        if self.exchange.is_some() && self.buoyancy.is_some() {
+            return Err(Error::Config(
+                "distflow: a decomposed RasCore cannot build the buoyancy \
+                 production G_b - it reads grad(T) at the far cell of a face, \
+                 and the temperature's gradient has no halo on the turbulence \
+                 path yet (PAR-12); run the model serial, or decompose an \
+                 isothermal case"
+                    .to_string(),
+            ));
+        }
         let Some(b) = self.buoyancy else {
             return Ok(false);
         };
@@ -1892,6 +2118,90 @@ impl<'m> RasCore<'m> {
     ) -> Result<()> {
         self.a.zero(gpu)?;
 
+        // SPEC-LIT 139.6 (PAR-12): the blend multiplier crosses the halo
+        // first. The owned values are copied into the `n_local` room and the
+        // exchange fills its halo - on EVERY rank with an exchange, because
+        // the exchange is collective - and both passes read the room: the
+        // internal-face pass its owned cells, the coupled pass below the
+        // processor faces' halo cells. Serially `exchange` and
+        // `r_sigma_halo` are `None` and `r_sigma` itself is the pass buffer -
+        // nothing here moves.
+        let Self { fld, exchange, r_sigma_halo, .. } = self;
+        let pass: &DevBuf<Scalar> = match (exchange.as_mut(), r_sigma_halo.as_mut()) {
+            (Some(x), Some(halo)) => {
+                crate::field_ops::copy_field(gpu, fld, halo, r_sigma, self.mesh.n_cells)?;
+                x.cells(gpu, halo)?;
+                &*halo
+            }
+            _ => r_sigma,
+        };
+
+        face_diffusivity_cell(
+            gpu,
+            &self.turb,
+            &mut self.gamma,
+            &mut self.b_gamma,
+            &self.nut,
+            pass,
+            self.mesh,
+            flow.nu,
+        )?;
+
+        // On a part the processor faces' diffusivity is an internal face's,
+        // not the owner-only value the boundary pass just wrote; the coupled
+        // kernel overwrites exactly those faces from the same exchanged
+        // room. Nothing here moves for a serial run: `proc_faces` is `None`
+        // and this block is a failed `if`.
+        if self.n_proc_faces > 0 {
+            let Self { r_sigma_halo, proc_faces, turb, b_gamma, nut, mesh, .. } = self;
+            let halo = r_sigma_halo
+                .as_mut()
+                .expect("proc_faces is set only with a halo buffer");
+            let faces = proc_faces
+                .as_ref()
+                .expect("n_proc_faces > 0 implies proc_faces");
+            face_diffusivity_coupled_cell(
+                gpu,
+                turb,
+                b_gamma,
+                nut,
+                halo,
+                faces,
+                self.n_proc_faces,
+                *mesh,
+                flow.nu,
+            )?;
+        }
+
+        self.assemble_after_diffusivity(gpu, flow, psi, conv, None)
+    }
+
+    /// [`Self::assemble_transport_blended`] for a MASS-WEIGHTED equation -
+    /// SPEC-LIT §156.1 (DST-05), the rho-weighted SST:
+    ///
+    /// ```text
+    /// ddt(rho, psi) + div(phi_m, psi) - laplacian(rho_f (nu + sigma nu_t), psi) = 0
+    /// ```
+    ///
+    /// with `sigma` read per cell, as SST's blend needs. The same contract as
+    /// [`Self::assemble_transport_mass_weighted`]: `flow.phi` must already BE
+    /// the mass flux, and everything after the diffusivity is the one
+    /// assembly every entry point shares. At `rho == 1` this is
+    /// [`Self::assemble_transport_blended`] bit for bit: the face
+    /// diffusivity is multiplied by an exact `1`, and the `ddt` is the first
+    /// term written into the zeroed matrix, so `fma(sv*a_N, 1, 0)` and
+    /// `fma(sv, a_N, 0)` are the same rounding of the same product.
+    pub fn assemble_transport_blended_mass_weighted(
+        &mut self,
+        gpu: &Gpu,
+        flow: &FlowState,
+        psi: &GpuScalarField,
+        conv: DivEntry,
+        r_sigma: &DevBuf<Scalar>,
+        mass: &MassWeighting<'_>,
+    ) -> Result<()> {
+        self.a.zero(gpu)?;
+
         face_diffusivity_cell(
             gpu,
             &self.turb,
@@ -1903,7 +2213,22 @@ impl<'m> RasCore<'m> {
             flow.nu,
         )?;
 
-        self.assemble_after_diffusivity(gpu, flow, psi, conv, None)
+        crate::field_ops::multiply_field(
+            gpu,
+            &self.fld,
+            &mut self.gamma,
+            &mass.rho_face.f,
+            self.mesh.n_internal_faces,
+        )?;
+        crate::field_ops::multiply_field(
+            gpu,
+            &self.fld,
+            &mut self.b_gamma,
+            &mass.rho_face.bf,
+            self.mesh.n_boundary_faces,
+        )?;
+
+        self.assemble_after_diffusivity(gpu, flow, psi, conv, Some(mass))
     }
 
     /// [`Self::assemble_transport`] with the face diffusivity supplied by
@@ -2134,7 +2459,21 @@ impl<'m> RasCore<'m> {
         relax(gpu, &self.ldu, &mut self.a, self.mesh, &psi.f, alpha)?;
 
         if constrain_walls {
-            constrain_wall_cells(gpu, &self.ldu, &mut self.a, self.mesh, &self.wd)?;
+            if let Some(x) = &mut self.exchange {
+                // SPEC-LIT 139.6 (PAR-12): `constrain_wall_cells` split across
+                // the cut. The mark half first, then the two constraint
+                // arrays across the halo - `lduSetValues` reads `isFixed` at a
+                // coupled face's NEIGHBOUR cell, which on a part is a halo
+                // cell that only the exchange can fill - then the same fold,
+                // in the same position (after the relaxation that would
+                // re-open the row, before the boundary fold).
+                mark_wall_cells(gpu, &mut self.a, self.mesh, &self.wd)?;
+                x.cells_label(gpu, &mut self.a.is_fixed)?;
+                x.cells(gpu, &mut self.a.fixed_value)?;
+                crate::ldu_ops::set_values(gpu, &self.ldu, &mut self.a, self.mesh)?;
+            } else {
+                constrain_wall_cells(gpu, &self.ldu, &mut self.a, self.mesh, &self.wd)?;
+            }
         }
 
         add_boundary_contributions(gpu, &self.ldu, &mut self.a, self.mesh)?;
@@ -2149,7 +2488,69 @@ impl<'m> RasCore<'m> {
         // (SPEC-LIT 8.2, 13.4). A transport equation carrying convection is
         // asymmetric, so `solver PCG;` on one is now refused instead of
         // running BiCGStab and saying nothing.
-        crate::solver::solve(gpu, &self.sol, &mut psi.f, &self.a, self.mesh, &mut self.ws, sc)
+        // SPEC-LIT 139.6 (PAR-12): on a part the final solve goes through the
+        // SPMD Krylov (every residual norm the world's), exactly as
+        // `solve_equation_route` does; `None` - every serial run - is the
+        // rank-local call above, launch for launch.
+        match self.route.as_mut() {
+            Some(r) => r.solve_component(gpu, &mut psi.f, &self.a, self.mesh, sc),
+            None => {
+                crate::solver::solve(gpu, &self.sol, &mut psi.f, &self.a, self.mesh, &mut self.ws, sc)
+            }
+        }
+    }
+
+    /// SPEC-LIT 139.5 (PAR-11): [`Self::solve_equation_with`], with the final
+    /// solve through `route` when `Some`.
+    ///
+    /// `None` -> exactly `self.solve_equation_with(gpu, psi, alpha, sc,
+    /// constrain_walls, constrain_fixed)`, launch for launch. `Some` runs the
+    /// same relax / constrain_wall_cells / add_boundary_contributions /
+    /// set_values steps and hands the assembled system to the part's SPMD
+    /// Krylov instead of the rank-local one - the seam
+    /// `ScalarTransport::set_route` (PAR-11) drives.
+    pub fn solve_equation_route(
+        &mut self,
+        gpu: &Gpu,
+        psi: &mut GpuScalarField,
+        alpha: Scalar,
+        sc: &SolverControls,
+        constrain_walls: bool,
+        constrain_fixed: bool,
+        route: Option<&mut (dyn crate::momentum::ComponentRoute + '_)>,
+    ) -> Result<SolverPerformance> {
+        relax(gpu, &self.ldu, &mut self.a, self.mesh, &psi.f, alpha)?;
+
+        if constrain_walls {
+            if let Some(x) = &mut self.exchange {
+                // SPEC-LIT 139.6 (PAR-12): `constrain_wall_cells` split across
+                // the cut. The mark half first, then the two constraint
+                // arrays across the halo - `lduSetValues` reads `isFixed` at a
+                // coupled face's NEIGHBOUR cell, which on a part is a halo
+                // cell that only the exchange can fill - then the same fold,
+                // in the same position (after the relaxation that would
+                // re-open the row, before the boundary fold).
+                mark_wall_cells(gpu, &mut self.a, self.mesh, &self.wd)?;
+                x.cells_label(gpu, &mut self.a.is_fixed)?;
+                x.cells(gpu, &mut self.a.fixed_value)?;
+                crate::ldu_ops::set_values(gpu, &self.ldu, &mut self.a, self.mesh)?;
+            } else {
+                constrain_wall_cells(gpu, &self.ldu, &mut self.a, self.mesh, &self.wd)?;
+            }
+        }
+
+        add_boundary_contributions(gpu, &self.ldu, &mut self.a, self.mesh)?;
+
+        if constrain_fixed {
+            crate::ldu_ops::set_values(gpu, &self.ldu, &mut self.a, self.mesh)?;
+        }
+
+        match route {
+            Some(r) => r.solve_component(gpu, &mut psi.f, &self.a, self.mesh, sc),
+            None => {
+                crate::solver::solve(gpu, &self.sol, &mut psi.f, &self.a, self.mesh, &mut self.ws, sc)
+            }
+        }
     }
 
     /// `k_prev <- k`. Called at the top of every `correct`, so that
@@ -2185,7 +2586,175 @@ impl<'m> RasCore<'m> {
         let d = change.first().copied().unwrap_or(0.0);
         let s = scale.first().copied().unwrap_or(0.0);
 
+        // SPEC-LIT 139.6 (PAR-12): the two maxima are RANK-local reductions;
+        // on a part they are the WORLD's, or two ranks of one outer iteration
+        // would disagree about whether the model converged. The same
+        // NaN-propagating max the flow path reduces with.
+        let (d, s) = if let Some(x) = &mut self.exchange {
+            (x.max(d)?, x.max(s)?)
+        } else {
+            (d, s)
+        };
+
         Ok(if s > 0.0 { d / s } else { d })
+    }
+}
+
+// ==========================================================================
+//  The decomposed seams - SPEC-LIT 139.6 (PAR-12)
+// ==========================================================================
+
+impl<'m> RasCore<'m> {
+    /// Set the exchange a decomposed model runs through: the field halo +
+    /// boundary evaluation of [`Self::correct_bc`], the raw-cell halos of the
+    /// wall-cell constraint, the processor faces of the coupled diffusivity
+    /// and the world's maxima of [`Self::convergence_measure`]. `None` (the
+    /// default) leaves every serial call launch for launch.
+    ///
+    /// Refusals ([`Error::Config`], starting `distflow: `), checked only when
+    /// `x` is `Some`, in this order:
+    ///
+    /// 1. `snGrad` not `uncorrected`, or a non-orthogonal corrector - both
+    ///    read a cell gradient at the far cell of a face, and gradients have
+    ///    no halo on the turbulence path yet;
+    /// 2. `k`'s or `epsilon`'s (or `omega`'s) `divScheme` neither `upwind` nor
+    ///    `central` (named with `{:?}`) - the other schemes read the far cell's
+    ///    gradient too;
+    /// 3. `gradSchemes` not plain `Gauss linear` - a limiter reads its
+    ///    neighbours' extrema;
+    /// 4. buoyancy production attached - `G_b` needs the temperature's
+    ///    gradient, which PAR-12 does not exchange.
+    ///
+    /// Then the processor faces: every boundary face of every patch whose
+    /// `type_name` is `"processor"` (a TRUE cyclic patch is not one of them),
+    /// ascending, uploaded once - and the `n_local` halo buffer the blended
+    /// assembly fills, allocated on every rank with an exchange (its halo
+    /// exchange is collective, processor faces or not).
+    pub fn set_exchange(
+        &mut self,
+        gpu: &Gpu,
+        hm: &HostMesh,
+        x: Option<Box<dyn crate::distflow::FlowExchange + 'm>>,
+    ) -> Result<()> {
+        if let Some(_) = &x {
+            if self.ctrl.sn_grad != crate::fv::SnGradScheme::Uncorrected
+                || self.ctrl.n_non_orth_correctors > 0
+            {
+                return Err(Error::Config(format!(
+                    "distflow: snGrad {:?} with {} non-orthogonal corrector(s) \
+                     reads a cell gradient at the far cell of a face, and \
+                     gradients have no halo on the turbulence path yet \
+                     (PAR-12); a decomposed RAS model runs snGrad uncorrected \
+                     and zero correctors only",
+                    self.ctrl.sn_grad, self.ctrl.n_non_orth_correctors
+                )));
+            }
+            for (what, conv) in [("k", self.ctrl.k_conv()), ("epsilon", self.ctrl.eps_conv())] {
+                match conv.scheme {
+                    crate::fv::DivScheme::Upwind | crate::fv::DivScheme::Central => {}
+                    other => {
+                        return Err(Error::Config(format!(
+                            "distflow: {what} divScheme {other:?} needs a cell \
+                             gradient at the far cell of a face, and gradients \
+                             have no halo on the turbulence path yet (PAR-12); \
+                             a decomposed RAS model runs upwind or central \
+                             convection only"
+                        )));
+                    }
+                }
+            }
+            if self.ctrl.grad_scheme != crate::fv::GradScheme::GAUSS {
+                return Err(Error::Config(format!(
+                    "distflow: gradSchemes {} limits or reconstructs from the \
+                     neighbours' values, which cross the cut; a decomposed RAS \
+                     model runs plain Gauss linear only (PAR-12)",
+                    self.ctrl.grad_scheme.describe()
+                )));
+            }
+            if self.buoyancy.is_some() {
+                return Err(Error::Config(
+                    "distflow: a decomposed RAS model cannot run the buoyancy \
+                     production G_b - it reads grad(T) at the far cell of a \
+                     face, and the temperature's gradient has no halo on the \
+                     turbulence path yet (PAR-12)"
+                        .to_string(),
+                ));
+            }
+        }
+
+        match x {
+            Some(x) => {
+                // The processor faces: kind Cyclic, `type_name` "processor" -
+                // a TRUE cyclic patch carries its own name and is NOT one of
+                // these (SPEC-LIT 139.1). Ascending by construction: the
+                // patches are stored in order and each patch's faces ascend.
+                let mut faces: Vec<Label> = Vec::new();
+                for pi in &hm.patches {
+                    if pi.type_name == "processor" {
+                        faces.extend((pi.start..pi.start + pi.size).map(|b| b as Label));
+                    }
+                }
+                if faces.is_empty() {
+                    self.proc_faces = None;
+                    self.n_proc_faces = 0;
+                } else {
+                    let mut buf = gpu.zeros(faces.len())?;
+                    gpu.write(&mut buf, &faces)?;
+                    self.proc_faces = Some(buf);
+                    self.n_proc_faces = faces.len();
+                }
+                // The room is allocated on EVERY rank with an exchange, not
+                // only on ranks with processor faces: the blend multiplier's
+                // halo exchange is collective, and a part whose neighbours
+                // reach it through a cut cyclic couple alone has a halo and
+                // no processor face - skipping the exchange there would
+                // leave its neighbours waiting.
+                self.r_sigma_halo = Some(gpu.zeros(self.mesh.n_local().max(1))?);
+                self.exchange = Some(x);
+            }
+            None => {
+                self.exchange = None;
+                self.proc_faces = None;
+                self.n_proc_faces = 0;
+                self.r_sigma_halo = None;
+            }
+        }
+        Ok(())
+    }
+
+    /// SPEC-LIT 139.6 (PAR-12): set where every equation this core solves is
+    /// solved - the part's SPMD Krylov behind
+    /// [`ComponentRoute`](crate::momentum::ComponentRoute); `None` (the
+    /// default) keeps the rank-local [`crate::solver::solve`], launch for
+    /// launch.
+    pub fn set_route(&mut self, route: Option<Box<dyn crate::momentum::ComponentRoute + 'm>>) {
+        self.route = route;
+    }
+
+    /// True when a decomposed run's exchange is set.
+    pub fn has_exchange(&self) -> bool {
+        self.exchange.is_some()
+    }
+
+    /// A transported scalar's halo then boundary evaluation on a part; the
+    /// plain `correct_boundary_conditions` a serial run has always made,
+    /// launch for launch, when the exchange is `None`.
+    pub fn correct_bc(&mut self, gpu: &Gpu, psi: &mut GpuScalarField) -> Result<()> {
+        if let Some(x) = &mut self.exchange {
+            x.field(gpu, &self.fld, psi, self.mesh)
+        } else {
+            crate::field_ops::correct_boundary_conditions(gpu, &self.fld, psi, self.mesh)
+        }
+    }
+
+    /// [`Self::correct_bc`] for `nu_t`, whose boundary faces the model owns
+    /// and whose halo the kernels read at a coupled face's far cell.
+    pub fn correct_nut_bc(&mut self, gpu: &Gpu) -> Result<()> {
+        if let Some(x) = &mut self.exchange {
+            x.field(gpu, &self.fld, &mut self.nut, self.mesh)
+        } else {
+            crate::field_ops::correct_boundary_conditions(gpu, &self.fld, &mut self.nut, self.mesh)
+        }
     }
 }
 
@@ -2320,6 +2889,7 @@ mod tests {
     /// test that only checked the reduction would pass on a kernel that
     /// ignored `a` entirely.
     #[test]
+    // f32 (F32-17): face 25's identity gap is 1.1e-5 relative, past the cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_affine_diffusivity_reduces_to_the_plain_one_bitwise() -> Result<()> {
         let Some(gpu) = gpu() else {
@@ -2607,5 +3177,263 @@ mod tests {
         assert!((got[0] - 3.0).abs() < 1e-12);
 
         Ok(())
+    }
+
+    // ----------------------------------------------------------------------
+    //  The Boussinesq production - SPEC-LIT §121.6
+    // ----------------------------------------------------------------------
+
+    use crate::momentum::BuoyancyForm;
+
+    /// The build's `Scalar` widened to the f64 the answer keys are computed
+    /// in: a no-op in this build, the exact widening under `single`.
+    #[allow(clippy::useless_conversion)]
+    fn w64(x: Scalar) -> f64 {
+        x as f64
+    }
+
+    /// The 8-ulp-of-the-build rule the §121.6 tests are written against.
+    fn within_8_ulp(got: Scalar, want: f64) -> bool {
+        let eps = Scalar::EPSILON as f64;
+        (w64(got) - want).abs() <= 8.0 * eps * w64(got).abs()
+    }
+
+    /// Fixture F - six awkward cells for the §121.6 term: a `nut` spanning
+    /// two decades, a `grad(T)` that turns the dot with `g` through both
+    /// signs, `T` from 256 K to 1173.15 K (256 and 512 are the dyadic T the
+    /// bitwise `beta = 1/T` checks hang off) and a velocity field that
+    /// exercises the Henkes split.
+    fn fixture_f() -> (Vec3, Scalar, Vec<Scalar>, Vec<Vec3>, Vec<Scalar>, Vec<Vec3>) {
+        (
+            Vec3::new(0.3, -0.2, -9.81),
+            0.85,
+            vec![0.02, 0.035, 0.011, 0.5, 0.0042, 1.3],
+            vec![
+                Vec3::new(0.0, 0.0, 50.0),
+                Vec3::new(0.0, 0.0, -50.0),
+                Vec3::new(2.0, -1.0, 30.0),
+                Vec3::new(-1.0, 0.5, -80.0),
+                Vec3::new(0.1, 0.2, 5.0),
+                Vec3::new(-3.0, 2.0, -12.0),
+            ],
+            vec![256.0, 512.0, 293.15, 1173.15, 300.0, 350.5],
+            vec![
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 2.0),
+                Vec3::new(0.3, -0.4, 1.2),
+                Vec3::new(0.0, 0.7, 0.0),
+                Vec3::new(-2.0, 1.0, -0.5),
+            ],
+        )
+    }
+
+    /// Launch [`buoyancy_production`] on plain buffers - the term needs no
+    /// mesh - and read both results back.
+    fn run_buoy(
+        gpu: &Gpu,
+        kern: &TurbKernels,
+        nut: &[Scalar],
+        grad_t: &[Vec3],
+        t: &[Scalar],
+        u: &[Vec3],
+        b: &BuoyancyProduction,
+    ) -> Result<(Vec<Scalar>, Vec<Scalar>)> {
+        let n = nut.len();
+        let nut_b = gpu.upload(nut)?;
+        let grad_b = gpu.upload(grad_t)?;
+        let t_b = gpu.upload(t)?;
+        let u_b = gpu.upload(u)?;
+        let mut gb: DevBuf<Scalar> = gpu.zeros(n)?;
+        let mut c3: DevBuf<Scalar> = gpu.zeros(n)?;
+        buoyancy_production(gpu, kern, &mut gb, &mut c3, &nut_b, &grad_b, &t_b, &u_b, b, n)?;
+        gpu.sync()?;
+        Ok((gpu.download(&gb)?, gpu.download(&c3)?))
+    }
+
+    /// SPEC-LIT §121.6 and (121.7): the Boussinesq `G_b` is the density-ratio
+    /// `G_b` times exactly `beta*T`, whatever `C_3` convention runs beside
+    /// it - and with `beta = 1/T` the two forms agree bit for bit, both
+    /// kernels then scaling the same product by a dyadic.
+    #[test]
+    fn boussinesq_gb_equals_ratio_gb_times_t_beta() -> Result<()> {
+        let Some(gpu) = gpu() else {
+            return Ok(());
+        };
+        let kern = TurbKernels::new(&gpu)?;
+        let (g, prt, nut, grad_t, t, u) = fixture_f();
+        let beta: Scalar = 3.4e-3;
+
+        for c3 in [C3Mode::Henkes, C3Mode::Constant(0.7)] {
+            let ratio = BuoyancyProduction {
+                g,
+                prt,
+                c3,
+                form: BuoyancyForm::DensityRatio,
+                ..Default::default()
+            };
+            let bous = BuoyancyProduction {
+                g,
+                prt,
+                c3,
+                form: BuoyancyForm::Boussinesq { beta },
+                ..Default::default()
+            };
+            let (gb_r, c3_r) = run_buoy(&gpu, &kern, &nut, &grad_t, &t, &u, &ratio)?;
+            let (gb_b, c3_b) = run_buoy(&gpu, &kern, &nut, &grad_t, &t, &u, &bous)?;
+
+            for c in 0..nut.len() {
+                assert_eq!(
+                    c3_b[c].to_bits(),
+                    c3_r[c].to_bits(),
+                    "cell {c}: C_3 moved between the forms"
+                );
+                // (121.7): G_b,B = G_b,R * T * beta, cell by cell.
+                let want = w64(gb_r[c]) * w64(t[c]) * w64(beta);
+                assert!(
+                    within_8_ulp(gb_b[c], want),
+                    "cell {c}: device {} against (121.7) {want}",
+                    gb_b[c]
+                );
+            }
+
+            // beta = 1/T: both forms are then the same product scaled by a
+            // dyadic, so the agreement is exact, bit for bit.
+            for (cell, one_over_t) in [(0usize, 1.0 / 256.0), (1usize, 1.0 / 512.0)] {
+                let exact = BuoyancyProduction {
+                    g,
+                    prt,
+                    c3,
+                    form: BuoyancyForm::Boussinesq { beta: one_over_t },
+                    ..Default::default()
+                };
+                let (gb_e, _) = run_buoy(&gpu, &kern, &nut, &grad_t, &t, &u, &exact)?;
+                assert_eq!(
+                    gb_e[cell].to_bits(),
+                    gb_r[cell].to_bits(),
+                    "cell {cell}: beta = 1/T must give the ratio form bit for bit"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// SPEC-LIT §121.6 carrying §17's sign argument over unchanged: `grad(T)`
+    /// up against `g` down is a stable layer and `G_b < 0`; above a heat
+    /// source the dot turns round and `G_b > 0`. Cell 0 is about
+    /// -0.02308235.
+    #[test]
+    fn boussinesq_gb_sign_follows_the_stratification() -> Result<()> {
+        let Some(gpu) = gpu() else {
+            return Ok(());
+        };
+        let kern = TurbKernels::new(&gpu)?;
+        let g = Vec3::new(0.0, 0.0, -9.81);
+        let prt: Scalar = 0.85;
+        let beta: Scalar = 2.0e-3;
+        let nut = vec![0.02, 0.02];
+        let grad_t = vec![Vec3::new(0.0, 0.0, 50.0), Vec3::new(0.0, 0.0, -50.0)];
+        let t = vec![300.0, 300.0];
+        let u = vec![Vec3::ZERO; 2];
+        let b = BuoyancyProduction {
+            g,
+            prt,
+            c3: C3Mode::Constant(0.0),
+            form: BuoyancyForm::Boussinesq { beta },
+            ..Default::default()
+        };
+        let (gb, _) = run_buoy(&gpu, &kern, &nut, &grad_t, &t, &u, &b)?;
+
+        // The host formula in f64, with `rPrt` formed in `Scalar` first -
+        // the kernel forms its rPrt the same way, and the answer key has to
+        // round where the kernel rounds.
+        let r_prt = 1.0 / prt;
+        let dtdz = [50.0, -50.0];
+        for c in 0..2 {
+            let want = w64(beta) * w64(nut[c]) * w64(r_prt) * w64(g.z) * w64(dtdz[c]);
+            assert!(
+                within_8_ulp(gb[c], want),
+                "cell {c}: device {} against (121.6) {want}",
+                gb[c]
+            );
+        }
+        assert!(gb[0] < 0.0, "a stable layer must destroy k, gave {}", gb[0]);
+        assert!(gb[1] > 0.0, "above a heat source G_b must make k, gave {}", gb[1]);
+        assert!(
+            (w64(gb[0]) + 0.02308235).abs() < 1e-6,
+            "cell 0 is about -0.02308235, gave {}",
+            gb[0]
+        );
+        Ok(())
+    }
+
+    /// SPEC-LIT §121.6: the Boussinesq kernel reads no temperature, so a NaN
+    /// or zero `t` cannot reach `G_b` - three launches identical but for the
+    /// `t` buffer, and every bit of `G_b` must agree across them.
+    #[test]
+    fn boussinesq_gb_does_not_read_the_temperature() -> Result<()> {
+        let Some(gpu) = gpu() else {
+            return Ok(());
+        };
+        let kern = TurbKernels::new(&gpu)?;
+        let (g, prt, nut, grad_t, t, u) = fixture_f();
+        let b = BuoyancyProduction {
+            g,
+            prt,
+            c3: C3Mode::Henkes,
+            form: BuoyancyForm::Boussinesq { beta: 3.4e-3 },
+            ..Default::default()
+        };
+
+        let (gb_finite, _) = run_buoy(&gpu, &kern, &nut, &grad_t, &t, &u, &b)?;
+        let nans = vec![Scalar::NAN; nut.len()];
+        let (gb_nan, _) = run_buoy(&gpu, &kern, &nut, &grad_t, &nans, &u, &b)?;
+        let zeros = vec![0.0; nut.len()];
+        let (gb_zero, _) = run_buoy(&gpu, &kern, &nut, &grad_t, &zeros, &u, &b)?;
+
+        for c in 0..nut.len() {
+            assert_eq!(
+                gb_nan[c].to_bits(),
+                gb_finite[c].to_bits(),
+                "cell {c}: a NaN temperature leaked into G_b"
+            );
+            assert_eq!(
+                gb_zero[c].to_bits(),
+                gb_finite[c].to_bits(),
+                "cell {c}: a zero temperature leaked into G_b"
+            );
+            assert!(
+                gb_finite[c].is_finite(),
+                "cell {}: {} is not finite",
+                c,
+                gb_finite[c]
+            );
+        }
+        Ok(())
+    }
+
+    /// SPEC-LIT §121.6: a non-finite `beta` is refused BY NAME, as
+    /// `Momentum::new` refuses it for the force. Host-side - no launch, so
+    /// no card needed.
+    #[test]
+    fn boussinesq_production_refuses_a_non_finite_beta() {
+        let mut b = BuoyancyProduction::default();
+        assert_eq!(b.form, BuoyancyForm::DensityRatio);
+        assert!(b.validate().is_ok());
+
+        b.form = BuoyancyForm::Boussinesq { beta: 3.4e-3 };
+        assert!(b.validate().is_ok());
+
+        for beta in [Scalar::NAN, Scalar::INFINITY] {
+            b.form = BuoyancyForm::Boussinesq { beta };
+            let err = b
+                .validate()
+                .err()
+                .expect("a non-finite beta must be refused");
+            assert!(
+                err.to_string().contains("beta"),
+                "the refusal must name beta: {err}"
+            );
+        }
     }
 }

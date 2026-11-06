@@ -150,11 +150,19 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 
 // --------------------------------------------------------------- manifest --
 
-/// Whether a key is a file under `reference/` or a literal still typed into a
-/// source file.
+/// Whether a key is a tracked file under `reference/`, a `fetched` file whose
+/// host grants no redistribution this repository's licence can carry, or a
+/// literal still typed into a source file.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Kind {
+    /// A tracked file under `reference/`.
     File,
+    /// A file under `reference/` that is NOT tracked: its host grants no
+    /// redistribution this repository can use (none at all, or a
+    /// non-commercial licence), the row pins its digest, and
+    /// `tools/keys/fetch_answer_keys.py fetch` fetches it.
+    Fetched,
+    /// A literal still typed into a source file.
     Literal,
 }
 
@@ -194,9 +202,10 @@ impl Manifest {
     /// with `-` (the rule). Everything else is prose and ignored. Refuses by
     /// name (`Error::Parse { path, msg }`, `msg` naming the line number and
     /// the id where there is one): a table line with other than 7 cells; a
-    /// `kind` other than `file` / `literal`; a `file` row whose `sha256` is
-    /// not exactly 64 characters of `[0-9a-f]`; a `literal` row whose
-    /// `sha256` is not `-`; an `id` seen twice; an empty `id` or `file`.
+    /// `kind` other than `file` / `fetched` / `literal`; a `file` or
+    /// `fetched` row whose `sha256` is not exactly 64 characters of
+    /// `[0-9a-f]`; a `literal` row whose `sha256` is not `-`; an `id` seen
+    /// twice; an empty `id` or `file`.
     pub fn parse(path: &Path, text: &str) -> Result<Manifest> {
         let named = display_path(path);
         let mut rows: Vec<Row> = Vec::new();
@@ -225,13 +234,14 @@ impl Manifest {
             }
             let kind = match cells[1] {
                 "file" => Kind::File,
+                "fetched" => Kind::Fetched,
                 "literal" => Kind::Literal,
                 other => {
                     return Err(Error::Parse {
                         path: named.clone(),
                         msg: format!(
                             "line {at}: answer key \"{}\": the kind cell is \"{other}\", \
-                             not file or literal",
+                             not file, fetched or literal",
                             cells[0]
                         ),
                     });
@@ -251,17 +261,21 @@ impl Manifest {
                 });
             }
             match kind {
-                Kind::File => {
+                Kind::File | Kind::Fetched => {
                     let sha = cells[6];
                     let lower_hex = sha.len() == 64
                         && sha
                             .bytes()
                             .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase());
                     if !lower_hex {
+                        let what = match kind {
+                            Kind::Fetched => "a fetched row's sha256",
+                            _ => "a file row's sha256",
+                        };
                         return Err(Error::Parse {
                             path: named.clone(),
                             msg: format!(
-                                "line {at}: answer key \"{id}\": a file row's sha256 must \
+                                "line {at}: answer key \"{id}\": {what} must \
                                  be 64 lower-case hex characters, found \"{sha}\""
                             ),
                         });
@@ -408,7 +422,7 @@ pub fn load_text(id: &str) -> Result<(String, String)> {
 }
 
 /// The key `id`'s digest line and VERIFIED text, for keys that are not the
-/// CSV [`load_from`] parses - an MKM `.means` whitespace table with `%`
+/// CSV [`load_from`] parses - an MKM `.means` whitespace table with `#`
 /// header lines, and the two transcriptions SPEC-LIT §110.3 and §110.4
 /// print. The refusals are exactly [`load_from`]'s (no row names `id`; a
 /// literal row; an unreadable file; a digest that is not the manifest's;
@@ -568,6 +582,270 @@ pub fn ghia_1982() -> Result<Ghia> {
     })
 }
 
+// --------------------------------------------------------- ERCOFTAC T3A --
+
+/// The manifest id of the T3A summary table (SPEC-LIT §144.6).
+pub const T3A_ID: &str = "ercoftac-t3a";
+/// The manifest id of the same table for the T3B case (SPEC-LIT §144.7).
+pub const T3B_ID: &str = "ercoftac-t3b";
+/// The manifest id of the same table for the T3A- case (SPEC-LIT §144.7).
+pub const T3AM_ID: &str = "ercoftac-t3am";
+
+/// The nine column names of the T3A summary table, in the file's order.
+const T3A_COLUMNS: [&str; 9] = [
+    "RUN", "X", "REX", "UO", "CF", "H", "RETHETA", "DELTA", "TUFS",
+];
+
+/// One station of the ERCOFTAC T3A summary table (`t3ay.dat`), as printed:
+/// the single-wire run id, the axial position `x` from the leading edge in
+/// mm, `Re_x = x U0 / nu`, the free-stream velocity `U0` in m/s, the skin
+/// friction coefficient `Cf`, the shape factor `H`, `Re_theta`, the 99 %
+/// thickness in mm and the free-stream turbulence intensity `Tu` in %.
+#[derive(Clone, Debug, PartialEq)]
+pub struct T3aStation {
+    pub run: String,
+    pub x_mm: f64,
+    pub re_x: f64,
+    pub u0: f64,
+    pub cf: f64,
+    pub h: f64,
+    pub re_theta: f64,
+    pub delta_mm: f64,
+    pub tu_pct: f64,
+}
+
+/// The T3A key: every station in file order and the key's digest line
+/// ([`KeyFile::digest_line`]'s shape).
+#[derive(Debug)]
+pub struct T3a {
+    pub stations: Vec<T3aStation>,
+    pub digest_line: String,
+}
+
+/// Parse one summary table of the T3 family (SPEC-LIT §144.6, §144.7): the
+/// T3A, T3B and T3A- files share the layout and the nine columns. The column
+/// header is the first line whose whitespace-separated fields are exactly
+/// `RUN X REX UO CF H RETHETA DELTA TUFS`; lines before it are the file's
+/// title and key and are skipped. Every later non-empty line is a station:
+/// nine fields, the run id then eight numbers. Refuses by name
+/// (`Error::Parse`, `msg` naming `id`): no header line; a station
+/// line with another field count (line number); a cell that does not parse
+/// as `f64` (line number, cell text); a non-finite cell, or an `X`, `REX`,
+/// `UO`, `CF` or `TUFS` that is not positive (line number, column); no
+/// station at all.
+pub fn parse_t3_summary(path: &str, id: &str, text: &str) -> Result<Vec<T3aStation>> {
+    let refuse = |msg: String| Error::Parse {
+        path: path.to_string(),
+        msg: format!("answer key \"{id}\": {msg}"),
+    };
+    let mut lines = text.lines().enumerate();
+    lines
+        .by_ref()
+        .find(|(_, l)| l.split_whitespace().eq(T3A_COLUMNS.iter().copied()))
+        .ok_or_else(|| {
+            refuse(format!(
+                "no column header line \"{}\"",
+                T3A_COLUMNS.join(" ")
+            ))
+        })?;
+    let mut stations = Vec::new();
+    for (i, line) in lines {
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        if fields.is_empty() {
+            continue;
+        }
+        let n = i + 1;
+        if fields.len() != T3A_COLUMNS.len() {
+            return Err(refuse(format!(
+                "line {n} has {} fields, expected {}",
+                fields.len(),
+                T3A_COLUMNS.len()
+            )));
+        }
+        let mut v = [0.0f64; 8];
+        for (k, cell) in fields[1..].iter().enumerate() {
+            let x: f64 = cell
+                .parse()
+                .map_err(|_| refuse(format!("line {n}: the cell \"{cell}\" is not a number")))?;
+            let positive = matches!(k, 0..=3 | 7);
+            if !x.is_finite() || (positive && x <= 0.0) {
+                return Err(refuse(format!(
+                    "line {n}: {} = {cell} is not a {} number",
+                    T3A_COLUMNS[k + 1],
+                    if positive { "positive finite" } else { "finite" }
+                )));
+            }
+            v[k] = x;
+        }
+        stations.push(T3aStation {
+            run: fields[0].to_string(),
+            x_mm: v[0],
+            re_x: v[1],
+            u0: v[2],
+            cf: v[3],
+            h: v[4],
+            re_theta: v[5],
+            delta_mm: v[6],
+            tu_pct: v[7],
+        });
+    }
+    if stations.is_empty() {
+        return Err(refuse("the table holds no station".to_string()));
+    }
+    Ok(stations)
+}
+
+/// [`parse_t3_summary`] at the T3A id: today's [`parse_t3ay`], unchanged.
+pub fn parse_t3ay(path: &str, text: &str) -> Result<Vec<T3aStation>> {
+    parse_t3_summary(path, T3A_ID, text)
+}
+
+/// `ercoftac_t3a_from(&Manifest::load()?, &reference_dir())`.
+pub fn ercoftac_t3a() -> Result<T3a> {
+    ercoftac_t3a_from(&Manifest::load()?, &reference_dir())
+}
+
+/// The T3B key, `reference/ercoftac_t3a/t3by.dat` (SPEC-LIT §144.7): the
+/// same summary table and refusals as [`ercoftac_t3a`], at [`T3B_ID`].
+pub fn ercoftac_t3b() -> Result<T3a> {
+    // answer-key: ercoftac-t3b
+    ercoftac_t3_from(&Manifest::load()?, &reference_dir(), T3B_ID)
+}
+
+/// The T3A- key, `reference/ercoftac_t3a/t3amy.dat` (SPEC-LIT §144.7): the
+/// same summary table and refusals as [`ercoftac_t3a`], at [`T3AM_ID`].
+pub fn ercoftac_t3am() -> Result<T3a> {
+    // answer-key: ercoftac-t3am
+    ercoftac_t3_from(&Manifest::load()?, &reference_dir(), T3AM_ID)
+}
+
+/// One T3-family key through `manifest`, its file under `dir`, at `id`:
+/// [`load_text_from`]'s refusals (an absent file is `Error::Io` with
+/// `NotFound`, the key being `fetched` and git-ignored), then
+/// [`parse_t3_summary`]'s.
+pub fn ercoftac_t3_from(manifest: &Manifest, dir: &Path, id: &str) -> Result<T3a> {
+    let (digest_line, text) = load_text_from(manifest, dir, id)?;
+    let file = manifest.row(id).map(|r| r.file.clone()).unwrap_or_default();
+    let stations = parse_t3_summary(&display_path(&dir.join(file)), id, &text)?;
+    Ok(T3a {
+        stations,
+        digest_line,
+    })
+}
+
+/// The T3A key through `manifest`, its file under `dir`: [`load_text_from`]'s
+/// refusals (an absent file is `Error::Io` with `NotFound`, the key being
+/// `fetched` and git-ignored), then [`parse_t3ay`]'s.
+pub fn ercoftac_t3a_from(manifest: &Manifest, dir: &Path) -> Result<T3a> {
+    // answer-key: ercoftac-t3a
+    ercoftac_t3_from(manifest, dir, T3A_ID)
+}
+
+/// The NASA TMR zero-pressure-gradient plate's Karman-Schoenherr file,
+/// `(Re_theta, c_f)` (SPEC-LIT §144.5, Gate 132-Z).
+pub const TMR_KS_ID: &str = "tmr-ks-cf";
+/// The same case's Coles profile at `Re_theta = 1e4`, `(y+, u+)`.
+pub const TMR_COLES_ID: &str = "tmr-coles-uplus";
+/// The `variables=` line each file carries, exactly.
+pub const TMR_KS_VARIABLES: &str = "variables=\"retheta\",\"cf\"";
+pub const TMR_COLES_VARIABLES: &str = "variables=\"y+\",\"u+\"";
+
+/// One TMR curve: its points in file order and the key's digest line.
+#[derive(Debug)]
+pub struct TmrCurve {
+    pub points: Vec<(f64, f64)>,
+    pub digest_line: String,
+}
+
+/// Parse a TMR two-column `.dat` file (SPEC-LIT §144.5): `#` lines are the
+/// file's title and are skipped, one line is exactly `variables`, and every
+/// other non-empty line is a point, two finite numbers. Refuses by name
+/// (`Error::Parse`, `msg` naming `id`): no `variables` line, or another one;
+/// a point line before it; a line with another field count, or a cell that is
+/// not a finite number (line number); a first column that does not strictly
+/// increase (line number); fewer than two points.
+pub fn parse_tmr_dat(path: &str, id: &str, variables: &str, text: &str) -> Result<Vec<(f64, f64)>> {
+    let refuse = |msg: String| Error::Parse {
+        path: path.to_string(),
+        msg: format!("answer key \"{id}\": {msg}"),
+    };
+    let mut header = false;
+    let mut points: Vec<(f64, f64)> = Vec::new();
+    for (i, line) in text.lines().enumerate() {
+        let n = i + 1;
+        let t = line.trim();
+        if t.is_empty() || t.starts_with('#') {
+            continue;
+        }
+        if t.to_ascii_lowercase().starts_with("variables") {
+            if header || t != variables {
+                return Err(refuse(format!("line {n}: \"{t}\" is not the one line {variables}")));
+            }
+            header = true;
+            continue;
+        }
+        if !header {
+            return Err(refuse(format!("line {n}: a point before the line {variables}")));
+        }
+        let cells: Vec<&str> = t.split_whitespace().collect();
+        if cells.len() != 2 {
+            return Err(refuse(format!("line {n} has {} fields, expected 2", cells.len())));
+        }
+        let mut v = [0.0f64; 2];
+        for (k, cell) in cells.iter().enumerate() {
+            v[k] = cell
+                .parse::<f64>()
+                .ok()
+                .filter(|x| x.is_finite())
+                .ok_or_else(|| refuse(format!("line {n}: the cell \"{cell}\" is not a finite number")))?;
+        }
+        if points.last().is_some_and(|p| !(v[0] > p.0)) {
+            return Err(refuse(format!("line {n}: the first column does not increase")));
+        }
+        points.push((v[0], v[1]));
+    }
+    if !header {
+        return Err(refuse(format!("no line {variables}")));
+    }
+    if points.len() < 2 {
+        return Err(refuse("fewer than two points".to_string()));
+    }
+    Ok(points)
+}
+
+fn tmr_curve_from(manifest: &Manifest, dir: &Path, id: &str, variables: &str) -> Result<TmrCurve> {
+    let (digest_line, text) = load_text_from(manifest, dir, id)?;
+    let file = manifest.row(id).map(|r| r.file.clone()).unwrap_or_default();
+    let points = parse_tmr_dat(&display_path(&dir.join(file)), id, variables, &text)?;
+    Ok(TmrCurve {
+        points,
+        digest_line,
+    })
+}
+
+/// `tmr_ks_cf_from(&Manifest::load()?, &reference_dir())`.
+pub fn tmr_ks_cf() -> Result<TmrCurve> {
+    tmr_ks_cf_from(&Manifest::load()?, &reference_dir())
+}
+
+/// The K-S key through `manifest`: [`load_text_from`]'s refusals, then
+/// [`parse_tmr_dat`]'s.
+pub fn tmr_ks_cf_from(manifest: &Manifest, dir: &Path) -> Result<TmrCurve> {
+    // answer-key: tmr-ks-cf
+    tmr_curve_from(manifest, dir, TMR_KS_ID, TMR_KS_VARIABLES)
+}
+
+/// `tmr_coles_uplus_from(&Manifest::load()?, &reference_dir())`.
+pub fn tmr_coles_uplus() -> Result<TmrCurve> {
+    tmr_coles_uplus_from(&Manifest::load()?, &reference_dir())
+}
+
+/// The Coles key through `manifest`, as [`tmr_ks_cf_from`].
+pub fn tmr_coles_uplus_from(manifest: &Manifest, dir: &Path) -> Result<TmrCurve> {
+    // answer-key: tmr-coles-uplus
+    tmr_curve_from(manifest, dir, TMR_COLES_ID, TMR_COLES_VARIABLES)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -592,6 +870,12 @@ mod tests {
         );
     }
 
+    // The dust stream's one remaining key (docs/17 DST-00, SPEC-LIT §151.6)
+    // is read only by the digest test below until a unit reads it in its
+    // gate; each unit moves its marker into its gate, as DST-07, DST-08 and
+    // DST-11 already moved theirs into dst_leeds.rs, dst_vessel.rs and
+    // dst_rembe.rs.
+    // answer-key: huang2022-corn-starch-table1
     #[test]
     fn every_file_key_matches_its_manifest_digest() {
         let m = Manifest::load().expect("reference/PROVENANCE.md parses");
@@ -775,9 +1059,12 @@ mod tests {
 
     #[test]
     fn every_answer_key_is_named_in_the_manifest_and_every_row_has_its_marker() {
-        const SCAN: [(&str, &str); 5] = [
+        const SCAN: [(&str, &str); 8] = [
             ("rust/src/bin/validate.rs", include_str!("../validate.rs")),
             ("rust/src/bin/validate_key/mod.rs", include_str!("mod.rs")),
+            ("rust/src/bin/validate_gates/dst_leeds.rs", include_str!("../validate_gates/dst_leeds.rs")),
+            ("rust/src/bin/validate_gates/dst_vessel.rs", include_str!("../validate_gates/dst_vessel.rs")),
+            ("rust/src/bin/validate_gates/dst_rembe.rs", include_str!("../validate_gates/dst_rembe.rs")),
             ("rust/src/simple.rs", include_str!("../../simple.rs")),
             ("rust/src/fan/tests.rs", include_str!("../../fan/tests.rs")),
             ("rust/src/cht/ambient.rs", include_str!("../../cht/ambient.rs")),
@@ -796,7 +1083,7 @@ mod tests {
         let distinct = seen.len();
         seen.dedup();
         assert_eq!(distinct, seen.len(), "a marker appears twice: {seen:?}");
-        assert_eq!(markers.len(), 20, "twenty markers, found {markers:?}");
+        assert_eq!(markers.len(), 48, "forty-eight markers, found {markers:?}");
         let m = Manifest::load().expect("reference/PROVENANCE.md parses");
         let mut row_ids: Vec<&str> = m.rows.iter().map(|r| r.id.as_str()).collect();
         row_ids.sort_unstable();
@@ -818,6 +1105,42 @@ mod tests {
                 "kadoya1985-tables-8-12",
                 "nasa-glenn2002-coefficients",
                 "nasa-glenn2002-table-B1",
+                "mcbride-gordon-reno1993-table-II",
+                "ivptestset2008-rober",
+                "ivptestset2008-hires",
+                "tnf-flameD-centreline",
+                "tnf-flameD-x15",
+                "tnf-flameD-x30",
+                "tnf-flameD-x45",
+                "martin-moyce-1952",
+                "riboux-gordillo-2014",
+                "rae2822-coordinates",
+                "rae2822-cp-case6",
+                "driver-seegmiller1985",
+                "mccaffrey1979-table1",
+                "huang2020-leeds-st-b",
+                "huang2022-rembe-p-closed",
+                "huang2022-rembe-p-vented",
+                "huang2022-corn-starch-table1",
+                "tmr-ks-cf",
+                "tmr-coles-uplus",
+            ]
+        );
+        let fetched_ids: Vec<&str> = m
+            .rows
+            .iter()
+            .filter(|r| r.kind == Kind::Fetched)
+            .map(|r| r.id.as_str())
+            .collect();
+        assert_eq!(
+            fetched_ids,
+            [
+                "mkm99-chan180",
+                "mkm99-chan395",
+                "mkm99-chan590",
+                "ercoftac-t3a",
+                "ercoftac-t3b",
+                "ercoftac-t3am",
             ]
         );
         for row in &m.rows {
@@ -829,6 +1152,10 @@ mod tests {
                     assert_eq!(row.sha256.len(), 64, "{}: a file row's sha256", row.id);
                     "file"
                 }
+                Kind::Fetched => {
+                    assert_eq!(row.sha256.len(), 64, "{}: a fetched row's sha256", row.id);
+                    "fetched"
+                }
                 Kind::Literal => {
                     assert_eq!(row.sha256, "-", "{}: a literal row's sha256", row.id);
                     "literal"
@@ -836,5 +1163,1448 @@ mod tests {
             };
             println!("  [answer-key] {}  {kind}  {}  {}", row.id, row.file, row.sha256);
         }
+    }
+
+    /// The `fetched` rows' files are git-ignored, so their presence is a
+    /// property of the TREE, not of the manifest: one that is present must
+    /// carry exactly the digest its row pins, and one that is absent must be
+    /// plainly absent (NotFound) - on a clean clone all six are.
+    #[test]
+    fn every_fetched_key_that_is_present_matches_its_manifest_digest() {
+        let m = Manifest::load().expect("reference/PROVENANCE.md parses");
+        let fetched: Vec<&Row> = m
+            .rows
+            .iter()
+            .filter(|r| r.kind == Kind::Fetched)
+            .collect();
+        assert_eq!(
+            fetched.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(),
+            [
+                "mkm99-chan180",
+                "mkm99-chan395",
+                "mkm99-chan590",
+                "ercoftac-t3a",
+                "ercoftac-t3b",
+                "ercoftac-t3am",
+            ],
+            "exactly the six fetched rows, in manifest order"
+        );
+        let mut present = 0usize;
+        for row in &fetched {
+            match std::fs::read(reference_dir().join(&row.file)) {
+                Ok(bytes) => {
+                    present += 1;
+                    assert_eq!(sha256_hex(&bytes), row.sha256, "{} moved", row.file);
+                }
+                Err(e) => assert_eq!(
+                    e.kind(),
+                    std::io::ErrorKind::NotFound,
+                    "{}: {} (an absent fetched key is simply not there)",
+                    row.file,
+                    e
+                ),
+            }
+        }
+        println!("  [answer-key] fetched keys present on this tree: {present}/6");
+    }
+
+    /// A `fetched` row reads exactly as a `file` row through
+    /// [`load_text_from`] - only a literal is refused - and its sha256 rule
+    /// is the file rule, so a `-` in the digest cell is refused by name.
+    #[test]
+    fn a_fetched_row_reads_like_a_file_row() {
+        let dir = std::env::temp_dir().join("ofgpuValidate_key_fetched");
+        let body = "% Re_tau = 1\n 0 0\n";
+        let m = one_row_manifest(
+            &dir,
+            &format!(
+                "| f | fetched | f.means | s | u | l | {} |",
+                sha256_hex(body.as_bytes())
+            ),
+        );
+        std::fs::write(dir.join("f.means"), body).expect("write f.means");
+        let (line, text) = load_text_from(&m, &dir, "f").expect("the fetched key loads");
+        assert_eq!(text, body);
+        assert!(
+            line.starts_with("answer key f: reference/f.means sha256 "),
+            "{line}"
+        );
+        let refused = text_of(Manifest::parse(
+            &dir.join("PROVENANCE.md"),
+            &format!("{}| f | fetched | f.means | s | u | l | - |\n", synthetic_header()),
+        ));
+        assert!(refused.contains("\"f\""), "{refused}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // ------------------------------------------------------- ERCOFTAC T3A --
+
+    /// A synthetic summary in the T3A file's layout - invented numbers, not
+    /// the ERCOFTAC data, which is not distributed (SPEC-LIT §144.6).
+    const T3A_SYNTHETIC: &str = "TITLE\n\nKEY : RUN  THE RUN NUMBER\n      X    THE POSITION\n\n   \
+        RUN         X          REX          UO        CF          H      RETHETA    DELTA      TUFS\n \
+        1W00001      10.0     1.000E+04      5.00    0.006000     2.600      50.0      1.00     3.000\n \
+        1W00002      20.0     2.000E+04      5.01    0.004000     2.500      70.5      1.50     2.500\n";
+
+    /// [`parse_t3ay`] reads the file's layout to the printed digit and
+    /// refuses by name a table that is not that layout.
+    #[test]
+    fn t3ay_parser_reads_a_synthetic_summary_and_refuses_by_name() {
+        let s = parse_t3ay("t.dat", T3A_SYNTHETIC).expect("the synthetic summary parses");
+        assert_eq!(
+            s,
+            [
+                T3aStation {
+                    run: "1W00001".into(),
+                    x_mm: 10.0,
+                    re_x: 1.0e4,
+                    u0: 5.0,
+                    cf: 0.006,
+                    h: 2.6,
+                    re_theta: 50.0,
+                    delta_mm: 1.0,
+                    tu_pct: 3.0,
+                },
+                T3aStation {
+                    run: "1W00002".into(),
+                    x_mm: 20.0,
+                    re_x: 2.0e4,
+                    u0: 5.01,
+                    cf: 0.004,
+                    h: 2.5,
+                    re_theta: 70.5,
+                    delta_mm: 1.5,
+                    tu_pct: 2.5,
+                },
+            ]
+        );
+        let row2 = " 1W00002      20.0     2.000E+04      5.01    0.004000     2.500      70.5      1.50     2.500";
+        let cases: [(String, &str); 7] = [
+            (T3A_SYNTHETIC.replace("RETHETA", "RE_THETA"), "no column header line"),
+            (T3A_SYNTHETIC.replace(row2, " 1W00002  20.0  2.000E+04"), "line 8 has 3 fields"),
+            (T3A_SYNTHETIC.replace("0.004000", "0.0O4"), "line 8: the cell \"0.0O4\""),
+            (T3A_SYNTHETIC.replace("0.004000", "0.0"), "line 8: CF = 0.0 is not a positive"),
+            (T3A_SYNTHETIC.replace("0.004000", "-0.004"), "line 8: CF = -0.004"),
+            (T3A_SYNTHETIC.replace("70.5", "NaN"), "line 8: RETHETA = NaN is not a finite"),
+            (T3A_SYNTHETIC.split(" 1W00001").next().unwrap().to_string(), "no station"),
+        ];
+        for (text, want) in &cases {
+            let got = text_of(parse_t3ay("t.dat", text));
+            assert!(got.contains("\"ercoftac-t3a\""), "{got}");
+            assert!(got.contains(want), "expected '{want}' in: {got}");
+        }
+    }
+
+    /// The fetched T3A key on this tree: placed, it reads sixteen stations
+    /// from x = 45 to 1495 mm with x and Re_x increasing and every Cf and Tu
+    /// positive and finite; absent (a clean clone), it is plainly NotFound
+    /// and the missing-key line names the id and the file, as VAL-01's keys.
+    #[test]
+    fn ercoftac_t3a_key_reads_sixteen_stations_or_is_missing_by_name() {
+        match ercoftac_t3a() {
+            Ok(t) => {
+                let s = &t.stations;
+                assert_eq!(s.len(), 16, "sixteen stations");
+                assert_eq!((s[0].x_mm, s[15].x_mm), (45.0, 1495.0));
+                for w in s.windows(2) {
+                    assert!(w[1].x_mm > w[0].x_mm && w[1].re_x > w[0].re_x, "{w:?}");
+                }
+                for st in s {
+                    assert!(st.cf.is_finite() && st.cf > 0.0, "{st:?}");
+                    assert!(st.tu_pct.is_finite() && st.tu_pct > 0.0, "{st:?}");
+                }
+                assert!(
+                    t.digest_line.starts_with(
+                        "answer key ercoftac-t3a: reference/ercoftac_t3a/t3ay.dat sha256 "
+                    ),
+                    "{}",
+                    t.digest_line
+                );
+                println!("  [answer-key] {} ({} stations)", t.digest_line, s.len());
+            }
+            Err(e) => {
+                assert!(
+                    matches!(&e, Error::Io { source, .. }
+                        if source.kind() == std::io::ErrorKind::NotFound),
+                    "an absent fetched key is NotFound, got: {e}"
+                );
+                let line = crate::answer_key_missing_line(T3A_ID, "ercoftac_t3a/t3ay.dat", &e);
+                assert!(
+                    line.starts_with(
+                        "answer key ercoftac-t3a missing: reference/ercoftac_t3a/t3ay.dat "
+                    ),
+                    "{line}"
+                );
+                println!("  [answer-key] {line}");
+            }
+        }
+    }
+
+    /// The fetched T3B and T3A- keys on this tree (SPEC-LIT §144.7): placed,
+    /// T3B reads fifteen stations with `Re_x` rising from `1.51e4` and a last
+    /// `Tu` of 2.400 %, T3A- sixteen stations from `1.225e5` with a last `Cf`
+    /// of 0.001514; absent (a clean clone), both are plainly `NotFound`, as
+    /// the T3A key is.
+    #[test]
+    fn ercoftac_t3b_and_t3am_keys_read_their_stations_or_are_missing_by_name() {
+        for (id, file, read) in [
+            (T3B_ID, "ercoftac_t3a/t3by.dat", ercoftac_t3b as fn() -> Result<T3a>),
+            (T3AM_ID, "ercoftac_t3a/t3amy.dat", ercoftac_t3am as fn() -> Result<T3a>),
+        ] {
+            match read() {
+                Ok(t) => {
+                    let s = &t.stations;
+                    if id == T3B_ID {
+                        assert_eq!(s.len(), 15, "fifteen stations");
+                        assert!((s[0].re_x / 1.51e4 - 1.0).abs() <= 1e-12, "{:?}", s[0]);
+                        assert!((s[14].tu_pct - 2.400).abs() <= 1e-12, "{:?}", s[14]);
+                    } else {
+                        assert_eq!(s.len(), 16, "sixteen stations");
+                        assert!((s[0].re_x / 1.225e5 - 1.0).abs() <= 1e-12, "{:?}", s[0]);
+                        assert!((s[15].cf - 0.001514).abs() <= 1e-12, "{:?}", s[15]);
+                    }
+                    for w in s.windows(2) {
+                        assert!(w[1].re_x > w[0].re_x, "{w:?}");
+                    }
+                    for st in s {
+                        assert!(st.cf.is_finite() && st.cf > 0.0, "{st:?}");
+                        assert!(st.tu_pct.is_finite() && st.tu_pct > 0.0, "{st:?}");
+                    }
+                    assert!(t.digest_line.starts_with(&format!("answer key {id}: reference/{file} sha256 ")), "{}", t.digest_line);
+                    println!("  [answer-key] {} ({} stations)", t.digest_line, s.len());
+                }
+                Err(e) => {
+                    assert!(
+                        matches!(&e, Error::Io { source, .. }
+                            if source.kind() == std::io::ErrorKind::NotFound),
+                        "an absent fetched key is NotFound, got: {e}"
+                    );
+                    let line = crate::answer_key_missing_line(id, file, &e);
+                    assert!(
+                        line.starts_with(&format!("answer key {id} missing: reference/{file} ")),
+                        "{line}"
+                    );
+                    println!("  [answer-key] {line}");
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------- chemistry answer keys --
+
+    /// The gas constant the TM-4513 coefficients were generated with,
+    /// J/(mol K) (SPEC-LIT section 128.5; Gate 100-B uses the same value).
+    const TM4513_R: f64 = 8.314510;
+
+    /// cp/R, TM-4513 eq. (1) = SPEC-LIT eq. (128.1), `a = [a1..a7]` of one row.
+    fn tm4513_cp_r(a: &[f64; 7], t: f64) -> f64 {
+        let t2 = t * t;
+        a[0] + a[1] * t + a[2] * t2 + a[3] * t2 * t + a[4] * t2 * t2
+    }
+
+    /// H/(R T), TM-4513 eq. (2) = SPEC-LIT eq. (128.2).
+    fn tm4513_h_rt(a: &[f64; 7], t: f64) -> f64 {
+        let t2 = t * t;
+        a[0] + a[1] * t / 2.0 + a[2] * t2 / 3.0 + a[3] * t2 * t / 4.0 + a[4] * t2 * t2 / 5.0
+            + a[5] / t
+    }
+
+    /// S/R, TM-4513 eq. (3) = SPEC-LIT eq. (128.3).
+    fn tm4513_s_r(a: &[f64; 7], t: f64) -> f64 {
+        let t2 = t * t;
+        a[0] * t.ln() + a[1] * t + a[2] * t2 / 2.0 + a[3] * t2 * t / 3.0 + a[4] * t2 * t2 / 4.0
+            + a[6]
+    }
+
+    /// The element counts of a TM-4513 species code, as (count, weight) pairs
+    /// over SPEC-LIT section 128.2's weights, g/mol.
+    fn tm4513_elements(code: i64) -> &'static [(f64, f64)] {
+        const H: f64 = 1.00794;
+        const C: f64 = 12.011;
+        const N: f64 = 14.00674;
+        const O: f64 = 15.9994;
+        match code {
+            1 => &[(2.0, N)],
+            2 => &[(2.0, O)],
+            5 => &[(1.0, C), (4.0, H)],
+            6 => &[(1.0, C), (2.0, O)],
+            7 => &[(2.0, H), (1.0, O)],
+            8 => &[(1.0, C), (1.0, O)],
+            9 => &[(2.0, H)],
+            10 => &[(1.0, O), (1.0, H)],
+            11 => &[(1.0, O)],
+            12 => &[(1.0, H)],
+            _ => unreachable!("no TM-4513 species code {code}"),
+        }
+    }
+
+    #[test]
+    fn tm4513_records_meet_at_1000_k_and_reproduce_their_printed_weight_and_h298() {
+        // answer-key: mcbride-gordon-reno1993-table-II
+        const ID: &str = "mcbride-gordon-reno1993-table-II";
+        let key = load(ID).expect("the TM-4513 Table II key loads");
+        // The row indices below follow this header.
+        assert_eq!(
+            key.columns,
+            [
+                "species", "t_lo", "t_hi", "mol_weight", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
+                "h298_r",
+            ],
+            "{ID}: the header row"
+        );
+        assert_eq!(key.rows.len(), 20, "{ID}: ten species, two rows each");
+        let col = |name: &str| {
+            key.column(name)
+                .unwrap_or_else(|e| panic!("{ID}: the column {name}: {e}"))
+        };
+        let species = col("species");
+        let t_lo = col("t_lo");
+        let t_hi = col("t_hi");
+        let mol_weight = col("mol_weight");
+        let h298_r = col("h298_r");
+        // [a1..a7] of each row, columns 4..=10 of the asserted header.
+        let coeffs: Vec<[f64; 7]> = key
+            .rows
+            .iter()
+            .map(|r| [r[4], r[5], r[6], r[7], r[8], r[9], r[10]])
+            .collect();
+        assert_eq!(
+            species,
+            [
+                1.0, 1.0, 2.0, 2.0, 5.0, 5.0, 6.0, 6.0, 7.0, 7.0, 8.0, 8.0, 9.0, 9.0, 10.0, 10.0,
+                11.0, 11.0, 12.0, 12.0,
+            ],
+            "{ID}: the species column, two rows per code"
+        );
+        for (k, code) in species.iter().step_by(2).enumerate() {
+            let (u, l) = (2 * k, 2 * k + 1);
+            assert_eq!(
+                (t_lo[u], t_hi[u]),
+                (1000.0, 6000.0),
+                "{ID}: row {u} (species {code}) is the 1000-6000 K row"
+            );
+            assert_eq!(
+                (t_lo[l], t_hi[l]),
+                (200.0, 1000.0),
+                "{ID}: row {l} (species {code}) is the 200-1000 K row"
+            );
+            assert_eq!(
+                mol_weight[u], mol_weight[l],
+                "{ID}: species {code}: mol_weight agrees on rows {u} and {l}"
+            );
+            assert_eq!(
+                h298_r[u], h298_r[l],
+                "{ID}: species {code}: h298_r agrees on rows {u} and {l}"
+            );
+            // The fit at T_mid = 1000 K: the two rows' eqs. (1)-(3) agree
+            // there to 1e-7 relative (worst measured 2.54e-8, CH4 H/RT).
+            let at_mid = [
+                (
+                    tm4513_cp_r(&coeffs[u], 1000.0),
+                    tm4513_cp_r(&coeffs[l], 1000.0),
+                ),
+                (
+                    tm4513_h_rt(&coeffs[u], 1000.0),
+                    tm4513_h_rt(&coeffs[l], 1000.0),
+                ),
+                (
+                    tm4513_s_r(&coeffs[u], 1000.0),
+                    tm4513_s_r(&coeffs[l], 1000.0),
+                ),
+            ];
+            let mut jump = [0.0; 3];
+            for (j, &(fu, fl)) in at_mid.iter().enumerate() {
+                jump[j] = (fu - fl).abs() / fu.abs().max(fl.abs()).max(1.0);
+                assert!(
+                    jump[j] <= 1.0e-7,
+                    "{ID}: species {code} rows {u}/{l}: eq. ({}) is {:e} apart at 1000 K, over 1e-7",
+                    j + 1,
+                    jump[j]
+                );
+            }
+            // The printed H(298.15)/R, from the LOWER row's coefficients
+            // (worst measured 6.40e-5, O).
+            let h298 = 298.15 * tm4513_h_rt(&coeffs[l], 298.15);
+            let dh = (h298 - h298_r[l]).abs();
+            assert!(
+                dh <= 1.0e-4,
+                "{ID}: species {code} rows {u}/{l}: H(298.15)/R evaluates to {h298}, printed {}",
+                h298_r[l]
+            );
+            // The printed molecular weight, from section 128.2's weights
+            // (half the printed fifth decimal; worst measured 3.6e-15).
+            let weight: f64 = tm4513_elements(*code as i64)
+                .iter()
+                .map(|(n, w)| n * w)
+                .sum();
+            let dw = (weight - mol_weight[l]).abs();
+            assert!(
+                dw <= 5.0e-6,
+                "{ID}: species {code} rows {u}/{l}: the weights sum to {weight}, printed {}",
+                mol_weight[l]
+            );
+            println!(
+                "  [answer-key] tm4513  species {}  fit 1000 K {:e}  H(298.15)/R {:e}  weight {:e}",
+                code,
+                jump[0].max(jump[1]).max(jump[2]),
+                dh,
+                dw
+            );
+        }
+        // Exact transcriptions, the spot rows a retyping would bend first.
+        assert_eq!(coeffs[4][0], 1.63552643, "{ID}: row 4 (CH4, 1000-6000 K) a1");
+        assert_eq!(coeffs[15][5], 3615.08056, "{ID}: row 15 (OH, 200-1000 K) a6");
+        assert_eq!(coeffs[19][0], 2.5, "{ID}: row 19 (H, 200-1000 K) a1");
+        for (j, a) in coeffs[19].iter().enumerate().skip(1).take(4) {
+            assert_eq!(*a, 0.0, "{ID}: row 19 (H, 200-1000 K) a{}", j + 1);
+        }
+        assert_eq!(h298_r[0], 0.0, "{ID}: row 0 (N2) h298_r");
+        assert_eq!(h298_r[17], 29968.7009, "{ID}: row 17 (O, 200-1000 K) h298_r");
+    }
+
+    #[test]
+    fn table_b1_holds_twelve_species_and_meets_the_tm4513_records() {
+        const ID: &str = "nasa-glenn2002-table-B1";
+        const TM: &str = "mcbride-gordon-reno1993-table-II";
+        let b1 = load(ID).expect("the Table B1 key loads");
+        let tm = load(TM).expect("the TM-4513 Table II key loads");
+        assert_eq!(
+            b1.columns,
+            ["species", "mol_weight", "cp_298", "dfh_298"],
+            "{ID}: the header row"
+        );
+        assert_eq!(b1.rows.len(), 12, "{ID}: twelve species");
+        let col = |k: &KeyFile, name: &str| {
+            k.column(name)
+                .unwrap_or_else(|e| panic!("{}: the column {name}: {e}", k.id))
+        };
+        let species = col(&b1, "species");
+        let cp_298 = col(&b1, "cp_298");
+        let dfh_298 = col(&b1, "dfh_298");
+        assert_eq!(
+            species,
+            [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0],
+            "{ID}: the species column, in code order"
+        );
+        assert_eq!(cp_298[0], 29.124, "{ID}: row 0 (N2) cp_298, as Gate 100-B reads it");
+        assert_eq!(cp_298[2], 20.786, "{ID}: row 2 (Ar) cp_298");
+        assert_eq!(dfh_298[3], -0.126, "{ID}: row 3 (Air) dfh_298");
+        assert_eq!(b1.rows[4][1], 16.04246, "{ID}: row 4 (CH4) mol_weight");
+        assert_eq!(dfh_298[9], 37.278, "{ID}: row 9 (OH) dfh_298");
+        assert_eq!(dfh_298[11], 217.999, "{ID}: row 11 (H) dfh_298");
+
+        let tm_species = col(&tm, "species");
+        let tm_h298_r = col(&tm, "h298_r");
+        // [a1..a7] of each TM-4513 row, columns 4..=10 of its header.
+        let coeffs: Vec<[f64; 7]> = tm
+            .rows
+            .iter()
+            .map(|r| [r[4], r[5], r[6], r[7], r[8], r[9], r[10]])
+            .collect();
+        for (k, code) in tm_species.iter().step_by(2).enumerate() {
+            let l = 2 * k + 1;
+            let at = species
+                .iter()
+                .position(|s| s == code)
+                .unwrap_or_else(|| panic!("{ID}: no row names species {code}"));
+            // Cp(298.15) from the 200-1000 K row against the B1 column: the
+            // 0.1 % is the fit difference between the seven- and
+            // nine-coefficient forms (SPEC-LIT section 128.7; worst measured
+            // 1.95e-5, O).
+            let cp = TM4513_R * tm4513_cp_r(&coeffs[l], 298.15);
+            let dcp = (cp - cp_298[at]).abs() / cp_298[at];
+            assert!(
+                dcp <= 1.0e-3,
+                "{TM}: species {code} against {ID} row {at}: cp(298.15) is {cp} against {} (rel {dcp:e})",
+                cp_298[at]
+            );
+            // Delta_f H(298.15): the row's H(298.15)/R in K, times R, in
+            // kJ/mol, against the B1 column.
+            let d = TM4513_R * tm_h298_r[l] / 1000.0 - dfh_298[at];
+            if *code as i64 == 10 {
+                // TM-4513's OH record (TPIS78) and TP-2002's Table B1 adopt
+                // different heats of formation of OH, 39.347106 against
+                // 37.278 kJ/mol. The difference is a fact of the two printed
+                // tables, pinned here so nobody meets it unannounced.
+                assert!(
+                    (d - 2.069106).abs() <= 1.0e-5,
+                    "{TM}: species 10 (OH) against {ID} row {at}: the heat-of-formation gap is {d} kJ/mol, pinned 2.069106"
+                );
+            } else {
+                assert!(
+                    d.abs() <= 0.010,
+                    "{TM}: species {code} against {ID} row {at}: the heat of formation differs by {d} kJ/mol"
+                );
+            }
+            println!(
+                "  [answer-key] b1  species {}  cp {:.6}  cp_298 {}  rel {:e}  d {:+.6}",
+                code, cp, cp_298[at], dcp, d
+            );
+        }
+    }
+
+    #[test]
+    fn ivp_testset_references_hold_their_invariants() {
+        // answer-key: ivptestset2008-rober
+        // answer-key: ivptestset2008-hires
+        const ROBER: &str = "ivptestset2008-rober";
+        const HIRES: &str = "ivptestset2008-hires";
+        let rober = load(ROBER).expect("the ROBER reference loads");
+        let hires = load(HIRES).expect("the HIRES reference loads");
+        for (k, id) in [(&rober, ROBER), (&hires, HIRES)] {
+            assert_eq!(
+                k.columns,
+                ["component", "t_end", "y0", "y_ref"],
+                "{id}: the header row"
+            );
+        }
+
+        // ROBER, Table II.10.3 at t = 1e11.
+        assert_eq!(rober.rows.len(), 3, "{ROBER}: three components");
+        let rcol = |name: &str| {
+            rober.column(name)
+                .unwrap_or_else(|e| panic!("{ROBER}: the column {name}: {e}"))
+        };
+        let component = rcol("component");
+        let t_end = rcol("t_end");
+        let y0 = rcol("y0");
+        let y_ref = rcol("y_ref");
+        assert_eq!(component, [1.0, 2.0, 3.0], "{ROBER}: the component column");
+        for (i, t) in t_end.iter().enumerate() {
+            assert_eq!(*t, 1.0e11, "{ROBER}: row {i}: t_end");
+        }
+        assert_eq!(y0, [1.0, 0.0, 0.0], "{ROBER}: the y0 column, y(0) = (1, 0, 0)");
+        assert_eq!(y_ref[0], 2.083340149701255e-8, "{ROBER}: row 0: y_ref");
+        assert_eq!(y_ref[1], 8.333360770334713e-14, "{ROBER}: row 1: y_ref");
+        assert_eq!(y_ref[2], 0.999999979166505, "{ROBER}: row 2: y_ref");
+        // ROBER conserves mass, y1 + y2 + y3 = 1. The reference's own defect
+        // is -1.02e-14; the guard catches a mistyped digit of y3.
+        let mass = y_ref[0] + y_ref[1] + y_ref[2] - 1.0;
+        assert!(
+            mass.abs() <= 2.0e-14,
+            "{ROBER}: y1 + y2 + y3 - 1 is {mass:e}, beyond 2e-14"
+        );
+        println!("  [answer-key] rober sum - 1 = {mass:e}");
+
+        // HIRES, Table II.1.1 at t = 321.8122.
+        assert_eq!(hires.rows.len(), 8, "{HIRES}: eight components");
+        let hcol = |name: &str| {
+            hires.column(name)
+                .unwrap_or_else(|e| panic!("{HIRES}: the column {name}: {e}"))
+        };
+        let component = hcol("component");
+        let t_end = hcol("t_end");
+        let y0 = hcol("y0");
+        let y_ref = hcol("y_ref");
+        assert_eq!(
+            component,
+            [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+            "{HIRES}: the component column"
+        );
+        for (i, t) in t_end.iter().enumerate() {
+            assert_eq!(*t, 321.8122, "{HIRES}: row {i}: t_end");
+        }
+        assert_eq!(
+            y0,
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0057],
+            "{HIRES}: the y0 column"
+        );
+        assert_eq!(y_ref[0], 7.371312573325668e-4, "{HIRES}: row 0: y_ref");
+        assert_eq!(y_ref[7], 2.850001604814231e-3, "{HIRES}: row 7: y_ref");
+        // HIRES conserves y7 + y8, the enzyme E free and bound (f7 = -f8 in
+        // the report's section 1.2); the reference holds it to 0.0 in f64.
+        let enzyme = y_ref[6] + y_ref[7] - 0.0057;
+        assert!(
+            enzyme.abs() <= 1.0e-17,
+            "{HIRES}: y7 + y8 - 0.0057 is {enzyme:e}, beyond 1e-17"
+        );
+        println!("  [answer-key] hires y7 + y8 - 0.0057 = {enzyme:e}");
+    }
+
+    // ------------------------------------------- the TNF Flame D answer keys --
+
+    /// The four Flame D keys, centreline first (SPEC-LIT section 137.5).
+    const TNF_IDS: [&str; 4] = [
+        "tnf-flameD-centreline",
+        "tnf-flameD-x15",
+        "tnf-flameD-x30",
+        "tnf-flameD-x45",
+    ];
+
+    /// The 24 columns after the station column, in the archive's order, that
+    /// all four keys share.
+    const TNF_COLUMNS: [&str; 24] = [
+        "f",
+        "f_rms",
+        "t",
+        "t_rms",
+        "y_o2",
+        "y_o2_rms",
+        "y_n2",
+        "y_n2_rms",
+        "y_h2",
+        "y_h2_rms",
+        "y_h2o",
+        "y_h2o_rms",
+        "y_ch4",
+        "y_ch4_rms",
+        "y_co_raman",
+        "y_co_raman_rms",
+        "y_co2",
+        "y_co2_rms",
+        "y_oh",
+        "y_oh_rms",
+        "y_no",
+        "y_no_rms",
+        "y_co_lif",
+        "y_co_lif_rms",
+    ];
+
+    /// The atomic weights of SPEC-LIT section 137.5, g/mol. The O weight is
+    /// that section's DESIGN choice, because the documentation gives none.
+    const TNF_W_H: f64 = 1.008;
+    const TNF_W_C: f64 = 12.011;
+    const TNF_W_O: f64 = 15.999;
+    /// The jet stream (1) and the coflow (2) element mass fractions that
+    /// close (137.4), from SPEC-LIT section 137.5.
+    const TNF_Y_H1: f64 = 0.0393;
+    const TNF_Y_C1: f64 = 0.1170;
+    const TNF_Y_H2: f64 = 0.0007;
+    const TNF_Y_C2: f64 = 0.0;
+    /// The stoichiometric mixture fraction of SPEC-LIT section 137.5.
+    const TNF_F_STOIC: f64 = 0.351;
+
+    /// All four Flame D keys, loaded and verified, in [`TNF_IDS`]'s order.
+    fn tnf_keys() -> Vec<KeyFile> {
+        TNF_IDS
+            .iter()
+            .map(|id| load(id).unwrap_or_else(|e| panic!("{id}: the key loads: {e}")))
+            .collect()
+    }
+
+    /// One cell of a Flame D key, by data-row index and column name.
+    fn tnf_cell(key: &KeyFile, row: usize, name: &str) -> f64 {
+        let at = key
+            .columns
+            .iter()
+            .position(|c| c == name)
+            .unwrap_or_else(|| panic!("{}: no column named {name}", key.id));
+        key.rows[row][at]
+    }
+
+    /// The denominator of (137.4): the jet stream's `0.5 (Y_H1 - Y_H2)/W_H +
+    /// 2 (Y_C1 - Y_C2)/W_C`, SPEC-LIT section 137.5.
+    fn tnf_denominator() -> f64 {
+        0.5 * (TNF_Y_H1 - TNF_Y_H2) / TNF_W_H + 2.0 * (TNF_Y_C1 - TNF_Y_C2) / TNF_W_C
+    }
+
+    /// The mixture fraction of one row by (137.4)-(137.5), SPEC-LIT section
+    /// 137.5, from the row's Favre-mean species. `co` names the CO column,
+    /// `"y_co_lif"` or `"y_co_raman"`. The H carriers are H2, H2O, CH4 and
+    /// OH, the C carriers CH4, CO and CO2.
+    fn tnf_mixture_fraction(key: &KeyFile, row: usize, co: &str) -> f64 {
+        let y = |name: &str| tnf_cell(key, row, name);
+        let w_h2 = 2.0 * TNF_W_H;
+        let w_h2o = 2.0 * TNF_W_H + TNF_W_O;
+        let w_ch4 = TNF_W_C + 4.0 * TNF_W_H;
+        let w_oh = TNF_W_O + TNF_W_H;
+        let w_co = TNF_W_C + TNF_W_O;
+        let w_co2 = TNF_W_C + 2.0 * TNF_W_O;
+        // (137.5): Y_H = sum_k n_H,k W_H Y_k / W_k, H2's term being y_h2 itself.
+        let y_h = 2.0 * TNF_W_H * y("y_h2") / w_h2
+            + 2.0 * TNF_W_H * y("y_h2o") / w_h2o
+            + 4.0 * TNF_W_H * y("y_ch4") / w_ch4
+            + TNF_W_H * y("y_oh") / w_oh;
+        // (137.5): Y_C = sum_k n_C,k W_C Y_k / W_k.
+        let y_c = TNF_W_C * y("y_ch4") / w_ch4
+            + TNF_W_C * y(co) / w_co
+            + TNF_W_C * y("y_co2") / w_co2;
+        // (137.4): Bilger's F with the H and C element mass fractions only.
+        (0.5 * (y_h - TNF_Y_H2) / TNF_W_H + 2.0 * (y_c - TNF_Y_C2) / TNF_W_C) / tnf_denominator()
+    }
+
+    /// The nine measured mass fractions of one row, summed: O2, N2, H2, H2O,
+    /// CH4, CO (`co` names the column), CO2, OH and NO.
+    fn tnf_mass_sum(key: &KeyFile, row: usize, co: &str) -> f64 {
+        let y = |name: &str| tnf_cell(key, row, name);
+        y("y_o2")
+            + y("y_n2")
+            + y("y_h2")
+            + y("y_h2o")
+            + y("y_ch4")
+            + y(co)
+            + y("y_co2")
+            + y("y_oh")
+            + y("y_no")
+    }
+
+    #[test]
+    fn tnf_flame_d_keys_hold_their_columns_and_stations() {
+        // answer-key: tnf-flameD-centreline
+        // answer-key: tnf-flameD-x15
+        // answer-key: tnf-flameD-x30
+        // answer-key: tnf-flameD-x45
+        let keys = tnf_keys();
+        let [cl, x15, x30, x45] = &keys[..] else {
+            panic!("four Flame D keys, found {}", keys.len());
+        };
+
+        // 1. The headers: the station column, then the 24 shared names.
+        let header = |first: &str| -> Vec<String> {
+            std::iter::once(first)
+                .chain(TNF_COLUMNS)
+                .map(str::to_string)
+                .collect()
+        };
+        assert_eq!(cl.columns.len(), 25, "{}: 25 header names", cl.id);
+        assert_eq!(cl.columns, header("x_d"), "{}: the header row", cl.id);
+        for key in [x15, x30, x45] {
+            assert_eq!(key.columns.len(), 25, "{}: 25 header names", key.id);
+            assert_eq!(key.columns, header("r_d"), "{}: the header row", key.id);
+        }
+
+        // 2. The row counts.
+        for (key, want) in [(cl, 16), (x15, 15), (x30, 15), (x45, 14)] {
+            assert_eq!(key.rows.len(), want, "{}: the row count", key.id);
+        }
+
+        // 3. The centreline stations, x/d = 5 to 80 in steps of 5.
+        let x_d: Vec<f64> = (1..=16).map(|i| 5.0 * f64::from(i)).collect();
+        let got = cl.column("x_d").expect("the x_d column");
+        assert_eq!(got, x_d, "{}: the x_d column", cl.id);
+
+        // 4. The radial stations; x/d = 15 prints r/d = 0.28 twice.
+        let r_x15 = [
+            -0.56, -0.28, 0.0, 0.28, 0.28, 0.56, 0.83, 1.11, 1.39, 1.67, 1.94, 2.22, 2.5, 2.78,
+            3.06,
+        ];
+        let r_x30 = [
+            -0.83, -0.42, 0.0, 0.42, 0.83, 1.25, 1.67, 2.08, 2.5, 2.92, 3.33, 3.75, 4.17, 5.0,
+            5.83,
+        ];
+        let r_x45 = [
+            -1.11, -0.56, 0.0, 0.56, 1.11, 1.67, 2.22, 2.78, 3.33, 3.89, 4.44, 5.56, 6.67, 7.78,
+        ];
+        let r_d = |key: &KeyFile| key.column("r_d").expect("the r_d column");
+        assert_eq!(r_d(x15), r_x15, "{}: the r_d column", x15.id);
+        assert_eq!(r_d(x30), r_x30, "{}: the r_d column", x30.id);
+        assert_eq!(r_d(x45), r_x45, "{}: the r_d column", x45.id);
+
+        // 5. The pinned cells, the ones a retyping would bend first.
+        let pin = |key: &KeyFile, row: usize, name: &str, want: f64| {
+            assert_eq!(
+                tnf_cell(key, row, name),
+                want,
+                "{}: row {row}: the {name} cell",
+                key.id
+            );
+        };
+        pin(cl, 0, "f", 0.9853);
+        pin(cl, 0, "t", 298.0);
+        pin(cl, 8, "x_d", 45.0);
+        pin(cl, 8, "t", 1945.0);
+        pin(cl, 8, "f", 0.3904);
+        pin(cl, 15, "f", 0.1176);
+        pin(cl, 15, "y_co_lif_rms", 2.45e-4);
+        pin(x15, 3, "f", 0.9011);
+        pin(x15, 4, "f", 0.9018);
+        pin(x30, 2, "f", 0.6817);
+        pin(x30, 2, "t", 1262.0);
+        pin(x30, 14, "f", 0.0);
+        pin(x45, 0, "t", 1852.0);
+        pin(x45, 13, "y_co_lif_rms", 4.32e-5);
+
+        // 6. Signs and ranges, over every row of the four keys.
+        for key in &keys {
+            for (row, cells) in key.rows.iter().enumerate() {
+                let station = cells[0];
+                for (name, &v) in key.columns.iter().zip(cells) {
+                    let at = format!("{}: row {row} (station {station}): {name} = {v}", key.id);
+                    match name.as_str() {
+                        "f" => assert!((0.0..=1.0).contains(&v), "{at}: f lies in [0, 1]"),
+                        "t" => assert!(
+                            (290.0..=2100.0).contains(&v),
+                            "{at}: t lies in [290, 2100] K"
+                        ),
+                        _ => {}
+                    }
+                    if name.ends_with("_rms") {
+                        assert!(v >= 0.0, "{at}: an rms is not negative");
+                    } else if name.starts_with("y_") {
+                        assert!(v >= 0.0, "{at}: a mass fraction is not negative");
+                    }
+                }
+            }
+        }
+
+        // 7. One line per key.
+        for key in &keys {
+            let first = key.rows.first().map_or(f64::NAN, |r| r[0]);
+            let last = key.rows.last().map_or(f64::NAN, |r| r[0]);
+            println!(
+                "  [answer-key] tnf {}  {} rows  stations {first} to {last}",
+                key.id,
+                key.rows.len()
+            );
+        }
+    }
+
+    #[test]
+    fn tnf_flame_d_rows_close_their_mass_and_mixture_fraction() {
+        let keys = tnf_keys();
+        // The oracle's denominator of (137.4), a guard on the typed constants
+        // of SPEC-LIT section 137.5 before any row is read.
+        let den = tnf_denominator();
+        assert!(
+            (den - 0.03862896676723586).abs() <= 1.0e-15,
+            "the denominator of (137.4) is {den}, the oracle's is 0.03862896676723586"
+        );
+        for key in &keys {
+            // (value, row) of the worst difference, for each CO column.
+            let (mut lif_f, mut lif_s) = ((0.0_f64, 0_usize), (0.0_f64, 0_usize));
+            let (mut raman_f, mut raman_s) = ((0.0_f64, 0_usize), (0.0_f64, 0_usize));
+            for (row, cells) in key.rows.iter().enumerate() {
+                let station = cells[0];
+                let f = tnf_cell(key, row, "f");
+                let df = (tnf_mixture_fraction(key, row, "y_co_lif") - f).abs();
+                let ds = (tnf_mass_sum(key, row, "y_co_lif") - 1.0).abs();
+                // The documentation says models are compared with the LIF CO,
+                // and the Raman CO carries hydrocarbon interference. So the
+                // Raman figures are printed and never asserted.
+                let rf = (tnf_mixture_fraction(key, row, "y_co_raman") - f).abs();
+                let rs = (tnf_mass_sum(key, row, "y_co_raman") - 1.0).abs();
+                // 1. (137.4)-(137.5) rebuild the printed f (SPEC-LIT section 137.5).
+                assert!(
+                    df <= 5.0e-3,
+                    "{}: row {row} (station {station}): (137.4)-(137.5) with CO from LIF give \
+                     f = {}, printed {f}, differing by {df:e}, beyond 5e-3",
+                    key.id,
+                    tnf_mixture_fraction(key, row, "y_co_lif")
+                );
+                // 2. The nine measured mass fractions sum to one.
+                assert!(
+                    ds <= 2.0e-3,
+                    "{}: row {row} (station {station}): the nine mass fractions with CO from \
+                     LIF sum to {}, which is {ds:e} from 1, beyond 2e-3",
+                    key.id,
+                    tnf_mass_sum(key, row, "y_co_lif")
+                );
+                if df > lif_f.0 {
+                    lif_f = (df, row);
+                }
+                if ds > lif_s.0 {
+                    lif_s = (ds, row);
+                }
+                if rf > raman_f.0 {
+                    raman_f = (rf, row);
+                }
+                if rs > raman_s.0 {
+                    raman_s = (rs, row);
+                }
+            }
+            println!(
+                "  [answer-key] tnf mix {}  lif |F - f| {:.6e} (row {})  lif |sum - 1| {:.6e} \
+                 (row {})  raman |F - f| {:.6e} (row {})  raman |sum - 1| {:.6e} (row {})",
+                key.id, lif_f.0, lif_f.1, lif_s.0, lif_s.1, raman_f.0, raman_f.1, raman_s.0,
+                raman_s.1
+            );
+        }
+    }
+
+    #[test]
+    fn tnf_flame_d_centreline_anchors_the_chr16_band() {
+        let keys = tnf_keys();
+        let [cl, x15, x30, x45] = &keys[..] else {
+            panic!("four Flame D keys, found {}", keys.len());
+        };
+        let col = |key: &KeyFile, name: &str| {
+            key.column(name)
+                .unwrap_or_else(|e| panic!("{}: the column {name}: {e}", key.id))
+        };
+        let x_d = col(cl, "x_d");
+        let f = col(cl, "f");
+        let t = col(cl, "t");
+
+        // 1. T_max: the largest centreline temperature, once, at x/d = 45
+        // (SPEC-LIT section 137.5's anchor for CHR-16's band).
+        let t_max = t.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+        assert_eq!(t_max, 1945.0, "{}: the largest centreline t", cl.id);
+        let at_max: Vec<usize> = t
+            .iter()
+            .enumerate()
+            .filter(|&(_, &v)| v == t_max)
+            .map(|(i, _)| i)
+            .collect();
+        assert_eq!(
+            at_max.len(),
+            1,
+            "{}: T_max occurs at rows {at_max:?}, not at exactly one row",
+            cl.id
+        );
+        assert_eq!(
+            x_d[at_max[0]], 45.0,
+            "{}: row {}: T_max sits at x/d {}",
+            cl.id, at_max[0], x_d[at_max[0]]
+        );
+
+        // 2. The stoichiometric length: f = 0.351 crossed between two
+        // stations, interpolated linearly.
+        let i = (0..f.len() - 1)
+            .find(|&i| f[i] >= TNF_F_STOIC && TNF_F_STOIC > f[i + 1])
+            .unwrap_or_else(|| panic!("{}: f never crosses {TNF_F_STOIC}", cl.id));
+        assert_eq!(i, 8, "{}: f crosses {TNF_F_STOIC} after row {i}", cl.id);
+        let l_stoic = x_d[i] + (x_d[i + 1] - x_d[i]) * (f[i] - TNF_F_STOIC) / (f[i] - f[i + 1]);
+        assert!(
+            (l_stoic - 47.5452196382429).abs() <= 1.0e-12,
+            "{}: rows {i} and {}: L_stoic/d interpolates to {l_stoic}, the supervisor's f64 \
+             value is 47.5452196382429",
+            cl.id,
+            i + 1
+        );
+        // 47.0 is the documentation's printed L_stoic/d for flame D; its
+        // interpolant is not stated, and the measured difference is 0.545.
+        assert!(
+            (l_stoic - 47.0).abs() <= 1.0,
+            "{}: rows {i} and {}: L_stoic/d is {l_stoic}, more than 1 from the printed 47.0",
+            cl.id,
+            i + 1
+        );
+
+        // 3. Each radial profile's r/d = 0 row repeats the centreline station
+        // at its x/d, within the archive's own repeatability.
+        let mut repeats = Vec::new();
+        for (key, station) in [(x15, 15.0), (x30, 30.0), (x45, 45.0)] {
+            let r_d = col(key, "r_d");
+            let r0 = r_d
+                .iter()
+                .position(|&r| r == 0.0)
+                .unwrap_or_else(|| panic!("{}: no row has r/d = 0", key.id));
+            assert_eq!(r0, 2, "{}: the r/d = 0 row is row {r0}", key.id);
+            let c = x_d
+                .iter()
+                .position(|&x| x == station)
+                .unwrap_or_else(|| panic!("{}: no row has x/d = {station}", cl.id));
+            let df = tnf_cell(key, r0, "f") - f[c];
+            let dt = tnf_cell(key, r0, "t") - t[c];
+            let rel = dt.abs() / t[c];
+            assert!(
+                df.abs() <= 0.015,
+                "{}: row {r0} against {} row {c}: f differs by {df:+}, beyond 0.015",
+                key.id,
+                cl.id
+            );
+            assert!(
+                rel <= 0.03,
+                "{}: row {r0} against {} row {c}: t differs by {dt:+} K ({rel:e} relative), \
+                 beyond 3 %",
+                key.id,
+                cl.id
+            );
+            repeats.push((key.id.clone(), df, dt, rel));
+        }
+
+        // 4. The coflow edge: the last station of each radial profile is air.
+        for key in [x15, x30, x45] {
+            let last = key.rows.len() - 1;
+            let (f_edge, t_edge) = (tnf_cell(key, last, "f"), tnf_cell(key, last, "t"));
+            assert!(
+                f_edge <= 0.005,
+                "{}: row {last}: f = {f_edge} at the coflow edge, beyond 0.005",
+                key.id
+            );
+            assert!(
+                t_edge <= 330.0,
+                "{}: row {last}: t = {t_edge} K at the coflow edge, beyond 330 K",
+                key.id
+            );
+        }
+
+        // 5. The printed lines.
+        println!(
+            "  [answer-key] tnf T_max {t_max:.0} K at x/d {:.0}, L_stoic/d {l_stoic:.3} (printed 47.0)",
+            x_d[at_max[0]]
+        );
+        for (id, df, dt, rel) in &repeats {
+            println!("  [answer-key] tnf {id}  r/d = 0 against the centreline  df {df:+.4}  dT {dt:+} K  rel {rel:.4e}");
+        }
+    }
+
+    /// The Martin & Moyce (1952) Table 2 transcription guard (SPEC-LIT
+    /// §145.1): the key holds all 205 printed numbers as the 14 series
+    /// `(a_in, record)`; within every series, in file order, Z and T
+    /// strictly increase; every series carries the normalisation row
+    /// `Z = 1.44, T = 1.19`; and a station carries the printed mean exactly
+    /// when it carries records, the mean inside their closed T range. A
+    /// misread digit that breaks a series' order, a dropped or doubled row,
+    /// or a mean copied into the wrong series fails here. Loading through
+    /// the manifest also pins the file's SHA-256.
+    #[test]
+    fn martin_moyce_key_is_monotone_per_series() {
+        // answer-key: martin-moyce-1952
+        let key = load("martin-moyce-1952").expect("load the answer key \"martin-moyce-1952\"");
+
+        // 1. The header and the row count.
+        assert_eq!(
+            key.columns, ["a_in", "record", "Z", "T"],
+            "martin-moyce-1952: the header row"
+        );
+        assert_eq!(key.rows.len(), 205, "martin-moyce-1952: the row count");
+        let a_in = key.column("a_in").expect("martin-moyce-1952: the a_in column");
+        let record = key.column("record").expect("martin-moyce-1952: the record column");
+        let z = key.column("Z").expect("martin-moyce-1952: the Z column");
+        let t = key.column("T").expect("martin-moyce-1952: the T column");
+
+        // 2. a_in is exactly one of the two widths; record is an integer
+        //    in 0..=9.
+        for i in 0..key.rows.len() {
+            assert!(
+                record[i] >= 0.0 && record[i] <= 9.0 && record[i] == record[i].trunc(),
+                "martin-moyce-1952: row {i}: record {} is not an integer in 0..=9",
+                record[i]
+            );
+            assert!(
+                a_in[i] == 1.125 || a_in[i] == 2.25,
+                "martin-moyce-1952: row {i}: a_in {} is neither 1.125 nor 2.25",
+                a_in[i]
+            );
+        }
+        // 3. The rows of each `(a_in, record)` series, in file order, and
+        //    the exact row counts: 53 rows at a_in = 1.125 (records 1, 2, 3
+        //    and the mean) and 152 at a_in = 2.25 (records 1 to 9 and the
+        //    mean). Fourteen known series and fourteen found leave no room
+        //    for a stray `(a_in, record)` pair.
+        let mut series: Vec<((f64, f64), Vec<usize>)> = Vec::new();
+        for i in 0..key.rows.len() {
+            match series
+                .iter_mut()
+                .find(|(s, _)| *s == (a_in[i], record[i]))
+            {
+                Some((_, rows)) => rows.push(i),
+                None => series.push(((a_in[i], record[i]), vec![i])),
+            }
+        }
+        assert_eq!(series.len(), 14, "martin-moyce-1952: the series count");
+        let want: [((f64, f64), usize); 14] = [
+            ((1.125, 1.0), 12),
+            ((1.125, 2.0), 13),
+            ((1.125, 3.0), 14),
+            ((1.125, 0.0), 14),
+            ((2.25, 1.0), 12),
+            ((2.25, 2.0), 15),
+            ((2.25, 3.0), 15),
+            ((2.25, 4.0), 13),
+            ((2.25, 5.0), 14),
+            ((2.25, 6.0), 14),
+            ((2.25, 7.0), 14),
+            ((2.25, 8.0), 15),
+            ((2.25, 9.0), 15),
+            ((2.25, 0.0), 25),
+        ];
+        for (pair, count) in want {
+            let got = series
+                .iter()
+                .find(|(s, _)| *s == pair)
+                .unwrap_or_else(|| panic!("martin-moyce-1952: no rows for series {pair:?}"));
+            assert_eq!(
+                got.1.len(),
+                count,
+                "martin-moyce-1952: series {pair:?}: the row count"
+            );
+        }
+        // 4. Within every series, in file order, Z and T both strictly
+        //    increase.
+        for ((a, r), rows) in &series {
+            for w in rows.windows(2) {
+                let (i, j) = (w[0], w[1]);
+                assert!(
+                    z[j] > z[i],
+                    "martin-moyce-1952: series ({a}, {r}): rows {i} to {j}: Z {} to {} \
+                     does not strictly increase",
+                    z[i], z[j]
+                );
+                assert!(
+                    t[j] > t[i],
+                    "martin-moyce-1952: series ({a}, {r}): rows {i} to {j}: T {} to {} \
+                     does not strictly increase",
+                    t[i], t[j]
+                );
+            }
+        }
+        // 5. Every series carries the paper's normalisation row: T = 1.19 at
+        //    Z = 1.44 (the page's asterisk), exactly as printed.
+        for ((a, r), rows) in &series {
+            assert!(
+                rows.iter().any(|&i| z[i] == 1.44 && t[i] == 1.19),
+                "martin-moyce-1952: series ({a}, {r}): no row reads T = 1.19 at Z = 1.44"
+            );
+        }
+
+        // 6. A station carries the printed mean exactly when it carries
+        //    records, and the mean lies in the closed range of their T.
+        for a in [1.125, 2.25] {
+            let block: Vec<usize> = (0..key.rows.len()).filter(|&i| a_in[i] == a).collect();
+            let mut zs: Vec<f64> = Vec::new();
+            for &i in &block {
+                if !zs.contains(&z[i]) {
+                    zs.push(z[i]);
+                }
+            }
+            for zz in &zs {
+                let records: Vec<usize> = block
+                    .iter()
+                    .copied()
+                    .filter(|&i| record[i] >= 1.0 && z[i] == *zz)
+                    .collect();
+                let mean = block
+                    .iter()
+                    .copied()
+                    .find(|&i| record[i] == 0.0 && z[i] == *zz);
+                match (records.is_empty(), mean) {
+                    (true, Some(i)) => panic!(
+                        "martin-moyce-1952: a_in {a}: Z = {zz}: row {i} is a mean with no records"
+                    ),
+                    (false, None) => panic!(
+                        "martin-moyce-1952: a_in {a}: Z = {zz}: {} records but no mean row",
+                        records.len()
+                    ),
+                    (false, Some(m)) => {
+                        let lo = records.iter().map(|&i| t[i]).fold(f64::INFINITY, f64::min);
+                        let hi = records.iter().map(|&i| t[i]).fold(f64::NEG_INFINITY, f64::max);
+                        assert!(
+                            lo <= t[m] && t[m] <= hi,
+                            "martin-moyce-1952: a_in {a}: Z = {zz}: mean T {} is outside the \
+                             records' closed range [{lo}, {hi}]",
+                            t[m]
+                        );
+                    }
+                    (true, None) => {}
+                }
+            }
+        }
+
+        println!("  [answer-key] martin-moyce-1952  205 rows, 14 series, monotone in Z and T");
+    }
+
+    /// Half the last printed digit's place, `0.5 * 10^(-k)` with `k` the
+    /// cell's decimals (0 without a `.`): SPEC-LIT section 146.1's `h(x)`
+    /// for the transcription interval.
+    fn printed_half_unit(cell: &str) -> f64 {
+        let k = match cell.find('.') {
+            Some(dot) => cell.len() - dot - 1,
+            None => 0,
+        };
+        0.5 * 10f64.powi(-(k as i32))
+    }
+
+    /// SPEC-LIT section 146.1: the Riboux & Gordillo (2014) splash key's
+    /// printed Table I reproduces its printed `1000 Oh` through eq. (146.3)
+    /// and its printed capillary length through eq. (146.4), every digitised
+    /// `Oh_e3_fig` names its own table row, and FIG. 1's one printed
+    /// threshold is the key's ethanol row at R = 1.04 mm.
+    #[test]
+    fn riboux_gordillo_key_reproduces_its_printed_ohnesorge_numbers() {
+        // answer-key: riboux-gordillo-2014
+        let key = load("riboux-gordillo-2014")
+            .expect("load the answer key \"riboux-gordillo-2014\"");
+        let (_, text) = load_text("riboux-gordillo-2014")
+            .expect("load the verified text of \"riboux-gordillo-2014\"");
+        // The same grammar as `load_from`, kept as text: each data cell's
+        // printed precision is read off its digits.
+        let mut printed: Vec<Vec<&str>> = Vec::new();
+        let mut header = true;
+        for line in text.lines() {
+            let t = line.trim();
+            if t.is_empty() || t.starts_with('#') {
+                continue;
+            }
+            if header {
+                header = false;
+                continue;
+            }
+            printed.push(t.split(',').map(str::trim).collect());
+        }
+        assert_eq!(
+            printed.len(),
+            key.rows.len(),
+            "riboux-gordillo-2014: the text's data rows vs the parsed key's"
+        );
+        let h = |i: usize, c: usize| printed_half_unit(printed[i][c]);
+        let liquid = key.column("liquid").expect("the liquid column");
+        let rho = key.column("rho").expect("the rho column");
+        let sigma = key.column("sigma").expect("the sigma column");
+        let mu = key.column("mu").expect("the mu column");
+        let radius = key.column("R").expect("the R column");
+        let l_sigma = key.column("l_sigma").expect("the l_sigma column");
+        let oh = key.column("Oh_e3").expect("the Oh_e3 column");
+        let v_star = key.column("V_star").expect("the V_star column");
+        let oh_fig = key.column("Oh_e3_fig").expect("the Oh_e3_fig column");
+
+        // 1. The header and the row count, and the table's shape: liquids
+        //    1..=8 holding 1, 4, 2, 2, 2, 2, 2 and 2 rows in file order,
+        //    R strictly decreasing and Oh_e3 strictly increasing within
+        //    each liquid.
+        assert_eq!(
+            key.columns,
+            ["liquid", "rho", "sigma", "mu", "R", "l_sigma", "Oh_e3", "V_star", "Oh_e3_fig"],
+            "riboux-gordillo-2014: the header row"
+        );
+        assert_eq!(key.rows.len(), 17, "riboux-gordillo-2014: the row count");
+        let mut per_liquid = [0usize; 8];
+        for i in 0..17 {
+            assert!(
+                liquid[i] >= 1.0 && liquid[i] <= 8.0 && liquid[i] == liquid[i].trunc(),
+                "riboux-gordillo-2014: row {i}: liquid {} is not an integer in 1..=8",
+                liquid[i]
+            );
+            per_liquid[liquid[i] as usize - 1] += 1;
+            if i > 0 {
+                assert!(
+                    liquid[i] >= liquid[i - 1],
+                    "riboux-gordillo-2014: row {i}: liquid {} follows liquid {} \
+                     and decreases",
+                    liquid[i], liquid[i - 1]
+                );
+                if liquid[i] == liquid[i - 1] {
+                    assert!(
+                        radius[i] < radius[i - 1],
+                        "riboux-gordillo-2014: row {i} (liquid {}): R {} does not \
+                         strictly decrease from row {}'s {}",
+                        liquid[i], radius[i], i - 1, radius[i - 1]
+                    );
+                    assert!(
+                        oh[i] > oh[i - 1],
+                        "riboux-gordillo-2014: row {i} (liquid {}): Oh_e3 {} does not \
+                         strictly increase from row {}'s {}",
+                        liquid[i], oh[i], i - 1, oh[i - 1]
+                    );
+                }
+            }
+        }
+        assert_eq!(
+            per_liquid,
+            [1, 4, 2, 2, 2, 2, 2, 2],
+            "riboux-gordillo-2014: the rows per liquid 1..8"
+        );
+
+        // 2.-6. Per row: eq. (146.3) holds the printed Oh_e3 inside the
+        //    interval its printed cells span, eq. (146.4) the printed
+        //    l_sigma; the digitised Oh_e3_fig names its own row; V* lies on
+        //    the figure's axis; We and Re are printed for the record only
+        //    (the paper prints neither).
+        for i in 0..17 {
+            let (h_rho, h_sig) = (h(i, 1), h(i, 2));
+            let (h_mu, h_r) = (h(i, 3), h(i, 4));
+            let (h_l, h_oh) = (h(i, 5), h(i, 6));
+            let h_fig = h(i, 8);
+            let oh_lo = 1000.0 * (mu[i] - h_mu) * 1.0e-3
+                / ((rho[i] + h_rho) * (sigma[i] + h_sig) * 1.0e-3 * (radius[i] + h_r) * 1.0e-3)
+                    .sqrt();
+            let oh_hi = 1000.0 * (mu[i] + h_mu) * 1.0e-3
+                / ((rho[i] - h_rho) * (sigma[i] - h_sig) * 1.0e-3 * (radius[i] - h_r) * 1.0e-3)
+                    .sqrt();
+            assert!(
+                oh_lo <= oh[i] + h_oh && oh_hi >= oh[i] - h_oh,
+                "riboux-gordillo-2014: row {i} (liquid {}): Oh_e3 {} +- {h_oh} is outside \
+                 [Oh_lo {oh_lo}, Oh_hi {oh_hi}] of eq. (146.3) at rho {}, sigma {}, mu {}, R {}",
+                liquid[i], oh[i], rho[i], sigma[i], mu[i], radius[i]
+            );
+
+            // 3. Eq. (146.4) at standard gravity.
+            let g = 9.80665_f64;
+            let l_lo = 1000.0
+                * ((sigma[i] - h_sig) * 1.0e-3 / ((rho[i] + h_rho) * g)).sqrt();
+            let l_hi = 1000.0
+                * ((sigma[i] + h_sig) * 1.0e-3 / ((rho[i] - h_rho) * g)).sqrt();
+            assert!(
+                l_lo <= l_sigma[i] + h_l && l_hi >= l_sigma[i] - h_l,
+                "riboux-gordillo-2014: row {i} (liquid {}): l_sigma {} +- {h_l} is outside \
+                 [l_lo {l_lo}, l_hi {l_hi}] of eq. (146.4) at rho {}, sigma {}",
+                liquid[i], l_sigma[i], rho[i], sigma[i]
+            );
+
+            // 4. The digitised marker sits on its own row's printed Oh_e3,
+            //    and no other row's is nearer in log ratio.
+            assert!(
+                (oh_fig[i] - oh[i]).abs() <= h_oh + h_fig,
+                "riboux-gordillo-2014: row {i} (liquid {}): Oh_e3_fig {} is further than \
+                 {} from its own Oh_e3 {}",
+                liquid[i], oh_fig[i], h_oh + h_fig, oh[i]
+            );
+            let (mut best_j, mut best_d) = (0, f64::INFINITY);
+            for j in 0..17 {
+                let d = (oh_fig[i] / oh[j]).ln().abs();
+                if d < best_d {
+                    (best_j, best_d) = (j, d);
+                }
+            }
+            assert_eq!(
+                best_j, i,
+                "riboux-gordillo-2014: row {i} (liquid {}, Oh_e3_fig {}): its nearest printed \
+                 Oh_e3 is row {best_j}'s {}, not its own",
+                liquid[i], oh_fig[i], oh[best_j]
+            );
+
+            // 5. V* lies on FIG. 4(c)'s axis.
+            assert!(
+                v_star[i] > 0.0 && v_star[i] < 6.0,
+                "riboux-gordillo-2014: row {i} (liquid {}): V* {} is not on the figure's \
+                 0..6 m/s axis",
+                liquid[i], v_star[i]
+            );
+
+            // 6. The record line: We and Re at V* from the row's own
+            //    properties, radius-based, eq. (146.1) - asserted against
+            //    nothing, the paper prints neither.
+            let v = v_star[i];
+            let we = rho[i] * v * v * radius[i] * 1.0e-3 / (sigma[i] * 1.0e-3);
+            let re = rho[i] * v * radius[i] * 1.0e-3 / (mu[i] * 1.0e-3);
+            println!(
+                "  row {i:>2}  liquid {}  R {:.2} mm  V* {:.3} m/s  We {:.2}  Re {:.1}",
+                liquid[i], radius[i], v, we, re
+            );
+        }
+
+        // 5. FIG. 1's one printed threshold: ethanol, R = 1.04 mm,
+        //    V* = 2.19 m/s.
+        let fig1: Vec<usize> = (0..17)
+            .filter(|&i| liquid[i] == 4.0 && radius[i] == 1.04)
+            .collect();
+        assert_eq!(
+            fig1.len(),
+            1,
+            "riboux-gordillo-2014: exactly one row is liquid 4 at R = 1.04 mm, found {fig1:?}"
+        );
+        let i1 = fig1[0];
+        assert!(
+            (v_star[i1] - 2.19).abs() <= 0.005,
+            "riboux-gordillo-2014: row {i1}: V* {} is not within 0.005 m/s of FIG. 1's 2.19",
+            v_star[i1]
+        );
+
+        println!(
+            "  [answer-key] riboux-gordillo-2014  17 rows, 8 liquids, Oh and l_sigma \
+             reproduce their print"
+        );
+    }
+
+    /// SPEC-LIT section 127.5.1: the RAE 2822 key holds the NPARC archive's
+    /// 65 stations in ascending `x`, closed at both ends, with the rows
+    /// CMP-26's gate quotes and the lower surface dipping below the chord
+    /// at x = 0.91574.
+    #[test]
+    fn rae2822_key_holds_65_stations_closed_at_both_ends() {
+        // answer-key: rae2822-coordinates
+        let key =
+            load("rae2822-coordinates").expect("load the answer key \"rae2822-coordinates\"");
+        assert_eq!(
+            key.columns,
+            ["x_c", "z_c_lower", "z_c_upper"],
+            "rae2822-coordinates: the header row"
+        );
+        assert_eq!(key.rows.len(), 65, "rae2822-coordinates: the row count");
+        let x = key.column("x_c").expect("the x_c column");
+        let zl = key.column("z_c_lower").expect("the z_c_lower column");
+        let zu = key.column("z_c_upper").expect("the z_c_upper column");
+        for i in 1..65 {
+            assert!(
+                x[i] > x[i - 1],
+                "rae2822-coordinates: row {i}: x {} does not ascend from {}",
+                x[i], x[i - 1]
+            );
+        }
+        assert_eq!((x[0], zl[0], zu[0]), (0.0, 0.0, 0.0), "rae2822-coordinates: row 0");
+        assert_eq!(
+            (x[64], zl[64], zu[64]),
+            (1.0, 0.0, 0.0),
+            "rae2822-coordinates: row 64"
+        );
+        assert_eq!(
+            (x[1], zl[1], zu[1]),
+            (0.0006, 0.00317, 0.00323),
+            "rae2822-coordinates: row 1"
+        );
+        assert_eq!(
+            (x[63], zl[63], zu[63]),
+            (0.9994, 0.00001, 0.0003),
+            "rae2822-coordinates: row 63"
+        );
+        let at = x.iter().position(|&v| v == 0.91574).expect("the x 0.91574 row");
+        assert!(
+            zl[at] < 0.0 && zl[at] == -0.00027,
+            "rae2822-coordinates: row {at}: the lower ordinate {} is not -0.00027",
+            zl[at]
+        );
+        println!(
+            "  [answer-key] rae2822-coordinates  65 stations, closed at both ends"
+        );
+    }
+
+    /// SPEC-LIT section 127.6.8: the RAE 2822 Case 6 key holds the NPARC
+    /// archive's 103 measured Cp points at the corrected conditions - the
+    /// upper surface from the trailing edge, the leading edge once, then
+    /// the lower surface to the trailing edge - with the extremes Gate
+    /// CMP-RAE quotes.
+    #[test]
+    fn rae2822_cp_key_holds_103_points_of_case6() {
+        // answer-key: rae2822-cp-case6
+        let key =
+            load("rae2822-cp-case6").expect("load the answer key \"rae2822-cp-case6\"");
+        assert_eq!(
+            key.columns,
+            ["x_c", "minus_cp", "surface"],
+            "rae2822-cp-case6: the header row"
+        );
+        assert_eq!(key.rows.len(), 103, "rae2822-cp-case6: the row count");
+        let x = key.column("x_c").expect("the x_c column");
+        let mcp = key.column("minus_cp").expect("the minus_cp column");
+        let s = key.column("surface").expect("the surface column");
+        for (i, row) in s.iter().enumerate() {
+            let want = if i < 53 {
+                1.0
+            } else if i == 53 {
+                0.0
+            } else {
+                -1.0
+            };
+            assert_eq!(
+                *row, want,
+                "rae2822-cp-case6: row {i}: surface {} is not {want}",
+                row
+            );
+        }
+        assert_eq!(
+            (x[0], mcp[0], s[0]),
+            (0.9938, -0.1432, 1.0),
+            "rae2822-cp-case6: row 0, the upper trailing edge"
+        );
+        assert_eq!(
+            (x[53], mcp[53], s[53]),
+            (0.0, -0.8328, 0.0),
+            "rae2822-cp-case6: row 53, the leading edge"
+        );
+        assert_eq!(
+            (x[102], mcp[102], s[102]),
+            (0.9938, -0.2146, -1.0),
+            "rae2822-cp-case6: row 102, the lower trailing edge"
+        );
+        let (hi, lo) = (
+            mcp.iter().enumerate().fold((0usize, f64::NEG_INFINITY), |(a, m), (i, v)| {
+                if *v > m { (i, *v) } else { (a, m) }
+            }),
+            mcp.iter().enumerate().fold((0usize, f64::INFINITY), |(a, m), (i, v)| {
+                if *v < m { (i, *v) } else { (a, m) }
+            }),
+        );
+        assert_eq!(
+            (x[hi.0], mcp[hi.0], s[hi.0]),
+            (0.525, 1.2201, 1.0),
+            "rae2822-cp-case6: the largest minus_cp is the upper surface's peak"
+        );
+        assert_eq!(
+            (x[lo.0], mcp[lo.0], s[lo.0]),
+            (0.0016, -1.1338, -1.0),
+            "rae2822-cp-case6: the smallest minus_cp is the lower surface's stagnation"
+        );
+        println!("  [answer-key] rae2822-cp-case6  103 points of Case 6, upper, LE, lower");
     }
 }

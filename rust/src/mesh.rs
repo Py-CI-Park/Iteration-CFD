@@ -31,9 +31,68 @@
 //! designed here. `PROVENANCE.md`, *GPU plumbing and tooling - original*. No
 //! GPL-licensed source was consulted.
 
+use std::borrow::Cow;
+
 use crate::device::{DevBuf, Gpu};
 use crate::error::{Error, Result};
+use crate::types::to_vec3;
+use crate::types::{DVec3, GeomPoint};
+#[cfg(feature = "single")]
+use crate::types::to_dvec3;
 use crate::{Label, Scalar, Vec3};
+
+/// SPEC-LIT §118.2: the f64 geometry that the `Scalar` arrays were rounded
+/// from. Single build only - in the f64 build the `Scalar` arrays ARE f64 and
+/// there is nothing to shadow. Set by `compute_geometry`; `None` for a mesh
+/// whose geometry came from anywhere else (the device sweep, a decomposed
+/// sub-mesh, a hand-built `HostMesh`).
+#[cfg(feature = "single")]
+#[derive(Debug, Default, Clone)]
+pub struct HostGeom64 {
+    pub v: Vec<f64>,
+    pub c: Vec<DVec3>,
+    pub sf: Vec<DVec3>,
+    pub mag_sf: Vec<f64>,
+    pub cf: Vec<DVec3>,
+    pub weights: Vec<f64>,
+    pub delta_coeffs: Vec<f64>,
+    pub non_orth_corr: Vec<DVec3>,
+    pub skew_corr: Vec<DVec3>,
+    pub b_sf: Vec<DVec3>,
+    pub b_mag_sf: Vec<f64>,
+    pub b_cf: Vec<DVec3>,
+    pub b_delta_coeffs: Vec<f64>,
+    pub b_non_orth_corr: Vec<DVec3>,
+    pub b_y: Vec<f64>,
+    pub b_weights: Vec<f64>,
+}
+
+/// A read-only f64 view of the 16 geometry arrays, in both builds
+/// (SPEC-LIT §118.2).
+///
+/// In the f64 build every field borrows the mesh's own array, which IS f64.
+/// Under `single` [`HostMesh::geom64`] borrows the f64 shadow
+/// [`HostGeom64`] when one is present and every array still matches the
+/// stored `Scalar` array bit for bit, and widens the stored arrays otherwise
+/// - all or nothing, so a view never mixes the two precisions.
+pub struct Geom64<'a> {
+    pub v: Cow<'a, [f64]>,
+    pub c: Cow<'a, [DVec3]>,
+    pub sf: Cow<'a, [DVec3]>,
+    pub mag_sf: Cow<'a, [f64]>,
+    pub cf: Cow<'a, [DVec3]>,
+    pub weights: Cow<'a, [f64]>,
+    pub delta_coeffs: Cow<'a, [f64]>,
+    pub non_orth_corr: Cow<'a, [DVec3]>,
+    pub skew_corr: Cow<'a, [DVec3]>,
+    pub b_sf: Cow<'a, [DVec3]>,
+    pub b_mag_sf: Cow<'a, [f64]>,
+    pub b_cf: Cow<'a, [DVec3]>,
+    pub b_delta_coeffs: Cow<'a, [f64]>,
+    pub b_non_orth_corr: Cow<'a, [DVec3]>,
+    pub b_y: Cow<'a, [f64]>,
+    pub b_weights: Cow<'a, [f64]>,
+}
 
 /// What a patch *is*, topologically. The physical boundary condition applied
 /// to a given field is stored per face in `field.rs`; this only describes the
@@ -73,6 +132,9 @@ pub enum PatchKind {
     /// No mesh this crate read before SPEC-LIT S47 carries it, so every
     /// existing case is unmoved by construction.
     Interface = 6,
+    /// An axisymmetric wedge side, SPEC-LIT section 119. Until BC-04 every
+    /// solver path treats it as `Symmetry`.
+    Wedge = 7,
 }
 
 impl PatchKind {
@@ -81,7 +143,10 @@ impl PatchKind {
         match t {
             "wall" | "mappedWall" => Self::Wall,
             "empty" => Self::Empty,
-            "symmetry" | "symmetryPlane" | "wedge" => Self::Symmetry,
+            "symmetry" | "symmetryPlane" => Self::Symmetry,
+            "wedge" => Self::Wedge,
+            // SPEC-LIT 120.13: `cyclicAMI` reaches here already imprinted
+            // conformal by the polyMesh reader.
             "cyclic" | "cyclicAMI" | "cyclicSlip" => Self::Cyclic,
             "processor" | "processorCyclic" => Self::Processor,
             _ => Self::Generic,
@@ -97,6 +162,7 @@ impl PatchKind {
             Self::Cyclic => "cyclic",
             Self::Processor => "processor",
             Self::Interface => "interface",
+            Self::Wedge => "wedge",
         }
     }
 }
@@ -193,6 +259,10 @@ pub struct HostMesh {
 
     pub patches: Vec<PatchInfo>,
 
+    /// The derived wedge of SPEC-LIT section 119.1; `None` when the mesh has
+    /// no wedge patch. Set by `io::polymesh::build_host_mesh`.
+    pub wedge: Option<wedge::WedgeInfo>,
+
     // ---- cell -> face CSR (built, not read) ------------------------------
     /// `[n_cells + 1]`
     pub cf_offset: Vec<Label>,
@@ -234,22 +304,81 @@ pub struct HostMesh {
     /// `[2 * n_internal_faces + n_boundary_faces]`
     /// [`topology::RF_OWNS`] | [`topology::RF_BOUNDARY`].
     pub rf_flags: Vec<Label>,
+
+    /// SPEC-LIT §118.2: the f64 geometry the `Scalar` arrays were rounded
+    /// from, set by `compute_geometry`; `None` for a mesh whose geometry came
+    /// from anywhere else. Single build only; a driver that no longer needs
+    /// the f64 view calls [`Self::release_geom64`].
+    #[cfg(feature = "single")]
+    pub geom64: Option<Box<HostGeom64>>,
+
+    /// The world position of the LOCAL coordinate origin every stored
+    /// position is measured from (SPEC-LIT 118.7): `x_world = x_local + O`,
+    /// the add in f64. ZERO for every mesh built without a local origin -
+    /// `build_host_mesh` and every blockgen path - and always ZERO in the
+    /// f64 build, where nothing shifts.
+    pub origin: DVec3,
+
+    // ---- the processor-face marks - SPEC-LIT 139.8 (PAR-13a) -------------
+    /// `[n_boundary_faces]` or EMPTY. EMPTY means "no processor face", which
+    /// is every mesh except a decomposed part, so every mesh that predates
+    /// this array means the same thing it always did. Per face:
+    ///
+    /// - `-1` not a processor face (a real boundary face, or an inherited
+    ///   cyclic couple);
+    /// - `1` a processor face whose GLOBAL owner cell is on this part;
+    /// - `0` a processor face whose global owner is on the other part (this
+    ///   part's cell is the whole mesh's neighbour).
+    ///
+    /// The mark is what lets a kernel put a processor face's term back where
+    /// the whole mesh put it - in the internal-face position of the merged
+    /// row (SPEC-LIT 70) - with the whole mesh's operands rebuilt exactly.
+    pub b_proc: Vec<Label>,
+    /// `[n_boundary_faces]` or EMPTY: the WHOLE mesh's `weights[g]` of a
+    /// processor face - the owner-side weight, whichever side of the cut this
+    /// part is on - and `0` on every other face.
+    ///
+    /// It has to be STORED because the side that does not own the global face
+    /// carries `weight_from_offsets(b, a)` in `b_weights` instead (a
+    /// recomputation, not a copy), and `1 - (1 - w)` is not `w` in floating
+    /// point: the whole weight is not recoverable from the part's own. See
+    /// SPEC-LIT 139.8's table of exact rebuilds.
+    pub b_proc_w: Vec<Scalar>,
+    /// `[n_boundary_faces]` or EMPTY. On a processor face the WHOLE mesh's
+    /// centre `c` of the cell on the OTHER side of the cut (the ghost cell),
+    /// copied; `Vec3::ZERO` on every other face.
+    ///
+    /// It has to be STORED because `fvDivCorrection` reads `C[owner]` and
+    /// `C[neighbour]`, and on a part the ghost cell's centre is not on the
+    /// device (`GpuMesh::c` is `n_cells` long) and cannot be rebuilt bitwise
+    /// from face data. Filled together with [`Self::b_proc`] by `decompose`,
+    /// face by face, so the two stay the same length by construction.
+    /// SPEC-LIT 139.9.
+    pub b_proc_c: Vec<Vec3>,
 }
 
 /// What `HostMesh::check` found. Printing it is the first thing every binary
 /// does, because a mesh that does not close is not worth solving on.
+///
+/// Every real-valued field is f64 (SPEC-LIT §118.2), computed from the
+/// `geom64` view - the identity in the f64 build.
 #[derive(Debug, Clone)]
 pub struct MeshReport {
-    pub total_volume: Scalar,
-    pub min_volume: Scalar,
-    pub max_volume: Scalar,
+    /// Computed in f64 (§118).
+    pub total_volume: f64,
+    /// Computed in f64 (§118).
+    pub min_volume: f64,
+    /// Computed in f64 (§118).
+    pub max_volume: f64,
     pub min_volume_cell: usize,
-    /// Maximum face non-orthogonality, degrees.
-    pub max_non_orth_deg: Scalar,
-    pub mean_non_orth_deg: Scalar,
+    /// Maximum face non-orthogonality, degrees. Computed in f64 (§118).
+    pub max_non_orth_deg: f64,
+    /// Computed in f64 (§118).
+    pub mean_non_orth_deg: f64,
     /// `max |sum_f s*Sf| / V^(2/3)` over cells. A correct mesh closes to
     /// round-off; anything above ~1e-10 means the face winding is wrong.
-    pub max_closure_error: Scalar,
+    /// Computed in f64 (§118).
+    pub max_closure_error: f64,
     pub max_closure_cell: usize,
     /// `true` when owner < neighbour everywhere and faces are sorted by
     /// (owner, neighbour) - the upper-triangular order the LDU addressing and
@@ -266,6 +395,25 @@ pub struct MeshReport {
 }
 
 impl HostMesh {
+    /// SPEC-LIT 120.13: a `cyclicAMI` pair is imprinted ONCE, from the mesh
+    /// at rest, as the polyMesh is read; a mesh whose points move would need
+    /// the two sides intersected again at every step, which this solver does
+    /// not do. Every moving-mesh entry point (`MeshMotion::new`,
+    /// `AleMesh::new`) calls this first, and it refuses by name, naming
+    /// `who` and the patch.
+    pub fn refuse_a_moving_cyclic_ami(&self, who: &str) -> Result<()> {
+        match self.patches.iter().find(|p| p.type_name == "cyclicAMI") {
+            Some(p) => Err(Error::Mesh(format!(
+                "{who}: patch '{}' is cyclicAMI, a static interface imprinted once from the \
+                 mesh at rest; on a moving mesh its two sides would have to be intersected \
+                 again at every step, which this solver does not do. Mesh the interface \
+                 conformal and write cyclic, or keep the mesh still (SPEC-LIT 120.13)",
+                p.name
+            ))),
+            None => Ok(()),
+        }
+    }
+
     /// Invert `owner`/`neighbour` into the two CSR maps, and build the merged
     /// global-face-ordered row map on top of them.
     ///
@@ -282,16 +430,227 @@ impl HostMesh {
     /// `non_orth_corr`, `b_non_orth_corr` and the boundary metrics from raw
     /// points and faces.
     /// Mirrors `primitiveMesh` + `surfaceInterpolation`.
-    pub fn compute_geometry(
+    ///
+    /// Generic over the point type (SPEC-LIT §118.2): `Vec3` or, under
+    /// `single`, `DVec3`. The sweep itself computes in f64 and rounds once
+    /// into the `Scalar` arrays (§118).
+    pub fn compute_geometry<P: GeomPoint>(
         &mut self,
-        points: &[Vec3],
+        points: &[P],
         faces: &[Vec<Label>],
     ) -> Result<()> {
         crate::mesh::geometry::compute(self, points, faces)
     }
 
+    /// A LOCAL stored position in WORLD coordinates (SPEC-LIT 118.7):
+    /// `x_world = f64(x_local) + O`, the add in f64. The f64 build has no
+    /// local origin, so the value comes back unchanged - no arithmetic is
+    /// added, not even `+ 0.0`, which would turn `-0.0` into `+0.0`.
+    pub fn world(&self, p: Vec3) -> DVec3 {
+        #[cfg(feature = "single")]
+        {
+            to_dvec3(p) + self.origin
+        }
+        #[cfg(not(feature = "single"))]
+        {
+            let _ = self;
+            p
+        }
+    }
+
+    /// The same for a value of the [`Self::geom64`] view, which is local too
+    /// (`world = local + origin`).
+    pub fn world64(&self, p: DVec3) -> DVec3 {
+        #[cfg(feature = "single")]
+        {
+            p + self.origin
+        }
+        #[cfg(not(feature = "single"))]
+        {
+            let _ = self;
+            p
+        }
+    }
+
+    /// A WORLD position as the mesh stores it, ONE rounding (118.7c): the
+    /// subtraction in f64, then the single rounding of SPEC-LIT 118.2 into
+    /// the stored `Scalar`. The f64 build returns the value unchanged.
+    pub fn local(&self, w: DVec3) -> Vec3 {
+        #[cfg(feature = "single")]
+        {
+            to_vec3(w - self.origin)
+        }
+        #[cfg(not(feature = "single"))]
+        {
+            let _ = self;
+            w
+        }
+    }
+
+    /// World -> local in f64, no rounding at all.
+    pub fn local64(&self, w: DVec3) -> DVec3 {
+        #[cfg(feature = "single")]
+        {
+            w - self.origin
+        }
+        #[cfg(not(feature = "single"))]
+        {
+            let _ = self;
+            w
+        }
+    }
+
     pub fn check(&self) -> MeshReport {
         crate::mesh::geometry::check(self)
+    }
+
+    /// The f64 view of the 16 geometry arrays (SPEC-LIT §118.2). In the f64
+    /// build this borrows the mesh's own arrays. Under `single` it borrows
+    /// the shadow `HostGeom64` when every one of the 16 arrays still matches
+    /// the stored `Scalar` array bit for bit, and widens the stored arrays
+    /// otherwise - all or nothing.
+    pub fn geom64(&self) -> Geom64<'_> {
+        #[cfg(not(feature = "single"))]
+        {
+            Geom64 {
+                v: Cow::Borrowed(&self.v),
+                c: Cow::Borrowed(&self.c),
+                sf: Cow::Borrowed(&self.sf),
+                mag_sf: Cow::Borrowed(&self.mag_sf),
+                cf: Cow::Borrowed(&self.cf),
+                weights: Cow::Borrowed(&self.weights),
+                delta_coeffs: Cow::Borrowed(&self.delta_coeffs),
+                non_orth_corr: Cow::Borrowed(&self.non_orth_corr),
+                skew_corr: Cow::Borrowed(&self.skew_corr),
+                b_sf: Cow::Borrowed(&self.b_sf),
+                b_mag_sf: Cow::Borrowed(&self.b_mag_sf),
+                b_cf: Cow::Borrowed(&self.b_cf),
+                b_delta_coeffs: Cow::Borrowed(&self.b_delta_coeffs),
+                b_non_orth_corr: Cow::Borrowed(&self.b_non_orth_corr),
+                b_y: Cow::Borrowed(&self.b_y),
+                b_weights: Cow::Borrowed(&self.b_weights),
+            }
+        }
+        #[cfg(feature = "single")]
+        {
+            if self.geom64_shadow_is_fresh() {
+                // Unwrap is safe: `fresh` is exactly `self.geom64.is_some()`
+                // AND every array matching.
+                let g = self.geom64.as_ref().unwrap();
+                Geom64 {
+                    v: Cow::Borrowed(&g.v),
+                    c: Cow::Borrowed(&g.c),
+                    sf: Cow::Borrowed(&g.sf),
+                    mag_sf: Cow::Borrowed(&g.mag_sf),
+                    cf: Cow::Borrowed(&g.cf),
+                    weights: Cow::Borrowed(&g.weights),
+                    delta_coeffs: Cow::Borrowed(&g.delta_coeffs),
+                    non_orth_corr: Cow::Borrowed(&g.non_orth_corr),
+                    skew_corr: Cow::Borrowed(&g.skew_corr),
+                    b_sf: Cow::Borrowed(&g.b_sf),
+                    b_mag_sf: Cow::Borrowed(&g.b_mag_sf),
+                    b_cf: Cow::Borrowed(&g.b_cf),
+                    b_delta_coeffs: Cow::Borrowed(&g.b_delta_coeffs),
+                    b_non_orth_corr: Cow::Borrowed(&g.b_non_orth_corr),
+                    b_y: Cow::Borrowed(&g.b_y),
+                    b_weights: Cow::Borrowed(&g.b_weights),
+                }
+            } else {
+                Geom64 {
+                    v: Cow::Owned(self.v.iter().map(|&x| f64::from(x)).collect()),
+                    c: Cow::Owned(self.c.iter().map(|&p| to_dvec3(p)).collect()),
+                    sf: Cow::Owned(self.sf.iter().map(|&p| to_dvec3(p)).collect()),
+                    mag_sf: Cow::Owned(self.mag_sf.iter().map(|&x| f64::from(x)).collect()),
+                    cf: Cow::Owned(self.cf.iter().map(|&p| to_dvec3(p)).collect()),
+                    weights: Cow::Owned(self.weights.iter().map(|&x| f64::from(x)).collect()),
+                    delta_coeffs: Cow::Owned(self.delta_coeffs.iter().map(|&x| f64::from(x)).collect()),
+                    non_orth_corr: Cow::Owned(self.non_orth_corr.iter().map(|&p| to_dvec3(p)).collect()),
+                    skew_corr: Cow::Owned(self.skew_corr.iter().map(|&p| to_dvec3(p)).collect()),
+                    b_sf: Cow::Owned(self.b_sf.iter().map(|&p| to_dvec3(p)).collect()),
+                    b_mag_sf: Cow::Owned(self.b_mag_sf.iter().map(|&x| f64::from(x)).collect()),
+                    b_cf: Cow::Owned(self.b_cf.iter().map(|&p| to_dvec3(p)).collect()),
+                    b_delta_coeffs: Cow::Owned(self.b_delta_coeffs.iter().map(|&x| f64::from(x)).collect()),
+                    b_non_orth_corr: Cow::Owned(self.b_non_orth_corr.iter().map(|&p| to_dvec3(p)).collect()),
+                    b_y: Cow::Owned(self.b_y.iter().map(|&x| f64::from(x)).collect()),
+                    b_weights: Cow::Owned(self.b_weights.iter().map(|&x| f64::from(x)).collect()),
+                }
+            }
+        }
+    }
+
+    /// `true` exactly when [`Self::geom64`] borrows an f64 array that is not
+    /// merely a widening of the stored `Scalar` array: always in the f64
+    /// build (the arrays ARE f64), and under `single` exactly when a fresh
+    /// shadow is present.
+    pub fn geom64_is_shadow(&self) -> bool {
+        #[cfg(feature = "single")]
+        {
+            self.geom64_shadow_is_fresh()
+        }
+        #[cfg(not(feature = "single"))]
+        {
+            let _ = self;
+            true
+        }
+    }
+
+    /// The all-or-nothing freshness test of [`Self::geom64`], under `single`:
+    /// the shadow exists, all 16 arrays have the stored lengths, and every
+    /// element rounds to the stored `Scalar` bit for bit.
+    #[cfg(feature = "single")]
+    fn geom64_shadow_is_fresh(&self) -> bool {
+        let same_bits = |a: &DVec3, b: &Vec3| {
+            (a.x as f32).to_bits() == b.x.to_bits()
+                && (a.y as f32).to_bits() == b.y.to_bits()
+                && (a.z as f32).to_bits() == b.z.to_bits()
+        };
+        let same_scalar = |a: &f64, b: &Scalar| (*a as f32).to_bits() == b.to_bits();
+        let Some(g) = &self.geom64 else { return false };
+        g.v.len() == self.v.len()
+            && g.c.len() == self.c.len()
+            && g.sf.len() == self.sf.len()
+            && g.mag_sf.len() == self.mag_sf.len()
+            && g.cf.len() == self.cf.len()
+            && g.weights.len() == self.weights.len()
+            && g.delta_coeffs.len() == self.delta_coeffs.len()
+            && g.non_orth_corr.len() == self.non_orth_corr.len()
+            && g.skew_corr.len() == self.skew_corr.len()
+            && g.b_sf.len() == self.b_sf.len()
+            && g.b_mag_sf.len() == self.b_mag_sf.len()
+            && g.b_cf.len() == self.b_cf.len()
+            && g.b_delta_coeffs.len() == self.b_delta_coeffs.len()
+            && g.b_non_orth_corr.len() == self.b_non_orth_corr.len()
+            && g.b_y.len() == self.b_y.len()
+            && g.b_weights.len() == self.b_weights.len()
+            && g.v.iter().zip(&self.v).all(|(a, b)| same_scalar(a, b))
+            && g.c.iter().zip(&self.c).all(|(a, b)| same_bits(a, b))
+            && g.sf.iter().zip(&self.sf).all(|(a, b)| same_bits(a, b))
+            && g.mag_sf.iter().zip(&self.mag_sf).all(|(a, b)| same_scalar(a, b))
+            && g.cf.iter().zip(&self.cf).all(|(a, b)| same_bits(a, b))
+            && g.weights.iter().zip(&self.weights).all(|(a, b)| same_scalar(a, b))
+            && g.delta_coeffs.iter().zip(&self.delta_coeffs).all(|(a, b)| same_scalar(a, b))
+            && g.non_orth_corr.iter().zip(&self.non_orth_corr).all(|(a, b)| same_bits(a, b))
+            && g.skew_corr.iter().zip(&self.skew_corr).all(|(a, b)| same_bits(a, b))
+            && g.b_sf.iter().zip(&self.b_sf).all(|(a, b)| same_bits(a, b))
+            && g.b_mag_sf.iter().zip(&self.b_mag_sf).all(|(a, b)| same_scalar(a, b))
+            && g.b_cf.iter().zip(&self.b_cf).all(|(a, b)| same_bits(a, b))
+            && g.b_delta_coeffs.iter().zip(&self.b_delta_coeffs).all(|(a, b)| same_scalar(a, b))
+            && g.b_non_orth_corr.iter().zip(&self.b_non_orth_corr).all(|(a, b)| same_bits(a, b))
+            && g.b_y.iter().zip(&self.b_y).all(|(a, b)| same_scalar(a, b))
+            && g.b_weights.iter().zip(&self.b_weights).all(|(a, b)| same_scalar(a, b))
+    }
+
+    /// A driver that no longer needs the f64 geometry may drop it (the view
+    /// then widens the `Scalar` arrays). Does nothing in the f64 build.
+    pub fn release_geom64(&mut self) {
+        #[cfg(feature = "single")]
+        {
+            self.geom64 = None;
+        }
+        #[cfg(not(feature = "single"))]
+        {
+            let _ = self;
+        }
     }
 
     /// Human-readable summary, in the same shape the C++ version printed so
@@ -326,6 +685,12 @@ pub struct GpuMesh {
     pub n_cells: usize,
     pub n_internal_faces: usize,
     pub n_boundary_faces: usize,
+    /// Ghost cells `n_cells .. n_cells + n_halo`; 0 on a whole mesh;
+    /// SPEC-LIT 139.1. A decomposed part's `b_nbr_cell` entries point into
+    /// this range, so every cell buffer this mesh solves on is `n_local()`
+    /// long. Nothing exchanges the range here (PAR-10a): the halo only has
+    /// to EXIST.
+    pub n_halo: usize,
 
     pub owner: DevBuf<Label>,
     pub neighbour: DevBuf<Label>,
@@ -345,6 +710,11 @@ pub struct GpuMesh {
 
     pub b_face_cells: DevBuf<Label>,
     pub b_sf: DevBuf<Vec3>,
+    /// SPEC-LIT 119.2, (119.2j): the boundary area vectors the least-squares
+    /// reconstruction reads - `S'_f` on the two wedge patches, the face's own
+    /// `S_f` on every other. `None` when the mesh has no wedge, and then
+    /// `fvc_reconstruct` reads `b_sf` exactly as before.
+    pub b_sf_recon: Option<DevBuf<Vec3>>,
     pub b_mag_sf: DevBuf<Scalar>,
     pub b_cf: DevBuf<Vec3>,
     pub b_delta_coeffs: DevBuf<Scalar>,
@@ -373,7 +743,33 @@ pub struct GpuMesh {
 
     /// Kept on the host for reporting only.
     pub patches: Vec<PatchInfo>,
+    /// SPEC-LIT 119.2: the mesh's derived wedge of SPEC-LIT 119.1, host
+    /// metadata only
+    /// - no device buffer. `correct_boundary_conditions_vector` reads it to
+    /// decide whether `fldWedgeRefGrad` has anything to rewrite.
+    pub wedge: Option<wedge::WedgeInfo>,
     pub total_volume: Scalar,
+
+    // ---- the processor-face marks - SPEC-LIT 139.8 (PAR-13a) -------------
+    /// `[n_bf]` `-1` not a processor face, `1` this part holds the global
+    /// face's owner, `0` it holds the neighbour. All-unmarked (`-1`) on a
+    /// whole mesh, which is what makes the selection rule of the part twins -
+    /// `n_proc_faces > 0` - false on every serial path.
+    pub b_proc: DevBuf<Label>,
+    /// `[n_bf]` the WHOLE mesh's `weights[g]` of a processor face, `0`
+    /// elsewhere. Stored because the non-owning side's `b_weights` is a
+    /// recomputation the whole weight cannot be recovered from.
+    pub b_proc_w: DevBuf<Scalar>,
+    /// How many boundary faces are processor faces: the entries of
+    /// [`Self::b_proc`] that are `>= 0`, counted once at upload. Zero on a
+    /// whole mesh and on every P = 1 part, so the part twins of the
+    /// laplacian and the Gauss gradients launch ONLY here.
+    pub n_proc_faces: usize,
+    /// SPEC-LIT 139.9 (PAR-13b): `[n_bf]` the WHOLE mesh's centre of the cell
+    /// on the other side of a processor cut (the ghost cell), ZERO elsewhere.
+    /// Stored, not rebuilt: `GpuMesh::c` is `n_cells` long, so the ghost's
+    /// centre is not on the device and no face metric gives it back.
+    pub b_proc_c: DevBuf<Vec3>,
 }
 
 /// Everything a [`GpuMesh`] carries that is **not** geometry: the addressing,
@@ -401,6 +797,15 @@ struct GpuTopology {
     rf_offset: DevBuf<Label>,
     rf_face: DevBuf<Label>,
     rf_flags: DevBuf<Label>,
+    // SPEC-LIT 139.8 (PAR-13a): the processor-face marks and the stored
+    // whole-mesh weights, both face-sized, and the count of processor faces
+    // the operators key on.
+    b_proc: DevBuf<Label>,
+    b_proc_w: DevBuf<Scalar>,
+    n_proc_faces: usize,
+    // SPEC-LIT 139.9 (PAR-13b): the stored ghost-cell centre of a processor
+    // face, face-sized like the marks.
+    b_proc_c: DevBuf<Vec3>,
 }
 
 impl GpuTopology {
@@ -443,6 +848,59 @@ impl GpuTopology {
             ),
         };
 
+        // SPEC-LIT 139.8 (PAR-13a). EMPTY means "no processor face" - every
+        // mesh except a decomposed part, i.e. every mesh this crate could
+        // read before PAR-13a - and uploads as all-unmarked, so nothing
+        // about a whole mesh's upload moves. A length that is neither the
+        // boundary-face count nor EMPTY is a part whose marks were cut or
+        // pasted wrong; refuse by name rather than let a kernel read a mark
+        // that is not there.
+        let (b_proc, b_proc_w, b_proc_c, n_proc) = if m.b_proc.len() == m.n_boundary_faces {
+            if m.b_proc_w.len() != m.n_boundary_faces {
+                return Err(Error::Config(format!(
+                    "mesh: b_proc_w has {} entries for {} boundary faces, \
+                     and b_proc marks all of them; the two arrays are filled \
+                     together by decompose and every consumer reads both",
+                    m.b_proc_w.len(),
+                    m.n_boundary_faces
+                )));
+            }
+            // SPEC-LIT 139.9 (PAR-13b): the ghost-cell centres travel with
+            // the marks; a full `b_proc` beside a short `b_proc_c` is a
+            // kernel reading a centre that is not there.
+            if m.b_proc_c.len() != m.n_boundary_faces {
+                return Err(Error::Config(format!(
+                    "mesh: b_proc_c has {} entries for {} boundary faces, \
+                     and b_proc marks all of them; the two arrays are filled \
+                     together by decompose and every consumer reads both",
+                    m.b_proc_c.len(),
+                    m.n_boundary_faces
+                )));
+            }
+            let n = m.b_proc.iter().filter(|&&b| b >= 0).count();
+            (
+                gpu.upload(&m.b_proc)?,
+                gpu.upload(&m.b_proc_w)?,
+                gpu.upload(&m.b_proc_c)?,
+                n,
+            )
+        } else if m.b_proc.is_empty() {
+            (
+                gpu.upload(&vec![-1 as Label; m.n_boundary_faces])?,
+                gpu.upload(&vec![0.0 as Scalar; m.n_boundary_faces])?,
+                gpu.upload(&vec![Vec3::ZERO; m.n_boundary_faces])?,
+                0,
+            )
+        } else {
+            return Err(Error::Config(format!(
+                "mesh: b_proc has {} entries for {} boundary faces; it is \
+                 either [n_boundary_faces] or EMPTY (no processor face, \
+                 every mesh except a decomposed part), never anything else",
+                m.b_proc.len(),
+                m.n_boundary_faces
+            )));
+        };
+
         Ok(Self {
             owner: gpu.upload(&m.owner)?,
             neighbour: gpu.upload(&m.neighbour)?,
@@ -468,11 +926,79 @@ impl GpuTopology {
             rf_offset: gpu.upload(rf_offset)?,
             rf_face: gpu.upload(rf_face)?,
             rf_flags: gpu.upload(rf_flags)?,
+
+            b_proc,
+            b_proc_w,
+            n_proc_faces: n_proc,
+            b_proc_c,
         })
     }
 }
 
+/// SPEC-LIT 119.2, (119.2j): the boundary area vectors the reconstruction
+/// reads, on the host - `S'_f` on the front and back wedge patches, the
+/// face's own `S_f` on every other. `None` when the mesh has no wedge.
+///
+/// All arithmetic is f64 through [`HostMesh::geom64`], each vector cast to
+/// `Scalar` once. A mesh whose wedge is `Some` came through
+/// `io::polymesh::build_host_mesh`, which populated the host geometry before
+/// `derive_wedge` read it - so the f64 view here is the mesh's real
+/// geometry, in either constructor.
+fn b_sf_recon_host(m: &HostMesh) -> Option<Vec<Vec3>> {
+    let w = m.wedge.as_ref()?;
+    let g = m.geom64();
+    let (back, front) = (&m.patches[w.back], &m.patches[w.front]);
+    Some(
+        g.b_sf
+            .iter()
+            .enumerate()
+            .map(|(f, &sf)| {
+                let d = if f >= front.start && f < front.start + front.size {
+                    wedge::recon_area(sf, w.axis, w.theta, 1.0)
+                } else if f >= back.start && f < back.start + back.size {
+                    wedge::recon_area(sf, w.axis, w.theta, -1.0)
+                } else {
+                    sf
+                };
+                to_vec3(d)
+            })
+            .collect(),
+    )
+}
+
 impl GpuMesh {
+    /// The length every CELL buffer on this mesh has: the owned cells plus
+    /// the halo of SPEC-LIT 139.1. Face buffers stay face-sized. On a whole
+    /// mesh this is `n_cells`.
+    #[inline]
+    pub fn n_local(&self) -> usize {
+        self.n_cells + self.n_halo
+    }
+
+    /// SPEC-LIT 139.1 (PAR-09): upload a decomposed part and give its halo
+    /// room. A part IS an ordinary mesh - the upload is the plain
+    /// [`GpuMesh::upload`], unchanged - and only the count is added, refused
+    /// by name when some `b_nbr_cell` would point past the room asked for:
+    /// the kernels read `psi[bNbrCell[f]]` unconditionally, and a short
+    /// buffer is a read out of bounds rather than an error.
+    pub fn upload_with_halo(gpu: &Gpu, m: &HostMesh, n_halo: usize) -> Result<Self> {
+        let room = m.n_cells + n_halo;
+        for (bf, &nbr) in m.b_nbr_cell.iter().enumerate() {
+            if nbr >= 0 && (nbr as usize) >= room {
+                return Err(Error::Config(format!(
+                    "GpuMesh::upload_with_halo: boundary face {bf} names \
+                     neighbour cell {nbr}, past n_cells + n_halo = {room}; \
+                     n_halo = {n_halo} is too small for this part. The \
+                     processor faces' neighbours live in the halo and every \
+                     cell buffer must be n_cells + n_halo long"
+                )));
+            }
+        }
+        let mut g = Self::upload(gpu, m)?;
+        g.n_halo = n_halo;
+        Ok(g)
+    }
+
     pub fn upload(gpu: &Gpu, m: &HostMesh) -> Result<Self> {
         let t = GpuTopology::upload(gpu, m)?;
 
@@ -480,6 +1006,7 @@ impl GpuMesh {
             n_cells: m.n_cells,
             n_internal_faces: m.n_internal_faces,
             n_boundary_faces: m.n_boundary_faces,
+            n_halo: 0,
 
             owner: t.owner,
             neighbour: t.neighbour,
@@ -506,6 +1033,7 @@ impl GpuMesh {
 
             b_face_cells: t.b_face_cells,
             b_sf: gpu.upload(&m.b_sf)?,
+            b_sf_recon: b_sf_recon_host(m).map(|v| gpu.upload(&v)).transpose()?,
             b_mag_sf: gpu.upload(&m.b_mag_sf)?,
             b_cf: gpu.upload(&m.b_cf)?,
             b_delta_coeffs: gpu.upload(&m.b_delta_coeffs)?,
@@ -528,7 +1056,13 @@ impl GpuMesh {
             rf_flags: t.rf_flags,
 
             patches: m.patches.clone(),
+            wedge: m.wedge.clone(),
             total_volume: m.v.iter().copied().sum(),
+
+            b_proc: t.b_proc,
+            b_proc_w: t.b_proc_w,
+            n_proc_faces: t.n_proc_faces,
+            b_proc_c: t.b_proc_c,
         })
     }
 
@@ -597,6 +1131,7 @@ impl GpuMesh {
             n_cells: m.n_cells,
             n_internal_faces: m.n_internal_faces,
             n_boundary_faces: m.n_boundary_faces,
+            n_halo: 0,
 
             owner: t.owner,
             neighbour: t.neighbour,
@@ -614,6 +1149,7 @@ impl GpuMesh {
 
             b_face_cells: t.b_face_cells,
             b_sf: g.b_sf,
+            b_sf_recon: b_sf_recon_host(m).map(|v| gpu.upload(&v)).transpose()?,
             b_mag_sf: g.b_mag_sf,
             b_cf: g.b_cf,
             b_delta_coeffs: g.b_delta_coeffs,
@@ -636,7 +1172,13 @@ impl GpuMesh {
             rf_flags: t.rf_flags,
 
             patches: m.patches.clone(),
+            wedge: m.wedge.clone(),
             total_volume: m.v.iter().copied().sum(),
+
+            b_proc: t.b_proc,
+            b_proc_w: t.b_proc_w,
+            n_proc_faces: t.n_proc_faces,
+            b_proc_c: t.b_proc_c,
         })
     }
 }
@@ -645,6 +1187,48 @@ pub mod ale;
 pub mod geometry;
 pub mod gpuemit;
 pub mod gpugeom;
+pub mod imprint;
 pub mod motion;
 pub mod refined;
 pub mod topology;
+pub mod wedge;
+
+#[cfg(test)]
+mod tests {
+    use super::PatchKind;
+
+    /// SPEC-LIT section 119: `wedge` is its own kind, distinct from
+    /// `symmetry`/`symmetryPlane`, and numbered 7 behind `Interface` 6.
+    #[test]
+    fn wedge_is_not_symmetry() {
+        assert_eq!(PatchKind::from_type("wedge"), PatchKind::Wedge);
+        assert_ne!(PatchKind::from_type("wedge"), PatchKind::Symmetry);
+        assert_eq!(PatchKind::Wedge as i32, 7);
+        assert_eq!(PatchKind::Wedge.as_str(), "wedge");
+        assert_eq!(PatchKind::from_type("symmetry"), PatchKind::Symmetry);
+        assert_eq!(PatchKind::from_type("symmetryPlane"), PatchKind::Symmetry);
+        assert_eq!(PatchKind::Interface as i32, 6);
+    }
+
+    /// The device mirrors the host enum: every `.cu` that tests a patch kind
+    /// carries the wedge define at 7 beside the symmetry define at 3
+    /// (SPEC-LIT section 119.1).
+    #[test]
+    fn device_patch_kinds_match_the_host() {
+        let root = env!("CARGO_MANIFEST_DIR");
+        let kind_of = |file: &str, prefix: &str| -> i32 {
+            let src = std::fs::read_to_string(format!("{root}/{file}")).unwrap();
+            let line = src
+                .lines()
+                .find(|l| l.starts_with(prefix))
+                .unwrap_or_else(|| panic!("{file}: no line starts with {prefix:?}"));
+            line.split_whitespace().nth(2).unwrap().parse::<i32>().unwrap()
+        };
+        for file in ["cuda/fv.cu", "cuda/momentum.cu", "cuda/solid.cu", "cuda/vof.cu", "cuda/marangoni.cu"] {
+            assert_eq!(kind_of(file, "#define OFPATCH_WEDGE "), 7, "{file}");
+            assert_eq!(kind_of(file, "#define OFPATCH_SYMMETRY "), 3, "{file}");
+        }
+        assert_eq!(kind_of("cuda/parcels.cu", "#define OFP_PATCH_WEDGE "), 7);
+        assert_eq!(kind_of("cuda/parcels.cu", "#define OFP_PATCH_SYMMETRY "), 3);
+    }
+}

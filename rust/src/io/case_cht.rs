@@ -75,10 +75,11 @@ use crate::fv::DivScheme;
 use crate::error::{Error, Result};
 use crate::field::BcKind;
 use crate::io::case::{LinearSolverKind, Preconditioner, SolverControls};
-use crate::io::case_json::{JsonBounds, JsonGrading, JsonGradingAxis, JsonOutput};
+use crate::io::case_json::{BuoyancyModel, JsonBounds, JsonGrading, JsonGradingAxis, JsonOutput};
 use crate::io::output_plan::{OutputFormat, OutputPlan};
 use crate::io::polymesh::{build_host_mesh, read_poly_mesh, PolyMeshRaw};
 use crate::mesh::{HostMesh, PatchKind};
+use crate::momentum::BuoyancyForm;
 use crate::properties::{Piece, Property};
 use crate::cht::volumetric::{LoweredSource, SourceLaw, TimeTable};
 use crate::sources::CellSelector;
@@ -141,6 +142,15 @@ pub struct ChtBuoyancy {
     /// The reference temperature of `b = g(TRef/T - 1)`, K.
     #[serde(rename = "TRef")]
     pub t_ref: f64,
+    /// SPEC-LIT 121.7: `"densityRatio"` - the default when absent - or
+    /// `"boussinesq"`, lowered through
+    /// [`crate::momentum::BuoyancyForm::lower`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<BuoyancyModel>,
+    /// Thermal expansion coefficient [1/K] - read only under
+    /// `"model": "boussinesq"`, SPEC-LIT 121.7. There is no default.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub beta: Option<f64>,
 }
 
 /// One region: a block of cells, one material, its own boundary conditions.
@@ -930,6 +940,12 @@ pub struct ChtSolidSolver {
     /// its controls (§109.8). Only with a single `material` (§96.3 row 22).
     #[serde(default)]
     pub coupled: bool,
+    /// The outer iteration around the map: `"anderson"` (the default) is
+    /// §95.3's Anderson of depth five; `"gmres"` is §142.2's restarted
+    /// GMRES(50) on the block map's state, only with `coupled: true`
+    /// (§96.3 row 23). Any other name is refused listing both.
+    #[serde(default = "default_solid_outer")]
+    pub outer: String,
     /// ALWAYS refused (§96.3 row 7): the outer loop is Aitken delta-squared
     /// on the increment and its first omega is 1 - a static relaxation
     /// factor is not offered.
@@ -947,10 +963,15 @@ impl Default for ChtSolidSolver {
             tolerance: default_solid_tolerance(),
             max_outer: default_solid_max_outer(),
             coupled: false,
+            outer: default_solid_outer(),
             relaxation: None,
             ddt_scheme: None,
         }
     }
+}
+
+fn default_solid_outer() -> String {
+    "anderson".to_string()
 }
 
 fn default_solid_tolerance() -> f64 {
@@ -1111,6 +1132,8 @@ pub struct SolidOuterControls {
     pub max_outer: usize,
     /// `true`: the block-coupled solve (§109.8).
     pub coupled: bool,
+    /// The outer iteration: Anderson of depth five, or GMRES(50) (§142.2).
+    pub outer: crate::solid::outer::Relaxation,
 }
 
 /// A region's `mechanics` block, everything resolved - what
@@ -2209,6 +2232,15 @@ impl ChtCase {
                 let b = Buoyancy {
                     g: crate::Vec3::new(b.g[0] as Scalar, b.g[1] as Scalar, b.g[2] as Scalar),
                     t_ref: b.t_ref as Scalar,
+                    // SPEC-LIT 121.7: the same lowering table every other
+                    // format goes through; an absent model is the density
+                    // ratio, as every case written before it was.
+                    form: BuoyancyForm::lower(
+                        "buoyancy.model",
+                        b.model.map(BuoyancyModel::name).unwrap_or("densityRatio"),
+                        "buoyancy.beta",
+                        b.beta,
+                    )?,
                 };
                 b.validate()?;
                 Some(b)
@@ -2373,9 +2405,48 @@ impl ChtCase {
         let output = match &self.output {
             Some(o) => {
                 let mut plan = OutputPlan::from_json(o)?;
-                // A multi-region mesh is not one Cartesian lattice, so there
-                // is no voxel grid to sample onto.
-                plan.refuse_visualisation_on_a_non_cartesian_mesh(false)?;
+                // SPEC-LIT 117.3 / 117.12 (VIO-05b): a multi-region mesh is
+                // not one lattice, so `output.visualisation` writes one
+                // `.vdb`/`.nvdb` per region - the region's cells on a
+                // uniform Cartesian region, else the lattice laid on that
+                // region alone (117.3's default box is the region's). Only a
+                // region on which no lattice can be laid is refused, by name.
+                if let Some(v) = &plan.vis {
+                    // SPEC-LIT 117.9's D6 (VIO-09): the Isaac scene is ONE
+                    // stage over ONE lattice, and a multi-region case
+                    // writes one volume file PER REGION.
+                    if v.isaac.is_some() {
+                        return Err(Error::Config(
+                            "output.visualisation.isaac: the Isaac scene is one stage over one \
+                             region's volume, and ofgpu-cht writes one .vdb per region - an \
+                             isaac block is not built for a multi-region case. Drop the isaac \
+                             block (SPEC-LIT 117.9)"
+                                .to_string(),
+                        ));
+                    }
+                    if let Some(f) = v.formats.iter().find(|f| !matches!(f, OutputFormat::Vdb | OutputFormat::Nvdb)) {
+                        return Err(Error::Config(format!(
+                            "output/visualisation/format: ofgpu-cht writes `vdb` and `nvdb`, \
+                             one file per region; a `{}` scene (output.visualisation.usdScene) \
+                             is not built for a multi-region case. Drop usdScene; the region \
+                             VTU is output.exact's",
+                            f.name()
+                        )));
+                    }
+                    let mut menu = vec!["T"];
+                    if stress {
+                        menu.extend(["u", "sigma", "vonMises", "sigmaPrincipal", "magU"]);
+                    }
+                    plan.check_fields(&menu)?;
+                }
+                let no_lattice = plan.vis.as_ref().and_then(|v| {
+                    (0..meshes.len()).find_map(|r| {
+                        crate::pressure::cartesian::detect(&meshes[r]).err()?;
+                        v.lattice_refusal(&raws[r], &meshes[r])
+                            .map(|why| format!("region '{}': {why}", region_names[r]))
+                    })
+                });
+                plan.refuse_visualisation_without_a_lattice(no_lattice.as_deref())?;
                 plan.refuse_restart("ofgpu-cht", "run the case again")?;
                 let foam = plan
                     .exact
@@ -2389,8 +2460,15 @@ impl ChtCase {
                             .to_string(),
                     ));
                 }
-                let interval = plan.exact.as_ref().map_or(0.0, |e| e.interval);
-                if interval > 0.0 {
+                let positive: Vec<&str> = [
+                    ("output/exact/interval", plan.exact.as_ref().map_or(0.0, |e| e.interval)),
+                    ("output/visualisation/interval", plan.vis.as_ref().map_or(0.0, |v| v.interval)),
+                ]
+                .into_iter()
+                .filter(|(_, i)| *i > 0.0)
+                .map(|(k, _)| k)
+                .collect();
+                if !positive.is_empty() {
                     if self.run.steady {
                         plan.refuse_interval_when_steady(
                             "ofgpu-cht",
@@ -2400,13 +2478,13 @@ impl ChtCase {
                              state (SPEC-LIT 47.14)",
                         )?;
                     } else {
-                        return Err(Error::Config(
-                            "output/exact/interval: a positive interval names a \
+                        return Err(Error::Config(format!(
+                            "{}: a positive interval names a \
                              schedule this run has no clock for - ofgpu-cht's \
                              run_case returns one state, the final one. Drop the \
-                             interval (SPEC-LIT 44.4)"
-                                .to_string(),
-                        ));
+                             interval (SPEC-LIT 44.4)",
+                            positive.join(", ")
+                        )));
                     }
                 }
                 Some(plan)
@@ -2708,10 +2786,32 @@ fn lower_mechanics(
              built. Use one `material`, or `coupled: false` (SPEC-LIT 96.3 row 22)"
         )));
     }
+    // Row 23 and the name check: `outer` names the iteration around the map.
+    let outer = match mech.solver.outer.as_str() {
+        "anderson" => crate::solid::outer::Relaxation::Anderson(crate::solid::outer::ANDERSON_DEPTH),
+        "gmres" if mech.solver.coupled => {
+            crate::solid::outer::Relaxation::Gmres(crate::solid::outer::GMRES_RESTART)
+        }
+        "gmres" => {
+            return Err(Error::Config(format!(
+                "{path}/solver/outer: \"gmres\" is built for the block-coupled map only - \
+                 SPEC-LIT §142.2's GMRES(50) iterates the state of §109.6's block map. Set \
+                 `coupled: true`, or `outer: \"anderson\"` (SPEC-LIT 96.3 row 23)"
+            )));
+        }
+        other => {
+            return Err(Error::Config(format!(
+                "{path}/solver/outer: unknown outer iteration {other:?} - the names are \
+                 \"anderson\" (the default, Anderson of depth five, SPEC-LIT §95.3) and \
+                 \"gmres\" (GMRES(50) on the block-coupled map, SPEC-LIT §142.2)"
+            )));
+        }
+    };
     let solver = SolidOuterControls {
         tolerance: mech.solver.tolerance as Scalar,
         max_outer: mech.solver.max_outer as usize,
         coupled: mech.solver.coupled,
+        outer,
     };
 
     Ok(Some(LoweredMechanics {

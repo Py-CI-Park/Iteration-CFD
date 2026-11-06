@@ -4,9 +4,18 @@
 import {
   DEFAULT_VIEWER_STATE,
   ViewerCommandSchema,
+  defaultVisiblePatches,
+  hiddenPatches,
+  visibleBounds,
   type CameraPreset,
+  type CutPlaneSpec,
   type FieldComponent,
   type FieldInfo,
+  type GeometryBounds,
+  type IsoSurfaceInfo,
+  type StreamlineInfo,
+  type PlaneCutInfo,
+  type PointLocateInfo,
   type ViewerCommand,
   type ViewerErrorCode,
   type ViewerResult,
@@ -55,11 +64,17 @@ export interface ProbeHit {
   field: string | null
   /** Cell centre when known; see centerFor(). */
   center: [number, number, number] | null
+  /**
+   * How a world point found the cell, when the server located it (docs/17 STU-13): 'contains' when a
+   * convex cell holds the point exactly, 'nearest-centre' when only warped or non-convex cells could
+   * and the nearest centre among them answers. Absent for a pixel pick or a lattice lookup.
+   */
+  located?: 'contains' | 'nearest-centre'
 }
 
 export type ProbeOutcome =
   | { ok: true; hit: ProbeHit }
-  | { ok: false; code: 'NO_VIEWER' | 'NO_DATASET' | 'NO_STRUCTURED_GRID' | 'MISS'; message: string }
+  | { ok: false; code: 'NO_VIEWER' | 'NO_DATASET' | 'NO_STRUCTURED_GRID' | 'MISS' | 'LOCATE_FAILED'; message: string }
 
 type Listener = (state: ViewerState) => void
 
@@ -91,6 +106,12 @@ export class ViewerController {
   private readonly mountWaiters: ((mounted: boolean) => void)[] = []
   private readonly observedRanges = new Map<string, [number, number]>()
   private readonly speedRanges = new Map<string, [number, number]>()
+  /** Plane cuts the server already made for the loaded dataset, by plane (a non-lattice polyMesh). */
+  private readonly cuts = new Map<string, PlaneCutInfo>()
+  /** Iso-surfaces the server already contoured for the loaded dataset, by field, time and values (a non-lattice polyMesh). */
+  private readonly isos = new Map<string, IsoSurfaceInfo>()
+  /** Streamlines the server already traced for the loaded dataset, by request (a non-lattice polyMesh). */
+  private readonly streams = new Map<string, StreamlineInfo>()
   private layerSeq = 0
   private overlayLines: () => string[] = () => []
   private readonly requireMount: boolean
@@ -191,6 +212,26 @@ export class ViewerController {
     return { ok: true, hit: { cell, value: this.valueAt(cell), field: this.field?.name ?? null, center: this.centerFor(cell, [i, j, k]) } }
   }
 
+  /**
+   * Cell containing a world point on any dataset: the structured grid when there is one (probePoint),
+   * else the server's cells when it can locate in them (a polyMesh, docs/17 STU-13). A hit there says
+   * how it was found (`located`); a point in no cell is a MISS.
+   */
+  async locatePoint(point: [number, number, number]): Promise<ProbeOutcome> {
+    const ds = this.dataset
+    if (!ds || ds.grid || !this.loader.canLocate(ds.manifest)) return this.probePoint(point)
+    let info: PointLocateInfo
+    try {
+      info = await this.loader.locate(ds.manifest, point)
+    } catch (err) {
+      return { ok: false, code: 'LOCATE_FAILED', message: err instanceof Error ? err.message : String(err) }
+    }
+    if (this.dataset !== ds) return { ok: false, code: 'NO_DATASET', message: 'the result in the viewer changed while the point was being located' }
+    if (info.cell === null) return { ok: false, code: 'MISS', message: 'the point lies in no cell of the mesh (outside it, or in a hole)' }
+    const located = info.method === 'nearest-centre' ? 'nearest-centre' : 'contains'
+    return { ok: true, hit: { cell: info.cell, value: this.valueAt(info.cell), field: this.field?.name ?? null, center: info.center, located } }
+  }
+
   /** Attach the renderer; rebuilds everything the model already holds. */
   attachView(view: SceneView): void {
     this.detachView()
@@ -209,7 +250,7 @@ export class ViewerController {
       view.setSurfaceColoring(this.coloring)
       for (const entry of this.layers.values()) view.upsertLayer(entry, this.layerContext(entry.spec))
       view.setClipBox(this.clip)
-      view.setCamera(this.pendingCamera ?? { preset: 'fit', position: null, target: null, projection: this.camera.projection })
+      view.setCamera(this.pendingCamera ?? { preset: 'fit', position: null, target: null, projection: this.camera.projection, fitBounds: this.fitBounds() })
       this.pendingCamera = null
     }
     this.camera = view.getCamera()
@@ -324,6 +365,9 @@ export class ViewerController {
       this.displayRange = null
       this.observedRanges.clear()
       this.speedRanges.clear()
+      this.cuts.clear()
+      this.isos.clear()
+      this.streams.clear()
       this.timeIndex = this.resolveTime(cmd.timeIndex ?? 'last')
       this.display.patches = this.defaultPatches()
       const wanted = cmd.field ?? 'U'
@@ -354,10 +398,16 @@ export class ViewerController {
   }
 
   private defaultPatches(): string[] | 'all' {
-    const m = this.dataset?.manifest
-    if (!m?.grid?.emptyAxis) return 'all'
-    const empties = m.surface.patches.filter((p) => p.type === 'empty').map((p) => p.name)
-    return empties.length ? empties : 'all'
+    const ds = this.dataset
+    if (!ds) return 'all'
+    return defaultVisiblePatches(ds.manifest, ds.surface.positions, ds.surface.indices)
+  }
+
+  /** Bounds of the patches currently shown, for camera fits (null without a dataset). */
+  fitBounds(): GeometryBounds | null {
+    const ds = this.dataset
+    if (!ds) return null
+    return visibleBounds(ds.manifest, ds.surface.positions, ds.surface.indices, this.display.patches)
   }
 
   // ---- field / colouring --------------------------------------------------
@@ -478,18 +528,24 @@ export class ViewerController {
   // ---- layers -------------------------------------------------------------
 
   private async addSlice(cmd: Extract<ViewerCommand, { type: 'addSlice' }>): Promise<void> {
-    this.requireGrid()
+    this.requireSliceable()
     const position = this.resolvePosition(cmd.axis, cmd.position)
     await this.upsertLayer({ id: this.layerId(cmd.id ?? null, 'slice'), type: 'slice', axis: cmd.axis, position })
   }
 
   private async addPlane(cmd: Extract<ViewerCommand, { type: 'addPlane' }>): Promise<void> {
-    this.requireGrid()
+    this.requireSliceable()
     if (Math.hypot(...cmd.normal) === 0) throw new ViewerError('INVALID', 'plane normal must be non-zero')
     await this.upsertLayer({ id: this.layerId(cmd.id ?? null, 'plane'), type: 'plane', origin: cmd.origin, normal: cmd.normal })
   }
 
   private async addIso(cmd: Extract<ViewerCommand, { type: 'addIsoSurface' }>): Promise<void> {
+    // A polyMesh with no lattice is contoured on the server (SPEC-LIT §148.2).
+    if (this.isServerIso()) {
+      const info = this.requireField(cmd.field)
+      await this.upsertLayer({ id: this.layerId(cmd.id ?? null, 'iso'), type: 'iso', field: info.name, values: cmd.values })
+      return
+    }
     const ds = this.requireGrid()
     if (ds.manifest.grid?.emptyAxis) throw new ViewerError('NO_STRUCTURED_GRID', 'ISO_2D: iso-surfaces are disabled for 2-D cases; use a slice instead')
     // Marching cubes walks the lattice by site and reads the field by the same
@@ -502,7 +558,8 @@ export class ViewerController {
   }
 
   private async addStreamlines(cmd: Extract<ViewerCommand, { type: 'addStreamlines' }>): Promise<void> {
-    this.requireGrid()
+    // A polyMesh with no lattice is traced on the server (SPEC-LIT §148.3).
+    if (!this.isServerStream()) this.requireGrid()
     const info = this.requireVector(cmd.field ?? 'U')
     const seed = 'line' in cmd.seed ? { line: cmd.seed.line, count: cmd.seed.count } : { plane: cmd.seed.plane, position: this.resolvePosition(cmd.seed.plane, cmd.seed.position), grid: cmd.seed.grid }
     await this.upsertLayer({
@@ -542,16 +599,125 @@ export class ViewerController {
   }
 
   private async computeLayer(entry: LayerEntry): Promise<void> {
-    const req = this.layerRequest(entry.spec)
+    const spec = entry.spec
+    const req =
+      this.isCutMesh() && (spec.type === 'slice' || spec.type === 'plane')
+        ? await this.cutRequest(spec)
+        : this.isServerIso() && spec.type === 'iso'
+          ? await this.isoRequest(spec)
+          : this.isServerStream() && spec.type === 'streamlines'
+            ? await this.streamRequest(spec)
+            : this.layerRequest(spec)
     if (!req) {
       entry.result = null
       return
     }
     const result = await this.compute().run(req)
     if (result.op === 'plane' && result.width === 0) throw new ViewerError('INVALID', 'the plane does not intersect the domain')
+    if (result.op === 'cut' && result.triangleCount === 0) throw new ViewerError('INVALID', 'the plane does not intersect the domain (a plane on a domain wall must face away from the domain)')
     entry.result = result
     entry.summary = summarize(entry.spec, result)
     this.view?.upsertLayer(entry, this.layerContext(entry.spec))
+  }
+
+  /** A dataset with no lattice whose slices and planes are the server's exact cuts (SPEC-LIT §148.1). */
+  private isCutMesh(): boolean {
+    const ds = this.dataset
+    return !!ds && !ds.grid && this.loader.canCut(ds.manifest)
+  }
+
+  /** A dataset with no lattice whose iso-surfaces the server contours (SPEC-LIT §148.2). */
+  private isServerIso(): boolean {
+    const ds = this.dataset
+    return !!ds && !ds.grid && this.loader.canIso(ds.manifest)
+  }
+
+  private async isoRequest(spec: Extract<LayerSpec, { type: 'iso' }>): Promise<ComputeRequest> {
+    const ds = this.requireDataset()
+    const req = { field: spec.field, timeIndex: this.timeIndex, values: [...spec.values] }
+    const key = JSON.stringify(req)
+    let info = this.isos.get(key)
+    if (!info) {
+      try {
+        info = await this.loader.polyIso(ds.manifest, req)
+      } catch (e) {
+        throw new ViewerError('LOAD_FAILED', `the server could not contour ${ds.manifest.name}: ${e instanceof Error ? e.message : String(e)}`)
+      }
+      this.isos.set(key, info)
+    }
+    return { op: 'isoMesh', positions: scopedKey(ds.manifest.id, info.positions.key), normals: scopedKey(ds.manifest.id, info.normals.key) }
+  }
+
+  /** A dataset with no lattice whose streamlines the server traces (SPEC-LIT §148.3). */
+  private isServerStream(): boolean {
+    const ds = this.dataset
+    return !!ds && !ds.grid && this.loader.canStream(ds.manifest)
+  }
+
+  /** The seeds of a streamline layer: a line rake, or a plane rake over the dataset's box. */
+  private seedsOf(spec: Extract<LayerSpec, { type: 'streamlines' }>): Float32Array {
+    const b = this.requireDataset().manifest.bounds
+    if ('line' in spec.seed) return lineSeeds(spec.seed.line[0], spec.seed.line[1], spec.seed.count)
+    return planeSeeds(b.min, b.max, AXIS_INDEX[spec.seed.plane], spec.seed.position, spec.seed.grid[0], spec.seed.grid[1])
+  }
+
+  private async streamRequest(spec: Extract<LayerSpec, { type: 'streamlines' }>): Promise<ComputeRequest> {
+    const ds = this.requireDataset()
+    const b = ds.manifest.bounds
+    const diag = Math.hypot(b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2])
+    const req = { field: spec.field, timeIndex: this.timeIndex, seeds: [...this.seedsOf(spec)], direction: spec.direction, maxLength: spec.maxLength ?? diag * 4 }
+    const key = JSON.stringify(req)
+    let info = this.streams.get(key)
+    if (!info) {
+      try {
+        info = await this.loader.polyStream(ds.manifest, req)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        if (msg.startsWith('OUTSIDE:')) throw new ViewerError('INVALID', msg)
+        throw new ViewerError('LOAD_FAILED', `the server could not trace streamlines on ${ds.manifest.name}: ${msg}`)
+      }
+      this.streams.set(key, info)
+    }
+    return { op: 'streamlineMesh', points: scopedKey(ds.manifest.id, info.points.key), speeds: scopedKey(ds.manifest.id, info.speeds.key), offsets: scopedKey(ds.manifest.id, info.offsets.key) }
+  }
+
+  /**
+   * The cut plane of a slice or plane layer. An axis slice faces +axis, except on the domain's min
+   * wall, where it faces -axis: a face lying in the plane belongs to the cell on its - side
+   * (SPEC-LIT §148.1), so a plane on a wall must face away from the domain to show the wall's cells.
+   */
+  private cutPlaneOf(spec: Extract<LayerSpec, { type: 'slice' | 'plane' }>): CutPlaneSpec {
+    if (spec.type === 'plane') return { origin: [...spec.origin], normal: [...spec.normal] }
+    const b = this.requireDataset().manifest.bounds
+    const a = AXIS_INDEX[spec.axis]
+    const origin: [number, number, number] = [0.5 * (b.min[0] + b.max[0]), 0.5 * (b.min[1] + b.max[1]), 0.5 * (b.min[2] + b.max[2])]
+    origin[a] = spec.position
+    const normal: [number, number, number] = [0, 0, 0]
+    normal[a] = spec.position <= b.min[a] ? -1 : 1
+    return { origin, normal }
+  }
+
+  private async cutRequest(spec: Extract<LayerSpec, { type: 'slice' | 'plane' }>): Promise<ComputeRequest | null> {
+    const ds = this.requireDataset()
+    if (!this.mapper || !this.field) return null
+    const plane = this.cutPlaneOf(spec)
+    const planeKey = JSON.stringify(plane)
+    let info = this.cuts.get(planeKey)
+    if (!info) {
+      try {
+        info = await this.loader.planeCut(ds.manifest, plane)
+      } catch (e) {
+        throw new ViewerError('LOAD_FAILED', `the server could not cut ${ds.manifest.name}: ${e instanceof Error ? e.message : String(e)}`)
+      }
+      this.cuts.set(planeKey, info)
+    }
+    return {
+      op: 'cut',
+      positions: scopedKey(ds.manifest.id, info.positions.key),
+      cells: scopedKey(ds.manifest.id, info.cells.key),
+      field: this.fieldRef(this.field.name)!,
+      mapper: this.mapper,
+    }
   }
 
   private layerRequest(spec: LayerSpec): ComputeRequest | null {
@@ -576,9 +742,7 @@ export class ViewerController {
         const empty = ds.manifest.grid?.emptyAxis ?? null
         const planarAxis = empty ? AXIS_INDEX[empty] : null
         const b = ds.manifest.bounds
-        let seeds: Float32Array
-        if ('line' in spec.seed) seeds = lineSeeds(spec.seed.line[0], spec.seed.line[1], spec.seed.count)
-        else seeds = planeSeeds(b.min, b.max, AXIS_INDEX[spec.seed.plane], spec.seed.position, spec.seed.grid[0], spec.seed.grid[1])
+        const seeds = this.seedsOf(spec)
         if (planarAxis !== null) for (let i = planarAxis; i < seeds.length; i += 3) seeds[i] = 0.5 * (b.min[planarAxis] + b.max[planarAxis])
         const diag = Math.hypot(b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2])
         return { op: 'streamlines', grid, field: ref, seeds, direction: spec.direction, maxLength: spec.maxLength ?? diag * 4, planarAxis }
@@ -648,14 +812,16 @@ export class ViewerController {
   }
 
   private applyCamera(opts: Parameters<SceneView['setCamera']>[0]): void {
+    // A preset frames the visible patches (explicit position/target still win in the view).
+    const full = opts.preset ? { ...opts, fitBounds: this.fitBounds() } : opts
     if (this.view) {
-      this.view.setCamera(opts)
+      this.view.setCamera(full)
       this.camera = this.view.getCamera()
     } else {
-      this.pendingCamera = opts
-      if (opts.projection) this.camera.projection = opts.projection
-      if (opts.position) this.camera.position = opts.position
-      if (opts.target) this.camera.target = opts.target
+      this.pendingCamera = full
+      if (full.projection) this.camera.projection = full.projection
+      if (full.position) this.camera.position = full.position
+      if (full.target) this.camera.target = full.target
     }
   }
 
@@ -691,9 +857,26 @@ export class ViewerController {
     return this.dataset
   }
 
+  /** A lattice, or a non-lattice polyMesh the server cuts exactly: what slices and planes need. */
+  private requireSliceable(): LoadedDataset {
+    const ds = this.requireDataset()
+    if (ds.grid && ds.gridKeys) return ds
+    if (this.loader.canCut(ds.manifest)) return ds
+    throw new ViewerError('NO_STRUCTURED_GRID', `${ds.manifest.name} has no structured grid (${ds.manifest.source}) and cannot be cut by a plane; slices and planes need one or the other`)
+  }
+
   private requireGrid(): LoadedDataset {
     const ds = this.requireDataset()
-    if (!ds.grid || !ds.gridKeys) throw new ViewerError('NO_STRUCTURED_GRID', `${ds.manifest.name} has no structured grid (${ds.manifest.source}); slices, planes, iso-surfaces, streamlines and glyphs need one`)
+    if (!ds.grid || !ds.gridKeys) {
+      const cut = this.loader.canCut(ds.manifest)
+      const iso = this.loader.canIso(ds.manifest)
+      const stream = this.loader.canStream(ds.manifest)
+      const list = (xs: string[]): string => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0] ?? '')
+      const served = [...(cut ? ['slices', 'planes'] : []), ...(iso ? ['iso-surfaces'] : []), ...(stream ? ['streamlines'] : [])]
+      const here = cut && !iso && !stream ? ' (slices and planes are exact cuts here)' : served.length ? ` (${list(served)} are computed on its cells here)` : ''
+      const needs = [...(iso ? [] : ['iso-surfaces']), ...(stream ? [] : ['streamlines']), 'glyphs']
+      throw new ViewerError('NO_STRUCTURED_GRID', `${ds.manifest.name} has no structured grid (${ds.manifest.source}); ${list(needs)} need${needs.length > 1 ? '' : 's'} one${here}`)
+    }
     return ds
   }
 
@@ -832,6 +1015,7 @@ export class ViewerController {
       time: times.length ? { index: this.timeIndex, value: times[this.timeIndex]?.value ?? 0, count: times.length } : null,
       layers: [...this.layers.values()].map((l) => ({ id: l.spec.id, type: l.spec.type, summary: l.summary })),
       camera: { position: [...this.camera.position], target: [...this.camera.target], projection: this.camera.projection },
+      patches: m ? { visible: Array.isArray(this.display.patches) ? [...this.display.patches] : this.display.patches, hidden: hiddenPatches(m, this.display.patches) } : null,
       loading: this.loading,
       message: this.message,
     }

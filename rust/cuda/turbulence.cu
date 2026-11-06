@@ -975,6 +975,60 @@ extern "C" __global__ void turbGammaBoundaryCell
 }
 
 
+//- SPEC-LIT 139.6 (PAR-12): the blended diffusivity on the LISTED boundary
+//  faces - a decomposed run's PROCESSOR faces - interpolated as an internal
+//  face is, from the two cells the face couples.
+//
+//  Extended from:
+//    Menter, "Two-equation eddy-viscosity turbulence models for engineering
+//      applications", AIAA J. 32 (1994) 1598-1605
+//    Menter, Kuntz & Langtry, "Ten years of industrial experience with the
+//      SST turbulence model", Turbulence, Heat and Mass Transfer 4 (2003)
+//    Tucker, "Assessment of geometric multilevel convergence and a wall
+//      distance method for flows with multiple internal boundaries",
+//      Applied Mathematical Modelling 22 (1998) 293-305
+//    ofgpu SPEC-LIT.md sections 6.3 and 6.6
+//  No GPL-licensed source was consulted.
+//
+//  On the whole mesh a processor face IS an internal face, and
+//  turbGammaInternalCell would interpolate BOTH cells' blending factor. Cut,
+//  it becomes a boundary face of the part, and turbGammaBoundaryCell (the
+//  call face_diffusivity_cell makes on every boundary face) takes the OWNER's
+//  rSigma only - which with F1 varying is O(1e-3) wrong, not round-off. This
+//  kernel is turbGammaInternalCell's expression - the SAME gP/gN form and the
+//  SAME multiplication order - evaluated over the listed faces only, with the
+//  neighbour's nut and rSigma read at the halo cell the exchange has filled
+//  (SPEC-LIT 139.6's fixed-cell halo). k-epsilon's constant sigma makes the
+//  owner-only value algebraically equal there, so nothing calls this for it.
+extern "C" __global__ void turbGammaCoupledCell
+(
+    ofscalar* __restrict__ bGammaMagSf,
+    const ofscalar* __restrict__ nut,
+    const ofscalar* __restrict__ rSigma,
+    const oflabel* __restrict__ bFaceCells,
+    const oflabel* __restrict__ bNbrCell,
+    const ofscalar* __restrict__ bWeights,
+    const ofscalar* __restrict__ bMagSf,
+    const oflabel* __restrict__ faces,
+    ofscalar nu,
+    oflabel nFaces
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= nFaces) return;
+
+    const oflabel b = faces[i];
+    const oflabel P = bFaceCells[b];
+    const oflabel N = bNbrCell[b];
+
+    const ofscalar w = bWeights[b];
+    const ofscalar gP = nu + rSigma[P]*nut[P];
+    const ofscalar gN = nu + rSigma[N]*nut[N];
+
+    bGammaMagSf[b] = (w*gP + ((ofscalar)1 - w)*gN)*bMagSf[b];
+}
+
+
 // ==========================================================================
 //  Affine diffusivity - SPEC-LIT 41.2
 //
@@ -1203,6 +1257,101 @@ extern "C" __global__ void turbBuoyancyProduction
     ofscalar r = upar/un;
     if (r < (ofscalar)0) r = -r;
     c3[c] = oftanh_(r);
+}
+
+
+// ==========================================================================
+//  G_b under Boussinesq - SPEC-LIT section 121.6
+//
+//      G_b = beta (nu_t / Pr_t) g . grad(T)
+//
+//  Rodi (1987) writes G_b = -(nu_t/Pr_t) g.grad(rho)/rho for any density
+//  law; under the Boussinesq approximation the density that divides is
+//  rho_ref and grad(rho)/rho_ref = -beta grad(T) exactly, which leaves the
+//  line above, evaluated left to right. Against the density-ratio kernel
+//  above the two differ by exactly the factor beta*T (121.7) - the same
+//  T/T_ref the force law of (121.4) carries. Rodi, W. (1987), "Examples of
+//  calculation methods for flow and mixing in stratified fluids",
+//  J. Geophys. Res. 92(C5) 5305-5328.
+//
+//  No temperature is read: (121.6) has no divide, so it needs no floor and
+//  a NaN or zero temperature field cannot reach it. C_3 is computed exactly
+//  as the density-ratio kernel computes it, through turbHenkesC3 below.
+//
+//  The density-ratio kernel `turbBuoyancyProduction` above is left
+//  untouched, byte for byte: every existing case launches it and its f64
+//  results must stay bit-identical, so the Boussinesq form runs in its own
+//  kernel instead.
+// ==========================================================================
+
+// The Henkes (1991) C_3, exactly the mode-1 tail of turbBuoyancyProduction:
+// C_3 = tanh |u_parallel_to_g / u_normal_to_g|, 0 where |g| == 0 leaves no
+// axis to split along, and the limit 1 where the velocity is purely
+// vertical. turbBuoyancyProductionBoussinesq must hand back the SAME bits
+// as the density-ratio kernel for the same g and u, so the two C_3 buffers
+// can be compared bit for bit.
+__device__ __forceinline__ ofscalar turbHenkesC3(ofvec3 g, ofvec3 uc)
+{
+    const ofscalar gmag = ofsqrt_(dot3(g, g));
+    if (!(gmag > (ofscalar)0))
+    {
+        return (ofscalar)0;
+    }
+
+    const ofvec3 e = mkvec(g.x/gmag, g.y/gmag, g.z/gmag);
+    const ofscalar upar = dot3(uc, e);
+    const ofscalar u2 = dot3(uc, uc);
+    // |u_normal|^2 = |u|^2 - u_parallel^2, clamped: round-off can make it
+    // very slightly negative when the velocity is exactly along g.
+    const ofscalar un2 = ofmax_(u2 - upar*upar, (ofscalar)0);
+    const ofscalar un = ofsqrt_(un2);
+
+    // u_normal == 0 is a purely vertical velocity: the ratio is infinite
+    // and tanh of it is 1, which is the limit and not a special case.
+    if (!(un > (ofscalar)0))
+    {
+        return (upar != (ofscalar)0) ? (ofscalar)1 : (ofscalar)0;
+    }
+
+    ofscalar r = upar/un;
+    if (r < (ofscalar)0) r = -r;
+    return oftanh_(r);
+}
+
+
+extern "C" __global__ void turbBuoyancyProductionBoussinesq
+(
+    ofscalar* __restrict__ gb,
+    ofscalar* __restrict__ c3,
+    const ofscalar* __restrict__ nut,
+    const ofvec3*  __restrict__ gradT,
+    const ofvec3*  __restrict__ u,
+    ofscalar gx,
+    ofscalar gy,
+    ofscalar gz,
+    ofscalar rPrt,
+    ofscalar beta,
+    oflabel c3Mode,
+    ofscalar c3Const,
+    oflabel nCells
+)
+{
+    const oflabel c = OFGPU_TID;
+    if (c >= nCells) return;
+
+    const ofvec3 g  = mkvec(gx, gy, gz);
+    const ofvec3 gt = gradT[c];
+
+    // SPEC-LIT section 121.6, evaluated left to right: no t, no floor.
+    gb[c] = nut[c]*rPrt*dot3(g, gt)*beta;
+
+    if (c3Mode == 0)
+    {
+        c3[c] = c3Const;
+        return;
+    }
+
+    c3[c] = turbHenkesC3(g, u[c]);
 }
 
 

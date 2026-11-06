@@ -129,7 +129,7 @@ use ofgpu::io::msh::read_msh;
 use ofgpu::io::polymesh::{PolyMeshRaw, build_host_mesh, write_poly_mesh_raw};
 use ofgpu::mesh::PatchKind;
 use ofgpu::mesh::geometry::{cell_regions, region_sizes_text};
-use ofgpu::{Error, Label, Result, Scalar};
+use ofgpu::{Error, Label, Result};
 
 /// Every `-type` value that means something - the strings
 /// `PatchKind::from_type` maps to anything but `Generic`, plus `patch`
@@ -307,7 +307,7 @@ struct FluentZone {
 fn default_fluent_zone(name: &str, kind: PatchKind) -> &'static str {
     match kind {
         PatchKind::Wall => "wall",
-        PatchKind::Symmetry => "symmetry",
+        PatchKind::Symmetry | PatchKind::Wedge => "symmetry",
         _ => {
             let lower = name.to_lowercase();
             if lower == "east" || lower.starts_with("inlet") || lower.ends_with("_source") {
@@ -925,8 +925,8 @@ fn check_fluent_mesh(raw: &PolyMeshRaw) -> Result<()> {
 /// C's `%.*g` with `sig` significant digits - the same formatter
 /// `io/polymesh.rs`'s private `fmt_g_prec` is, repeated here because a
 /// binary cannot see it.
-fn fmt_g_prec(v: Scalar, sig: usize) -> String {
-    let x = v as f64;
+fn fmt_g_prec(v: f64, sig: usize) -> String {
+    let x = v;
     if x == 0.0 {
         // printf keeps the sign of a negative zero; so does this.
         return if x.is_sign_negative() { "-0".to_string() } else { "0".to_string() };
@@ -968,7 +968,7 @@ fn trim_trailing_zeros(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ofgpu::Vec3;
+    use ofgpu::DVec3;
     use ofgpu::io::polymesh::read_poly_mesh;
     use ofgpu::mesh::PatchInfo;
 
@@ -1036,10 +1036,10 @@ mod tests {
         raw.patches[0].type_name = "wall".to_string();
         raw.patches[0].kind = PatchKind::Wall;
         raw.points = vec![
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(1.0, 0.0, 0.0),
-            Vec3::new(0.0, 1.0, 0.0),
-            Vec3::new(0.0, 0.0, 1.0),
+            DVec3::new(0.0, 0.0, 0.0),
+            DVec3::new(1.0, 0.0, 0.0),
+            DVec3::new(0.0, 1.0, 0.0),
+            DVec3::new(0.0, 0.0, 1.0),
         ];
         // Outward from cell 0, the way `read_msh` winds them.
         raw.faces = vec![vec![0, 2, 1], vec![0, 1, 3], vec![0, 3, 2], vec![1, 2, 3]];
@@ -1060,11 +1060,11 @@ mod tests {
         raw.patches[1].start = 3;
         raw.patches[1].size = 3;
         raw.points = vec![
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(1.0, 0.0, 0.0),
-            Vec3::new(0.0, 1.0, 0.0),
-            Vec3::new(0.0, 0.0, 1.0),
-            Vec3::new(0.0, 0.0, -1.0),
+            DVec3::new(0.0, 0.0, 0.0),
+            DVec3::new(1.0, 0.0, 0.0),
+            DVec3::new(0.0, 1.0, 0.0),
+            DVec3::new(0.0, 0.0, 1.0),
+            DVec3::new(0.0, 0.0, -1.0),
         ];
         raw.faces = vec![
             vec![0, 2, 1], // internal, owner 0 / neighbour 1
@@ -1216,11 +1216,11 @@ mod tests {
                 }
             }
         }
-        let centroid = |c: usize| -> Vec3 {
+        let centroid = |c: usize| -> DVec3 {
             verts[c]
                 .iter()
-                .fold(Vec3::new(0.0, 0.0, 0.0), |a, &v| a + raw.points[v])
-                / verts[c].len() as Scalar
+                .fold(DVec3::new(0.0, 0.0, 0.0), |a, &v| a + raw.points[v])
+                / verts[c].len() as f64
         };
 
         // Every face line, from whichever `(13 ...)` block wrote it:
@@ -1365,10 +1365,10 @@ mod tests {
             nbr_patch: None,
         });
         raw.points.extend([
-            Vec3::new(10.0, 0.0, 0.0),
-            Vec3::new(11.0, 0.0, 0.0),
-            Vec3::new(10.0, 1.0, 0.0),
-            Vec3::new(10.0, 0.0, 1.0),
+            DVec3::new(10.0, 0.0, 0.0),
+            DVec3::new(11.0, 0.0, 0.0),
+            DVec3::new(10.0, 1.0, 0.0),
+            DVec3::new(10.0, 0.0, 1.0),
         ]);
         // Points 5..8, wound outward from cell 2 - `one_tet`'s face list
         // shifted by the five points the two-cell region already holds - the
@@ -1402,10 +1402,10 @@ mod tests {
         for k in 0..2 {
             for j in 0..=ny {
                 for i in 0..=nx {
-                    points.push(Vec3::new(
-                        i as Scalar,
-                        j as Scalar,
-                        k as Scalar,
+                    points.push(DVec3::new(
+                        i as f64,
+                        j as f64,
+                        k as f64,
                     ));
                 }
             }

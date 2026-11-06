@@ -31,6 +31,7 @@ from __future__ import annotations
 import ast
 import copy
 import gzip
+import hashlib
 import json
 import math
 import os
@@ -175,6 +176,14 @@ TEMPLATES = {
                  "title": "coarsen the ladder until the predicted cells fit the budget",
                  "because": "far-field bands are coarsened first and the wall last, so the cells fit "
                             "with the least loss at the wall"},
+    "R-SNAP": {"layer": "rule",
+               "title": "tighten the snap dead band to a fixed fraction of the finest cell",
+               "because": "a snapped wall point stops once it is inside the dead band, so the band, "
+                          "not the geometry, sets the wall residual"},
+    "R-ECON": {"layer": "rule",
+               "title": "trim the distance bands to the wall band at its minimum depth",
+               "because": "the wall level carries the layers and the octree balance builds the "
+                          "coarser shells, so wider bands add cells that no gate reads"},
     "RM-BUDGET-FAR": {"layer": "remedy",
                       "title": "halve the far-field band distances",
                       "because": "a run over the cell budget or out of time sheds far-field cells "
@@ -191,6 +200,11 @@ TEMPLATES = {
                        "title": "refine the whole refinement ladder one level",
                        "because": "a missing wall patch or a split fluid region means the lattice is "
                                   "too coarse for the body's topology"},
+    "RM-TE": {"layer": "remedy",
+              "title": "drop the feature bump to the wall level and widen the attraction radius",
+              "because": "the worst snap residuals sit just outside the one-cell feature band, "
+                         "where the trailing wedge is thinner than one wall cell, and without "
+                         "the bump a radius of one and a half finest cells still holds the edges"},
     "RM-SNAP-WALL": {"layer": "remedy",
                      "title": "coarsen the whole refinement ladder one level, not below the y+ floor",
                      "because": "the pilot sweep found one level coarser the only snap-clean change "
@@ -266,6 +280,10 @@ TEMPLATES = {
                     "title": "abstain: the prior ships disabled",
                     "because": "the prior did not earn its place on the tuning split, so the setup "
                                "rules decide attempt one"},
+    "PR-RULES": {"layer": "prior",
+                 "title": "keep the rules' attempt: the surrogate predicts it passes",
+                 "because": "the prior acts only where the surrogate predicts that the rules' attempt "
+                            "one fails with a probability of at least one half"},
     "OPT-PICK": {"layer": "optimiser",
                  "title": "propose the surrogate's pick from the Sobol pool",
                  "because": "the remedies are spent, and the surrogate predicts this config passes "
@@ -954,7 +972,7 @@ def _st_binom_cdf(x: int, n: int, p: float) -> float:
 
 
 def _g1_templates():
-    assert len(TEMPLATES) == 53, len(TEMPLATES)
+    assert len(TEMPLATES) == 57, len(TEMPLATES)
     counts = {}
     for rid, tp in TEMPLATES.items():
         assert _DECISION_ID_RE.fullmatch(rid) and ID_RE.fullmatch(rid), rid
@@ -963,9 +981,9 @@ def _g1_templates():
         assert len(tp) == 3, rid
         assert re.search(r"\d", tp["title"] + tp["because"]) is None, rid
         counts[prefix] = counts.get(prefix, 0) + 1
-    assert counts == {"PF": 11, "WL": 7, "R": 8, "RM": 17, "PR": 6,
+    assert counts == {"PF": 11, "WL": 7, "R": 10, "RM": 18, "PR": 7,
                       "OPT": 4}, counts
-    print("[ok] templates: 53 rule ids (PF 11, WL 7, R 8, RM 17, PR 6, OPT 4), "
+    print("[ok] templates: 56 rule ids (PF 11, WL 7, R 10, RM 18, PR 6, OPT 4), "
           "each with its "
           "prefix's layer, no digit in any template")
 
@@ -986,15 +1004,15 @@ def _g2_static_scan():
     finally:
         os.remove(planted)
         os.rmdir(tmp)
-    print("[ok] static scan: 53 ids in %d source files, all templated, none dead, "
+    print("[ok] static scan: %d ids in %d source files, all templated, none dead, "
           "PF-TEST only in remedies.py; module tables templated; a planted "
-          "RM-NEW-THING is reported missing" % sc["files"])
+          "RM-NEW-THING is reported missing" % (len(sc["ids"]), sc["files"]))
 
 
 def _g3_records():
     fx = load_fixtures()
     recs = fx["records_by_id"]
-    assert len(recs) == 61, len(recs)
+    assert len(recs) == 68, len(recs)
     ids = set()
     for rec in recs:
         c = card(rec)
@@ -1005,7 +1023,7 @@ def _g3_records():
     assert ids == fx_ids, ids ^ fx_ids
     for v in [0.0, 1.0, 0.1334231805929919, 3, True, None, "a", [1.5, None], {"k": 1}]:
         assert fmt(v) == remedies._fmt(v), (v, fmt(v), remedies._fmt(v))
-    print("[ok] records: 61 fixture records of 43 ids render, every line starts with "
+    print("[ok] records: 68 fixture records of 46 ids render, every line starts with "
           "its rule id, 0 ungrounded; fmt == remedies._fmt on 9 values")
 
 
@@ -1499,8 +1517,104 @@ def _g14_optimiser_end():
           "--audit --bundle reads a bundle")
 
 
+def _g15_seed1_ends():
+    """The supervisor's seed-1 fixture of 63 ending optimiser records, post-hoc (AUT-08)."""
+    global ends_geometry
+    with gzip.open(os.path.join(FIXTURE_DIR, "seed1_opt_end.json.gz"),
+                   "rt", encoding="utf-8") as f:
+        fx = json.load(f)
+    assert fx["schema"] == "autonomy-explain-seed1-fixture/1", fx["schema"]
+    assert fx["$comment"].startswith("meteor-cfd - Copyright")
+    paths = [("eval-full", "evaluate/eval_full.json.gz"),
+             ("eval-gdet-1", "evaluate/eval_gdet-1.json.gz"),
+             ("eval-gdet-2", "evaluate/eval_gdet-2.json.gz"),
+             ("eval-no-preflight", "evaluate/eval_no-preflight.json.gz"),
+             ("eval-no-prior", "evaluate/eval_no-prior.json.gz")]
+    n_rows = (64, 1, 1, 28, 33)
+    checked = (970, 20, 20, 292, 456)
+    triggers = (31, 0, 0, 14, 19)
+    end_counts = ({"OPT-NOFEAS": 26, "OPT-PICK": 7}, {"OPT-PICK": 1}, {"OPT-PICK": 1},
+                  {"OPT-NOFEAS": 14}, {"OPT-NOFEAS": 12, "OPT-PICK": 2})
+    mut_bad = (33, 1, 1, 14, 14)
+    kept = []
+    tot = {"OPT-NOFEAS": 0, "OPT-PICK": 0}
+    for i, c in enumerate(fx["campaigns"]):
+        cid, bundle = paths[i]
+        assert (c["campaign_id"], c["bundle"]) == (cid, bundle), (c["campaign_id"], c["bundle"])
+        with open(os.path.join(HERE, bundle), "rb") as f:
+            assert hashlib.sha256(f.read()).hexdigest() == c["bundle_sha256"], bundle
+        gids = sorted({a["geometry_id"] for a in c["attempts"]})
+        assert c["geometry_ids"] == gids, cid
+        assert gids == sorted({r["geometry_id"] for r in c["records"]}), cid
+        assert len(c["attempts"]) == n_rows[i], (cid, len(c["attempts"]))
+        rows, recs = c["attempts"], _group_records(c["records"])
+        au = audit(rows, recs)
+        assert au["ok"] and au["record_order"]["bad"] == [], (cid, au["record_order"]["bad"][:2])
+        assert au["record_order"]["checked"] == checked[i], \
+            (cid, au["record_order"]["checked"])
+        assert au["trigger_checked"] == triggers[i], (cid, au["trigger_checked"])
+        by_rule = {}
+        for g in gids:
+            grows = [r for r in rows if r["geometry_id"] == g]
+            last = grows[-1]["attempt"]
+            n_end = 0
+            for t, e in zip(recs[g], ends_geometry(recs[g], last)):
+                rid = t["record"]["rule_id"]
+                if e and rid.startswith("OPT-"):
+                    by_rule[rid] = by_rule.get(rid, 0) + 1
+                    tot[rid] = tot.get(rid, 0) + 1
+                    n_end += 1
+            assert n_end == 1, (cid, g, n_end)
+            obj = explain_geometry(grows, recs[g])
+            assert obj["terminal"] == "EXHAUSTED", (cid, g, obj["terminal"])
+            a_last = obj["attempts"][last - 1]
+            end_card = a_last["end"][-1]
+            assert end_card["rule_id"].startswith("OPT-"), (cid, g, end_card["rule_id"])
+            assert end_card["ends_geometry"] is True
+            assert end_card["end_note"] == END_TEMPLATES[end_card["rule_id"]]
+            want = "end %s; %s" % (end_card["line"], END_TEMPLATES[end_card["rule_id"]])
+            assert obj["text"].rstrip("\n").split("\n")[-1] == want, obj["text"][-200:]
+            assert not [x for x in a_last["records"] if x["rule_id"].startswith("OPT-")], g
+            assert ungrounded(obj["text"], grows + [t["record"] for t in recs[g]]) == []
+        assert by_rule == end_counts[i], (cid, by_rule)
+        kept.append((rows, recs, gids))
+    assert sum(tot.values()) == 63, tot
+
+    def pre_cb69bc9(tags, last_attempt):
+        return [t["record"]["rule_id"] in TERMINAL_IDS for t in tags]
+
+    saved = ends_geometry
+    ends_geometry = pre_cb69bc9
+    n_mut = 0
+    try:
+        for i, (rows, recs, gids) in enumerate(kept):
+            au = audit(rows, recs)
+            bad = au["record_order"]["bad"]
+            assert au["ok"] is False and len(bad) == mut_bad[i], (paths[i][0], len(bad))
+            mr = {}
+            for b in bad:
+                last = max(r["attempt"] for r in rows
+                           if r["geometry_id"] == b["geometry_id"])
+                assert b["why"] == "a decision record after its run started", b
+                assert b["attempt"] == last, b
+                mr[b["rule_id"]] = mr.get(b["rule_id"], 0) + 1
+            assert mr == end_counts[i], (paths[i][0], mr)
+            assert {b["geometry_id"] for b in bad} == set(gids), paths[i][0]
+            n_mut += len(bad)
+    finally:
+        ends_geometry = saved
+    assert n_mut == 63, n_mut
+    rows, recs, _ = kept[0]
+    assert audit(rows, recs)["ok"] is True
+    print("[ok] seed-1 ends (post-hoc): %d ending optimiser records (OPT-NOFEAS %d, "
+          "OPT-PICK %d) in %d of the 9 seed-1 campaigns audit ok and render after "
+          "EXHAUSTED; under the pre-cb69bc9 rule all %d are reported as a decision "
+          "record after its run started"
+          % (sum(tot.values()), tot["OPT-NOFEAS"], tot["OPT-PICK"], len(kept), n_mut))
+
+
 def selftest() -> int:
-    """The 14 G-EXPL groups; [ok] per group, SELFTEST PASS at the end."""
+    """The 15 G-EXPL groups; [ok] per group, SELFTEST PASS at the end."""
     groups = [("templates", _g1_templates), ("static scan", _g2_static_scan),
               ("records", _g3_records), ("rows", _g4_rows),
               ("timestamps", _g5_timestamps), ("moved", _g6_moved),
@@ -1508,7 +1622,8 @@ def selftest() -> int:
               ("clopper-pearson", _g9_clopper_pearson),
               ("summary property", _g10_property), ("audit", _g11_audit_faults),
               ("determinism", _g12_determinism), ("cli", _g13_cli),
-              ("optimiser end", _g14_optimiser_end)]
+              ("optimiser end", _g14_optimiser_end),
+              ("seed-1 ends", _g15_seed1_ends)]
     for name, fn in groups:
         try:
             fn()
@@ -1673,6 +1788,15 @@ def _load_records_maybe(path) -> dict:
         return json.load(f)["records"]
 
 
+def _group_records(lns: list) -> dict:
+    """Record lines grouped by geometry_id in file order, as audit and explain take them."""
+    out = {}
+    for ln in lns:
+        out.setdefault(ln["geometry_id"], []).append(
+            {"attempt": ln["attempt"], "record": ln["record"]})
+    return out
+
+
 def bundle_rows(path: str) -> tuple:
     """(rows, records) of a campaign bundle (baseline.py's gzip JSON) for audit;
     records grouped by geometry in file order."""
@@ -1687,11 +1811,7 @@ def bundle_rows(path: str) -> tuple:
     if not isinstance(b, dict) or not isinstance(b.get("attempts"), list) \
             or not isinstance(b.get("records"), list):
         raise ExplainError("bundle: %s holds no attempts and records" % path)
-    out = {}
-    for ln in b["records"]:
-        out.setdefault(ln["geometry_id"], []).append(
-            {"attempt": ln["attempt"], "record": ln["record"]})
-    return (b["attempts"], out)
+    return (b["attempts"], _group_records(b["records"]))
 
 
 def _parse_opts(rest: list) -> tuple:

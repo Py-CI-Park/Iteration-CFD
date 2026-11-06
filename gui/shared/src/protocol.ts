@@ -14,6 +14,19 @@ export const RunStatusSchema = z.enum(['queued', 'running', 'done', 'failed', 'k
 export type RunStatus = z.infer<typeof RunStatusSchema>
 export const RunEndWordSchema = z.enum(RUN_END_WORDS)
 
+/**
+ * The build a run uses (F32-19): `double` is the default f64 build in rust/target/release, `single`
+ * the `--features single` build in rust/target/single/release (SPEC-LIT §118, mixed precision). The
+ * default stays `double` (docs/17 §10.1 A18). Single is a supported configuration since F32-18
+ * measured the full single-build validate run (SPEC-LIT §112.5).
+ */
+export const RUN_PRECISIONS = ['double', 'single'] as const
+export const RunPrecisionSchema = z.enum(RUN_PRECISIONS)
+export type RunPrecision = z.infer<typeof RunPrecisionSchema>
+export const DEFAULT_RUN_PRECISION: RunPrecision = 'double'
+/** True until F32-18 landed; false since F32-19b (F32-18 measured the single build). */
+export const SINGLE_PRECISION_PREVIEW = false
+
 /** Grouped machine scalars; `hostname` is the Machine primary key and the struct's main field. */
 export const MachineRefSchema = z.object({
   hostname: z.string(),
@@ -70,6 +83,8 @@ export const RunInfoSchema = z.object({
   meshId: z.string().nullable().optional(),
   /** The Machine this run ran on: N1's struct, `hostname` its main field. Null only when unreadable. */
   machine: MachineRefSchema.nullable().optional(),
+  /** The build the run used (F32-19); absent on every run before it, which all ran `double`. */
+  precision: RunPrecisionSchema.optional(),
   /** The driver's own `run ended:` word; absent when it printed none (every run before it, every other driver). */
   endWord: RunEndWordSchema.optional(),
   /** The `<detail>` of that line; absent with endWord. */
@@ -356,8 +371,8 @@ export type UserContext = z.infer<typeof UserContextSchema>
 // projection of the screen changes.
 // ---------------------------------------------------------------------------
 
-/** The boundary editor's type select, as the GUI's PATCH_PRESETS spell it. */
-export const PATCH_PRESET_IDS = ['velocity-inlet', 'pressure-outlet', 'no-slip-wall', 'fixed-temperature-wall', 'heat-flux-wall', 'slip-wall', 'symmetry', 'empty'] as const
+/** The boundary editor's type select. `wedge` is offered only on a wedge mesh's ymin/ymax sides (server/src/tools/guiBoundary.ts). */
+export const PATCH_PRESET_IDS = ['velocity-inlet', 'pressure-outlet', 'no-slip-wall', 'fixed-temperature-wall', 'heat-flux-wall', 'slip-wall', 'symmetry', 'empty', 'wedge'] as const
 export const PatchPresetIdSchema = z.enum(PATCH_PRESET_IDS)
 export type PatchPresetId = z.infer<typeof PatchPresetIdSchema>
 /** The fields a patch rule may carry a condition for, in schema order. */
@@ -369,22 +384,100 @@ const NumberOrVector = z.union([z.array(z.coerce.number()), z.coerce.number()])
 /** One per-field condition as the case carries it; nulls a weaker model sends for absent keys are dropped. */
 export const PatchBcSchema = z
   .object({
-    type: z.string().describe('Condition type: fixedValue, zeroGradient, inletOutlet, fixedFluxTemperature, thermalWallFunction, calculated or a wall function'),
+    type: z.string().describe('Condition type: fixedValue, zeroGradient, inletOutlet, fixedFluxTemperature, thermalWallFunction, fixedProfile, calculated or a wall function'),
     value: NumberOrVector.nullish(),
     inletValue: NumberOrVector.nullish(),
     q: z.coerce.number().nullish().describe('Heat flux (W/m²) for fixedFluxTemperature'),
+    direction: z.array(z.coerce.number()).nullish().describe('Profile direction [x, y, z] for fixedProfile'),
+    origin: z.coerce.number().nullish().describe('Profile origin for fixedProfile (the schema defaults it to 0)'),
+    profile: z.array(z.unknown()).nullish().describe('Profile points [s, v] for fixedProfile; the server checks the shape'),
   })
   .transform((b) => {
-    const out: { type: string; value?: number | number[]; inletValue?: number | number[]; q?: number } = { type: b.type }
+    const out: { type: string; value?: number | number[]; inletValue?: number | number[]; q?: number; direction?: number[]; origin?: number; profile?: unknown[] } = { type: b.type }
     if (b.value != null) out.value = b.value
     if (b.inletValue != null) out.inletValue = b.inletValue
     if (b.q != null) out.q = b.q
+    if (b.direction != null) out.direction = b.direction
+    if (b.origin != null) out.origin = b.origin
+    if (b.profile != null) out.profile = b.profile
     return out
   })
 export type PatchBc = z.infer<typeof PatchBcSchema>
+/** One per-field condition as the Boundary editor shows it: a case's own JSON, or a foam field's raw entry text. */
+export interface BoundaryCondition {
+  type: string
+  value?: number | number[] | string
+  inletValue?: number | number[] | string
+  q?: number | string
+  direction?: number[] | string
+  origin?: number | string
+  profile?: unknown[] | string
+}
+/** One patch row of the Boundary editor (GET /api/case/boundary, server/src/tools/guiBoundary.ts). */
+export interface BoundaryPatchRow {
+  name: string
+  /** The box faces a case patch sits on (a region: the face it is cut from); empty for a polyMesh patch. */
+  faces: string[]
+  /** The polyMesh face count; null for a case patch. */
+  nFaces: number | null
+  /** patches[].kind of the rule that governs the patch, or the polyMesh type. */
+  kind: string | null
+  /** The editor preset that kind and those conditions are, when one is. */
+  preset: PatchPresetId | null
+  /** The patches[] index that governs the patch (first match wins); null when none does or for a polyMesh patch. */
+  rule: number | null
+  /** The patches[] index of the patch's own rule (match is its name), when it has one. */
+  ownRule: number | null
+  /** The governing rule's match. */
+  match: string | null
+  /** Field -> its condition on this patch. */
+  fields: Record<string, BoundaryCondition>
+  /** The presets set_patch accepts as this patch's kind (empty when the patch cannot be edited). */
+  presets: PatchPresetId[]
+}
+/** One condition type the Boundary editor's picker offers on a field (docs/17 BC-22). */
+export interface BoundaryConditionType {
+  type: string
+  /** The members the type requires (a .jsonc case: docs/schema/case-1.json's); null when the catalogue does not list them (a foam case directory). */
+  entries: string[] | null
+}
+/** The Boundary editor's table: a .jsonc case's patches (editable through set_patch) or a foam case directory's (read-only). */
+export interface BoundaryTable {
+  path: string
+  format: 'jsonc' | 'foamDir'
+  editable: boolean
+  /** The case directory whose constant/polyMesh/boundary the face counts come from; null when the case is not meshed yet. */
+  meshDir: string | null
+  /** The field columns, in PATCH_FIELDS order then by name. */
+  fields: string[]
+  patches: BoundaryPatchRow[]
+  /** Field -> the condition types its picker offers: a .jsonc case's per-field schema types, or every type the solver implements (bcCatalogue.ts) for a foam case directory. Set by the server. */
+  conditionTypes?: Record<string, BoundaryConditionType[]>
+}
 /** The two halves of a split viewport. */
 export const ViewIdSchema = z.enum(['A', 'B'])
 export type ViewId = z.infer<typeof ViewIdSchema>
+
+/** open_mesh_dialog: an edit of the session's mesh draft. gui_control sends it, and so does the
+ *  studio's Mesh dialog (ClientMsg mesh.draft); a field left out keeps its value. */
+export const OpenMeshDialogSchema = z.object({
+  type: z.literal('open_mesh_dialog'),
+  mode: z.enum(['preset', 'automesher', 'regions']).nullish().describe('Which half of the dialog to open; the default follows whichever of preset/config/layoutDir is given'),
+  preset: z.string().nullish().describe('Mesh preset kind, e.g. "channel"'),
+  // One number fills all three axes, which is wrong for every 2-D preset
+  // (channel, cavity, step, damBreak run one cell deep): [nx, ny, nz] says
+  // it exactly.
+  cells: z
+    .union([z.coerce.number().int(), z.tuple([z.coerce.number().int(), z.coerce.number().int(), z.coerce.number().int()])])
+    .nullish()
+    .describe('Cells: one number for every direction, or [nx, ny, nz]'),
+  outputDir: z.string().nullish().describe('Workspace-relative output directory'),
+  config: z.string().nullish().describe('Automesher form: workspace-relative AutomeshConfig JSONC'),
+  layoutDir: z.string().nullish().describe('Regions form: workspace-relative layout directory the region meshes write into (regions.json + <region>/polyMesh)'),
+  check: z.string().nullish().describe('Automesher form: -check this existing case directory instead of meshing'),
+  dryRun: Boolish.nullish().describe('Automesher form: -dryRun (read the config and report the plan, mesh nothing)'),
+})
+export type OpenMeshDialog = z.infer<typeof OpenMeshDialogSchema>
 
 export const UiCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('select_tab'), tab: z.string().describe('Tab id or label, e.g. "velocity" or "Residuals"') }),
@@ -395,7 +488,18 @@ export const UiCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('set_projection'), projection: z.enum(['Perspective', 'Orthographic']) }),
   z.object({ type: z.literal('fit_view') }),
   z.object({ type: z.literal('show_overlay'), what: z.enum(['axes', 'colorbars']), on: z.boolean() }),
-  z.object({ type: z.literal('set_centerline'), quantity: z.string() }),
+  // The centreline chart (STU-09): line_sample along the longest axis through
+  // the domain centre, or along p0..p1. gui_control resolves every optional key
+  // on the server, so the window always receives the full line.
+  z.object({
+    type: z.literal('set_centerline'),
+    quantity: z.string().describe('Field name (U, p, T, k...) or Temperature / Velocity / Pressure'),
+    component: z.enum(['magnitude', 'x', 'y', 'z']).nullish().describe('Vector component; null = magnitude'),
+    p0: Vec3Schema.nullish().describe('Explicit line start (x, y, z) in metres; give p1 too. Null = the longest axis through the domain centre'),
+    p1: Vec3Schema.nullish().describe('Explicit line end (x, y, z) in metres'),
+    path: z.string().nullish().describe('Workspace-relative result root; null = the result on screen'),
+    time: z.string().nullish().describe('Time directory label; null = the time on screen, else the latest'),
+  }),
   z.object({ type: z.literal('run'), action: z.enum(['run', 'stop']) }),
   z.object({ type: z.literal('notify'), level: z.enum(['info', 'warning', 'error']), text: z.string().describe('Shown as a toast on the operator\'s screen') }),
   // The workspace commands the GUI shell units add: cases, runs, meshing,
@@ -428,6 +532,7 @@ export const UiCommandSchema = z.discriminatedUnion('type', [
     // and the GUI's run-settings form coerces "4000" and "true" by that type. Turning
     // every numeric-looking string into a number here would decide it in the wrong place.
     value: z.union([z.string(), z.coerce.number(), Boolish]).nullish().describe('New value; a string is passed through as typed and the GUI coerces it by the flag\'s type'),
+    precision: RunPrecisionSchema.nullish().describe('The build to run: double (default, f64) or single (the f32 build); null = leave it'),
   }),
   z.object({ type: z.literal('start_run') }),
   z.object({
@@ -440,23 +545,7 @@ export const UiCommandSchema = z.discriminatedUnion('type', [
     type: z.literal('follow_run'),
     runId: z.string().describe('Run to follow: subscribe to its log and point the Log tab, the charts and the status bar at it'),
   }),
-  z.object({
-    type: z.literal('open_mesh_dialog'),
-    mode: z.enum(['preset', 'automesher', 'regions']).nullish().describe('Which half of the dialog to open; the default follows whichever of preset/config/layoutDir is given'),
-    preset: z.string().nullish().describe('Mesh preset kind, e.g. "channel"'),
-    // One number fills all three axes, which is wrong for every 2-D preset
-    // (channel, cavity, step, damBreak run one cell deep): [nx, ny, nz] says
-    // it exactly.
-    cells: z
-      .union([z.coerce.number().int(), z.tuple([z.coerce.number().int(), z.coerce.number().int(), z.coerce.number().int()])])
-      .nullish()
-      .describe('Cells: one number for every direction, or [nx, ny, nz]'),
-    outputDir: z.string().nullish().describe('Workspace-relative output directory'),
-    config: z.string().nullish().describe('Automesher form: workspace-relative AutomeshConfig JSONC'),
-    layoutDir: z.string().nullish().describe('Regions form: workspace-relative layout directory the region meshes write into (regions.json + <region>/polyMesh)'),
-    check: z.string().nullish().describe('Automesher form: -check this existing case directory instead of meshing'),
-    dryRun: Boolish.nullish().describe('Automesher form: -dryRun (read the config and report the plan, mesh nothing)'),
-  }),
+  OpenMeshDialogSchema,
   z.object({ type: z.literal('start_mesh') }),
   z.object({
     type: z.literal('show_chart'),
@@ -517,10 +606,10 @@ export const UiCommandSchema = z.discriminatedUnion('type', [
     y: z.coerce.number().nullish().describe('Window y in pixels from the top (with x)'),
     fx: z.coerce.number().nullish().describe('Fraction 0..1 across the 3-D canvas, left to right (with fy)'),
     fy: z.coerce.number().nullish().describe('Fraction 0..1 down the 3-D canvas, top to bottom (with fx)'),
-    point: Vec3Schema.nullish().describe('World point [x, y, z]: the cell containing it is read'),
+    point: Vec3Schema.nullish().describe('World point [x, y, z]: the cell containing it is read; on a polyMesh, ui.state selection.located "nearest-centre" means the cell is warped or non-convex and only the nearest centre could be named'),
     at: z.literal('center').nullish().describe('"center": the middle of the canvas'),
   }),
-  z.object({ type: z.literal('open_tab'), kind: z.string().describe('Tab kind, e.g. "viewer", "chart", "log"'), label: z.string().nullish() }),
+  z.object({ type: z.literal('open_tab'), kind: z.string().describe('Tab kind, e.g. "viewer", "chart", "log"'), label: z.string().nullish(), path: z.string().nullish().describe('Workspace path, for kind geometry (.stl/.obj/.step) or campaign (a campaign directory)') }),
   z.object({ type: z.literal('close_tab'), id: z.string() }),
   z.object({ type: z.literal('set_locale'), locale: z.enum(['ko', 'en']) }),
   // The Post panel's own commands. set_post still sets colour map, range,
@@ -621,6 +710,10 @@ export const UiCommandSchema = z.discriminatedUnion('type', [
 ])
 export type UiCommand = z.infer<typeof UiCommandSchema>
 export type UiCommandType = UiCommand['type']
+/** Every gui_control ui.command type, in schema order (the STU census enumerates these). */
+export const UI_COMMAND_TYPES: readonly UiCommandType[] = UiCommandSchema.options.map(
+  (o) => (o.shape.type as { value: UiCommandType }).value,
+)
 
 export const UiSelectionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('none') }),
@@ -635,6 +728,10 @@ export const UiSelectionSchema = z.discriminatedUnion('kind', [
     value: z.number().nullish(),
     field: z.string().nullish(),
     patch: z.string().nullish(),
+    // How a point probe on a polyMesh found the cell (docs/17 STU-13): 'contains' when a convex cell
+    // holds it exactly, 'nearest-centre' when only warped or non-convex cells could and the nearest
+    // centre answered. Absent for a pixel pick or a structured-grid lookup.
+    located: z.enum(['contains', 'nearest-centre']).nullish(),
   }),
 ])
 export type UiSelection = z.infer<typeof UiSelectionSchema>
@@ -698,6 +795,24 @@ export const UiTabSchema = z.object({
 })
 export type UiTab = z.infer<typeof UiTabSchema>
 
+/**
+ * The session's mesh draft: what open_mesh_dialog edits on the server and
+ * start_mesh runs (through mesh_generate, or mesh_regions for the regions
+ * form). The server holds it per session in memory and fills UiState.meshDraft
+ * with it; the window only shows it.
+ */
+export const MeshDraftSchema = z.object({
+  mode: z.enum(['preset', 'automesher', 'regions']),
+  preset: z.string().nullable(),
+  cells: z.tuple([z.number().int(), z.number().int(), z.number().int()]).nullable(),
+  outputDir: z.string().nullable(),
+  config: z.string().nullable(),
+  layoutDir: z.string().nullable(),
+  check: z.string().nullable(),
+  dryRun: z.boolean(),
+})
+export type MeshDraft = z.infer<typeof MeshDraftSchema>
+
 export const UiStateSchema = z.object({
   activeTab: z.string().nullable(),
   activeStep: z.string().nullable(),
@@ -728,6 +843,16 @@ export const UiStateSchema = z.object({
   compareRunId: z.string().nullish(),
   /** The split viewport (split_view / focus_view / link_cameras); null or absent = one viewport. */
   views: z.object({ split: z.boolean(), focused: ViewIdSchema, camerasLinked: z.boolean(), datasetA: z.string().nullable(), datasetB: z.string().nullable() }).nullish(),
+  /** The viewer's axes triad and colour bars as show_overlay set them; null or absent = unknown. */
+  overlays: z.object({ axes: z.boolean(), colorBars: z.boolean() }).nullish(),
+  /** The bottom pane tab on screen (terminal, logs, problems, output); null when the bottom pane is hidden. */
+  bottomTab: z.string().nullish(),
+  /** The Log tab's filter as set_log_filter or the screen left it; null or absent = unknown. */
+  logs: z.object({ text: z.string(), streams: z.array(z.enum(['stdout', 'stderr', 'system'])), follow: z.boolean() }).nullish(),
+  /** What the metrics chart draws: slot 1 (left axis), slot 2 (right axis), metrics or sweeps; null or absent = unknown. */
+  metricPick: z.object({ left: z.string().nullable(), right: z.string().nullable(), mode: z.enum(['metrics', 'sweeps']) }).nullish(),
+  /** The session's mesh draft (open_mesh_dialog), filled by the server; null or absent = no draft. */
+  meshDraft: MeshDraftSchema.nullish(),
 })
 export type UiState = z.infer<typeof UiStateSchema>
 
@@ -747,8 +872,8 @@ export type HostState = z.infer<typeof HostStateSchema>
 
 export const ClientMsgSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('ping'), ts: z.number() }),
-  z.object({ t: z.literal('session.open'), sessionId: z.string().nullable() }),
-  z.object({ t: z.literal('session.new') }),
+  z.object({ t: z.literal('session.open'), sessionId: z.string().nullable(), locale: SessionSettingsSchema.shape.locale.nullish() }),
+  z.object({ t: z.literal('session.new'), locale: SessionSettingsSchema.shape.locale.nullish() }),
   z.object({ t: z.literal('session.list') }),
   z.object({ t: z.literal('session.delete'), sessionId: z.string() }),
   z.object({ t: z.literal('session.rename'), sessionId: z.string(), title: z.string() }),
@@ -768,6 +893,10 @@ export const ClientMsgSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('run.stop'), runId: z.string() }),
   z.object({ t: z.literal('quick'), sessionId: z.string(), action: QuickActionSchema, casePath: z.string().nullable(), runId: z.string().nullable() }),
   z.object({ t: z.literal('settings.set'), sessionId: z.string(), patch: SessionSettingsSchema.partial() }),
+  // The studio's Mesh dialog: the operator's edit of the session's mesh draft
+  // (applied as gui_control's open_mesh_dialog is) and its Start press (as start_mesh).
+  z.object({ t: z.literal('mesh.draft'), sessionId: z.string(), edit: OpenMeshDialogSchema }),
+  z.object({ t: z.literal('mesh.start'), sessionId: z.string() }),
 ])
 export type ClientMsg = z.infer<typeof ClientMsgSchema>
 
@@ -831,6 +960,16 @@ export const ServerMsgSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('gpu'), gpu: GpuStateSchema }),
   z.object({ t: z.literal('host'), host: HostStateSchema }),
   z.object({ t: z.literal('output'), level: z.enum(['info', 'warning', 'error']), text: z.string(), ts: z.number() }),
+  // The answer to one mesh.draft / mesh.start: a refusal's code and message, or the mesh run's id.
+  z.object({
+    t: z.literal('mesh.status'),
+    sessionId: z.string(),
+    action: z.enum(['draft', 'start']),
+    ok: z.boolean(),
+    code: z.string().nullable(),
+    error: z.string().nullable(),
+    runId: z.string().nullable(),
+  }),
 ])
 export type ServerMsg = z.infer<typeof ServerMsgSchema>
 export type ServerMsgOf<T extends ServerMsg['t']> = Extract<ServerMsg, { t: T }>
@@ -848,6 +987,12 @@ export const REST = {
   llmSettings: '/api/llm/settings',
   registry: '/api/registry',
   caseSchema: '/api/schema/case-1.json',
+  /** POST {path, content}: validate an editor buffer as case_validate would, without writing (save_case). */
+  caseValidate: '/api/case/validate',
+  /** GET ?path=: the Boundary editor's BoundaryTable for a .jsonc case or a foam case directory. */
+  caseBoundary: '/api/case/boundary',
+  /** POST {path, edit}: one set_patch command applied to that .jsonc case as gui_control's set_patch is (STU-07b). */
+  casePatch: '/api/case/patch',
   fsTree: '/api/fs/tree',
   fsFile: '/api/fs/file',
   fsSearch: '/api/fs/search',
@@ -954,6 +1099,8 @@ export interface StartRunRequest {
   args: Array<{ flag: string; value: string | number | boolean | null }>
   positionals: string[]
   label: string | null
+  /** The build to run (F32-19); absent or null = `double`. */
+  precision?: RunPrecision | null
 }
 
 // ---------------------------------------------------------------------------

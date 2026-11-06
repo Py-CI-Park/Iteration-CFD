@@ -21,6 +21,15 @@
 //!   Wilcox, *Turbulence Modeling for CFD* - `omega = 6 nu/(beta_1 y^2)`
 //!   Cebeci & Bradshaw, *Momentum Transfer in Boundary Layers*, Hemisphere
 //!     (1977) - the rough-wall downshift `dB(Ks+, Cs)` ([`roughness_db`])
+//!   Richards & Hoxey, *J. Wind Eng. Ind. Aerodyn.* 46-47 (1993) 145-153,
+//!     doi:10.1016/0167-6105(93)90124-7 - the neutral atmospheric surface
+//!     layer `U = (u*/kappa) ln((z + z0)/z0)`, `k = u*^2/sqrt(C_mu)` the
+//!     ground's wall function is held to ([`nut_wall_atm_rough`])
+//!   Hargreaves & Wright, *J. Wind Eng. Ind. Aerodyn.* 95 (2007) 355-369,
+//!     doi:10.1016/j.jweia.2006.08.002 - writing the rough-wall function in
+//!     the roughness length `z0` so the ground keeps that profile
+//!   ofgpu `SPEC-LIT.md` §120.9 - (120.9g) and the *DESIGN* blend (120.9h)
+//!     ([`u_tau_blended`])
 //!   ofgpu `SPEC-LIT.md` §6.4. The two items marked *DESIGN* there - the
 //!     blending, and the treatment of the wall-adjacent CELL - are ours.
 //!   ofgpu `SPEC-LIT.md` §15.1 - the §15.1 Newton solve for `u_tau`
@@ -422,6 +431,141 @@ pub fn nut_wall_rough_u(
 }
 
 // ==========================================================================
+//  The atmospheric family - SPEC-LIT §120.9
+// ==========================================================================
+//
+// Written from:
+//   Richards & Hoxey, J. Wind Eng. Ind. Aerodyn. 46-47 (1993) 145-153,
+//     doi:10.1016/0167-6105(93)90124-7 - the neutral surface-layer profile
+//   Hargreaves & Wright, J. Wind Eng. Ind. Aerodyn. 95 (2007) 355-369,
+//     doi:10.1016/j.jweia.2006.08.002 - the rough-wall function written in
+//     the roughness length z0
+//   ofgpu `SPEC-LIT.md` §120.9 - (120.9g) and the *DESIGN* blend (120.9h)
+// No GPL-licensed source was consulted.
+//
+// The device (`wfNutWall`, cuda/wallfunctions.cu) branches on one family
+// code per `nut` face; codes 0 and 1 are the two families that existed
+// before §120.9 and keep their arithmetic unchanged.
+
+/// `wfNutWall`'s family code: `nutk`, `nutkRough` (SPEC-LIT §6.4/§15.3).
+pub const NUT_FAMILY_K: Label = 0;
+/// `wfNutWall`'s family code: `nutU`, `nutURough` (SPEC-LIT §15.1/§29.2).
+pub const NUT_FAMILY_U: Label = 1;
+/// `wfNutWall`'s family code: `nutkAtmRoughWallFunction` (SPEC-LIT §120.9).
+pub const NUT_FAMILY_K_ATM_ROUGH: Label = 2;
+/// `wfNutWall`'s family code: `nutUBlendedWallFunction` (SPEC-LIT §120.9).
+pub const NUT_FAMILY_U_BLENDED: Label = 3;
+
+/// (120.9g): the ground's `nu_t,w` in the roughness length `z0`,
+/// `u* = C_mu^{1/4} sqrt(k)`, `nu_t,w = max(0, u* kappa y / ln(1 + y/z0) -
+/// nu)`. `k` is the cell value already floored at `k_min` by the caller,
+/// exactly as `wfNutWall` floors it. On the Richards & Hoxey profile -
+/// `k = u*^2/sqrt(C_mu)` and `U(y) = (u*/kappa) ln(1 + y/z0)` - the wall
+/// shear `(nu + nu_t,w) U(y)/y` is `u*^2` exactly, whatever `y`, which is
+/// the property the ground is written for (Hargreaves & Wright 2007). The
+/// logarithm is `ln_1p`, so a first cell far inside `z0` keeps its digits.
+/// `z0 <= 0` or `y <= 0` give `0`; the setup refuses the former by name.
+#[inline]
+pub fn nut_wall_atm_rough(
+    k: Scalar,
+    y: Scalar,
+    nu: Scalar,
+    kappa: Scalar,
+    cmu25: Scalar,
+    z0: Scalar,
+) -> Scalar {
+    if !(y > 0.0) || !(z0 > 0.0) {
+        return 0.0;
+    }
+    let u_star = u_tau_from_k(k, cmu25);
+    let l = (y / z0).ln_1p();
+    (u_star * kappa * y / l - nu).max(0.0)
+}
+
+/// The stopping rule of [`u_tau_log`]: four units of the build's own
+/// round-off, relative. Quadratic convergence reaches it in a few steps;
+/// the iteration cap catches the rounding noise that can keep the last step
+/// just above it.
+const U_TAU_LOG_REL: Scalar = 4.0 * Scalar::EPSILON;
+
+/// The log-law friction velocity, the root `u_l` of
+/// `G(u) = u ln(1 + E y u/nu) - kappa |U| = 0` (SPEC-LIT §120.9, (120.9h)'s
+/// `u_l`). *DESIGN*: the log law is written `u+ = ln(1 + E y+)/kappa`,
+/// which differs from `ln(E y+)/kappa` by `1/(kappa E y+)` - under 4e-3 of
+/// `u+` from `y+ = 30` on - and which, unlike it, has a root that vanishes
+/// with `|U|` (`u_l -> sqrt(kappa/E) u_v`), so the blend's viscous limit is
+/// the sublayer's and not the log law's floor `y+ = 1/E`. Newton from
+/// `u_0 = u_v`, at most 40 steps, stopping at [`U_TAU_LOG_REL`]: `G` is
+/// increasing and convex for `u > 0` (`G(0) = -kappa |U| < 0`), so after
+/// at most one step the iterates fall to the root monotonically from above.
+/// `|U| = 0` or `y = 0` give `0`.
+pub fn u_tau_log(u_mag: Scalar, y: Scalar, nu: Scalar, kappa: Scalar, e: Scalar) -> Scalar {
+    if !(u_mag > 0.0) || !(y > 0.0) {
+        return 0.0;
+    }
+    let c = e * y / nu;
+    let mut u = (nu * u_mag / y).sqrt();
+    for _ in 0..40 {
+        let cu = c * u;
+        let l = cu.ln_1p();
+        let g = u * l - kappa * u_mag;
+        let dg = l + cu / (1.0 + cu);
+        if !(dg > 0.0) {
+            break;
+        }
+        let next = u - g / dg;
+        let done = (next - u).abs() <= U_TAU_LOG_REL * next.abs();
+        u = next;
+        if done {
+            break;
+        }
+    }
+    u.max(0.0)
+}
+
+/// (120.9h), *DESIGN*: `nutUBlendedWallFunction`'s friction velocity, the
+/// binomial blend `u_tau = (u_v^n + u_l^n)^{1/n}` of the viscous-sublayer
+/// `u_v = sqrt(nu |U|/y)` (`u+ = y+`) and the log-law [`u_tau_log`]. It is
+/// formed as `m (1 + r^n)^{1/n}` with `m = max(u_v, u_l)` and
+/// `r = min/max`, the same number without the overflow `u^n` would risk
+/// under `single`. `n -> inf` is `max(u_v, u_l)`; each limit is recovered
+/// where the other branch is the smaller by a margin. `|U| = 0` gives `0`.
+pub fn u_tau_blended(
+    u_mag: Scalar,
+    y: Scalar,
+    nu: Scalar,
+    kappa: Scalar,
+    e: Scalar,
+    n: Scalar,
+) -> Scalar {
+    if !(u_mag > 0.0) || !(y > 0.0) {
+        return 0.0;
+    }
+    let u_v = (nu * u_mag / y).sqrt();
+    let u_l = u_tau_log(u_mag, y, nu, kappa, e);
+    let m = u_v.max(u_l);
+    if !(m > 0.0) {
+        return 0.0;
+    }
+    let r = u_v.min(u_l) / m;
+    m * (1.0 + r.powf(n)).powf(1.0 / n)
+}
+
+/// `nu_t,w` of `nutUBlendedWallFunction`: [`u_tau_blended`] then
+/// [`nut_wall_u`], `max(0, u_tau^2 y/|U| - nu)` (SPEC-LIT §120.9).
+#[inline]
+pub fn nut_wall_blended(
+    u_mag: Scalar,
+    y: Scalar,
+    nu: Scalar,
+    kappa: Scalar,
+    e: Scalar,
+    n: Scalar,
+) -> Scalar {
+    nut_wall_u(u_tau_blended(u_mag, y, nu, kappa, e, n), y, nu, u_mag)
+}
+
+// ==========================================================================
 //  The Werner-Wengle LES wall model - SPEC-LIT §30.1
 // ==========================================================================
 //
@@ -586,9 +730,11 @@ pub struct WallData {
     pub n_nut_faces: usize,
     /// `[n_nut_faces]` boundary-face indices, ascending.
     pub nut_face: DevBuf<Label>,
-    /// `[n_nut_faces]` `1` where the face is in the `nutU` family (SPEC-LIT
-    /// §15.1) - velocity-based `y+`/`u_tau` - rather than `nutk`'s `k`-based
-    /// one, aligned with [`Self::nut_face`].
+    /// `[n_nut_faces]` the face's family code, aligned with
+    /// [`Self::nut_face`]: [`NUT_FAMILY_K`] (`nutk`'s `k`-based `y+`),
+    /// [`NUT_FAMILY_U`] (the velocity-based `nutU` family, SPEC-LIT §15.1),
+    /// [`NUT_FAMILY_K_ATM_ROUGH`] or [`NUT_FAMILY_U_BLENDED`] (SPEC-LIT
+    /// §120.9).
     pub nut_u_based: DevBuf<Label>,
     /// `[n_nut_faces]` sand-grain height, aligned with [`Self::nut_face`].
     /// Zero on every smooth face - SPEC-LIT §15.3/§29.2.
@@ -596,6 +742,11 @@ pub struct WallData {
     /// `[n_nut_faces]` the roughness constant, aligned with
     /// [`Self::nut_face`]. Meaningful only where `nut_ks > 0`.
     pub nut_cs: DevBuf<Scalar>,
+    /// `[n_nut_faces]` the §120.9 family's one parameter, aligned with
+    /// [`Self::nut_face`]: the roughness length `z0` on a
+    /// [`NUT_FAMILY_K_ATM_ROUGH`] face, the blend exponent `n` on a
+    /// [`NUT_FAMILY_U_BLENDED`] face, zero on every other.
+    pub nut_par: DevBuf<Scalar>,
 
     /// `[n_wall_cells]` the value `epsilon` (or `omega`) is pinned to.
     ///
@@ -649,6 +800,8 @@ impl WallData {
             ("nut u-based", roughness.u_based.len()),
             ("nut Ks", roughness.ks.len()),
             ("nut Cs", roughness.cs.len()),
+            ("nut family", roughness.family.len()),
+            ("nut parameter", roughness.par.len()),
         ] {
             if n != m.n_boundary_faces {
                 return Err(Error::Config(format!(
@@ -710,9 +863,36 @@ impl WallData {
         // Gathered from `roughness`'s per-boundary-face vectors onto the SAME
         // indexing as `nut_faces`, so `nut_face[i]`/`nut_ks[i]`/`nut_cs[i]`
         // describe the one face throughout - SPEC-LIT §15.3/§29.2.
-        let nut_u_based: Vec<Label> = nut_faces
+        // SPEC-LIT §120.9: the family code. The two families that existed
+        // before keep the code `u_based` always gave them (0 or 1); the two
+        // atmospheric ones are told apart by `roughness.family`, and a face
+        // whose two flags disagree is refused rather than guessed at.
+        let mut nut_u_based: Vec<Label> = Vec::with_capacity(n_nut);
+        for &bf in &nut_faces {
+            let b = bf as usize;
+            let code = match roughness.family[b] {
+                crate::field_setup::NutFamily::Standard => roughness.u_based[b] as Label,
+                crate::field_setup::NutFamily::AtmRough if !roughness.u_based[b] => {
+                    NUT_FAMILY_K_ATM_ROUGH
+                }
+                crate::field_setup::NutFamily::Blended if roughness.u_based[b] => {
+                    NUT_FAMILY_U_BLENDED
+                }
+                f => {
+                    return Err(Error::Config(format!(
+                        "WallData::build: boundary face {bf} is marked {f:?} with \
+                         u_based = {} - the k-based atmospheric function and the \
+                         velocity-based blend cannot be the other family (SPEC-LIT \
+                         120.9)",
+                        roughness.u_based[b]
+                    )))
+                }
+            };
+            nut_u_based.push(code);
+        }
+        let nut_par: Vec<Scalar> = nut_faces
             .iter()
-            .map(|&bf| roughness.u_based[bf as usize] as Label)
+            .map(|&bf| roughness.par[bf as usize])
             .collect();
         let nut_ks: Vec<Scalar> = nut_faces
             .iter()
@@ -742,6 +922,7 @@ impl WallData {
             nut_u_based: gpu.upload(&pad(nut_u_based))?,
             nut_ks: gpu.upload(&pad_s(nut_ks))?,
             nut_cs: gpu.upload(&pad_s(nut_cs))?,
+            nut_par: gpu.upload(&pad_s(nut_par))?,
 
             wall_cell_value: gpu.zeros(n_cells_w.max(1))?,
             y_plus: gpu.zeros(n_faces.max(1))?,
@@ -781,7 +962,7 @@ impl WallData {
             return Ok(());
         }
         self.check(nut_bf.len(), k.len(), m)?;
-        expect_count(u.f.len(), m.n_cells, "U")?;
+        expect_cell_count(u.f.len(), m, "U")?;
         expect_count(u.bf.len(), m.n_boundary_faces, "U boundary values")?;
 
         let cmu25 = wc.cmu.powf(0.25);
@@ -803,6 +984,7 @@ impl WallData {
                 .arg(&self.nut_u_based)
                 .arg(&self.nut_ks)
                 .arg(&self.nut_cs)
+                .arg(&self.nut_par)
                 .arg(&nu)
                 .arg(&wc.kappa)
                 .arg(&wc.e)
@@ -877,8 +1059,8 @@ impl WallData {
             return Ok(());
         }
         self.check(nut_bf.len(), k.len(), m)?;
-        expect_count(epsilon.len(), m.n_cells, "epsilon")?;
-        expect_count(g.len(), m.n_cells, "G")?;
+        expect_cell_count(epsilon.len(), m, "epsilon")?;
+        expect_cell_count(g.len(), m, "G")?;
 
         let cmu25 = wc.cmu.powf(0.25);
         let cmu75 = wc.cmu.powf(0.75);
@@ -933,8 +1115,8 @@ impl WallData {
             return Ok(());
         }
         self.check(nut_bf.len(), k.len(), m)?;
-        expect_count(omega.len(), m.n_cells, "omega")?;
-        expect_count(g.len(), m.n_cells, "G")?;
+        expect_cell_count(omega.len(), m, "omega")?;
+        expect_cell_count(g.len(), m, "G")?;
 
         let cmu25 = wc.cmu.powf(0.25);
         let nl = n as Label;
@@ -969,7 +1151,7 @@ impl WallData {
 
     fn check(&self, n_bf: usize, n_cells: usize, m: &GpuMesh) -> Result<()> {
         expect_count(n_bf, m.n_boundary_faces, "nut boundary values")?;
-        expect_count(n_cells, m.n_cells, "k")
+        expect_cell_count(n_cells, m, "k")
     }
 }
 
@@ -981,6 +1163,18 @@ fn expect_count(got: usize, want: usize, what: &str) -> Result<()> {
             "wallfunctions: `{what}` has {got} elements, expected {want}"
         )))
     }
+}
+
+/// The PAR-09 room (SPEC-LIT 139.6, PAR-12): a per-cell buffer on a part is
+/// `n_cells + n_halo` long, and the wall kernels read wall-adjacent cells -
+/// owned, never halo - so the halo room is admitted and never read. A whole
+/// mesh has `n_local == n_cells`, so a serial run passes the same check it
+/// always passed.
+fn expect_cell_count(got: usize, m: &GpuMesh, what: &str) -> Result<()> {
+    if got == m.n_local() {
+        return Ok(());
+    }
+    expect_count(got, m.n_cells, what)
 }
 
 // ==========================================================================
@@ -1071,7 +1265,7 @@ impl WernerWengleData {
         }
         expect_count(nut_bf.len(), m.n_boundary_faces, "nut boundary values")?;
         expect_count(self.tau_w.len(), m.n_boundary_faces, "tau_w")?;
-        expect_count(u.f.len(), m.n_cells, "U")?;
+        expect_cell_count(u.f.len(), m, "U")?;
         expect_count(u.bf.len(), m.n_boundary_faces, "U boundary values")?;
 
         let nl = n as Label;
@@ -1150,6 +1344,60 @@ pub fn constrain_wall_cells(
     }
 
     set_values(gpu, k, a, m)
+}
+
+/// SPEC-LIT 139.6 (PAR-12): the MARKING half of [`constrain_wall_cells`],
+/// alone - the same early return, the same row check and the same `wfMarkFixed`
+/// launch, WITHOUT the final `set_values`.
+///
+/// A decomposed wall-function run has to cross the cut between the two halves:
+/// `set_values` eliminates a marked row's column by reading `is_fixed` at the
+/// COUPLED faces' neighbour cell, and on a part that neighbour is a halo cell -
+/// so the rank's `is_fixed` must carry the neighbour ranks' marks first
+/// (`FlowExchange::cells_label`), the way the whole mesh's single matrix never
+/// had to. The caller therefore exchanges and folds:
+///
+/// ```text
+/// mark_wall_cells(..)?;               // this rank's wall cells marked
+/// exchange.cells_label(&mut a.is_fixed)?;
+/// exchange.cells(&mut a.fixed_value)?; // and its values
+/// ldu_ops::set_values(..)?;            // then the fold sees both sides
+/// ```
+///
+/// A serial run calls [`constrain_wall_cells`], which is these two halves in
+/// one function and stays launch for launch what it always was.
+pub fn mark_wall_cells(
+    gpu: &Gpu,
+    a: &mut GpuLduMatrix,
+    m: &GpuMesh,
+    wd: &WallData,
+) -> Result<()> {
+    let n = wd.n_wall_cells;
+    if n == 0 {
+        return Ok(());
+    }
+    if a.n_cells != m.n_cells {
+        return Err(Error::Config(format!(
+            "mark_wall_cells: the matrix has {} rows, the mesh {} cells",
+            a.n_cells, m.n_cells
+        )));
+    }
+
+    let nl = n as Label;
+    let f = wd.k.mark_fixed.clone();
+
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut a.is_fixed)
+            .arg(&mut a.fixed_value)
+            .arg(&wd.wall_cells)
+            .arg(&wd.wall_cell_value)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+
+    Ok(())
 }
 
 // ==========================================================================
@@ -3283,6 +3531,8 @@ mod tests {
             u_based: vec![false; m.n_boundary_faces],
             ks: ks_v,
             cs: cs_v,
+            family: vec![crate::field_setup::NutFamily::Standard; m.n_boundary_faces],
+            par: vec![0.0; m.n_boundary_faces],
         };
 
         let wd = WallData::build(&gpu, &m, &same_for_both(&flags), &roughness)?;
@@ -3334,7 +3584,6 @@ mod tests {
     /// wall-parallel velocity driving the Newton on the device exactly as it
     /// does on the host.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn device_rough_nutu_agrees_with_the_host_law() -> Result<()> {
         let Some(gpu) = gpu() else {
             return Ok(());
@@ -3365,6 +3614,8 @@ mod tests {
             u_based,
             ks: ks_v,
             cs: cs_v,
+            family: vec![crate::field_setup::NutFamily::Standard; m.n_boundary_faces],
+            par: vec![0.0; m.n_boundary_faces],
         };
 
         let wd = WallData::build(&gpu, &m, &same_for_both(&flags), &roughness)?;
@@ -3405,7 +3656,7 @@ mod tests {
                 nut_wall_rough_u(u_mag, y, nu, wc.kappa, wc.e, ks_vals[i], cs_val);
 
             assert!(
-                (got[bf] - want).abs() <= 1e-9 * want.abs().max(nu),
+                ((got[bf] - want).abs() as f64) <= crate::precision::roundoff_tol(1e-9) * want.abs().max(nu) as f64,
                 "face {bf} (Ks={}, |U|={u_mag}): device {}, host {want}",
                 ks_vals[i],
                 got[bf]
@@ -3415,7 +3666,8 @@ mod tests {
                 let u_tau = u_tau_newton(u_mag, y, nu, wc.kappa, wc.e, 0.0, cs_val);
                 let smooth = nut_wall_u(u_tau, y, nu, u_mag);
                 assert!(
-                    (got[bf] - smooth).abs() <= 1e-9 * smooth.abs().max(nu),
+                    (got[bf] - smooth).abs() as f64
+                        <= crate::precision::roundoff_tol(1e-9) * smooth.abs().max(nu) as f64,
                     "face {bf}: Ks=0 gave {} on the device, smooth nutU gives {smooth}",
                     got[bf]
                 );
@@ -3445,13 +3697,12 @@ mod tests {
     /// different expressions landing on the same number is evidence a typo'd
     /// exponent or a transposed term would not survive.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn nu_correlations_match_an_independently_written_derivation() {
         for (re, pr) in [(1.0e4, 0.71), (1.6e4, 0.71), (1.0e5, 7.0), (5.0e5, 0.6)] {
             let db = dittus_boelter_nu(re, pr);
             let db_mirror = 0.023 * (0.8 * re.ln()).exp() * (0.4 * pr.ln()).exp();
             assert!(
-                (db - db_mirror).abs() <= 1e-9 * db_mirror,
+                (db - db_mirror).abs() as f64 <= crate::precision::roundoff_tol(1e-9) * db_mirror as f64,
                 "Re {re} Pr {pr}: dittus_boelter_nu {db}, mirror {db_mirror}"
             );
 
@@ -3482,7 +3733,6 @@ mod tests {
     /// change to either formula is caught here rather than only downstream in
     /// the two-mesh comparison.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn nu_correlations_at_the_channel_operating_point() {
         let re: Scalar = 1.6e4;
         let pr: Scalar = 0.71;
@@ -3492,7 +3742,7 @@ mod tests {
             dittus_boelter_nu(re, pr)
         );
         assert!(
-            (gnielinski_f(re) - 0.027_708_723_8).abs() < 1e-9,
+            ((gnielinski_f(re) - 0.027_708_723_8).abs() as f64) < crate::precision::roundoff_tol(1e-9),
             "f = {}",
             gnielinski_f(re)
         );
@@ -3507,7 +3757,6 @@ mod tests {
     /// to `Pr_t · u+` because `t_vis = Pr_t·y+ `, `t_log = Pr_t·u_log` and
     /// both share `u_plus`'s own blend weights exactly.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn t_plus_reduces_to_prt_times_u_plus_when_pr_equals_prt() {
         let prt: Scalar = 0.85;
         let p = jayatilleke_p(prt, prt);
@@ -3517,7 +3766,8 @@ mod tests {
             let tp = t_plus(y_plus, prt, prt, KAPPA, E, p);
             let want = prt * u_plus(y_plus, KAPPA, E);
             assert!(
-                (tp - want).abs() <= 1e-9 * want.abs().max(1.0),
+                (tp - want).abs() as f64
+                    <= crate::precision::roundoff_tol(1e-9) * want.abs().max(1.0) as f64,
                 "y+ {y_plus}: T+ {tp}, Pr_t*u+ {want}"
             );
         }
@@ -3788,7 +4038,6 @@ mod tests {
     /// Inverting the integrated power law reproduces a manufactured `tau_w`
     /// to round-off - SPEC-LIT §30.3's own wording for this gate.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn ww_power_branch_inverts_a_manufactured_tau_w_to_round_off() {
         let nu: Scalar = 1.5e-5;
         let h: Scalar = 0.01;
@@ -3810,7 +4059,8 @@ mod tests {
 
             let got = tau_w_werner_wengle(u_p, h, nu);
             assert!(
-                (got - tau_w_target).abs() < 1e-9 * tau_w_target,
+                ((got - tau_w_target).abs() as f64)
+                    < crate::precision::roundoff_tol(1e-9) * tau_w_target as f64,
                 "tau_w = {tau_w_target}: inverting and reapplying the power law gave {got}"
             );
         }
@@ -4062,7 +4312,6 @@ mod tests {
     /// magnitude mean is `mu S`. That the totals differ is the whole point of
     /// reporting both.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn wall_shear_viscous_form_is_exact_on_a_linear_profile() {
         let (ny, h): (usize, Scalar) = (4, 1.0);
         let m = channel_mesh(ny, h);
@@ -4195,7 +4444,6 @@ mod tests {
     /// gradient, which is reported alongside it as `tau_w_other` and never
     /// averaged in.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn wall_shear_wall_function_form_uses_u_tau_of_k() {
         let (ny, h): (usize, Scalar) = (4, 1.0);
         let m = channel_mesh(ny, h);
@@ -4222,7 +4470,7 @@ mod tests {
         let u_tau = u_tau_of(k0, cmu);
         let want = rho * u_tau * u_tau;
         assert!(
-            (ws.tau_w_mag - want).abs() < 1e-12 * want,
+            ((ws.tau_w_mag - want).abs() as f64) < crate::precision::roundoff_tol(1e-12) * want as f64,
             "wall-function tau_w {} against rho (Cmu^1/4 sqrt(k))^2 = {want}",
             ws.tau_w_mag
         );
@@ -4510,7 +4758,6 @@ mod tests {
     /// Each wall here is one `1 x 1` face, so its force is exactly
     /// `rho nu S` along `x` - the wall-function form has nothing to read.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn couette_force_vector_is_mu_s_times_area_on_each_wall_to_round_off() {
         let (ny, h): (usize, Scalar) = (4, 1.0);
         let m = channel_mesh(ny, h);
@@ -4556,7 +4803,6 @@ mod tests {
     /// same closed form `ofgpu-validate`'s own live check uses - so the
     /// ratio is asserted exactly, and the 1 % bound with it.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn poiseuille_viscous_force_is_within_one_percent_of_the_closed_form() {
         let (ny, h): (usize, Scalar) = (64, 1.0);
         let m = channel_mesh(ny, h);
@@ -4592,7 +4838,7 @@ mod tests {
             );
             let ratio = fx / f64::from(want);
             assert!(
-                (ratio - exact_ratio).abs() <= 1e-12,
+                (ratio - exact_ratio).abs() <= crate::precision::roundoff_tol(1e-12),
                 "{}: ratio {ratio} against 1 - 1/(2 n_y) = {exact_ratio}",
                 m.patches[r.patch].name
             );
@@ -4604,7 +4850,6 @@ mod tests {
     /// `a V e_x` (divergence theorem - the face-centre rule is exact for a
     /// linear field on a hexahedron), and the wall density scales it.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn pressure_force_on_a_closed_box_is_zero_for_uniform_p_and_grad_p_times_v_for_linear_p() {
         let d = crate::Vec3::new(0.5, 0.25, 2.0);
         let (mut m, points, faces) = crate::mesh::topology::tests::box_mesh([4, 3, 2], d);
@@ -4672,7 +4917,6 @@ mod tests {
     /// the numbers either way are the same, because a plug flow's traction
     /// IS streamwise.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn drag_report_takes_the_run_axis_when_given_and_each_patch_own_traction_direction_otherwise()
     {
         let m = force_report_mesh();
@@ -4727,12 +4971,15 @@ mod tests {
                 );
                 assert!((f64::from(r.u_ref) - 4.0).abs() < 1e-12);
                 assert!((f64::from(r.length) - 7.0 * 0.25).abs() < 1e-12);
-                assert!((f64::from(r.re_l) - want_re).abs() <= 1e-9 * want_re);
+                assert!(
+                    (f64::from(r.re_l) - want_re).abs()
+                        <= crate::precision::roundoff_tol(1e-9) * want_re
+                );
                 let (c_f, _) = r.cf.expect("Re_L is in the laminar branch");
                 let want_fp = 0.5 * 1.2 * 16.0 * f64::from(c_f) * f64::from(r.area);
                 assert!(
                     (r.flat_plate.expect("estimate present") as f64 - want_fp).abs()
-                        <= 1e-12 * want_fp
+                        <= crate::precision::roundoff_tol(1e-12) * want_fp
                 );
             }
         }

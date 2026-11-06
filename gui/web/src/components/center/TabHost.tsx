@@ -1,6 +1,7 @@
 // Keeps every open tab mounted (editors, the viewer and the chart are
 // expensive to re-create) and hides the inactive ones.
 import { lazy, Suspense } from 'react'
+import { CenterlineChart } from '../../chart/CenterlineChart'
 import { ResidualsChart } from '../../chart/ResidualsChart'
 import { useUiStore } from '../../state/uiStore'
 import { EmptyState } from './EmptyState'
@@ -27,11 +28,15 @@ export function TabHost() {
               ) : tab.kind === 'viewer' ? (
                 <ViewerTab active={active} />
               ) : tab.kind === 'residuals' ? (
-                <ResidualsChart runId={tab.runId} compareRunId={tab.compareRunId ?? null} active={active} />
+                // Keyed by the chart kind: show_chart on an open tab must remount the
+                // chart, or the residuals chart's log scale and hidden series carry over.
+                <ResidualsChart key={tab.chart ?? 'residuals'} runId={tab.runId} compareRunId={tab.compareRunId ?? null} active={active} chart={tab.chart ?? 'residuals'} />
               ) : tab.kind === 'geometry' ? (
                 <GeometryTab path={tab.path} active={active} />
               ) : tab.kind === 'campaign' ? (
                 <CampaignTab path={tab.path} active={active} />
+              ) : tab.kind === 'centerline' ? (
+                <CenterlineChart line={tab.line} active={active} />
               ) : (
                 <DiffEditorTab id={tab.id} />
               )}

@@ -73,10 +73,20 @@ export function createWsClient(url: string = wsUrlFor(window.location)): WsClien
   }
 
   const viewer = createViewerBridge(send, ui)
+  // select_step's tree reads the case from its open buffer, else from disk (ProjectTree does the same).
+  const caseText = async (path: string): Promise<string | null> => {
+    const buf = useEditorStore.getState().buffers[path]
+    if (buf && !buf.loading) return buf.content
+    try {
+      return (await api.readFile(path)).content
+    } catch {
+      return null
+    }
+  }
   // The agent's gui_control drives this screen through ui.command; the bridge
   // applies what it can and answers every command, so the model never waits
   // out the hub's 5 s timeout on a frame nothing would ever answer.
-  const uiBridge = createUiBridge({ send, ui, session, subscribeRun })
+  const uiBridge = createUiBridge({ send, ui, session, subscribeRun, editor: { isDirty: (path) => !!useEditorStore.getState().buffers[path]?.dirty, closeBuffer: (path) => useEditorStore.getState().closeBuffer(path), removeDiff: (id) => useEditorStore.getState().removeDiff(id), saveCase: (path, force) => useEditorStore.getState().saveCase(path, { force }), caseText } })
 
   function subscribeRun(runId: string) {
     const data = session.getState().runData[runId]
@@ -133,7 +143,8 @@ export function createWsClient(url: string = wsUrlFor(window.location)): WsClien
       send({ t: 'session.open', sessionId: latest.id })
       return
     }
-    send({ t: 'session.new' })
+    // The server creates the session in the locale the screen is showing.
+    send({ t: 'session.new', locale: ui.getState().locale })
   }
 
   async function reconcileRuns() {
@@ -251,6 +262,23 @@ export function createWsClient(url: string = wsUrlFor(window.location)): WsClien
     }, delay)
   }
 
+  // Selecting a finished run in the UI is what subscribes to it, and moving off
+  // it is what unsubscribes. The watcher lives exactly while this client is
+  // connected or reconnecting: StrictMode's mount -> cleanup -> mount runs
+  // connect(); close(); connect() on this one client, so a watcher registered
+  // once at creation would die with the first close() and never come back.
+  let stopWatchingUi: (() => void) | null = null
+
+  function watchUi(): void {
+    if (stopWatchingUi) return
+    stopWatchingUi = ui.subscribe(syncRunSubscriptions)
+  }
+
+  function unwatchUi(): void {
+    stopWatchingUi?.()
+    stopWatchingUi = null
+  }
+
   function open() {
     if (closedByUser) return
     session.getState().setConnection(attempt === 0 ? 'connecting' : 'offline')
@@ -276,6 +304,11 @@ export function createWsClient(url: string = wsUrlFor(window.location)): WsClien
         void uiBridge.handleCommand(msg.requestId, msg.cmd)
         return
       }
+      // The Mesh dialog's answer is screen state, not session state.
+      if (msg.t === 'mesh.status') {
+        ui.getState().setMeshStatus({ action: msg.action, ok: msg.ok, code: msg.code, error: msg.error }, msg.runId)
+        return
+      }
       enqueue(msg)
     }
     sock.onclose = () => {
@@ -291,20 +324,17 @@ export function createWsClient(url: string = wsUrlFor(window.location)): WsClien
     }
   }
 
-  // Selecting a finished run in the UI is what subscribes to it, and moving off
-  // it is what unsubscribes.
-  const stopWatchingUi = ui.subscribe(syncRunSubscriptions)
-
   return {
     viewer,
     connect() {
       closedByUser = false
+      watchUi()
       if (ws) return
       open()
     },
     close() {
       closedByUser = true
-      stopWatchingUi()
+      unwatchUi()
       subscribed.clear()
       stopTimers()
       viewer.detach()

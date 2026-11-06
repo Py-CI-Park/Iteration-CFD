@@ -13,9 +13,20 @@ the §92.3 gate before it will emit anything.
 
 Tranche 1 implements the **hex-dominant path** (octree refinement,
 castellation, snapping, layers) and is complete: one command takes a config
-file to a `constant/polyMesh` a solver can be pointed at. The tetrahedral path
-is §92.4 and the polyhedral path is §92.5; both are specified there and neither
-is implemented.
+file to a `constant/polyMesh` a solver can be pointed at. Tranche 17 adds the
+**tet path**, `"kind": "tet"`: SPEC-LIT §116's native tetrahedral mesher
+(surface preparation, size field, surface remesh, conforming Delaunay
+recovery, Delaunay refinement, carve, optimisation, emission behind the same
+§92.3 gate). **The STL to tetrahedra path needs no gmsh** and no other
+external program: no GPL, LGPL or AGPL source or library is on it (§116.1).
+Prism layers on tet meshes (§116.15, TET-13b) grow by post-inflation from
+`layers` (`patches`, `n`, `first_thickness`, `growth`) and `tet.layers`.
+Declared bodies on the tet path are built (TET-19): each body is its own
+region, written as mesh/regions.json; no prism layers with bodies. Mind the
+band: with a refined band on the body's wall the interior refinement may not
+terminate yet (`tet.refine.max_inserted_points` bounds it with a `refine/cap`
+refusal; SPEC-LIT §116.18, TET-19's rows). The polyhedral path is §92.5,
+specified and not implemented.
 
 ## Usage
 
@@ -80,7 +91,8 @@ ofgpu-automesher <config.json> [-stopAfter STAGE] [-tag NAME] [-check [<caseDir>
 | `run_automesher.cmd` | Runs the mesher in a visible console with every line also copied to `<case_dir>/work/run.log`. The long runs go through this. |
 | `sections.py` | Draws xy / yz / zx sections of a written polyMesh - the actual face polygons, not a block sketch. How a mesh is looked at before a solver is pointed at it. |
 | `examples/box_sphere.json` | The smallest config that exercises the whole pipeline: a 1 m sphere in a 10 m box. Seconds to run; the config to try a change against. |
-| `examples/make_box_sphere_stl.py` | Writes `box_sphere.stl` - a generator rather than a checked-in binary asset. |
+| `examples/box_sphere_tet.json` | The same sphere and box on the tet path (`"kind": "tet"`, SPEC-LIT §116): about 20 000 tetrahedra in under 30 s. |
+| `examples/make_box_sphere_stl.py` | Writes `box_sphere.stl` - a generator rather than a checked-in binary asset. Its default sphere is wound inward, which the hex path accepts; `--outward` writes the outward one the tet path needs (§116.9 refuses an inward shell by name). |
 | `examples/nh3_site.json` | The ammonia-terminal site of §92.1, the mesher's own yardstick. |
 
 A first run, end to end:
@@ -93,6 +105,20 @@ python make_box_sphere_stl.py box_sphere.stl
 ..\..\..\rust\target\release\ofgpu-automesher box_sphere.json -check
 python ..\sections.py box_sphere_case 5 5 5 sections
 ```
+
+The same sphere as tetrahedra:
+
+```bat
+python make_box_sphere_stl.py box_sphere_outward.stl --outward
+..\..\..\rust\target\release\ofgpu-automesher box_sphere_tet.json
+..\..\..\rust\target\release\ofgpu-automesher box_sphere_tet.json -check
+```
+
+A tet run prints seven stage banners (`surfprep`, `sizefield`, `remesh`,
+`recover`, `refine`, `optimise`, `emit`) and writes `constant/polyMesh` and
+`<name>_summary.json`, whose `tet` block carries the tetrahedron and
+prism counts, the smallest and largest dihedral angle, the Steiner counts and
+each stage's time (SPEC-LIT §116.16). `-stopAfter` is refused on a tet config.
 
 ### From Claude Studio
 
@@ -113,6 +139,8 @@ Both carry comments on every block. Every key of
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `$schema` | string | - | Accepted and ignored; points at the `-schema` output. |
+| `kind` | string | `"hexDominant"` | SPEC-LIT §116.3: `"hexDominant"` (this table's pipeline) or `"tet"` (§116). Absent is `"hexDominant"`, so every older config is unchanged. A `tet` config refuses, by name, a `snap` block other than the defaults, `domain.grading` other than `[1, 1, 1]`, a non-default `castellation.min_faces`, `castellation.bodies`, and any `layers` key other than `patches`, `n`, `first_thickness` and `growth` that differs from its default. On the tet path `domain.base_size` is the largest size `H`, a `refinement` band is a size `H / 2^level` (§116.8) and `keep_region` picks the carve's start (§116.12). |
+| `tet` | object | `null` | `kind: "tet"` only (refused on a hex config): the tet path's own knobs, `size`, `recover`, `refine`, `optimise`, `layers`, every one defaulted, so `"tet": {}` is complete. The keys and defaults are SPEC-LIT §116.3's table. |
 | `input.surfaces` | array | *(required)* | The STL files the mesher casts against (stages 3-4). |
 | `input.surfaces[].path` | string | *(required)* | Path to one STL file. |
 | `input.surfaces[].name` | string | `null` | Replaces that file's own solid (patch) names wholesale. |
@@ -139,7 +167,7 @@ Both carry comments on every block. Every key of
 | `snap.tolerance` | number | `1e-3` | The dead band and the convergence test of eq. (92.28), as a FRACTION of `domain.base_size`: a point within `tolerance * base_size` of the surface is on it, and the loop stops when no point moves further. |
 | `snap.smoothing_passes` | integer | `3` | Laplacian passes over the displacement field, eq. (92.6). |
 | `snap.smoothing` | number | `0.5` | The smoothing relaxation weight, in `[0, 1]`. |
-| `snap.undo_limit` | integer | `4` | Halvings of a gate-breaking displacement before it is zeroed and the point pinned - eq. (92.7)'s undo. |
+| `snap.undo_limit` | integer | `4` | Halvings of a gate-breaking displacement before the local undo of eq. (92.68): the offending points and their hanging parents are frozen while the rest moves, and the iterate is abandoned whole only when a freeze would change nothing. |
 | `snap.max_area_ratio` | number | `4.0` | Eq. (92.32): a wall patch carrying more than this many times its own surface area is geometry the cells never resolved, and the run refuses rather than collapsing the cell that reached it. Must be >= 1. |
 | `snap.feature_tolerance` | number | `0.5` | Eq. (92.38): a boundary point whose surface target lies within this fraction of `domain.base_size` of a feature edge is snapped onto the edge instead, and onto the corner it claims (92.39). Zero turns the attraction off. Must be >= 0. |
 | `layers.patches` | string[] | `[]` | The patches layers are added to; empty means none. |
@@ -153,6 +181,8 @@ Both carry comments on every block. Every key of
 | `layers.smoothing` | number | `0.5` | Eqs. (92.41) and (92.46)'s `w`. |
 | `layers.smoothing_passes` | integer | `4` | Eq. (92.46): passes of the displacement into the interior. |
 | `layers.retreat_limit` | integer | `4` | Eq. (92.47): how many times the thickness is halved - on the EXTRUDED mesh - before the patch loses its layers by name. |
+| `layers.terminate` | string | `"patch"` | Eq. (92.70): where a stack ends when a point cannot carry it. `"patch"` (the default) drops the whole patch by name; `"face"` ends it PER FACE - the OUTER ladder moves no point: a G5-failing KEEP stack MERGES into one cell of the whole thickness, every other failing layer face is CUT (no cell, a step the wall carries), and the INNER ladder still anchors and tapers where the shrink itself cannot carry. The patch row then reports `kept_area_frac`, `stack_area_frac`, the KEEP/RING/OFF counts and `n_cut_faces` (92.74). |
+| `layers.junction_angle_deg` | number | `15.0` | Eq. (92.69): in `"face"` mode, the angle within which two of (92.42)'s constraint normals merge into one direction - a juncture reads as a wall and not as a refusal. Ignored in `"patch"` mode, which keeps (92.42)'s 1e-6 dedupe. Must lie in (0, 90). |
 | `quality.max_closure` | number | `1e-10` | G2 (92.12): `\|sum s Sf\| / V^(2/3)` stays under this - `mesh::geometry::CLOSURE_LIMIT`, the crate's own. |
 | `quality.max_non_orth_deg` | number | `70.0` | G4 (92.13): max internal-face non-orthogonality, degrees. |
 | `quality.report_non_orth_deg` | number | `60.0` | G4: faces past this are counted and reported, not refused. |
@@ -190,8 +220,10 @@ runs between snap and layers.
    that silently deletes 900 cells under a building has told you nothing.
 4. **Snapping** (`snap::snap`, §92.11) - boundary points to the closest surface
    point (92.5), the displacement field smoothed (92.6), and any displacement
-   that breaks the §92.3 gate halved up to `snap.undo_limit` times and then
-   abandoned (92.7). This is the stage that buys back the geometry
+   that breaks the §92.3 gate halved up to `snap.undo_limit` times, then the
+   offending points and their hanging parents frozen while the rest moves
+   (92.7, 92.68) - the iterate is abandoned whole only when a freeze would
+   change nothing. This is the stage that buys back the geometry
    castellation's staircase lost.
 5. **Feature snapping** (§92.12) - **inside stage 4's loop**, not after it:
    (92.38) pulls a point whose surface target is near a feature edge onto the
@@ -293,7 +325,8 @@ message. The ones that actually happen:
 | `castellate: no cell survived the walk` | The keep-set (92.4) is empty: usually `castellation.seed_point` is inside the solid, or outside the domain. | Put the seed in open fluid - for a site, high and upwind, e.g. `[-1200, 0, 150]`. |
 | a large `removed.off_region` and dropped boxes under buildings | Working as intended: those are the sealed pockets §92.1 exists for. | Read the boxes in the log. If one of them is a region you wanted, the seed is on the wrong side of a wall. |
 | `snap: patch "X" carries N times its own surface area` (92.32) | The cells never resolved that geometry, and snapping would collapse the one cell that reached it. | Raise `refinement.max_level` or add a tighter distance band for that patch. Raising `snap.max_area_ratio` hides the problem instead of fixing it. |
-| `layers: patch "X": ...` with `n_layers: 0` and a reason | The retreat ladder (92.47) gave up, after the re-seat (92.63)-(92.66) where it acts. | Read the reason and the row's `drop_cause` (§92.13's table says what drove it). The run continued and the mesh is the snapped one; a wall that castellates onto the cell planes always takes the stack. |
+| `layers: patch "X": ...` with `n_layers: 0` and a reason | The retreat ladder (92.47) gave up, after the re-seat (92.63)-(92.66) where it acts. | Read the reason and the row's `drop_cause` (§92.13's table says what drove it). The run continued and the mesh is the snapped one; a wall that castellates onto the cell planes always takes the stack. On a patch that loses layers where it cannot carry them and keeps them elsewhere, set `layers.terminate: "face"` (92.70) - the row's `kept_area_frac` then says what survived. |
+| `layers: patch "X": every layer face terminated - anchored or cut` | `"face"` mode ran out of stack: every face was anchored or cut one ladder step at a time (92.73), usually because `first_thickness` puts the first cells under G5 (92.51) - thinning halves `V` and so FALLS below the floor. | Lower `first_thickness` until the wedge clears `quality.min_thickness_ratio`, or go back to `"patch"` and let the patch lose its layers by name. |
 | `layers: patch "X": 3 layer(s) ... first layer 4.0e-03 m of 4.0e-01 requested` | (92.45)'s cell-size limiter bound, not `first_thickness`. | This is the number to quote, not `first_thickness`. Refine the wall if you need a thicker stack. |
 | gate G4 fails at 70-80 degrees on a snapped wall | (92.13). The snap traded a staircase for a slanted face. | Refine that patch, or relax `quality.max_non_orth_deg` **only** if the solver settings can carry it (`uncorrected` Laplacian, `nNonOrthogonalCorrectors 0`) - and say so in the case. |
 | the run is silent for a long time | It is not: the banner of §92.14.1 is printed before each stage. If nothing new has appeared for an hour, the named stage is the one to look at. | `refinement.max_level` and the base grid together set the leaf count; halving `base_size` is 8x the work. Run `-dryRun` first and read the plan line. |

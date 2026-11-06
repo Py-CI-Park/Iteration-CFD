@@ -2,9 +2,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { ServerMsg } from '@cfd/shared'
+import { parse as parseJsonc } from 'jsonc-parser'
 import { ChatError } from '../agent/types.js'
 import { loadCaseSchema, loadOptionalCaseSchema, type CaseSchema } from '../registry/schema.js'
 import { makeTempWorkspace, REPO_ROOT, testConfig, type TempWorkspace } from '../runs/test-helpers.js'
+import { setSchemaValidator } from '../tools/case.js'
 import { registerApiRoutes } from './routes.js'
 import { Router } from './router.js'
 import { createHttpServer, type HttpServerHandle } from './server.js'
@@ -82,8 +84,10 @@ describe('api routes', () => {
     expect(hello.gpu.state).toBe('demo')
     const reg = await json('/api/registry')
     expect(reg.binaries.map((b: { name: string }) => b.name)).toContain('ofgpu-k-epsilon')
-    expect(reg.pickLists.patchKinds).toEqual(['wall', 'inlet', 'open', 'empty', 'symmetry'])
+    expect(reg.pickLists.patchKinds).toEqual(['wall', 'inlet', 'open', 'empty', 'symmetry', 'wedge', 'farfield', 'supersonicInlet'])
     expect(reg.meshPresets.length).toBe(7)
+    expect(reg.caseBlocks.radiation.choices['radiation.model']).toEqual(['P1', 'fvDOM', 's2s', 'viewFactor'])
+    expect(Object.keys(reg.caseBlocks)).toEqual(['species', 'chemistry', 'combustion', 'radiation', 'parcels'])
     const schema = await get('/api/schema/case-1.json')
     expect(schema.headers.get('content-type')).toContain('json')
     expect(((await schema.json()) as { title: string }).title).toBe('JsonCase')
@@ -124,6 +128,65 @@ describe('api routes', () => {
     expect(fresh.status).toBe(200)
     expect((await put({ path: '../x', content: '', baseHash: null })).status).toBe(403)
     expect((await put({ path: 'cases/x', content: 5, baseHash: null })).status).toBe(400)
+  })
+
+  it('validates an editor buffer without writing it (save_case, STU-05)', async () => {
+    const disk = fs.readFileSync(path.join(ws.root, 'cases', 'plume.jsonc'), 'utf8')
+    const bad = disk.replace('"cells":  [98, 42, 20]', '"cells":  "eight"')
+    expect(bad).not.toBe(disk)
+    const res = await postJson(`${base}/api/case/validate`, { path: 'cases/plume.jsonc', content: bad })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as Loose
+    expect(body.ok).toBe(false)
+    expect(body.errors).toHaveLength(1)
+    expect(broadcasts.some((m) => m.t === 'problems' && m.path === 'cases/plume.jsonc' && m.items.length === 1)).toBe(true)
+    expect(fs.readFileSync(path.join(ws.root, 'cases', 'plume.jsonc'), 'utf8')).toBe(disk)
+    expect((await postJson(`${base}/api/case/validate`, { path: '../x.jsonc', content: '{}' })).status).toBe(403)
+    expect((await postJson(`${base}/api/case/validate`, { path: 'README.md', content: '' })).status).toBe(400)
+  })
+
+  it('validates a mock-LLM case with a radiation block (CHR-28)', async () => {
+    // The temp workspace has no docs/schema, so the route would fall back to
+    // structuralValidate; inject the real one for this check.
+    const real = loadCaseSchema([path.join(REPO_ROOT, 'docs', 'schema', 'case-1.json')])
+    setSchemaValidator((json) => real.validate(json))
+    try {
+      const disk = fs.readFileSync(path.join(ws.root, 'cases', 'plume.jsonc'), 'utf8')
+      const json = parseJsonc(disk, [], { allowTrailingComma: true }) as { radiation?: Record<string, unknown> }
+      json.radiation = { model: 'P1', absorption: { model: 'constant', kappa: 0.5 }, walls: { floor: { emissivity: 0.8 } }, every: 1 }
+      const res = await postJson(`${base}/api/case/validate`, { path: 'cases/plume.jsonc', content: JSON.stringify(json) })
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as Loose
+      expect(body.ok).toBe(true)
+      expect(body.errors).toEqual([])
+      json.radiation = { model: 'P1', absorbtion: {} }
+      const bad = (await (await postJson(`${base}/api/case/validate`, { path: 'cases/plume.jsonc', content: JSON.stringify(json) })).json()) as Loose
+      expect(bad.ok).toBe(false)
+      expect(bad.errors.map((e: { pointer: string }) => e.pointer)).toContain('/radiation/absorbtion')
+      // the route validates a buffer: the file on disk never changes
+      expect(fs.readFileSync(path.join(ws.root, 'cases', 'plume.jsonc'), 'utf8')).toBe(disk)
+    } finally {
+      setSchemaValidator(null)
+    }
+  })
+
+  it("serves the Boundary editor's table and applies its set_patch (STU-07b)", async () => {
+    const disk = fs.readFileSync(path.join(ws.root, 'cases', 'plume.jsonc'), 'utf8')
+    fs.writeFileSync(path.join(ws.root, 'cases', 'bnd.jsonc'), disk)
+    const table = await json('/api/case/boundary?path=cases/bnd.jsonc')
+    expect(table.format).toBe('jsonc')
+    expect(table.patches.map((r: { name: string }) => r.name)).toEqual(['wallXMin', 'outlet', 'wallYMin', 'wallYMax', 'floor', 'ceiling', 'inlet'])
+    expect((await get('/api/case/boundary')).status).toBe(400)
+    const res = await postJson(`${base}/api/case/patch`, { path: 'cases/bnd.jsonc', edit: { type: 'set_patch', patch: 'outlet', kind: 'no-slip-wall' } })
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as Loose).applied).toBe(true)
+    expect(fs.readFileSync(path.join(ws.root, 'cases', 'bnd.jsonc'), 'utf8')).not.toBe(disk)
+    expect(broadcasts.some((m) => m.t === 'fs.changed' && m.paths.includes('cases/bnd.jsonc'))).toBe(true)
+    expect((await json('/api/case/boundary?path=cases/bnd.jsonc')).patches[1]).toMatchObject({ name: 'outlet', kind: 'wall', preset: 'no-slip-wall' })
+    const refused = await postJson(`${base}/api/case/patch`, { path: 'cases/bnd.jsonc', edit: { type: 'set_patch', patch: 'nozzle', kind: 'no-slip-wall' } })
+    expect(refused.status).toBe(400)
+    expect(((await refused.json()) as Loose).code).toBe('NO_PATCH')
+    expect((await postJson(`${base}/api/case/patch`, { path: 'cases/bnd.jsonc', edit: { type: 'fit_view' } })).status).toBe(400)
   })
 
   it('exposes runs, logs, residuals and stop', async () => {
@@ -167,6 +230,39 @@ describe('api routes', () => {
     expect(blob.headers.get('content-type')).toBe('application/octet-stream')
     expect(new Float32Array(await blob.arrayBuffer())).toEqual(new Float32Array([1, 2, 3]))
     expect((await get('/api/datasets/d_1/blob/nope')).status).toBe(404)
+    const cut = await postJson(`${base}/api/datasets/d_cut/cut`, { origin: [0, 0, 0], normal: [1, 0, 0] })
+    expect(cut.status).toBe(200)
+    expect(await cut.json()).toMatchObject({ key: 'cut.fake', id: 'd_cut', origin: [0, 0, 0], normal: [1, 0, 0] })
+    expect((await postJson(`${base}/api/datasets/d_9/cut`, { origin: [0, 0, 0], normal: [1, 0, 0] })).status).toBe(404)
+    const refused = await postJson(`${base}/api/datasets/d_cut/cut`, { origin: [1, 0, 0], normal: [1, 0, 0] })
+    expect(refused.status).toBe(400)
+    expect(JSON.stringify(await refused.json())).toContain('NO_PLANE_CUT')
+    expect((await postJson(`${base}/api/datasets/d_cut/cut`, { origin: [0, 0], normal: [1, 0, 0] })).status).toBe(400)
+    const iso = await postJson(`${base}/api/datasets/d_cut/iso`, { field: 'p', timeIndex: 0, values: [0.5] })
+    expect(iso.status).toBe(200)
+    expect(await iso.json()).toMatchObject({ key: 'iso.fake', id: 'd_cut', field: 'p', timeIndex: 0, values: [0.5] })
+    expect((await postJson(`${base}/api/datasets/d_9/iso`, { field: 'p', timeIndex: 0, values: [0.5] })).status).toBe(404)
+    const noIso = await postJson(`${base}/api/datasets/d_cut/iso`, { field: 'U', timeIndex: 0, values: [0.5] })
+    expect(noIso.status).toBe(400)
+    expect(JSON.stringify(await noIso.json())).toContain('NO_POLY_ISO')
+    expect((await postJson(`${base}/api/datasets/d_cut/iso`, { field: 'p', timeIndex: 0, values: [] })).status).toBe(400)
+    const stream = await postJson(`${base}/api/datasets/d_cut/streamlines`, { field: 'U', timeIndex: 0, seeds: [0.1, 0.2, 0.3] })
+    expect(stream.status).toBe(200)
+    expect(await stream.json()).toMatchObject({ key: 'stream.fake', id: 'd_cut', field: 'U', seeds: [0.1, 0.2, 0.3], direction: 'both', maxLength: null, lineCount: 1 })
+    expect((await postJson(`${base}/api/datasets/d_9/streamlines`, { field: 'U', timeIndex: 0, seeds: [0, 0, 0] })).status).toBe(404)
+    const noStream = await postJson(`${base}/api/datasets/d_cut/streamlines`, { field: 'p', timeIndex: 0, seeds: [0, 0, 0] })
+    expect(noStream.status).toBe(400)
+    expect(JSON.stringify(await noStream.json())).toContain('NO_POLY_STREAM')
+    expect((await postJson(`${base}/api/datasets/d_cut/streamlines`, { field: 'U', timeIndex: 0, seeds: [] })).status).toBe(400)
+    const hit = await postJson(`${base}/api/datasets/d_cut/locate`, { point: [0.2, 0.3, 0.4] })
+    expect(hit.status).toBe(200)
+    expect(await hit.json()).toEqual({ point: [0.2, 0.3, 0.4], cell: 0, method: 'contains', center: [0.5, 0.5, 0.5] })
+    expect(await (await postJson(`${base}/api/datasets/d_cut/locate`, { point: [2, 0, 0] })).json()).toMatchObject({ cell: null, method: null })
+    expect((await postJson(`${base}/api/datasets/d_9/locate`, { point: [0, 0, 0] })).status).toBe(404)
+    const noLocate = await postJson(`${base}/api/datasets/d_cut/locate`, { point: [0, -11, 0] })
+    expect(noLocate.status).toBe(400)
+    expect(JSON.stringify(await noLocate.json())).toContain('NO_POINT_LOCATE')
+    expect((await postJson(`${base}/api/datasets/d_cut/locate`, { point: [0, 0] })).status).toBe(400)
     expect(await json('/api/results?root=cases')).toMatchObject({ root: 'cases' })
     expect((await get('/api/results?root=..')).status).toBe(403)
   })
@@ -243,6 +339,33 @@ describe('api routes', () => {
     expect((await postJson(`${base}/api/geometry/edit`, { ...editBody, path: '../x.step' })).status).toBe(403)
     expect((await postJson(`${base}/api/geometry/edit`, { ...editBody, ops: '[]', out: 'cases/z.step' })).status).toBe(400)
     expect((await postJson(`${base}/api/geometry/import-step`, { path: 'cases/none.step', tags: null, stlSize: null })).status).toBe(404)
+  })
+
+  it('geometry_boolean_route', async () => {
+    const CUBE = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]]
+    const TRI = [[0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7], [0, 1, 5], [0, 5, 4], [1, 2, 6], [1, 6, 5], [2, 3, 7], [2, 7, 6], [3, 0, 4], [3, 4, 7]]
+    const stl = (name: string, dx: number, skipLast = false): string => {
+      const lines = [`solid ${name}`]
+      for (const t of skipLast ? TRI.slice(0, -1) : TRI) {
+        lines.push('facet normal 0 0 0', 'outer loop')
+        for (const i of t) lines.push(`vertex ${CUBE[i][0] + dx} ${CUBE[i][1]} ${CUBE[i][2]}`)
+        lines.push('endloop', 'endfacet')
+      }
+      return `${lines.join('\n')}\nendsolid ${name}\n`
+    }
+    fs.mkdirSync(path.join(ws.root, 'cases'), { recursive: true })
+    fs.writeFileSync(path.join(ws.root, 'cases', 'two.stl'), stl('a', 0) + stl('b', 0.5), 'utf8')
+    fs.writeFileSync(path.join(ws.root, 'cases', 'open.stl'), stl('a', 0, true) + stl('b', 0.5), 'utf8')
+    const body = { path: 'cases/two.stl', op: 'cut', a: 'a', b: 'b', out: null, overwrite: null }
+    const cut = (await (await postJson(`${base}/api/geometry/boolean`, body)).json()) as Loose
+    expect(cut.path).toBe('cases/two-cut.stl')
+    expect(Math.abs(cut.volume - 0.5) / 0.5).toBeLessThanOrEqual(1e-12)
+    expect(broadcasts.at(-1)).toEqual({ t: 'fs.changed', paths: ['cases/two-cut.stl'] })
+    expect((await postJson(`${base}/api/geometry/boolean`, body)).status).toBe(409)
+    const open = await postJson(`${base}/api/geometry/boolean`, { path: 'cases/open.stl', op: 'fuse', a: 'a', b: 'b', out: null, overwrite: null })
+    expect(open.status).toBe(400)
+    expect(((await open.json()) as Loose).code).toBe('STL-OPEN')
+    expect((await postJson(`${base}/api/geometry/boolean`, { ...body, path: '../x.stl' })).status).toBe(403)
   })
 })
 

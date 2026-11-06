@@ -73,7 +73,7 @@
 //  topology - what the patch IS - and the two enums number their shared names
 //  differently:
 //
-//      PatchKind   Generic 0  Wall 1  Empty 2  Symmetry 3  Cyclic 4  Processor 5
+//      PatchKind   Generic 0  Wall 1  Empty 2  Symmetry 3  Cyclic 4  Processor 5  Interface 6  Wedge 7
 //      BcKind      ... Calculated 4  Empty 5  Symmetry 6  Cyclic 7  InletOutlet 8
 //
 //  Comparing a `PatchKind` value against a `BcKind` discriminant compiles,
@@ -86,7 +86,9 @@
 //  it.
 //
 //  Kernels that take a FIELD's `bc_kind` use the `OFGPU_BC_*` constants
-//  instead; see cuda/field.cu. No kernel in this file takes one.
+//  instead; see cuda/field.cu. `momFluxIsPrescribed` is the one kernel here
+//  that does: it asks whether the VELOCITY face is a DirectionMixed one
+//  (SPEC-LIT 120.3), whose flux is `U_b . Sf` and no pressure correction's.
 // --------------------------------------------------------------------------
 #define OFPATCH_GENERIC   0
 #define OFPATCH_WALL      1
@@ -94,20 +96,57 @@
 #define OFPATCH_SYMMETRY  3
 #define OFPATCH_CYCLIC    4
 #define OFPATCH_PROCESSOR 5
+//- SPEC-LIT 119.2: a wedge side; its flux is prescribed as U_b . Sf
+#define OFPATCH_WEDGE     7
+
+//- SPEC-LIT 120.3: the tensorial mixed velocity condition of the wall and
+//  slip family (directionMixed, partialSlip, fixedNormalSlip,
+//  fixedShearStress). Mirrors `BcKind::DirectionMixed` in src/field.rs and
+//  is pinned by `bc_kind_values_match_the_device` in src/field_ops.rs.
+#define OFGPU_BC_DIRECTION_MIXED 37
+
+//- SPEC-LIT 120.5: the five pressure-driven velocity inlets
+//  (pressureInletVelocity, pressureInletUniformVelocity,
+//  pressureDirectedInletVelocity, pressureDirectedInletOutletVelocity,
+//  pressureInletOutletParSlipVelocity), whose triple
+//  fldPressureInletValue in cuda/field.cu rewrites from the flux every
+//  outer iteration. Mirrors `BcKind::PressureInletVelocity` ..
+//  `BcKind::PressureInletOutletParSlipVelocity` in src/field.rs and is
+//  pinned by `bc_kind_values_match_the_device` in src/field_ops.rs.
+#define OFGPU_BC_PRESSURE_INLET_FIRST 41
+#define OFGPU_BC_PRESSURE_INLET_LAST  45
 
 //- True when the volumetric flux through this boundary face is fixed by the
 //  velocity boundary condition rather than by the pressure equation.
 //
 //  * empty     - a 2-D front or back; it carries no flux by construction
 //  * symmetry  - the mirror condition removes the normal component exactly
+//  * wedge     - SPEC-LIT 119.2, (119.2e): the flux is prescribed as
+//                U_b . Sf, the swirl through the side, which is not zero -
+//                and no pressure correction may move it
+//  * DirectionMixed velocity (SPEC-LIT 120.3) - the face value is (120.3a),
+//                whose normal part n.(I - F).q the wall condition cancels;
+//                the flux is U_b . Sf, so no pressure correction may move it
 //  * fr >= 1   - a Dirichlet velocity: U_b is given, so U_b . Sf is given
 //
-//  A cyclic face is deliberately NOT prescribed: it is an interior face that
-//  happens to be stored in the boundary arrays.
-OFGPU_DEV bool momFluxIsPrescribed(oflabel kind, ofscalar fr)
+//  `uKind` is the VELOCITY field's bc_kind on the face; `fr` its value
+//  fraction. A cyclic face is deliberately NOT prescribed: it is an
+//  interior face that happens to be stored in the boundary arrays.
+OFGPU_DEV bool momFluxIsPrescribed(oflabel kind, ofscalar fr, oflabel uKind)
 {
+    //- SPEC-LIT 120.5, the flux rule: a pressure-driven velocity inlet owns
+    //  NOTHING - its face value is whatever the mass flux through the face
+    //  makes it, so the pressure correction must reach it whatever its fr,
+    //  including the fr = 1 seed and the Dirichlet inflow half of the two
+    //  switched kinds. Answered first, ahead of every test below.
+    if (uKind >= OFGPU_BC_PRESSURE_INLET_FIRST && uKind <= OFGPU_BC_PRESSURE_INLET_LAST)
+    {
+        return false;
+    }
     return kind == OFPATCH_EMPTY
         || kind == OFPATCH_SYMMETRY
+        || kind == OFPATCH_WEDGE
+        || uKind == OFGPU_BC_DIRECTION_MIXED
         || fr >= (ofscalar)1;
 }
 
@@ -621,6 +660,7 @@ extern "C" __global__ void momBuoyancyFluxBoundary
     const ofvec3* __restrict__ sf,
     const oflabel* __restrict__ bKind,
     const ofscalar* __restrict__ fr,
+    const oflabel* __restrict__ uKind,
     ofscalar gx, ofscalar gy, ofscalar gz,
     ofscalar tRef,
     ofscalar tMin,
@@ -630,7 +670,7 @@ extern "C" __global__ void momBuoyancyFluxBoundary
     const oflabel i = OFGPU_TID;
     if (i >= nbf) return;
 
-    if (momFluxIsPrescribed(bKind[i], fr[i]))
+    if (momFluxIsPrescribed(bKind[i], fr[i], uKind[i]))
     {
         phib[i] = 0;
         return;
@@ -641,6 +681,81 @@ extern "C" __global__ void momBuoyancyFluxBoundary
 
     const ofvec3 s = sf[i];
     phib[i] = (tRef/t - 1)*(gx*s.x + gy*s.y + gz*s.z);
+}
+
+
+// ==========================================================================
+//  Boussinesq buoyancy  -  SPEC-LIT S121
+//
+//      rho/rho_ref = 1 - beta (T - Tref)                    (121.1)
+//      b           = -beta (T - Tref) g                     (121.2)
+//      phib_f      = -(beta (T_f - Tref)) (g . Sf)          (121.3)
+//
+//  The opt-in SECOND form of the body force, beside S9's density ratio,
+//  for cases whose temperature differences are small enough to linearise:
+//  dT/T << 1 (Spiegel & Veronis 1960 give the condition; Gray & Giorgini
+//  1976 tabulate when liquids and gases actually meet it). With
+//  beta = 1/Tref it is S9's force multiplied by exactly T/Tref, so it
+//  overstates a hot plume by that factor - which is why S9 stays the
+//  default.
+//
+//  A separate kernel pair, so S9's kernels above are untouched and their
+//  SASS does not move.
+//
+//  (121.3) has no divide, so there is NO floor and no tMin here: a NaN
+//  temperature propagates instead of being replaced, and Momentum::new
+//  refuses a non-finite beta by name.
+// ==========================================================================
+
+extern "C" __global__ void momBoussinesqFlux
+(
+    ofscalar* __restrict__ phib,
+    const ofscalar* __restrict__ tf,
+    const ofvec3* __restrict__ sf,
+    ofscalar gx, ofscalar gy, ofscalar gz,
+    ofscalar tRef,
+    ofscalar beta,
+    oflabel n
+)
+{
+    const oflabel f = OFGPU_TID;
+    if (f >= n) return;
+
+    const ofscalar t = tf[f];
+    const ofvec3 s = sf[f];
+    phib[f] = -(beta*(t - tRef))*(gx*s.x + gy*s.y + gz*s.z);
+}
+
+
+//- The same on the boundary, with the prescribed-flux faces zeroed, exactly
+//  as S9's boundary kernel does: a wall takes whatever force the fluid puts
+//  on it, and a sealed box must not drift.
+extern "C" __global__ void momBoussinesqFluxBoundary
+(
+    ofscalar* __restrict__ phib,
+    const ofscalar* __restrict__ tf,
+    const ofvec3* __restrict__ sf,
+    const oflabel* __restrict__ bKind,
+    const ofscalar* __restrict__ fr,
+    const oflabel* __restrict__ uKind,
+    ofscalar gx, ofscalar gy, ofscalar gz,
+    ofscalar tRef,
+    ofscalar beta,
+    oflabel nbf
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= nbf) return;
+
+    if (momFluxIsPrescribed(bKind[i], fr[i], uKind[i]))
+    {
+        phib[i] = 0;
+        return;
+    }
+
+    const ofscalar t = tf[i];
+    const ofvec3 s = sf[i];
+    phib[i] = -(beta*(t - tRef))*(gx*s.x + gy*s.y + gz*s.z);
 }
 
 
@@ -705,6 +820,7 @@ extern "C" __global__ void momPhiHbyABoundary
     const oflabel* __restrict__ bNbrCell,
     const oflabel* __restrict__ bKind,
     const ofscalar* __restrict__ fr,
+    const oflabel* __restrict__ uKind,
     oflabel nbf
 )
 {
@@ -720,7 +836,7 @@ extern "C" __global__ void momPhiHbyABoundary
         return;
     }
 
-    if (momFluxIsPrescribed(kind, fr[i]))
+    if (momFluxIsPrescribed(kind, fr[i], uKind[i]))
     {
         bphi[i] = dot3(bu[i], s);
         return;
@@ -789,13 +905,14 @@ extern "C" __global__ void momForceFluxBoundary
     const ofscalar* __restrict__ snGradP,
     const oflabel* __restrict__ bKind,
     const ofscalar* __restrict__ fr,
+    const oflabel* __restrict__ uKind,
     oflabel nbf
 )
 {
     const oflabel i = OFGPU_TID;
     if (i >= nbf) return;
 
-    out[i] = momFluxIsPrescribed(bKind[i], fr[i])
+    out[i] = momFluxIsPrescribed(bKind[i], fr[i], uKind[i])
            ? (ofscalar)0
            : phib[i] - snGradP[i];
 }
@@ -827,13 +944,91 @@ extern "C" __global__ void momCorrectFluxBoundary
     const ofscalar* __restrict__ snGradP,
     const oflabel* __restrict__ bKind,
     const ofscalar* __restrict__ fr,
+    const oflabel* __restrict__ uKind,
     oflabel nbf
 )
 {
     const oflabel i = OFGPU_TID;
     if (i >= nbf) return;
 
-    phi[i] = momFluxIsPrescribed(bKind[i], fr[i])
+    phi[i] = momFluxIsPrescribed(bKind[i], fr[i], uKind[i])
            ? phiHbyA[i]
            : phiHbyA[i] - rauf[i]*snGradP[i];
+}
+
+
+// ==========================================================================
+//  SPEC-LIT 139.10 (PAR-14) - the Rhie-Chow fix-ups
+// ==========================================================================
+
+//- momFaceInterpBoundary's fix-up: on a processor face rAU_f is the WHOLE
+//  face's interpolation, `wf*x[o_g] + (1 - wf)*x[n_g]` on the whole mesh's
+//  two cells and its STORED weight `bProcW` (139.8 fact 2) - not the part's
+//  own bWeights. Every face bProc does not mark is left as the boundary
+//  kernel wrote it.
+extern "C" __global__ void momFaceInterpProc
+(
+    ofscalar* __restrict__ out,
+    const ofscalar* __restrict__ x,
+    const oflabel* __restrict__ bProc,
+    const ofscalar* __restrict__ bProcW,
+    const oflabel* __restrict__ bFaceCells,
+    const oflabel* __restrict__ bNbrCell,
+    oflabel nbf
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= nbf) return;
+    if (bProc[i] < 0) return;
+
+    const oflabel owns = (bProc[i] == 1);
+    const oflabel o_g = owns ? bFaceCells[i] : bNbrCell[i];
+    const oflabel n_g = owns ? bNbrCell[i] : bFaceCells[i];
+    const ofscalar wf = bProcW[i];
+
+    out[i] = wf*x[o_g] + (1 - wf)*x[n_g];
+}
+
+
+//- momPhiHbyABoundary's fix-up: on a processor face phi_HbyA is the whole
+//  face's flux, `hf + rauf_g*phib_g` with momPhiHbyA's body on the whole
+//  mesh's cells, weight, face area and buoyancy flux - negated on the side
+//  that does not own the face, which is the part-oriented flux the whole
+//  mesh's internal face becomes (IEEE negation is exact). The ghost cells the
+//  exchange filled play the far cells.
+extern "C" __global__ void momPhiHbyAProc
+(
+    ofscalar* __restrict__ bphi,
+    const ofvec3* __restrict__ hbya,
+    const ofscalar* __restrict__ rau,
+    const ofscalar* __restrict__ phib,
+    const ofvec3* __restrict__ bSf,
+    const oflabel* __restrict__ bProc,
+    const ofscalar* __restrict__ bProcW,
+    const oflabel* __restrict__ bFaceCells,
+    const oflabel* __restrict__ bNbrCell,
+    oflabel nbf
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= nbf) return;
+    if (bProc[i] < 0) return;
+
+    const oflabel owns = (bProc[i] == 1);
+    const oflabel o_g = owns ? bFaceCells[i] : bNbrCell[i];
+    const oflabel n_g = owns ? bNbrCell[i] : bFaceCells[i];
+    const ofscalar wf = bProcW[i];
+    const ofvec3 ho = hbya[o_g];
+    const ofvec3 hn = hbya[n_g];
+    const ofvec3 s = owns ? bSf[i] : mkvec(-bSf[i].x, -bSf[i].y, -bSf[i].z);
+
+    const ofscalar hf = (wf*ho.x + (1 - wf)*hn.x)*s.x
+                      + (wf*ho.y + (1 - wf)*hn.y)*s.y
+                      + (wf*ho.z + (1 - wf)*hn.z)*s.z;
+    const ofscalar rauf_g = wf*rau[o_g] + (1 - wf)*rau[n_g];
+    const ofscalar phib_g = owns ? phib[i] : -phib[i];
+
+    const ofscalar v = hf + rauf_g*phib_g;
+
+    bphi[i] = owns ? v : -v;
 }

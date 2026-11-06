@@ -1,6 +1,6 @@
 // Component-facing helpers that turn UI intents into client frames. Every
 // helper reads the stores directly so components stay presentational.
-import type { QuickAction, SessionSettings } from '@cfd/shared'
+import type { OpenMeshDialog, QuickAction, SessionSettings } from '@cfd/shared'
 import { pickActiveRun, sortRuns, useSessionStore } from '../state/sessionStore'
 import { selectActiveFile, useUiStore } from '../state/uiStore'
 import { getWsClient } from './client'
@@ -62,8 +62,19 @@ export const actions = {
     const sid = sessionId()
     return sid ? getWsClient().send({ t: 'quick', sessionId: sid, action, casePath, runId }) : false
   },
+  /** The Mesh dialog's edit of the session's mesh draft; the server answers with mesh.status and the whole draft (ui.command open_mesh_dialog). */
+  meshDraft(edit: OpenMeshDialog): boolean {
+    const sid = sessionId()
+    return sid ? getWsClient().send({ t: 'mesh.draft', sessionId: sid, edit }) : false
+  },
+  /** The Mesh dialog's Start: the server runs the draft as start_mesh does. */
+  meshStart(): boolean {
+    const sid = sessionId()
+    return sid ? getWsClient().send({ t: 'mesh.start', sessionId: sid }) : false
+  },
   newSession(): boolean {
-    return getWsClient().send({ t: 'session.new' })
+    // The server creates the session in the locale the screen is showing.
+    return getWsClient().send({ t: 'session.new', locale: useUiStore.getState().locale })
   },
   openSession(id: string): boolean {
     useSessionStore.getState().setCurrentSessionId(id)

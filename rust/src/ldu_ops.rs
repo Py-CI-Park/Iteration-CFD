@@ -13,7 +13,8 @@
 //!   Moukalled, Mangani & Darwish, *The Finite Volume Method in CFD* (2016),
 //!     ch. 8
 //!   Saad, *Iterative Methods for Sparse Linear Systems*, 2nd ed. (2003), 3.4
-//!   ofgpu `SPEC-LIT.md` sections 1, 3, 4 and 5.2
+//!   ofgpu `SPEC-LIT.md` sections 1, 3, 4 and 5.2; section 120.2 for
+//!     [`add_jump_source`]
 //! No GPL-licensed source was consulted.
 //!
 //! # What lives where
@@ -70,6 +71,7 @@ pub struct LduKernels {
     relax: CudaFunction,
     set_values: CudaFunction,
     csr_fill: CudaFunction,
+    jump_source: CudaFunction,
 }
 
 impl LduKernels {
@@ -82,6 +84,7 @@ impl LduKernels {
             relax: k.func("lduRelax")?,
             set_values: k.func("lduSetValues")?,
             csr_fill: k.func("lduCsrFill")?,
+            jump_source: k.func("lduAddJumpSource")?,
         })
     }
 }
@@ -198,6 +201,54 @@ pub fn add_boundary_contributions(
             .arg(&mut a.source)
             .arg(&a.internal_coeffs)
             .arg(&a.boundary_coeffs)
+            .arg(&m.b_nbr_cell)
+            .arg(&m.bcf_offset)
+            .arg(&m.bcf_face)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+/// SPEC-LIT 120.2, (120.2d): `source_P += boundaryCoeffs[bf] * jump[bf]` over
+/// every coupled face of every cell - the known half of a cyclic jump, on
+/// both rows of the couple. The matrix itself is untouched, so its symmetry
+/// (SPEC-LIT 48) is too.
+///
+/// Call it after the operator has written `boundary_coeffs` and before the
+/// solve; `jump` is the field's `GpuScalarField::jump`. A face whose jump is
+/// zero adds nothing, so a field with no jump pair would get its source
+/// back bit for bit - but the caller launches this only when the field
+/// carries one (`GpuScalarField::cyclic_jump` is `Some`).
+pub fn add_jump_source(
+    gpu: &Gpu,
+    k: &LduKernels,
+    a: &mut GpuLduMatrix,
+    m: &GpuMesh,
+    jump: &DevBuf<Scalar>,
+) -> Result<()> {
+    check_shape(a, m, "add_jump_source")?;
+    if jump.len() != m.n_boundary_faces {
+        return Err(Error::Config(format!(
+            "add_jump_source: the jump array holds {} faces and the mesh {}",
+            jump.len(),
+            m.n_boundary_faces
+        )));
+    }
+
+    let n = a.n_cells;
+    if n == 0 {
+        return Ok(());
+    }
+    let nl = n as Label;
+
+    let f = k.jump_source.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut a.source)
+            .arg(&a.boundary_coeffs)
+            .arg(jump)
             .arg(&m.b_nbr_cell)
             .arg(&m.bcf_offset)
             .arg(&m.bcf_face)
@@ -803,6 +854,7 @@ pub(crate) mod tests {
     /// reason - which is a check on the coupled sign convention as much as on
     /// negSumDiag.
     #[test]
+    // f32 (F32-17): null-space residual ~2e-7 is an exact-zero check on tiny values
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_uniform_field_is_in_the_null_space_of_a_laplacian() {
         let Some((gpu, hm, m, k)) = ctx() else { return };
@@ -1219,7 +1271,6 @@ pub(crate) mod tests {
     /// the answer, only the path to it. `A'.psi - b'` equals `A.psi - b` at the
     /// psi that was passed in, exactly.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn relax_leaves_the_residual_at_the_current_iterate_unchanged() {
         let Some((gpu, _hm, m, k)) = ctx() else { return };
 
@@ -1247,7 +1298,7 @@ pub(crate) mod tests {
         for alpha in [0.3 as Scalar, 0.7, 1.0] {
             let relaxed = residual(Some(alpha));
             assert!(
-                max_diff(&plain, &relaxed) < 1e-12,
+                ((max_diff(&plain, &relaxed)) as f64) < crate::precision::roundoff_tol(1e-12),
                 "alpha = {alpha}: {relaxed:?} vs {plain:?}"
             );
         }
@@ -1406,7 +1457,6 @@ pub(crate) mod tests {
     /// it: cell 0's source must gain what its face and its cyclic couple to
     /// the fixed cells took away, or the answer changes.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn set_values_moves_the_eliminated_column_into_the_source() {
         let Some((gpu, hm, m, k)) = ctx() else { return };
 
@@ -1434,7 +1484,8 @@ pub(crate) mod tests {
         for r in [0usize, 2] {
             let moved = plain[r][3] * -3.25;
             assert!(
-                (pinned_b[r] - (plain_b[r] - moved)).abs() < 1e-13,
+                (((pinned_b[r] - (plain_b[r] - moved)).abs()) as f64)
+                    < crate::precision::roundoff_tol(1e-13),
                 "row {r}: source {} should be {} - {moved}",
                 pinned_b[r],
                 plain_b[r]

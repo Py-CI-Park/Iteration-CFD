@@ -42,13 +42,18 @@
 use std::path::{Path, PathBuf};
 
 use crate::error::{Error, Result};
-use crate::io::case_json::JsonOutput;
+use crate::io::case_json::{JsonIsaac, JsonLattice, JsonOutput};
 use crate::io::contract;
 use crate::io::nvdb::Precision;
 use crate::io::output_types::OutputField;
+use crate::io::polymesh::{build_host_mesh, PolyMeshRaw};
+use crate::io::voxelmap::{self, LatticeActivation, LatticeSample, LatticeSpec, VoxelMap};
+use crate::io::usda;
+use crate::mesh::HostMesh;
 use crate::io::writer::{
-    FoamWriter, NvdbWriter, ResultWriter, UsdaWriter, VdbWriter, VtuWriter, WriteCtx,
+    CartesianInfo, FoamWriter, NvdbWriter, ResultWriter, UsdaWriter, VdbWriter, VtuWriter, WriteCtx,
 };
+use crate::types::DVec3;
 use crate::restart::Checkpoints;
 
 // ==========================================================================
@@ -145,6 +150,20 @@ pub fn build_writers(
     formats: &[OutputFormat],
     precision: Precision,
 ) -> Result<Vec<Box<dyn ResultWriter>>> {
+    build_writers_isaac(root, stem, formats, precision, None)
+}
+
+/// [`build_writers`] with the Isaac profile of SPEC-LIT 117.9 in force: the
+/// `.vdb` writer carries an [`IsaacDensity`] (the `density` grid) and the
+/// `.usda` writer writes the Isaac scene instead of the plain per-field
+/// one. `None` is byte-for-byte [`build_writers`].
+pub fn build_writers_isaac(
+    root: &Path,
+    stem: &str,
+    formats: &[OutputFormat],
+    precision: Precision,
+    isaac: Option<&IsaacSpec>,
+) -> Result<Vec<Box<dyn ResultWriter>>> {
     let ext = usda_ext(formats);
     let mut out: Vec<Box<dyn ResultWriter>> = Vec::with_capacity(formats.len());
     for f in formats {
@@ -152,13 +171,27 @@ pub fn build_writers(
             OutputFormat::Foam => Box::new(FoamWriter::new(root.to_path_buf())),
             OutputFormat::Vtu => Box::new(VtuWriter::new(vtk_dir(root), stem)?),
             OutputFormat::Nvdb => Box::new(NvdbWriter::new(vdb_dir(root), stem, precision)?),
-            OutputFormat::Vdb => Box::new(VdbWriter::new(vdb_dir(root), stem, precision)?),
-            OutputFormat::Usda => Box::new(UsdaWriter::new(
-                root.join(format!("{stem}.usda")),
-                "VDB",
-                stem,
-                ext,
-            )),
+            OutputFormat::Vdb => match isaac {
+                Some(spec) => {
+                    Box::new(VdbWriter::with_isaac(vdb_dir(root), stem, precision, spec.clone())?)
+                }
+                None => Box::new(VdbWriter::new(vdb_dir(root), stem, precision)?),
+            },
+            OutputFormat::Usda => match isaac {
+                // The Isaac scene references the `.vdb` alone (117.9).
+                Some(spec) => Box::new(UsdaWriter::with_isaac(
+                    root.join(format!("{stem}.usda")),
+                    "VDB",
+                    stem,
+                    spec.clone(),
+                )),
+                None => Box::new(UsdaWriter::new(
+                    root.join(format!("{stem}.usda")),
+                    "VDB",
+                    stem,
+                    ext,
+                )),
+            },
         };
         out.push(w);
     }
@@ -270,6 +303,67 @@ impl FieldSelection {
 }
 
 // ==========================================================================
+//  SPEC-LIT 117.9 - output.visualisation.isaac (VIO-09)
+// ==========================================================================
+
+/// Which extinction law `sigma` comes from (117.9): `opticalDepth` scales
+/// the normalised field so the densest column's optical depth is exactly
+/// `tau` (117.10)-(117.12); `physical` writes `K_m rho_s` of (117.14).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IsaacScaling {
+    OpticalDepth,
+    Physical,
+}
+
+/// What `rho_s` is (117.14): the field itself (`density`, kg/m^3), or the
+/// field times the run's density field (`massFraction`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IsaacKind {
+    Density,
+    MassFraction,
+}
+
+/// `output.visualisation.isaac`, resolved. The nine keys of 117.9's table
+/// with every default in force; [`IsaacSpec::range`] `None` is the default
+/// range - the min and max of the field over the fluid voxels, taken at
+/// the first write at which `D > 0` and held with `D`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IsaacSpec {
+    pub profile: usda::IsaacProfile,
+    pub field: String,
+    pub scaling: IsaacScaling,
+    pub tau: f64,
+    pub range: Option<[f64; 2]>,
+    pub km: f64,
+    pub kind: IsaacKind,
+    pub stage: usda::StageMeta,
+}
+
+/// `output.visualisation.format` under an `isaac` block (D2 of 117.9's
+/// design): a list without `vdb` is refused by name - an Isaac scene never
+/// references `.nvdb` - and a list without `usda` gains `Usda` at the end,
+/// because the isaac block implies the scene. Call it only when a block is
+/// present.
+pub fn isaac_formats(formats: &[OutputFormat]) -> Result<Vec<OutputFormat>> {
+    if !formats.contains(&OutputFormat::Vdb) {
+        return contract::unsupported_note(
+            "output.visualisation.isaac",
+            &formats.iter().map(|f| f.name()).collect::<Vec<_>>().join(", "),
+            &["vdb"],
+            "an Isaac scene references the .vdb grid alone - .nvdb is never referenced by an \
+             Isaac scene (SPEC-LIT 117.9, 117.12)",
+            "dropping the isaac block",
+            formats.to_vec(),
+        );
+    }
+    let mut out = formats.to_vec();
+    if !out.contains(&OutputFormat::Usda) {
+        out.push(OutputFormat::Usda);
+    }
+    Ok(out)
+}
+
+// ==========================================================================
 //  SPEC-LIT §44.1 - the resolved plan
 // ==========================================================================
 
@@ -280,6 +374,27 @@ pub struct VisSpec {
     pub interval: f64,
     pub fields: FieldSelection,
     pub precision: Precision,
+    /// `output.visualisation.lattice`, resolved (SPEC-LIT 117.3): what
+    /// [`voxelmap::VoxelMap::build`] takes on a mesh that is not a uniform
+    /// Cartesian box. Every default of 117.3 when the block is absent.
+    pub lattice: LatticeSpec,
+    /// `output.visualisation.isaac`, resolved (SPEC-LIT 117.9): the Isaac
+    /// Sim profile - the `density` grid on the `.vdb` and the `.usda`
+    /// scene. `None` when the case names no block.
+    pub isaac: Option<IsaacSpec>,
+}
+
+impl VisSpec {
+    /// SPEC-LIT 117.12 on this mesh: `None` when a lattice can be laid,
+    /// else the named reason - an empty box, a voxel that is no voxel, a
+    /// zero budget, or an explicit voxel the budget would coarsen more than
+    /// 16 times. [`voxelmap::lattice_shape`] decides it, the same function
+    /// `VoxelMap::build` runs first, without visiting a voxel; so it is the
+    /// answer before the time loop, not at the first write. Pass the answer
+    /// to [`OutputPlan::refuse_visualisation_without_a_lattice`].
+    pub fn lattice_refusal(&self, raw: &PolyMeshRaw, hm: &HostMesh) -> Option<String> {
+        voxelmap::lattice_shape(raw, hm, &self.lattice).err().map(|e| e.to_string())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -301,6 +416,313 @@ pub struct OutputPlan {
     pub vis: Option<VisSpec>,
     pub exact: Option<ExactSpec>,
     pub restart: Option<RestartSpec>,
+}
+
+/// `output.visualisation.lattice`, resolved (SPEC-LIT 117.3). An unknown
+/// `sample` or `activation` is refused listing the menu (117.12); under
+/// `-permissive` the default is substituted and said.
+fn parse_lattice(j: Option<&JsonLattice>) -> Result<LatticeSpec> {
+    let mut spec = LatticeSpec::default();
+    let Some(j) = j else { return Ok(spec) };
+    spec.voxel = j.voxel;
+    spec.bbox = j.bbox;
+    if let Some(m) = j.max_voxels {
+        spec.max_voxels = m;
+    }
+    spec.sample = match j.sample.as_deref() {
+        None | Some("cell") => LatticeSample::Cell,
+        Some("linear") => LatticeSample::Linear,
+        Some(other) => contract::unsupported(
+            "output.visualisation.lattice.sample",
+            other,
+            &["cell", "linear"],
+            "cell - the solver's own cell value",
+            LatticeSample::Cell,
+        )?,
+    };
+    spec.activation = match j.activation.as_deref() {
+        None | Some("dense") => LatticeActivation::Dense,
+        Some("fluid") => LatticeActivation::Fluid,
+        Some(other) => contract::unsupported(
+            "output.visualisation.lattice.activation",
+            other,
+            &["dense", "fluid"],
+            "dense - every voxel active",
+            LatticeActivation::Dense,
+        )?,
+    };
+    if let Some(b) = j.background {
+        spec.background = b;
+    }
+    Ok(spec)
+}
+
+/// `output.visualisation.isaac`, resolved (SPEC-LIT 117.9). Every key of
+/// 117.9's table with its default; every refusal is per-key (117.12's
+/// table), strict naming the full key path, `-permissive` substituting the
+/// key's default - the substitution `contract` prints.
+/// The three rules of 117.9's design that cross the isaac block with the
+/// rest of the visualisation block, applied after `parse_isaac` and
+/// `parse_lattice` (D1, D2, D3). Each refusal is strict naming its key;
+/// under `-permissive` the stated substitution happens here, so the
+/// printed line is a fact.
+fn apply_isaac_rules(
+    isaac: &mut Option<IsaacSpec>,
+    formats: &mut Vec<OutputFormat>,
+    lattice: &mut LatticeSpec,
+    fields: &FieldSelection,
+    stated_activation: Option<&str>,
+) -> Result<()> {
+    // D2 first, before any rule of the block touches the plan: a block that
+    // is dropped changes NOTHING - the lattice activation stays the default
+    // (or what the case stated), the formats stay the case's own.
+    if isaac.is_some() && !formats.contains(&OutputFormat::Vdb) {
+        contract::unsupported_note(
+            "output.visualisation.isaac",
+            &formats.iter().map(|f| f.name()).collect::<Vec<_>>().join(", "),
+            &["vdb"],
+            "an Isaac scene references the .vdb grid alone - .nvdb is never referenced by an \
+             Isaac scene (SPEC-LIT 117.9, 117.12)",
+            "dropping the isaac block",
+            (),
+        )?;
+        // `-permissive` only.
+        *isaac = None;
+        return Ok(());
+    }
+    let Some(spec) = isaac.as_mut() else { return Ok(()) };
+    // D1: the profile owns the activation when the case states none, and a
+    // stated one that contradicts it is refused (117.12's row).
+    let want = match spec.profile {
+        usda::IsaacProfile::Index => LatticeActivation::Fluid,
+        usda::IsaacProfile::Pathtrace => LatticeActivation::Dense,
+    };
+    let want_name = match want {
+        LatticeActivation::Fluid => "fluid",
+        LatticeActivation::Dense => "dense",
+    };
+    match stated_activation {
+        None => lattice.activation = want,
+        Some(stated) if stated == want_name => {}
+        Some(stated) => {
+            contract::unsupported_note(
+                "output.visualisation.lattice.activation",
+                stated,
+                &["dense", "fluid"],
+                &format!(
+                    "lattice.activation contradicting isaac.profile (SPEC-LIT 117.12): the {} \
+                     profile runs on activation {want_name} - {} (SPEC-LIT 117.9's table)",
+                    spec.profile.name(),
+                    match spec.profile {
+                        usda::IsaacProfile::Index =>
+                            "IndeX hangs on large dense grids",
+                        usda::IsaacProfile::Pathtrace =>
+                            "a sparse grid renders transparent under the path tracer",
+                    }
+                ),
+                &format!("activation {want_name}"),
+                (),
+            )?;
+            lattice.activation = want;
+        }
+    }
+    // D2 (the rest of it): the block implies the `.usda` scene - appended
+    // at the end when the case did not name it.
+    *formats = isaac_formats(formats)?;
+    // D3: the density grid is made from the fields the visualisation write
+    // carries, and the selection of 44.2 names those. A Named list that
+    // lacks the isaac field (or rho, under kind massFraction) cannot make
+    // one; -permissive drops the block.
+    if let FieldSelection::Named(names) = fields {
+        let listed: Vec<&str> = names.iter().map(String::as_str).collect();
+        let has = |n: &str| listed.contains(&n);
+        let needs_rho = spec.kind == IsaacKind::MassFraction;
+        if !has(&spec.field) || (needs_rho && !has("rho")) {
+            let missing = if !has(&spec.field) { spec.field.as_str() } else { "rho" };
+            let setting = if missing == "rho" {
+                "output.visualisation.isaac.kind"
+            } else {
+                "output.visualisation.isaac.field"
+            };
+            contract::unsupported_note(
+                setting,
+                missing,
+                &listed,
+                &format!(
+                    "the Isaac density grid is made from the fields the visualisation write \
+                     carries, and output.visualisation.fields (SPEC-LIT 44.2, which isaac does \
+                     not change) names those; it does not name {missing}, which kind {} needs \
+                     (SPEC-LIT 117.9{})",
+                    match spec.kind {
+                        IsaacKind::Density => "density",
+                        IsaacKind::MassFraction => "massFraction",
+                    },
+                    if missing == "rho" { ", 117.14" } else { "" }
+                ),
+                "dropping the isaac block",
+                (),
+            )?;
+            // `-permissive` only - and this is the substitution it printed.
+            *isaac = None;
+        }
+    }
+    Ok(())
+}
+
+fn parse_isaac(j: Option<&JsonIsaac>) -> Result<Option<IsaacSpec>> {
+    let Some(j) = j else { return Ok(None) };
+    let profile = match j.profile.as_deref() {
+        None => usda::IsaacProfile::Index,
+        Some("index") => usda::IsaacProfile::Index,
+        Some("pathtrace") => usda::IsaacProfile::Pathtrace,
+        Some(other) => contract::unsupported(
+            "output.visualisation.isaac.profile",
+            other,
+            &["index", "pathtrace"],
+            "index - NVIDIA IndeX, the RTX volume path, on a fluid (sparse) lattice (SPEC-LIT 117.9)",
+            usda::IsaacProfile::Index,
+        )?,
+    };
+    let scaling = match j.scaling.as_deref() {
+        None | Some("opticalDepth") => IsaacScaling::OpticalDepth,
+        Some("physical") => IsaacScaling::Physical,
+        Some(other) => contract::unsupported(
+            "output.visualisation.isaac.scaling",
+            other,
+            &["opticalDepth", "physical"],
+            "opticalDepth - the densest column's optical depth is tau (SPEC-LIT 117.9)",
+            IsaacScaling::OpticalDepth,
+        )?,
+    };
+    let kind = match j.kind.as_deref() {
+        None | Some("density") => IsaacKind::Density,
+        Some("massFraction") => IsaacKind::MassFraction,
+        Some(other) => contract::unsupported(
+            "output.visualisation.isaac.kind",
+            other,
+            &["density", "massFraction"],
+            "density - rho_s = f_v, the field as a soot mass density (SPEC-LIT 117.9)",
+            IsaacKind::Density,
+        )?,
+    };
+    let tau = match j.tau {
+        None => 2.0,
+        Some(t) if t.is_finite() && t > 0.0 => t,
+        Some(t) => contract::unsupported_note(
+            "output.visualisation.isaac.tau",
+            &format!("{t}"),
+            &[],
+            "tau is the optical depth of the densest column (117.12); it must be finite and positive",
+            "tau = 2.0 (SPEC-LIT 117.9's default)",
+            2.0,
+        )?,
+    };
+    let range = match j.range {
+        None => None,
+        Some([lo, hi]) if lo.is_finite() && hi.is_finite() && lo < hi => Some([lo, hi]),
+        Some(r) => contract::unsupported_note(
+            "output.visualisation.isaac.range",
+            &format!("[{}, {}]", r[0], r[1]),
+            &[],
+            "range is [f_lo, f_hi] of (117.10)'s normalisation; both must be finite with f_lo < f_hi",
+            "the default range - the min and max of the field over the fluid voxels (SPEC-LIT 117.9)",
+            None,
+        )?,
+    };
+    let km = match j.km {
+        None => voxelmap::SMOKE_SPECIFIC_EXTINCTION,
+        Some(k) if k.is_finite() && k > 0.0 => k,
+        Some(k) => contract::unsupported_note(
+            "output.visualisation.isaac.Km",
+            &format!("{k}"),
+            &[],
+            "Km is the specific extinction of smoke in m^2/kg (117.14); it must be finite and positive. \
+             Mulholland & Croarkin 2000 measure 8.7 m^2/g for flame-generated smoke",
+            "Km = 8700 (SPEC-LIT 117.9's default)",
+            voxelmap::SMOKE_SPECIFIC_EXTINCTION,
+        )?,
+    };
+    let up_axis = match j.up_axis.as_deref() {
+        None | Some("Z") => "Z".to_string(),
+        Some("Y") => "Y".to_string(),
+        Some(other) => contract::unsupported(
+            "output.visualisation.isaac.upAxis",
+            other,
+            &["Y", "Z"],
+            "Z - the stage's up axis, what usda.rs writes (SPEC-LIT 117.9)",
+            "Z".to_string(),
+        )?,
+    };
+    let meters_per_unit = match j.meters_per_unit {
+        None => 1.0,
+        Some(m) if m.is_finite() && m > 0.0 => m,
+        Some(m) => contract::unsupported_note(
+            "output.visualisation.isaac.metersPerUnit",
+            &format!("{m}"),
+            &[],
+            "metersPerUnit is the stage's unit scale (117.9); it must be finite and positive",
+            "metersPerUnit = 1.0 (SPEC-LIT 117.9's default)",
+            1.0,
+        )?,
+    };
+    Ok(Some(IsaacSpec {
+        profile,
+        field: j.field.clone(),
+        scaling,
+        tau,
+        range,
+        km,
+        kind,
+        stage: usda::StageMeta { up_axis, meters_per_unit },
+    }))
+}
+
+/// SPEC-LIT 117.12's refusals that need nothing but the block itself: the
+/// spec's own (`box` empty or not finite, `voxel <= 0` or not finite,
+/// `maxVoxels = 0`, a non-finite `background`), and, when the case names
+/// both `voxel` and `box`, the budget's `s > 16`. The rest need the mesh
+/// ([`VisSpec::lattice_refusal`]).
+fn lattice_refusal_of_the_block(spec: &LatticeSpec) -> Option<String> {
+    if let Err(e) = voxelmap::check_spec(spec) {
+        return Some(e.to_string());
+    }
+    if let (Some(h), Some(b)) = (spec.voxel, spec.bbox) {
+        let l = [b[3] - b[0], b[4] - b[1], b[5] - b[2]];
+        if let Err(e) = voxelmap::check_budget(l, h, true, spec.max_voxels) {
+            return Some(e.to_string());
+        }
+    }
+    None
+}
+
+/// The one refusal of a volume format with no lattice behind it (SPEC-LIT
+/// 117.12, in §13.4's words): strict is an `Err` naming the format, the
+/// reason and what does work; `-permissive` drops the visualisation stage,
+/// which is the substitution it printed (§44.1).
+fn refuse_without_a_lattice(vis: &mut Option<VisSpec>, reason: &str) -> Result<()> {
+    let Some(v) = vis.as_ref() else { return Ok(()) };
+    let volume: Vec<&str> = v
+        .formats
+        .iter()
+        .filter(|f| matches!(f, OutputFormat::Vdb | OutputFormat::Nvdb))
+        .map(|f| f.name())
+        .collect();
+    if volume.is_empty() {
+        return Ok(());
+    }
+    contract::unsupported_note(
+        "output.visualisation.format",
+        &volume.join(", "),
+        &EXACT_FORMATS,
+        &format!(
+            "a .vdb/.nvdb file is a voxel grid, and no lattice can be laid for this run: {reason}. output.exact (vtu, openfoam) preserves the polyhedra"
+        ),
+        "no visualisation output",
+        (),
+    )?;
+    // `-permissive` only - and this is the substitution it printed.
+    *vis = None;
+    Ok(())
 }
 
 /// What `visualisation.format` accepts, for the refusal message.
@@ -459,14 +881,26 @@ impl OutputPlan {
     /// Resolve the case's `output` block. Every SPEC-LIT §13.4 refusal that
     /// needs nothing but the block itself is raised here.
     pub fn from_json(o: &JsonOutput) -> Result<Self> {
-        let vis = match &o.visualisation {
+        let mut vis = match &o.visualisation {
             Some(v) => {
-                let formats = vis_formats(&v.format, v.usd_scene)?;
+                let mut formats = vis_formats(&v.format, v.usd_scene)?;
+                let mut lattice = parse_lattice(v.lattice.as_ref())?;
+                let fields = FieldSelection::from_case(v.fields.as_ref())?;
+                let mut isaac = parse_isaac(v.isaac.as_ref())?;
+                apply_isaac_rules(
+                    &mut isaac,
+                    &mut formats,
+                    &mut lattice,
+                    &fields,
+                    v.lattice.as_ref().and_then(|l| l.activation.as_deref()),
+                )?;
                 let spec = VisSpec {
                     formats,
                     interval: check_interval("output.visualisation.interval", v.interval)?,
-                    fields: FieldSelection::from_case(v.fields.as_ref())?,
+                    fields,
                     precision: parse_precision("output.visualisation.precision", v.precision.as_ref())?,
+                    lattice,
+                    isaac,
                 };
                 // Under `-permissive` an unusable format list comes back
                 // empty rather than as an error; an empty stage is no stage.
@@ -474,6 +908,13 @@ impl OutputPlan {
             }
             None => None,
         };
+        // SPEC-LIT 117.12: a lattice block that lays no lattice is refused
+        // when the case is read, on every mesh - a uniform Cartesian box
+        // never reads the block, but a block that asks for the impossible
+        // is a mistake in the case either way.
+        if let Some(reason) = vis.as_ref().and_then(|v| lattice_refusal_of_the_block(&v.lattice)) {
+            refuse_without_a_lattice(&mut vis, &reason)?;
+        }
 
         let exact = match &o.exact {
             Some(e) => {
@@ -515,12 +956,36 @@ impl OutputPlan {
     }
 
     /// SPEC-LIT §44.2's early check, against the field names the driver is
-    /// about to build.
+    /// about to build - plus 117.12's isaac rows: the density's field must
+    /// be one the run has (44.2's rule, listing what is available), and
+    /// `kind: massFraction` needs `rho` to form `rho_s = rho f_v` (117.14).
     pub fn check_fields(&self, available: &[&str]) -> Result<()> {
-        match &self.vis {
-            Some(v) => v.fields.check(available),
-            None => Ok(()),
+        let Some(v) = &self.vis else { return Ok(()) };
+        v.fields.check(available)?;
+        let Some(isaac) = &v.isaac else { return Ok(()) };
+        // These two rows are refusals -permissive does not soften: there is
+        // nothing to substitute WITH, so both modes get the same `Err` and
+        // the run stops before the first write (SPEC-LIT 117.12).
+        if !available.iter().any(|a| *a == isaac.field) {
+            contract::refused(
+                "output.visualisation.isaac.field",
+                &isaac.field,
+                available,
+                "the Isaac density grid is made from the fields the visualisation write carries \
+                 (SPEC-LIT 44.2, which isaac does not change) - name one the run has \
+                 (SPEC-LIT 117.9, 117.12)",
+            )?;
         }
+        if isaac.kind == IsaacKind::MassFraction && !available.iter().any(|a| *a == "rho") {
+            contract::refused(
+                "output.visualisation.isaac.kind",
+                "massFraction",
+                &[],
+                "kind density - (117.14) needs the run's rho field to form rho_s = rho f_v, and \
+                 this run has none (SPEC-LIT 117.9, 117.12)",
+            )?;
+        }
+        Ok(())
     }
 
     /// SPEC-LIT §44.4: a positive `interval` names a schedule a steady run
@@ -571,37 +1036,21 @@ impl OutputPlan {
         Ok(())
     }
 
-    /// SPEC-LIT §44.1: `vdb`/`nvdb` are a dense lattice, so a mesh that is
-    /// not a recognised uniform Cartesian box has no voxels to write.
+    /// SPEC-LIT 117.12, which replaced §44.1's refusal of every mesh that is
+    /// not a uniform Cartesian box: `vdb`/`nvdb` are refused only when no
+    /// lattice can be laid for this run. `no_lattice` is `None` on a uniform
+    /// Cartesian box or when the lattice can be laid
+    /// ([`VisSpec::lattice_refusal`]), and otherwise the named reason - the
+    /// lattice's own refusal, or a driver that lays none.
     ///
-    /// The two volume writers already refuse this - at the FIRST WRITE, which
-    /// on a transient run is after the loop has already started. Raised here
-    /// it is raised before anything runs.
-    pub fn refuse_visualisation_on_a_non_cartesian_mesh(&mut self, cartesian: bool) -> Result<()> {
-        if cartesian {
-            return Ok(());
+    /// The two volume writers refuse a write with no lattice too - at the
+    /// FIRST WRITE, which on a transient run is after the loop has started.
+    /// Raised here it is raised before anything runs.
+    pub fn refuse_visualisation_without_a_lattice(&mut self, no_lattice: Option<&str>) -> Result<()> {
+        match no_lattice {
+            None => Ok(()),
+            Some(reason) => refuse_without_a_lattice(&mut self.vis, reason),
         }
-        let Some(v) = &self.vis else { return Ok(()) };
-        let volume: Vec<&str> = v
-            .formats
-            .iter()
-            .filter(|f| matches!(f, OutputFormat::Vdb | OutputFormat::Nvdb))
-            .map(|f| f.name())
-            .collect();
-        if volume.is_empty() {
-            return Ok(());
-        }
-        contract::unsupported_note(
-            "output.visualisation.format",
-            &volume.join(", "),
-            &EXACT_FORMATS,
-            "a .vdb/.nvdb file is a dense voxel grid, and this case's mesh is not a recognised uniform Cartesian box, so there is no lattice to sample onto. output.exact (vtu, openfoam) preserves the polyhedra",
-            "no visualisation output",
-            (),
-        )?;
-        // `-permissive` only - and this is the substitution it printed.
-        self.vis = None;
-        Ok(())
     }
 
     /// SPEC-LIT §44.1: a driver with no checkpoint at all cannot honour
@@ -727,7 +1176,7 @@ impl OutputPipeline {
         if let Some(v) = &plan.vis {
             stages.push(Stage {
                 label: "visualisation",
-                writers: build_writers(root, stem, &v.formats, v.precision)?,
+                writers: build_writers_isaac(root, stem, &v.formats, v.precision, v.isaac.as_ref())?,
                 formats: v.formats.clone(),
                 interval: v.interval,
                 next: v.interval,
@@ -796,6 +1245,7 @@ impl OutputPipeline {
                 name: ctx.name,
                 mesh: ctx.mesh,
                 cart: ctx.cart,
+                vox: ctx.vox,
                 fields: &selected,
                 foam: ctx.foam,
             };
@@ -909,25 +1359,117 @@ pub fn refuse_output_named_twice(plan: &OutputPlan, cli_flags: &[&str]) -> Resul
     )
 }
 
-/// SPEC-LIT §44.1 on the command-line route: `-output nvdb` / `-output vdb`
-/// ask for a dense voxel grid, and a mesh `cartesian::detect` refuses has no
-/// lattice to sample onto. The two volume writers refuse this themselves -
-/// at the FIRST WRITE, which on a steady run is the final write, after the
-/// whole run, and `-output nvdb,foam` then lost the foam write too. Raised
-/// here, before any writer is built, it is raised before anything runs, it
-/// names WHY (`detect`'s own reason) and what does work, and the empty
-/// `VDB/` directory `NvdbWriter::new` would have made is never made.
+// ==========================================================================
+//  SPEC-LIT 117.6 / 117.12 - what the volume writers sample onto (VIO-05a)
+// ==========================================================================
+
+/// Whether `formats` names a voxel format, `vdb` or `nvdb` - the two that
+/// need a [`VolumeTarget`].
+pub fn has_volume_format(formats: &[OutputFormat]) -> bool {
+    formats.iter().any(|f| matches!(f, OutputFormat::Vdb | OutputFormat::Nvdb))
+}
+
+/// What a run's `.vdb`/`.nvdb` files sample onto, decided once before the
+/// time loop: the cells of a uniform Cartesian box, whose bytes SPEC-LIT
+/// 117.6 keeps, or the lattice of 117.3 on any other mesh.
+pub enum VolumeTarget {
+    Cartesian(CartesianInfo),
+    Lattice(VoxelMap),
+}
+
+impl VolumeTarget {
+    /// `WriteCtx::cart`.
+    pub fn cart(&self) -> Option<&CartesianInfo> {
+        match self {
+            VolumeTarget::Cartesian(c) => Some(c),
+            VolumeTarget::Lattice(_) => None,
+        }
+    }
+
+    /// `WriteCtx::vox`.
+    pub fn vox(&self) -> Option<&VoxelMap> {
+        match self {
+            VolumeTarget::Cartesian(_) => None,
+            VolumeTarget::Lattice(m) => Some(m),
+        }
+    }
+
+    /// The lines a driver prints before the time loop: SPEC-LIT 117.7's
+    /// report of the lattice, or one line saying the cells are the voxels.
+    pub fn report_lines(&self) -> Vec<String> {
+        let VolumeTarget::Lattice(vm) = self else {
+            return vec!["volume output: uniform Cartesian box, the cells are the voxels (SPEC-LIT 117.6)".to_string()];
+        };
+        let r = &vm.report;
+        let mut lines = vec![format!(
+            "volume output: lattice {} x {} x {} of h = {} m (requested {}, coarsen {}): {} voxels, {} fluid, {} gap-filled; fluid fraction {} (SPEC-LIT 117.7)",
+            r.n[0], r.n[1], r.n[2], r.voxel, r.voxel_requested, r.coarsen, r.n_voxels, r.n_fluid, r.n_filled, r.fluid_fraction,
+        )];
+        if let Some(e) = r.volume_error {
+            lines.push(format!("  volume error {e}"));
+        }
+        if r.n_linear_fallback > 0 {
+            lines.push(format!("  linear sampling falls back to the cell value in {} cells", r.n_linear_fallback));
+        }
+        if let Some(n) = &r.note {
+            lines.push(format!("  note: {n}"));
+        }
+        lines.push(format!("  lattice built in {:.3} s", r.build_s));
+        lines
+    }
+}
+
+/// The one helper of VIO-05a: `cart` is `cartesian::detect` turned into a
+/// [`CartesianInfo`] (`None` when the mesh is not a uniform Cartesian box),
+/// and `spec` the case's `output.visualisation.lattice`, or the 117.3
+/// defaults on the command-line route. Call it only when
+/// [`has_volume_format`] holds: the map can be large.
 ///
-/// `not_cartesian` is `cartesian::detect(hm).err()`: `None` on a Cartesian
-/// box, `Some(reason)` otherwise. Strict: `Err` naming the format, the
-/// reason and the menu (§13.4). `-permissive`: one warning per volume format
-/// and the list comes back with `nvdb`/`vdb` dropped, the rest in order -
-/// which is exactly the substitution the warning printed (§13.4.2).
-pub fn drop_volume_formats_on_a_non_cartesian_mesh(
+/// `raw` is the polyMesh `hm` was built from. A Cartesian box needs none, so
+/// a caller passes `None` there and reads no mesh twice; on any other mesh
+/// `None` is refused by name.
+///
+/// The lattice is laid in world coordinates (117.2 item 4). `raw.points` are
+/// world; when `hm` stores its geometry about a local origin (F32-10, the
+/// `single` build's OpenFOAM route) a world `HostMesh` is built from the same
+/// `raw` for the map alone, so the map is the f64 build's map bit for bit
+/// (117.2 item 1). The cell order is `raw`'s in both, which is all the map
+/// hands the writers.
+pub fn volume_target(
+    raw: Option<&PolyMeshRaw>,
+    hm: &HostMesh,
+    cart: Option<CartesianInfo>,
+    spec: &LatticeSpec,
+) -> Result<VolumeTarget> {
+    if let Some(c) = cart {
+        return Ok(VolumeTarget::Cartesian(c));
+    }
+    let Some(raw) = raw else {
+        return Err(Error::Config(
+            "volume output: the mesh is not a uniform Cartesian box, and the lattice of SPEC-LIT 117.4 \
+             is laid from its polyMesh, which this caller did not pass"
+                .into(),
+        ));
+    };
+    let vm = if hm.origin == DVec3::ZERO {
+        VoxelMap::build(raw, hm, spec)?
+    } else {
+        VoxelMap::build(raw, &build_host_mesh(raw)?, spec)?
+    };
+    Ok(VolumeTarget::Lattice(vm))
+}
+
+/// SPEC-LIT 117.12 on the command-line route of a driver that lays the
+/// lattice: `-output vdb`/`-output nvdb` are refused only when no lattice
+/// can be laid. `no_lattice` is `voxelmap::lattice_shape(..).err()` on the
+/// 117.3 defaults, `None` on a Cartesian box. Strict: `Err` naming the
+/// format, the reason and what does work (§13.4). `-permissive`: one
+/// warning per volume format, and the list comes back without them.
+pub fn drop_volume_formats_without_a_lattice(
     formats: &[OutputFormat],
-    not_cartesian: Option<&str>,
+    no_lattice: Option<&str>,
 ) -> Result<Vec<OutputFormat>> {
-    let Some(reason) = not_cartesian else { return Ok(formats.to_vec()) };
+    let Some(reason) = no_lattice else { return Ok(formats.to_vec()) };
     let mut kept = Vec::with_capacity(formats.len());
     for f in formats {
         if !matches!(f, OutputFormat::Vdb | OutputFormat::Nvdb) {
@@ -936,10 +1478,10 @@ pub fn drop_volume_formats_on_a_non_cartesian_mesh(
         }
         contract::unsupported_note(
             &format!("-output {}", f.name()),
-            "a non-Cartesian mesh",
+            "a mesh with no lattice",
             &["foam", "vtu", "usda (boundary surface only)"],
             &format!(
-                "a .{} file is a dense voxel grid and this mesh is not a recognised uniform Cartesian box: {reason}. foam and vtu preserve the polyhedra",
+                "a .{} file is a voxel grid, and no lattice can be laid for this run: {reason}. foam and vtu preserve the polyhedra",
                 f.name()
             ),
             &format!("dropping {} from -output", f.name()),
@@ -967,6 +1509,8 @@ mod tests {
             fields: None,
             precision: None,
             usd_scene: false,
+            lattice: None,
+            isaac: None,
         }
     }
 
@@ -1183,15 +1727,510 @@ mod tests {
     }
 
     #[test]
-    fn a_volume_format_on_a_non_cartesian_mesh_is_refused_before_the_loop() {
+    fn a_volume_format_with_no_lattice_is_refused_before_the_loop() {
         let _g = permissive_test_guard();
         set_permissive(false);
         let mut p = OutputPlan::from_json(&only_vis(vis("vdb"))).unwrap();
-        assert!(p.refuse_visualisation_on_a_non_cartesian_mesh(true).is_ok());
-        let e = p.refuse_visualisation_on_a_non_cartesian_mesh(false).unwrap_err();
+        assert!(p.refuse_visualisation_without_a_lattice(None).is_ok());
+        assert!(p.vis.is_some(), "a lattice that can be laid keeps the stage");
+        let why = "ofgpu-k-epsilon lays no output.visualisation.lattice";
+        let e = p.refuse_visualisation_without_a_lattice(Some(why)).unwrap_err();
         let s = e.to_string();
-        assert!(s.contains("vdb") && s.contains("Cartesian"), "{s}");
+        assert!(s.contains("output.visualisation.format") && s.contains("\"vdb\""), "{s}");
+        assert!(s.contains("no lattice can be laid for this run") && s.contains(why), "{s}");
         assert!(s.contains("vtu"), "the error must name what DOES work: {s}");
+        // An exact-only plan has no volume format to refuse.
+        let mut q = OutputPlan::default();
+        assert!(q.refuse_visualisation_without_a_lattice(Some(why)).is_ok());
+    }
+
+    fn lattice_case(lattice: &str) -> JsonOutput {
+        let text = format!(r#"{{ "visualisation": {{ "format": "vdb", "lattice": {lattice} }} }}"#);
+        serde_json::from_str(&text).unwrap_or_else(|e| panic!("{text}: {e}"))
+    }
+
+    /// SPEC-LIT 117.3: the six keys, their defaults, and the schema.
+    #[test]
+    fn lattice_parses() {
+        let full = lattice_case(
+            r#"{ "voxel": 0.05, "box": [-1, -1, -1, 2, 2, 2], "maxVoxels": 1000,
+                 "sample": "linear", "activation": "fluid", "background": -1.5 }"#,
+        );
+        let p = plan_of(full).expect("a full lattice block");
+        assert_eq!(
+            p.vis.as_ref().unwrap().lattice,
+            LatticeSpec {
+                voxel: Some(0.05),
+                bbox: Some([-1.0, -1.0, -1.0, 2.0, 2.0, 2.0]),
+                max_voxels: 1000,
+                sample: LatticeSample::Linear,
+                activation: LatticeActivation::Fluid,
+                background: -1.5,
+            }
+        );
+        let absent = plan_of(only_vis(vis("vdb"))).unwrap();
+        assert_eq!(absent.vis.unwrap().lattice, LatticeSpec::default(), "absent is every 117.3 default");
+        assert_eq!(LatticeSpec::default().max_voxels, 8_000_000);
+        let partial = plan_of(lattice_case(r#"{ "voxel": 0.1 }"#)).unwrap();
+        assert_eq!(
+            partial.vis.unwrap().lattice,
+            LatticeSpec { voxel: Some(0.1), ..LatticeSpec::default() },
+            "a key not named keeps its default"
+        );
+        let explicit = plan_of(lattice_case(r#"{ "sample": "cell", "activation": "dense" }"#)).unwrap();
+        assert_eq!(explicit.vis.unwrap().lattice, LatticeSpec::default());
+
+        let text = r#"{ "visualisation": { "format": "vdb", "lattice": { "voxels": 0.1 } } }"#;
+        let e = serde_json::from_str::<JsonOutput>(text).unwrap_err().to_string();
+        assert!(e.contains("voxels"), "an unknown key is refused by name: {e}");
+
+        let schema = crate::io::case_json::emit_schema();
+        for want in ["\"JsonLattice\"", "\"lattice\"", "\"maxVoxels\"", "\"activation\"", "\"background\"", "\"box\""] {
+            assert!(schema.contains(want), "schema missing {want}");
+        }
+    }
+
+    /// SPEC-LIT 117.12's lattice rows, each refusal's text, strict and
+    /// `-permissive`.
+    #[test]
+    fn lattice_refusals() {
+        let _g = permissive_test_guard();
+        set_permissive(false);
+        reset_warnings();
+        let refused = |lattice: &str| -> String {
+            OutputPlan::from_json(&lattice_case(lattice)).unwrap_err().to_string()
+        };
+        let common = ["output.visualisation.format", "\"vdb\"", "no lattice can be laid for this run", "vtu", "-permissive"];
+        let cases: [(&str, &[&str]); 7] = [
+            (r#"{ "box": [0, 0, 0, 1, 0, 1] }"#, &["output.visualisation.lattice.box", "lo[1] = 0 >= hi[1] = 0", "the lattice would be empty"]),
+            (r#"{ "voxel": 0 }"#, &["output.visualisation.lattice.voxel: 0", "non-positive"]),
+            (r#"{ "voxel": -1 }"#, &["output.visualisation.lattice.voxel: -1", "non-positive"]),
+            (r#"{ "maxVoxels": 0 }"#, &["output.visualisation.lattice.maxVoxels: 0", "zero-voxel budget"]),
+            (
+                r#"{ "voxel": 0.01, "box": [0, 0, 0, 1, 1, 1], "maxVoxels": 100 }"#,
+                &["output.visualisation.lattice.voxel", "needs 1000000 voxels, over maxVoxels 100", "h' = 0.25 m", "over the 16 limit"],
+            ),
+            (r#"{ "sample": "trilinear" }"#, &["output.visualisation.lattice.sample", "\"trilinear\"", "available: cell, linear"]),
+            (r#"{ "activation": "sparse" }"#, &["output.visualisation.lattice.activation", "\"sparse\"", "available: dense, fluid"]),
+        ];
+        for (i, (lattice, wants)) in cases.iter().enumerate() {
+            let s = refused(lattice);
+            for want in *wants {
+                assert!(s.contains(want), "{lattice} must say {want:?}: {s}");
+            }
+            if i < 5 {
+                for want in common {
+                    assert!(s.contains(want), "{lattice} must say {want:?}: {s}");
+                }
+            }
+        }
+        // s = 10 <= 16: the budget coarsens and the case is accepted.
+        let p = OutputPlan::from_json(&lattice_case(r#"{ "voxel": 0.01, "box": [0, 0, 0, 1, 1, 1], "maxVoxels": 1000 }"#)).unwrap();
+        assert!(p.vis.is_some());
+
+        // On a mesh: the default box needs the mesh, so the budget refusal
+        // of an explicit voxel is only known there.
+        let (raw, hm) = crate::io::nvdb::lattice_fixture::refined();
+        let fine = OutputPlan::from_json(&lattice_case(r#"{ "voxel": 0.001, "maxVoxels": 1000 }"#)).unwrap();
+        let why = fine.vis.as_ref().unwrap().lattice_refusal(&raw, &hm).expect("s > 16 on the unit cube");
+        for want in ["output.visualisation.lattice.voxel", "over maxVoxels 1000", "over the 16 limit"] {
+            assert!(why.contains(want), "{want:?}: {why}");
+        }
+        let mut fine = fine;
+        let s = fine.refuse_visualisation_without_a_lattice(Some(why.as_str())).unwrap_err().to_string();
+        assert!(s.contains("output.visualisation.format") && s.contains(&why), "{s}");
+        let ok = OutputPlan::from_json(&only_vis(vis("vdb"))).unwrap();
+        assert_eq!(ok.vis.as_ref().unwrap().lattice_refusal(&raw, &hm), None, "the 117.3 defaults always lay a lattice");
+
+        // `-permissive`: the stage is dropped, as it printed; an unknown
+        // menu entry is substituted instead.
+        set_permissive(true);
+        for (lattice, _) in &cases[..5] {
+            let p = OutputPlan::from_json(&lattice_case(lattice)).expect("permissive");
+            assert!(p.vis.is_none(), "{lattice}: \"no visualisation output\"");
+        }
+        assert!(warned("output.visualisation.format"));
+        let p = OutputPlan::from_json(&lattice_case(r#"{ "sample": "trilinear", "activation": "sparse" }"#)).expect("permissive");
+        let l = &p.vis.as_ref().unwrap().lattice;
+        assert_eq!((l.sample, l.activation), (LatticeSample::Cell, LatticeActivation::Dense));
+        assert!(warned("output.visualisation.lattice.sample") && warned("output.visualisation.lattice.activation"));
+        set_permissive(false);
+    }
+
+    // ---- SPEC-LIT 117.9 - output.visualisation.isaac (VIO-09) -----------
+
+    fn isaac_block(field: &str) -> JsonIsaac {
+        JsonIsaac {
+            profile: None,
+            field: field.to_string(),
+            scaling: None,
+            tau: None,
+            range: None,
+            km: None,
+            kind: None,
+            up_axis: None,
+            meters_per_unit: None,
+        }
+    }
+
+    fn lattice(activation: &str) -> JsonLattice {
+        JsonLattice {
+            voxel: None,
+            bbox: None,
+            max_voxels: None,
+            sample: None,
+            activation: Some(activation.to_string()),
+            background: None,
+        }
+    }
+
+    #[test]
+    fn isaac_parses() {
+        // `plan_of` takes the crate-wide permissive guard itself - taking
+        // it here too would deadlock the non-reentrant Mutex.
+        let mut v = vis("vdb");
+        v.isaac = Some(isaac_block("smoke"));
+        let p = plan_of(only_vis(v)).expect("the block parses");
+        let vs = p.vis.as_ref().unwrap();
+        let i = vs.isaac.as_ref().unwrap();
+        assert_eq!(i.profile, usda::IsaacProfile::Index);
+        assert_eq!(i.scaling, IsaacScaling::OpticalDepth);
+        assert_eq!(i.tau, 2.0);
+        assert_eq!(i.range, None, "None is the fluid min/max default");
+        assert_eq!(i.km, 8700.0);
+        assert_eq!(i.km, voxelmap::SMOKE_SPECIFIC_EXTINCTION);
+        assert_eq!(i.kind, IsaacKind::Density);
+        assert_eq!(i.stage, usda::StageMeta::default());
+        assert_eq!(vs.formats, vec![OutputFormat::Vdb, OutputFormat::Usda], "D2 implies the scene");
+        assert_eq!(
+            vs.lattice.activation,
+            LatticeActivation::Fluid,
+            "D1: the index profile owns the activation when the case states none"
+        );
+
+        let mut v = vis("vdb");
+        let mut j = isaac_block("smoke");
+        j.profile = Some("pathtrace".to_string());
+        v.isaac = Some(j);
+        let vs = plan_of(only_vis(v)).expect("pathtrace").vis.unwrap();
+        assert_eq!(vs.lattice.activation, LatticeActivation::Dense, "D1: pathtrace is dense");
+        assert_eq!(vs.isaac.as_ref().unwrap().profile, usda::IsaacProfile::Pathtrace);
+
+        let mut v = vis("vdb");
+        v.isaac = Some(JsonIsaac {
+            profile: Some("pathtrace".into()),
+            field: "Y_CO2".into(),
+            scaling: Some("physical".into()),
+            tau: Some(1.5),
+            range: Some([0.0, 0.2]),
+            km: Some(9000.0),
+            kind: Some("massFraction".into()),
+            up_axis: Some("Y".into()),
+            meters_per_unit: Some(0.01),
+        });
+        let i = plan_of(only_vis(v)).expect("full").vis.unwrap().isaac.unwrap();
+        assert_eq!(i.profile, usda::IsaacProfile::Pathtrace);
+        assert_eq!(i.field, "Y_CO2");
+        assert_eq!(i.scaling, IsaacScaling::Physical);
+        assert_eq!(i.tau, 1.5);
+        assert_eq!(i.range, Some([0.0, 0.2]));
+        assert_eq!(i.km, 9000.0);
+        assert_eq!(i.kind, IsaacKind::MassFraction);
+        assert_eq!(i.stage.up_axis, "Y");
+        assert_eq!(i.stage.meters_per_unit, 0.01);
+    }
+
+    /// Every 117.9/117.12 refusal, strict - the text names its full key
+    /// path - and the substitution `-permissive` prints is the one that
+    /// happens.
+    #[test]
+    fn isaac_refusals() {
+        // Strict half: through `plan_of`, which takes the crate-wide
+        // permissive guard itself - holding it here would deadlock the
+        // non-reentrant Mutex.
+        let strict = |j: &JsonIsaac, format: &str| -> String {
+            let mut v = vis(format);
+            v.isaac = Some(j.clone());
+            plan_of(only_vis(v)).unwrap_err().to_string()
+        };
+
+        let mut j = isaac_block("smoke");
+        j.profile = Some("sparse".into());
+        let s = strict(&j, "vdb");
+        assert!(
+            s.contains("output.visualisation.isaac.profile")
+                && s.contains("sparse")
+                && s.contains("index")
+                && s.contains("pathtrace"),
+            "{s}"
+        );
+
+        let mut j = isaac_block("smoke");
+        j.scaling = Some("exponential".into());
+        let s = strict(&j, "vdb");
+        assert!(
+            s.contains("output.visualisation.isaac.scaling")
+                && s.contains("exponential")
+                && s.contains("opticalDepth")
+                && s.contains("physical"),
+            "{s}"
+        );
+
+        let mut j = isaac_block("smoke");
+        j.kind = Some("optical".into());
+        let s = strict(&j, "vdb");
+        assert!(
+            s.contains("output.visualisation.isaac.kind")
+                && s.contains("optical")
+                && s.contains("density")
+                && s.contains("massFraction"),
+            "{s}"
+        );
+
+        for tau in [-1.0, 0.0, f64::NAN] {
+            let mut j = isaac_block("smoke");
+            j.tau = Some(tau);
+            let s = strict(&j, "vdb");
+            assert!(s.contains("output.visualisation.isaac.tau") && s.contains("finite"), "tau {tau}: {s}");
+        }
+
+        for r in [[1.0, 1.0], [2.0, 1.0], [0.0, f64::NAN]] {
+            let mut j = isaac_block("smoke");
+            j.range = Some(r);
+            let s = strict(&j, "vdb");
+            assert!(s.contains("output.visualisation.isaac.range"), "{r:?}: {s}");
+        }
+
+        for km in [0.0, -5.0, f64::NAN] {
+            let mut j = isaac_block("smoke");
+            j.km = Some(km);
+            let s = strict(&j, "vdb");
+            assert!(s.contains("output.visualisation.isaac.Km"), "Km {km}: {s}");
+        }
+
+        let mut j = isaac_block("smoke");
+        j.up_axis = Some("X".into());
+        let s = strict(&j, "vdb");
+        assert!(
+            s.contains("output.visualisation.isaac.upAxis") && s.contains("X") && s.contains("Z"),
+            "{s}"
+        );
+
+        let mut j = isaac_block("smoke");
+        j.meters_per_unit = Some(0.0);
+        let s = strict(&j, "vdb");
+        assert!(s.contains("output.visualisation.isaac.metersPerUnit"), "{s}");
+
+        // D2: an isaac block without vdb is refused; the text names the
+        // block, "vdb", ".nvdb" and SPEC-LIT 117.9.
+        let s = strict(&isaac_block("smoke"), "nvdb");
+        assert!(
+            s.contains("output.visualisation.isaac")
+                && s.contains("vdb")
+                && s.contains(".nvdb")
+                && s.contains("117.9"),
+            "{s}"
+        );
+        // And `isaac_formats` alone refuses the same way.
+        let e = isaac_formats(&[OutputFormat::Nvdb]).unwrap_err().to_string();
+        assert!(e.contains("output.visualisation.isaac") && e.contains(".nvdb"), "{e}");
+
+        // D1: a stated lattice.activation contradicting the profile.
+        let mut v = vis("vdb");
+        v.lattice = Some(lattice("dense"));
+        v.isaac = Some(isaac_block("smoke"));
+        let s = plan_of(only_vis(v)).unwrap_err().to_string();
+        assert!(
+            s.contains("output.visualisation.lattice.activation")
+                && s.contains("dense")
+                && s.contains("index")
+                && s.contains("contradicting"),
+            "{s}"
+        );
+        let mut v = vis("vdb");
+        v.lattice = Some(lattice("fluid"));
+        let mut j = isaac_block("smoke");
+        j.profile = Some("pathtrace".into());
+        v.isaac = Some(j);
+        let s = plan_of(only_vis(v)).unwrap_err().to_string();
+        assert!(s.contains("output.visualisation.lattice.activation") && s.contains("fluid"), "{s}");
+        // A stated activation that AGREES is not refused.
+        let mut v = vis("vdb");
+        v.lattice = Some(lattice("fluid"));
+        v.isaac = Some(isaac_block("smoke"));
+        assert!(plan_of(only_vis(v)).is_ok());
+
+        // D3: a Named fields list without the isaac field, and without rho
+        // under kind massFraction.
+        let mut v = vis("vdb");
+        v.fields = Some(vec!["U".to_string(), "p".to_string()]);
+        v.isaac = Some(isaac_block("smoke"));
+        let s = plan_of(only_vis(v)).unwrap_err().to_string();
+        assert!(
+            s.contains("output.visualisation.isaac.field") && s.contains("smoke") && s.contains("U"),
+            "{s}"
+        );
+        let mut v = vis("vdb");
+        v.fields = Some(vec!["Y".to_string()]);
+        let mut j = isaac_block("Y");
+        j.kind = Some("massFraction".into());
+        v.isaac = Some(j);
+        let s = plan_of(only_vis(v)).unwrap_err().to_string();
+        assert!(
+            s.contains("output.visualisation.isaac.kind") && s.contains("rho") && s.contains("massFraction"),
+            "{s}"
+        );
+
+        // `-permissive`: the substitution printed is the substitution
+        // made. NOW take the guard - the strict half above is done, and
+        // the from_json calls below go through it directly, not `plan_of`.
+        let _g = permissive_test_guard();
+        set_permissive(true);
+        let parse = |j: &JsonIsaac, format: &str, lattice_json: Option<JsonLattice>, fields: Option<Vec<String>>| {
+            let mut v = vis(format);
+            v.isaac = Some(j.clone());
+            v.lattice = lattice_json;
+            v.fields = fields;
+            reset_warnings();
+            OutputPlan::from_json(&only_vis(v)).expect("permissive")
+        };
+        let mut j = isaac_block("smoke");
+        j.profile = Some("sparse".into());
+        let p = parse(&j, "vdb", None, None);
+        assert_eq!(p.vis.as_ref().unwrap().isaac.as_ref().unwrap().profile, usda::IsaacProfile::Index);
+        assert!(warned("output.visualisation.isaac.profile"));
+
+        let mut j = isaac_block("smoke");
+        j.scaling = Some("exponential".into());
+        j.kind = Some("optical".into());
+        j.tau = Some(-1.0);
+        j.range = Some([2.0, 1.0]);
+        j.km = Some(0.0);
+        j.up_axis = Some("X".into());
+        j.meters_per_unit = Some(0.0);
+        let p = parse(&j, "vdb", None, None);
+        let i = p.vis.as_ref().unwrap().isaac.as_ref().unwrap();
+        assert_eq!(i.scaling, IsaacScaling::OpticalDepth);
+        assert_eq!(i.kind, IsaacKind::Density);
+        assert_eq!(i.tau, 2.0);
+        assert_eq!(i.range, None);
+        assert_eq!(i.km, 8700.0);
+        assert_eq!(i.stage.up_axis, "Z");
+        assert_eq!(i.stage.meters_per_unit, 1.0);
+        for key in [
+            "output.visualisation.isaac.scaling",
+            "output.visualisation.isaac.kind",
+            "output.visualisation.isaac.tau",
+            "output.visualisation.isaac.range",
+            "output.visualisation.isaac.Km",
+            "output.visualisation.isaac.upAxis",
+            "output.visualisation.isaac.metersPerUnit",
+        ] {
+            assert!(warned(key), "{key} was not warned");
+        }
+
+        // D2: the isaac block is dropped, the scene with it.
+        let p = parse(&isaac_block("smoke"), "nvdb", None, None);
+        let vs = p.vis.as_ref().unwrap();
+        assert!(vs.isaac.is_none());
+        assert_eq!(vs.formats, vec![OutputFormat::Nvdb], "the run keeps its own formats");
+        assert!(warned("output.visualisation.isaac"));
+
+        // A dropped block changes NOTHING else: D2 is checked BEFORE D1, so
+        // the lattice activation stays the unstated default instead of the
+        // profile's fluid.
+        let p = parse(&isaac_block("smoke"), "nvdb", None, None);
+        let vs = p.vis.as_ref().unwrap();
+        assert_eq!(
+            vs.lattice.activation,
+            LatticeActivation::Dense,
+            "a dropped isaac block leaves the default activation (D2 before D1)"
+        );
+
+        // `isaac_formats` itself: -permissive returns the run's own formats
+        // UNCHANGED - the caller keeps them and drops the isaac block, which
+        // is the substitution the refusal printed. A plan without writers
+        // would write nothing at all.
+        assert_eq!(
+            isaac_formats(&[OutputFormat::Nvdb]).expect("permissive"),
+            vec![OutputFormat::Nvdb],
+            "the formats are the caller's to keep; the isaac block is theirs to drop"
+        );
+
+        // D1: the profile's activation is substituted.
+        reset_warnings();
+        let mut v = vis("vdb");
+        v.lattice = Some(lattice("dense"));
+        v.isaac = Some(isaac_block("smoke"));
+        let p = OutputPlan::from_json(&only_vis(v)).expect("permissive");
+        let vs = p.vis.as_ref().unwrap();
+        assert_eq!(vs.lattice.activation, LatticeActivation::Fluid);
+        assert!(vs.isaac.is_some(), "D1 substitutes the activation, not the block");
+        assert!(warned("output.visualisation.lattice.activation"));
+
+        // D3: the isaac block is dropped.
+        let p = parse(&isaac_block("smoke"), "vdb", None, Some(vec!["U".into(), "p".into()]));
+        assert!(p.vis.as_ref().unwrap().isaac.is_none());
+        assert!(warned("output.visualisation.isaac.field"));
+        set_permissive(false);
+    }
+
+    /// 117.12's check_fields rows: the isaac field must be one the run has
+    /// (44.2's rule, listing what is), and kind massFraction needs rho.
+    /// BOTH rows refuse in BOTH modes: there is nothing to substitute, so
+    /// -permissive does not soften them - the same `Err` either way.
+    #[test]
+    fn isaac_check_fields() {
+        let _g = permissive_test_guard();
+        set_permissive(false);
+        let mut v = vis("vdb");
+        v.isaac = Some(isaac_block("smoke"));
+        let p = OutputPlan::from_json(&only_vis(v)).expect("parses");
+        let e = p.check_fields(&["U", "p"]).unwrap_err().to_string();
+        assert!(e.contains("smoke") && e.contains("U") && e.contains("p"), "{e}");
+        assert!(p.check_fields(&["U", "smoke"]).is_ok());
+
+        // kind massFraction needs rho. The fields selection here is All -
+        // a Named list without rho is D3's refusal at from_json, tested in
+        // `isaac_refusals`; this is 117.12's check_fields row.
+        let mut v = vis("vdb");
+        let mut j = isaac_block("Y");
+        j.kind = Some("massFraction".into());
+        v.isaac = Some(j);
+        let p = OutputPlan::from_json(&only_vis(v)).expect("parses");
+        let e = p.check_fields(&["Y"]).unwrap_err().to_string();
+        assert!(
+            e.contains("massFraction") && e.contains("rho") && e.contains("(117.14)"),
+            "{e}"
+        );
+        p.check_fields(&["Y", "rho"]).expect("rho is there");
+
+        // -permissive gets the SAME refusals: no substitution exists, and
+        // printing one and then failing at the first write would make the
+        // printed line a lie.
+        set_permissive(true);
+        let mut v = vis("vdb");
+        v.isaac = Some(isaac_block("smoke"));
+        let e = OutputPlan::from_json(&only_vis(v))
+            .expect("parses")
+            .check_fields(&["U", "p"])
+            .unwrap_err()
+            .to_string();
+        assert!(e.contains("smoke") && e.contains("U") && e.contains("p"), "{e}");
+        let mut v = vis("vdb");
+        let mut j = isaac_block("Y");
+        j.kind = Some("massFraction".into());
+        v.isaac = Some(j);
+        let e = OutputPlan::from_json(&only_vis(v))
+            .expect("parses")
+            .check_fields(&["Y"])
+            .unwrap_err()
+            .to_string();
+        assert!(
+            e.contains("massFraction") && e.contains("rho") && e.contains("(117.14)"),
+            "{e}"
+        );
+        set_permissive(false);
     }
 
     #[test]
@@ -1256,7 +2295,7 @@ mod tests {
         assert_eq!(p.vis.as_ref().unwrap().interval, 0.0, "\"the final state only\"");
 
         let mut p = OutputPlan::from_json(&only_vis(vis("vdb"))).expect("permissive");
-        p.refuse_visualisation_on_a_non_cartesian_mesh(false).expect("permissive");
+        p.refuse_visualisation_without_a_lattice(Some("a driver that lays none")).expect("permissive");
         assert!(p.vis.is_none(), "\"no visualisation output\"");
 
         let mut p = OutputPlan::from_json(&JsonOutput {
@@ -1324,21 +2363,66 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    /// SPEC-LIT §44.1 on the command line, and §13.4's two modes of it.
+    /// VIO-05a's helper: the cells of a uniform Cartesian box, else the
+    /// lattice of (117.1) - predicted here from the mesh, not from the map.
     #[test]
-    fn the_command_line_volume_formats_are_dropped_on_a_non_cartesian_mesh_naming_the_reason() {
-        use super::drop_volume_formats_on_a_non_cartesian_mesh as drop_volume;
+    fn volume_target_is_the_box_or_the_lattice() {
+        use crate::blockgen::{raw_mesh, BlockSpec, GradedAxis};
+        let axis = |n: usize| GradedAxis { lo: 0.0, hi: 1.0, n, expansion: 1.0, two_sided: false };
+        let spec = BlockSpec { x: axis(4), y: axis(4), z: axis(4), ..Default::default() };
+        let raw = raw_mesh(&spec).expect("raw_mesh");
+        let hm = build_host_mesh(&raw).expect("build_host_mesh");
+        let grid = crate::pressure::cartesian::detect(&hm).expect("a uniform box");
+        let info = crate::io::writer::cartesian_info(&hm, &grid);
+        let t = volume_target(None, &hm, Some(info), &LatticeSpec::default()).unwrap();
+        let c = t.cart().expect("the cells are the voxels (117.6)");
+        assert_eq!((c.nx, c.ny, c.nz, c.origin, c.spacing), (info.nx, info.ny, info.nz, info.origin, info.spacing));
+        assert!(t.vox().is_none());
+        assert_eq!(t.report_lines().len(), 1);
+
+        // The 2:1 mesh on [0, 1]^3: min V = 1/512, so (117.1)'s default
+        // h = 1/8 and n = ceil(1/h - 1e-9) = 8 on every axis.
+        let (raw, hm) = crate::io::nvdb::lattice_fixture::refined();
+        assert!(crate::pressure::cartesian::detect(&hm).is_err());
+        let v_min = hm.geom64().v.iter().copied().fold(f64::INFINITY, f64::min);
+        let h = v_min.cbrt();
+        let n = (1.0 / h - 1e-9).ceil() as usize;
+        assert_eq!(n, 8);
+        assert!(volume_target(None, &hm, None, &LatticeSpec::default()).is_err(), "no polyMesh, no lattice");
+        let t = volume_target(Some(&raw), &hm, None, &LatticeSpec::default()).unwrap();
+        assert!(t.cart().is_none());
+        let r = &t.vox().expect("a lattice").report;
+        assert_eq!(r.n, [n, n, n]);
+        assert_eq!(r.n_voxels, 512);
+        assert_eq!(r.n_fluid, 512, "the default box is the mesh's own");
+        assert_eq!(r.coarsen, 1.0);
+        let lines = t.report_lines();
+        assert!(lines[0].contains("lattice 8 x 8 x 8") && lines[0].contains("512 voxels"), "{}", lines[0]);
+
+        // 117.12: the budget refusal of an explicit voxel comes back by name.
+        let tight = LatticeSpec { voxel: Some(1e-3), max_voxels: 1000, ..LatticeSpec::default() };
+        let e = volume_target(Some(&raw), &hm, None, &tight).err().expect("s > 16").to_string();
+        assert!(e.contains("over the 16 limit"), "{e}");
+        assert!(has_volume_format(&[OutputFormat::Foam, OutputFormat::Nvdb]));
+        assert!(!has_volume_format(&[OutputFormat::Foam, OutputFormat::Usda]));
+    }
+
+    /// SPEC-LIT 117.12 on the command-line route of a driver that lays the
+    /// lattice, strict and `-permissive`.
+    #[test]
+    fn the_command_line_volume_formats_are_dropped_without_a_lattice() {
+        use super::drop_volume_formats_without_a_lattice as drop_volume;
         let _g = permissive_test_guard();
         let all = [OutputFormat::Nvdb, OutputFormat::Foam, OutputFormat::Vdb, OutputFormat::Vtu];
-        let why = "cell volumes are not uniform (cell 7 is 1.000000e-03, cell 0 is 2.000000e-03)";
+        let why = "output.visualisation.lattice.maxVoxels: 0 - a zero-voxel budget";
         set_permissive(false);
         reset_warnings();
-        assert_eq!(drop_volume(&all, None).unwrap(), all.to_vec(), "Cartesian: the identity");
+        assert_eq!(drop_volume(&all, None).unwrap(), all.to_vec(), "a lattice: the identity");
         let exact = [OutputFormat::Foam, OutputFormat::Vtu];
         assert_eq!(drop_volume(&exact, Some(why)).unwrap(), exact.to_vec(), "no volume format: the identity");
         assert!(!warned("-output nvdb") && !warned("-output vdb"), "and nothing to warn about");
         let s = drop_volume(&all, Some(why)).unwrap_err().to_string();
-        for want in ["-output nvdb", "a non-Cartesian mesh", why, "foam", "vtu", "-permissive"] {
+        for want in ["-output nvdb", "a mesh with no lattice", "no lattice can be laid for this run", why, "foam", "vtu", "-permissive"] {
             assert!(s.contains(want), "strict must say {want:?}: {s}");
         }
         reset_warnings();

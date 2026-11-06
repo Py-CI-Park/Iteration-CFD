@@ -40,8 +40,9 @@
      shared names differently and mixing them compiles, runs, and is wrong.
         PatchKind   Generic 0  Wall 1  Empty 2  Symmetry 3  Cyclic 4  Proc 5
         BcKind      ... Calculated 4  Empty 5  Symmetry 6  Cyclic 7  ...
-     Only vofBodyForceFluxBoundary takes anything from a field, and what it
-     takes is `fr`, a number, not a kind.
+     Only vofBodyForceFluxBoundary takes anything from a field: `fr`, a
+     number, and the VELOCITY field's bc_kind, asked only against
+     OFGPU_BC_DIRECTION_MIXED (SPEC-LIT 120.3).
 \*---------------------------------------------------------------------------*/
 
 #include "ofgpu_device.cuh"
@@ -55,6 +56,14 @@
 #define OFPATCH_SYMMETRY  3
 #define OFPATCH_CYCLIC    4
 #define OFPATCH_PROCESSOR 5
+//- SPEC-LIT 119.2: a wedge side; treated as SYMMETRY in this module
+#define OFPATCH_WEDGE     7
+
+//- SPEC-LIT 120.3: the tensorial mixed velocity condition of the wall and
+//  slip family (directionMixed, partialSlip, fixedNormalSlip,
+//  fixedShearStress). Mirrors `BcKind::DirectionMixed` in src/field.rs and
+//  is pinned by `bc_kind_values_match_the_device` in src/field_ops.rs.
+#define OFGPU_BC_DIRECTION_MIXED 37
 
 OFGPU_DEV ofscalar vofAbs(ofscalar a) { return a < 0 ? -a : a; }
 
@@ -64,11 +73,15 @@ OFGPU_DEV ofscalar vofAbs(ofscalar a) { return a < 0 ? -a : a; }
 //  deliberately so: this module builds the same phi_HbyA those kernels do,
 //  only with gravity and surface tension in place of the plume's buoyancy, so
 //  the two must agree face for face about which boundary faces carry a body
-//  force at all.
-OFGPU_DEV bool vofFluxIsPrescribed(oflabel kind, ofscalar fr)
+//  force at all. `uKind` is the VELOCITY field's bc_kind, asked only against
+//  OFGPU_BC_DIRECTION_MIXED (SPEC-LIT 120.3): the flux through such a face is
+//  U_b . Sf and no pressure correction's.
+OFGPU_DEV bool vofFluxIsPrescribed(oflabel kind, ofscalar fr, oflabel uKind)
 {
     return kind == OFPATCH_EMPTY
         || kind == OFPATCH_SYMMETRY
+        || kind == OFPATCH_WEDGE
+        || uKind == OFGPU_BC_DIRECTION_MIXED
         || fr >= (ofscalar)1;
 }
 
@@ -1042,6 +1055,7 @@ extern "C" __global__ void vofBodyForceFluxBoundary
     const ofvec3* __restrict__ bCf,
     const oflabel* __restrict__ bKind,
     const ofscalar* __restrict__ fr,
+    const oflabel* __restrict__ uKind,
     ofscalar gx,
     ofscalar gy,
     ofscalar gz,
@@ -1052,7 +1066,7 @@ extern "C" __global__ void vofBodyForceFluxBoundary
     const oflabel i = OFGPU_TID;
     if (i >= nbf) return;
 
-    if (vofFluxIsPrescribed(bKind[i], fr[i]))
+    if (vofFluxIsPrescribed(bKind[i], fr[i], uKind[i]))
     {
         bphib[i] = 0;
         return;
@@ -1063,6 +1077,61 @@ extern "C" __global__ void vofBodyForceFluxBoundary
 
     bphib[i] = -gh*snGradRhoMagSf[i] + sigma*kappaf[i]*snGradAlphaMagSf[i];
 }
+
+
+#ifdef OFGPU_SINGLE
+//- forceSplitDouble (SPEC-LIT 120.7, single build only, opt-in): the face
+//  force phib - |Sf| snGrad(p_rgh) of momForceFlux, internal faces, with the
+//  whole split formed in double from the stored f32 inputs and rounded once:
+//
+//      out = -(g.x)_f dC (rho_N - rho_P) |Sf|  +  sigma kappa_f |Sf| snGrad(alpha)
+//            - |Sf| dC (p_N - p_P)  -  corr_f
+//
+//  At a 1000:1 jump the gravity and pressure terms are equal and opposite,
+//  and in f32 each is rounded before they cancel. The factors are those of
+//  vofSnGradMagSf, vofBodyForceFlux and fvSnGradFluxInternal. `corrInOut`
+//  holds, on entry, the non-orthogonal correction of |Sf| snGrad(p_rgh) alone
+//  (fv::sn_grad_flux_correction into a zeroed buffer; zero where the scheme
+//  applies none) and is overwritten with the force. The f64 build does not
+//  compile this kernel.
+extern "C" __global__ void vofForceFluxSplit64
+(
+    ofscalar* corrInOut,
+    const ofscalar* __restrict__ rho,
+    const ofscalar* __restrict__ pRgh,
+    const ofscalar* __restrict__ snGradAlphaMagSf,
+    const ofscalar* __restrict__ kappaf,
+    const ofvec3* __restrict__ Cf,
+    const ofscalar* __restrict__ deltaCoeffs,
+    const ofscalar* __restrict__ magSf,
+    const oflabel* __restrict__ owner,
+    const oflabel* __restrict__ neighbour,
+    ofscalar gx,
+    ofscalar gy,
+    ofscalar gz,
+    ofscalar sigma,
+    oflabel n
+)
+{
+    const oflabel f = OFGPU_TID;
+    if (f >= n) return;
+
+    const oflabel P = owner[f];
+    const oflabel N = neighbour[f];
+    const ofvec3 c = Cf[f];
+    const double dC = (double)deltaCoeffs[f];
+    const double sf = (double)magSf[f];
+
+    const double gh = (double)gx*(double)c.x + (double)gy*(double)c.y
+                    + (double)gz*(double)c.z;
+    const double gravity = -gh*(dC*((double)rho[N] - (double)rho[P])*sf);
+    const double st =
+        (double)sigma*(double)kappaf[f]*(double)snGradAlphaMagSf[f];
+    const double orth = (sf*dC)*((double)pRgh[N] - (double)pRgh[P]);
+
+    corrInOut[f] = (ofscalar)(gravity + st - orth - (double)corrInOut[f]);
+}
+#endif
 
 
 // ==========================================================================

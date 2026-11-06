@@ -42,11 +42,11 @@ English: [`GUIDEBOOK.en.md`](GUIDEBOOK.en.md)
 호스트는 Rust 1.85, 커널은 CUDA C++, 기본 정밀도는 배정밀도(`single` 기능으로
 단정밀도), 의존성은 `cudarc`와 `thiserror` 둘뿐입니다(AMGX는 선택 기능).
 
-**쓰임새**는 비압축성·저마하 유동입니다. RANS/LES/하이브리드 난류, 부력 플룸,
+**쓰임새**는 비압축성·저마하·압축성 유동입니다. RANS/LES/하이브리드 난류, 부력 플룸,
 가변밀도 저마하, 2상 VOF, 켤레 열전달, 면대면 복사, 라그랑주 분무, 팬과 다공성
 점프를 갖춘 환기·데이터센터 기류.
 
-**아닌 것**: 압축성·천음속 해석기가 아닙니다. 유한율 화학이 없습니다. 다중 GPU
+**아닌 것**: 검증된 천음속 해석기가 아닙니다. `ofgpu-compressible`는 새로 들어왔고 천음속 게이트가 미달입니다(§12). 유한율 화학이 없습니다. 다중 GPU
 확장성 수치를 발표하지 않습니다. 자세한 목록은 [§12](#12-할-수-없는-것).
 
 그리고 하나 더 — **비교가 불충분합니다. 많은 도움 부탁드립니다.** 검증은
@@ -75,7 +75,7 @@ CUDA Toolkit을 따로 깔 필요가 없습니다. 드라이버만 있으면 됩
 릴리스에서 `iterations-*.exe`를 받아 실행합니다. `bin`을 PATH에 넣는 옵션을
 켜면 어느 프롬프트에서든 `ofgpu-*`가 돕니다.
 
-설치되는 것: 솔버 바이너리 16개, 케이스 정의(`cases/*.jsonc`), 경주차 샘플,
+설치되는 것: `ofgpu-*` 바이너리 22개, 케이스 정의(`cases/*.jsonc`), 경주차 샘플,
 `docs/`(이 문서와 SPEC-LIT, PROVENANCE, 스키마), 라이선스 문서.
 
 ### 소스에서 빌드
@@ -709,6 +709,7 @@ python tools\mesh\fluent_check.py tester_ours.msh tester_tet_geometry.json
 | `ofgpu-vof` | **U, p**, α — 2상 자유표면 | 디렉터리 |
 | `ofgpu-cht` | 다영역 전도 + 켤레 자연대류 + 열응력 | JSONC |
 | `ofgpu-datacentre` | 데이터센터 룸(팬·타일·습공기·지표) | JSONC |
+| `ofgpu-compressible` | **U, p, T** — 압축성, 전속도(SPEC-LIT §122-§127) | 디렉터리 / JSONC |
 
 속도장이 필요하면 **굵게 표시된 것 중에서 고르십시오.**
 
@@ -834,6 +835,73 @@ error: solution diverged (NaN/Inf)
 | `nvdb` / `vdb` | NanoVDB / OpenVDB 볼륨 |
 | `usda` | USD ASCII |
 
+### 볼륨 파일의 복셀 격자 — `output.visualisation.lattice`
+
+`.vdb`/`.nvdb` 파일은 복셀 격자입니다. 균일 카테시안 상자에서는 셀이 곧 복셀입니다.
+그 밖의 격자는 정육면체 복셀 격자에 샘플링되며, JSONC 케이스는 그 격자를
+`output.visualisation` 안에 적습니다.
+
+```jsonc
+"output": { "visualisation": { "format": "vdb",
+  "lattice": { "voxel": 0.01, "box": [0, 0, 0, 2, 1, 1], "maxVoxels": 8000000,
+               "sample": "cell", "activation": "dense", "background": 0.0 } } }
+```
+
+| 키 | 뜻 | 기본값 |
+|---|---|---|
+| `voxel` | 복셀 한 변, m | 가장 작은 셀 부피의 세제곱근 |
+| `box` | `[xlo, ylo, zlo, xhi, yhi, zhi]`, m | 격자 점들의 경계 상자 |
+| `maxVoxels` | 복셀 예산; 이보다 큰 격자는 맞을 때까지 성기게 함 | 8 000 000 |
+| `sample` | `cell`(셀 값) 또는 `linear`(잘라낸 기울기를 더함) | `cell` |
+| `activation` | `dense`(모든 복셀) 또는 `fluid`(셀 안의 복셀만) | `dense` |
+| `background` | 어느 셀에도 들지 않는 복셀의 값 | `0.0` |
+
+키는 모두 생략할 수 있습니다. 이 블록으로 격자를 만들 수 없으면 솔버는 루프 전에 키 이름을
+대고 거절합니다: 어느 축에서 `lo >= hi`인 `box`, 0 이하의 `voxel`, `maxVoxels: 0`, 예산을
+맞추려면 16배를 넘게 성기게 해야 하는 명시적 `voxel`, 모르는 `sample`·`activation` 값.
+`-permissive`를 주면 대신 시각화 출력을 쓰지 않습니다.
+
+모든 드라이버(`ofgpu-lowmach`, `ofgpu-k-omega`, `ofgpu-k-epsilon`, `ofgpu-sa`, `ofgpu-vof`,
+`ofgpu-buoyant`, `ofgpu-cht`)가 어떤 격자에서도 이 격자를 깝니다. 케이스 블록을 읽는 드라이버는
+그 블록을 쓰고, 격자를 말하지 않는 명령줄(`-output vdb`)에서는 위의 기본값을 씁니다. 격자는
+루프 전에 한 번 만들고 크기, 복셀, 유체 비율을 출력합니다. 얇거나 경사가 심한 격자에서는 기본
+복셀(가장 작은 셀 부피의 세제곱근)이 영역의 두께보다 성길 수 있으니 `voxel`을 적으십시오.
+`ofgpu-cht`는 영역마다 따로 격자를 깔고(기본 상자는 그 영역의 상자), 영역마다
+`VDB/<영역>_000000.vdb`를 씁니다. 여러 영역을 담는 `.usda` 장면은 만들지 않으므로 이 형식에서는
+`usdScene`을 거절합니다.
+
+### Isaac Sim 장면 — `output.visualisation.isaac`
+
+`isaac` 블록은 볼륨 출력을 Isaac Sim이 그리는 형태로 바꿉니다. `.vdb` 위에 `density`
+격자 하나, 그것을 가리키는 `.usda` 장면 하나입니다. 이 블록은 장면을 함축합니다 — `usda`를
+적거나 붙게 두십시오. 다만 `vdb`는 요구합니다. Isaac 장면은 절대 `.nvdb`를 가리키지
+않기 때문입니다.
+
+```jsonc
+"output": { "visualisation": { "format": "vdb",
+  "isaac": { "profile": "index", "field": "smoke", "scaling": "opticalDepth", "tau": 2.0 } } }
+```
+
+| 키 | 뜻 | 기본값 |
+|---|---|---|
+| `profile` | `index`(NVIDIA IndeX, `def Volume`) 또는 `pathtrace`(RTX 경로 추적기, 볼륨 `Mesh`) | `index` |
+| `field` | 밀도를 만들 셀 필드 | 필수 |
+| `scaling` | `opticalDepth` 또는 `physical`(`K_m rho_s`) | `opticalDepth` |
+| `tau` | 가장 짙은 열의 광학 두께 | `2.0` |
+| `range` | 정규화의 `[f_lo, f_hi]` | 유체 위에서 필드의 최소·최대 |
+| `Km` | 비소광계수, m^2/kg(`physical`) | `8700`(Mulholland & Croarkin 2000) |
+| `kind` | `density` 또는 `massFraction`(이때 `rho_v f_v`) | `density` |
+| `upAxis`, `metersPerUnit` | 스테이지 메타데이터 | `"Z"`, `1.0` |
+
+`opticalDepth`는 정규화된 필드에 배율을 맞춰 가장 짙은 복셀 열의 광학 두께가 정확히
+`tau`가 되게 합니다. 범위와 배율을 첫 쓰기에서 잡아 두므로 자라는 플룸은 자라는 것처럼
+보입니다.
+`physical`은 대신 실제 그을음 밀도의 소광을 씁니다. 격자 `activation`은 케이스가 적지
+않았다면 프로파일이 정합니다(`index` -> `fluid`, `pathtrace` -> `dense`), 어긋나는 값은
+이름을 대고 거절합니다. `-permissive`가 누그러뜨리지 않는 두 거절이 있습니다: 실행에 없는
+`isaac.field`, 그리고 `rho`가 없는 실행의 `massFraction` — 대신할 것이 없기 때문입니다.
+`ofgpu-sample volume`은 같은 블록을 `-isaac JSON`으로 받고, 같은 거절을 그대로 적용합니다.
+
 ### Studio 3D 뷰어
 
 절단면, 임의 평면, 등가면, 유선, 벡터 글리프를 그 자리에서 그립니다. WebGPU로
@@ -907,8 +975,7 @@ ofgpu-validate
 판정을 출력하는 것과 등록하는 것이 같은 호출이므로, 게이트가 늘어나도 목록에서
 빠질 수 없습니다.
 
-현재의 통과 수와 MISSES/OPEN 목록은 [`README.md`](../README.md)의 「현황」에
-있으며, 그 숫자는 그 작업 트리에서 실제로 돌려 얻은 것입니다.
+현재의 통과 수와 MISSES/OPEN 목록은 전체 실행 한 번의 것이며, SPEC-LIT §110.5가 기록하고 이 절의 끝에 표로 실었습니다. [`README.md`](../README.md)의 「현황」도 같은 생성 블록을 싣습니다.
 
 ### 검증 항목 하나하나 — 어떤 검증이며, 무엇을 근거로 견주었는가
 
@@ -972,8 +1039,7 @@ ofgpu-validate
 | §39.7 접촉각 (Jurin, Hoffman, Tanner, Šikalo) | 해석해: Jurin 높이 h = 2σcosθ/(ρgR)의 부호(θ > 90°는 하강, 90°는 0), Hoffman 곡선을 Jiang–Oh–Slattery 상관식으로, Tanner R ∼ t^(1/10), Šikalo 등의 동접촉각 | Jurin (1718) 모세관 상승 / Washburn (1921) *Phys. Rev.* 17, 273; Hoffman (1975) *JCIS* 50, 228; Jiang, Oh & Slattery (1979) *JCIS* 69, 74; Tanner (1979) *J. Phys. D* 12, 1473; Šikalo 등 (2005) *Phys. Fluids* 17, 062103 | Washburn: DOI 10.1103/PhysRev.17.273; Hoffman: DOI 10.1016/0021-9797(75)90225-8; Jiang 등: DOI 10.1016/0021-9797(79)90081-X; Tanner: DOI 10.1088/0022-3727/12/9/009; Šikalo 등: DOI 10.1063/1.1928828 |
 | `cargo test --release --bin ofgpu-validate -- --ignored` — Ghia 뚜껑 구동 공동 Re 100/400 | 공개 벤치마크(분 단위라 `#[ignore]`): 공동 중심선의 u, v 17점을 Ghia, Ghia & Shin (1982) 표 I·II에 2 % 안(Re 400은 논문의 정오표 반영) | Ghia, Ghia & Shin (1982) *J. Comput. Phys.* 48, 387 — 표 I(u), II(v) | Ghia 등: DOI 10.1016/0021-9991(82)90058-4 |
 
-**빗나가는 게이트와 열린 게이트의 근거.** `ofgpu-validate`가 마지막에 이름으로 부르는
-여덟 개가 무엇에 견준 것인지입니다.
+**처음 빗나간 게이트와 열린 게이트의 근거.** 2026-09-09 실행이 마지막에 이름으로 부른 여덟 개가 무엇에 견준 것인지입니다. 2026-10-20 전체 실행이 출력한 목록 전부는 이 절의 끝에, 그 기록에서 생성해 실었습니다.
 
 | 게이트 | 판정 | 견준 자료 | 접속 주소 |
 |---|---|---|---|
@@ -983,10 +1049,212 @@ ofgpu-validate
 | §88 Gate 88-T, §90 Gate 90-T — 천이 위치 | OPEN | T3A 평판의 측정된 천이 개시 Re_x를 구하지 못해 비교를 닫지 못함; 자유류 감쇠는 TMR의 Tu 3.3 %에 맞춤 | <https://tmbwg.github.io/turbmodels/> |
 | 78-D — 두 스플래시 기준의 불일치 | OPEN | Mundo 등 (1995)와 Bai & Gosman (1995)의 문턱이 같은 액적에서 We 4.78배 서로 어긋남 | DOI 10.1016/0301-9322(94)00069-V; DOI 10.4271/950283 |
 
-이 표는 2026-09-09의 `ofgpu-validate` 출력(833/833, 37개 절)과
+이 표는 2026-09-09의 `ofgpu-validate` 출력(833/833, 37개 절; 2026-10-20 전체 실행은 95개 절이며 아래 표에 있습니다)과
 [`README.md`](../README.md) 「참고문헌」·[`rust/SPEC-LIT.md`](../rust/SPEC-LIT.md)의
 인용으로 만들었습니다. 유료라 읽지 못한 출처(Kaminski & Prakash, Menter 등 2015, Shur 등
 2008)와 2차 출처로 대신한 곳은 표에 그대로 적었습니다.
+
+### 전체 실행, 절마다
+
+전체 `ofgpu-validate` 실행 한 번이 빌드마다 출력한 것이며, `python tools/validate_record.py`가 `docs/validate-run/`의 기록에서 생성합니다(실행 방법은 SPEC-LIT §110.5). 굵은 칸은 실패하는 행이 있는 절, NOT RUN은 실행이 예산 안에 끝내지 못한 절, 대시는 행이 없는 절입니다(이 트리는 Gate 105-C의 격자를 만들지 않으며, `reference/mkm99/`가 없는 체크아웃에서 Gate 110-A는 답안 키가 없습니다).
+
+<!-- validate-run:status:ko begin -->
+```
+ofgpu-validate (f64)   1634 / 1708 checks passed in 95 sections (2026-10-20, 필터 없는 실행 1회, 3,533 s; SPEC-LIT §110.5)
+                       section 95개 중 77개 통과, 16개 미달, 행 없음 2개, NOT RUN 0개
+                       이어서 판정이 MISSES로 등록된 게이트 35개와 OPEN 37개 (아래 표)
+ofgpu-validate (f32)   1431 / 1655 checks passed in 95 sections (2026-10-20, 실행 5회, 5,087 s; SPEC-LIT §110.5)
+                       section 95개 중 49개 통과, 43개 미달, 행 없음 2개, NOT RUN 1개
+                       이어서 판정이 MISSES로 등록된 게이트 42개와 OPEN 37개 (아래 표)
+```
+<!-- validate-run:status:ko end -->
+
+<!-- validate-run:sections:ko begin -->
+| # | 절 | f64 행 | f64 s | f32 행 | f32 s |
+|---|---|---|---|---|---|
+| 1 | 3-D graded block | 71/71 | 0.0 | 71/71 | 0.0 |
+| 2 | 3-D sheared block (non-orthogonal) | 36/36 | 0.0 | 36/36 | 0.0 |
+| 3 | 3-D block with 2:1 refinement interfaces | 35/35 | 0.0 | 35/35 | 0.0 |
+| 4 | the adapt: refine, coarsen, and what a rebuild costs | 34/34 | 1.1 | 34/34 | 1.1 |
+| 5 | 2-D block with empty front and back | 37/37 | 0.0 | 37/37 | 0.0 |
+| 6 | linear solvers | 6/6 | 0.2 | **10/12** | 1.8 |
+| 7 | method of manufactured solutions, -lap(psi) = f | 6/6 | 0.1 | 6/6 | 0.1 |
+| 8 | observed order and reported uncertainty (SPEC-LIT 94) | 10/10 | 0.3 | 10/10 | 0.4 |
+| 9 | buoyancy | 12/12 | 0.0 | **8/12** | 0.0 |
+| 10 | buoyancy production, sources, species, phi I/O | 14/14 | 0.1 | **13/14** | 0.1 |
+| 11 | volume of fluid (SPEC-LIT 20, the 22 rows) | 16/16 | 2.5 | **13/16** | 13.6 |
+| 12 | msh hex closure, cut-cell closure (SPEC-LIT 23, 24) | 10/10 | 0.0 | 10/10 | 0.0 |
+| 13 | the low-Mach reference pressure (SPEC-LIT 25) | 3/3 | 0.0 | 3/3 | 0.0 |
+| 14 | wall treatment: Ks -> 0, the thermal wall function (SPEC-LIT 29) | 5/5 | 0.0 | 5/5 | 0.0 |
+| 15 | Werner-Wengle, coupled-solver turbulence selection (SPEC-LIT 30) | 9/9 | 0.1 | 9/9 | 0.2 |
+| 16 | periodic domains: cyclic-pair invariants (SPEC-LIT 31.1) | 4/4 | 0.0 | 4/4 | 0.0 |
+| 17 | the thermal wall-function gate, redesigned (SPEC-LIT 32) | 27/27 | 0.0 | **25/27** | 0.0 |
+| 18 | Launder-Sharma low-Re k-epsilon: damping functions (SPEC-LIT 33.3) | 10/10 | 0.0 | 10/10 | 0.0 |
+| 19 | resolved leg mesh resolution, replayed (SPEC-LIT 33.2/34) | 3/3 | 0.0 | 3/3 | 0.0 |
+| 20 | the bulk-temperature thermostat (SPEC-LIT 35) | 17/17 | 0.0 | 17/17 | 0.0 |
+| 21 | thermostat weighting: the decisive experiment, replayed (SPEC-LIT 35.3.2) | 5/5 | 0.0 | 5/5 | 0.0 |
+| 22 | bounded convection on momentum: the isolation, replayed (SPEC-LIT 3.1/32.5.5) | 10/10 | 0.0 | 10/10 | 0.0 |
+| 23 | Kays-Crawford turbulent Prandtl number (SPEC-LIT 37.1/37.2) | 10/10 | 0.0 | **6/10** | 0.0 |
+| 24 | realizable and RNG k-epsilon (SPEC-LIT 40, 41) | 39/39 | 6.0 | **37/39** | 19.7 |
+| 25 | the output block, and fp16 voxels (SPEC-LIT 44, 45) | 22/22 | 0.0 | 22/22 | 0.0 |
+| 26 | conjugate heat transfer (SPEC-LIT 46, 47, 48) | 16/16 | 0.5 | **15/16** | 0.5 |
+| 27 | the per-region residual - Gate 93-B (SPEC-LIT 8.4 on each region's rows) | 6/6 | 0.0 | **3/6** | 0.1 |
+| 28 | an equation that lives on a region - Gate 93-A (SPEC-LIT 93) | 8/8 | 0.0 | 8/8 | 0.0 |
+| 29 | the conjugate fluid/solid interface (SPEC-LIT 59, 60) | 48/48 | 182.9 | **21/48** | 786.7 |
+| 30 | surface-to-surface radiation (SPEC-LIT 49, 50, 51) | 47/47 | 2.3 | **45/47** | 0.7 |
+| 31 | fan curves, porous jumps, psychrometrics, metrics (SPEC-LIT 52, 53, 54, 55) | 83/83 | 0.2 | **81/83** | 0.3 |
+| 32 | Spalart-Allmaras, DES97/DDES/IDDES (SPEC-LIT 56, 57, 58) | 43/43 | 0.2 | **39/43** | 0.3 |
+| 33 | gamma-Re_theta transition (SPEC-LIT 88, 89) | 20/20 | 0.0 | **19/20** | 0.0 |
+| 34 | the 2015 gamma transition model (SPEC-LIT 90) | 24/24 | 0.1 | **21/24** | 0.1 |
+| 35 | Lagrangian parcels (SPEC-LIT 66) | 11/11 | 0.2 | 11/11 | 0.1 |
+| 36 | the parcel sort and gather-shaped deposition (SPEC-LIT 67) | 12/12 | 0.0 | 12/12 | 0.0 |
+| 37 | two-way coupling of the dispersed phase (SPEC-LIT 68) | 13/13 | 2.7 | 13/13 | 2.6 |
+| 38 | droplet heating and evaporation (SPEC-LIT 76) | 12/12 | 1.5 | **9/12** | 1.1 |
+| 39 | the vapour into the gas (SPEC-LIT 77) | 14/14 | 1.4 | **13/14** | 1.4 |
+| 40 | droplet-wall impact (SPEC-LIT 78) | 45/45 | 1.7 | **42/45** | 11.3 |
+| 41 | Gate 95-D: the thick cylinder heated through the conduction solver (three meshes, SPEC-LIT 95.10) | 6/6 | 3.9 | **3/6** | 81.1 |
+| 42 | Gate 95-E: the bimetal strip, two materials bonded in one region (three meshes, two bond treatments) | 3/3 | 163.7 | 3/3 | 442.3 |
+| 43 | Gate 95-A: the end-loaded cantilever, block-coupled, at 2.5:1, 5:1 and 10:1 (four meshes each, the tip study on the finest three, SPEC-LIT 109.6) | **36/42** | 86.5 | **4/42** | 335.2 |
+| 44 | Gate 95-G: the boundary-point fit on the Lame ring, and NAFEMS LE1, LE10 and LE11 from a restatement (LE1 and LE11 three meshes, the ring and LE10 four with their study on the finest three, SPEC-LIT 95.11) | 24/24 | 50.4 | NOT RUN | - |
+| 45 | the imported region (SPEC-LIT 97) | 5/5 | 0.1 | 5/5 | 0.1 |
+| 46 | the region layout (SPEC-LIT 97) | 3/3 | 0.0 | 3/3 | 0.1 |
+| 47 | Gate 98-A: the straight fin, three meshes, against (S98.7) (SPEC-LIT 98.6) | 1/1 | 0.1 | 1/1 | 0.1 |
+| 48 | Gate 98-B: the slab radiating to a surround, its Newton passes (SPEC-LIT 98.6) | 4/4 | 0.0 | **3/4** | 0.0 |
+| 49 | Gate 98-C: an enclosure on a live conjugate flow, its balance, split and relaxation (SPEC-LIT 98.9) | 5/5 | 12.0 | **2/5** | 183.9 |
+| 50 | Gate 100-B: silicon, air and the seven-term cp/R against their tables (SPEC-LIT 100.4) | 5/5 | 0.0 | **4/5** | 0.0 |
+| 51 | Gate 100-A: the Kirchhoff slab, kappa linear in T, three meshes (SPEC-LIT 100.8) | 4/4 | 0.2 | **0/1** | 0.3 |
+| 52 | Gate 100-C: Brinkman's plane Poiseuille with viscous heating, two walls, three meshes each (SPEC-LIT 100.15) | 16/16 | 27.4 | **5/16** | 850.7 |
+| 53 | Gate 100-D: Qu & Mudawar's micro-channel with water's mu(T) live (SPEC-LIT 100.15) | 11/11 | 91.6 | **0/1** | 0.3 |
+| 54 | Gate 105-A: space conservation on a moving mesh, euler and backward, 100 steps (SPEC-LIT 105.5) | 10/10 | 0.1 | 10/10 | 0.1 |
+| 55 | Gate 105-B: the piston and the stroking outlet, euler and backward (SPEC-LIT 105.10) | 14/14 | 20.4 | **8/14** | 41.1 |
+| 56 | Gate 105-C: Turek-Hron CFD1/CFD2 drag and lift over four meshes (the study on the finest three), CFD3 on a wobbling mesh (SPEC-LIT 105.14) | - | 0.0 | - | 0.0 |
+| 57 | lid-driven cavity, Ghia, Ghia & Shin (1982), three meshes per Re (SPEC-LIT 94.4 Gate 94-D) | 8/8 | 388.7 | 8/8 | 462.8 |
+| 58 | Gate 110-A: channel DNS, Moser-Kim-Mansour 1999, Re_tau 180/395/590 (SPEC-LIT 110.2) | - | 0.0 | - | 0.0 |
+| 59 | Gate 110-B: backward-facing step, Driver & Seegmiller 1985 (SPEC-LIT 110.3) | 1/1 | 0.0 | 1/1 | 0.0 |
+| 60 | Gate 110-C: buoyant plume, McCaffrey 1979 (SPEC-LIT 110.4) | 17/17 | 0.0 | 17/17 | 0.0 |
+| 61 | Gate CMP-B: de Vahl Davis with Boussinesq at beta*dT = 0.03, centro-symmetry, and the density-ratio control (SPEC-LIT 121.8) | 13/13 | 226.8 | **4/10** | 374.6 |
+| 62 | Gate 119-A: the wedge - Hagen-Poiseuille through the axis prisms and radial conduction in an annulus (SPEC-LIT 119.3) | 5/5 | 54.4 | 5/5 | 216.3 |
+| 63 | Gate 145-A: the dam break against Martin & Moyce 1952 Table 2, three meshes (SPEC-LIT 145.2) | 9/9 | 79.8 | 9/9 | 84.5 |
+| 64 | Gate 78-D measured leg: the two splash criteria against Riboux & Gordillo 2014's threshold speeds, eight liquids (SPEC-LIT 146.2) | 2/2 | 0.0 | 2/2 | 0.0 |
+| 65 | Gate 132-L: the laminar flat plate against Blasius, three meshes (SPEC-LIT 144.2) | 7/7 | 52.7 | 7/7 | 24.2 |
+| 66 | T3A leg 1 in 2-D: the leading-edge Tu of kOmegaSSTLM and kOmegaSSTGamma on the flat-plate harness, three meshes, replayed (SPEC-LIT 144.3) | 6/6 | 0.0 | 6/6 | 0.0 |
+| 67 | Gates 88-T and 90-T leg 4: the 2-D C_f(Re_x) of kOmegaSSTLM and kOmegaSSTGamma against Roach & Brierley's T3A measurement, replayed (SPEC-LIT 144.4) | 4/4 | 0.0 | 4/4 | 0.0 |
+| 68 | Gate 132-Z: the TMR zero-pressure-gradient plate, SA and SST against Karman-Schoenherr and Coles, three meshes, replayed (SPEC-LIT 144.5) | 5/5 | 0.0 | 5/5 | 0.0 |
+| 69 | Gate 131-P: TG0's turbulent pipe, kOmegaSST on the true wedge against Prandtl, Blasius, the log law and the core defect, three radial levels, replayed (SPEC-LIT 143.5) | 13/13 | 0.0 | 13/13 | 0.0 |
+| 70 | Gate CMP-SOD: Sod's shock tube against the exact Riemann solution, three meshes (SPEC-LIT 127.6) | **3/9** | 34.5 | **3/9** | 40.5 |
+| 71 | Gate CMP-AC: a small acoustic pulse travels at c_0 = sqrt(gamma R_s T_0), 400 cells (SPEC-LIT 127.6) | **1/2** | 21.7 | **1/2** | 27.8 |
+| 72 | Gate CMP-LM: the lid-driven cavity at Re 100, lid M 0.05, against Ghia (1982) (SPEC-LIT 127.6) | 3/3 | 27.8 | 3/3 | 27.0 |
+| 73 | Gate CMP-COU: compressible Couette with viscous heating, adiabatic-wall rise and T profile (SPEC-LIT 127.6) | 3/3 | 63.4 | 3/3 | 56.5 |
+| 74 | Gate CMP-NOZ: the quasi-1-D nozzle, subsonic, supersonic started and shocked, 200 cells (SPEC-LIT 127.6) | **1/7** | 89.5 | **1/7** | 101.5 |
+| 75 | Gate CMP-OBL: the oblique shock on a 10-degree ramp at M 2, 90 x 60 cells (SPEC-LIT 127.6) | 3/3 | 216.2 | 3/3 | 217.4 |
+| 76 | Gate CMP-RING: Ringleb's transonic flow on three meshes, h, h/2, h/4 (SPEC-LIT 127.6) | **3/4** | 128.1 | 3/3 | 129.8 |
+| 77 | Gate CMP-RAE: RAE 2822 Case 6 with Spalart-Allmaras against AR-138, a live coarse smoke and the three recorded C-meshes, replayed (SPEC-LIT 127.6) | **2/13** | 48.4 | **0/13** | 0.7 |
+| 78 | Gate 116-P: Hagen-Poiseuille on tetrahedra and prisms, the L1 pipe at Re 100, replayed (SPEC-LIT 116.17) | **2/5** | 0.0 | **2/5** | 0.0 |
+| 79 | Gate 88-T and 90-T leg 3: T3B and T3A- with a per-case inflow fitted to ERCOFTAC's measured Tu(x), onset ordering and spread, replayed (SPEC-LIT 144.7) | 14/14 | 0.0 | 14/14 | 0.0 |
+| 80 | Gate DST-LEEDS: the Leeds fan-stirred cornflour bomb, S_t,b against Bradley, Chen & Swithenbank 1989 via Huang et al. 2020 Fig. 9 (SPEC-LIT 157.5) | **18/23** | 960.7 | **2/23** | 20.6 |
+| 81 | Gate DST-VES: closed vessels, thin-flame spheres against (157.4) and the REMBE closed stage against Huang et al. 2022 Fig. 10 (SPEC-LIT 157.6) | **7/21** | 107.1 | **0/9** | 61.7 |
+| 82 | Gate CHR-13: a 1-D freely propagating CH4-air flame, BFER phi 1.0, S_L by the 1500 K isotherm, three meshes, replayed (SPEC-LIT 133.12) | **0/3** | 0.0 | **0/3** | 0.0 |
+| 83 | Gate CHR-16: Sandia Flame D, EDC + DRM19, k-epsilon C1 1.6, REDUCED on the true wedge, replayed (SPEC-LIT 134.8) | **1/7** | 0.0 | **1/7** | 0.0 |
+| 84 | Gate 110-C leg 2: the radiating plume, P1 kappa 1.0 1/m, McCaffrey 1979, replayed (SPEC-LIT 110.4) | 2/2 | 0.0 | 2/2 | 0.0 |
+| 85 | Gate CHR-THERMO: NASA-7 thermochemistry of the ten TM-4513 records against TP-2002 Table B1 (SPEC-LIT 128.7) | 111/111 | 0.0 | 111/111 | 0.0 |
+| 86 | Gate CHR-EQ: gas-phase equilibrium by Gibbs minimisation on the TM-4513 fixture against the 40-digit oracle (SPEC-LIT 131.4) | 94/94 | 0.0 | 94/94 | 0.0 |
+| 87 | Gate CHR-ODE: RODAS3 and ROS3 on Robertson and HIRES, and the constant-pressure reactor (SPEC-LIT 132.6, 132.8) | 48/48 | 3.7 | 48/48 | 3.6 |
+| 88 | Gate CHR-EDM: EDM and PaSR, the library and kernel gate of CHR-14, not a driver run (SPEC-LIT 134.5) | 33/33 | 0.0 | 33/33 | 0.0 |
+| 89 | Gate CHR-SLAB: the isothermal grey slab, P1 against its closed form and S8 fvDOM against 1 - 2 E_3 (SPEC-LIT 135.5, 136.7) | **61/63** | 72.8 | **38/41** | 130.6 |
+| 90 | Gate CHR-CUBE: fvDOM with scattering on the slab, and the isothermal cube at 24^3 (SPEC-LIT 136.8) | **53/54** | 49.2 | **53/54** | 44.3 |
+| 91 | Gate CHR-WSGG: the weighted sum of grey gases on the slab, per-gas fvDOM and P1, and the grey mean (SPEC-LIT 136.9) | 33/33 | 15.8 | 33/33 | 20.9 |
+| 92 | Gate DST-B-LAM: the Phase B cloud's 1-D laminar flame against the gas flame of its volatile, the fine-particle limit and the size order (SPEC-LIT 159.11) | **15/16** | 195.0 | **13/16** | 221.1 |
+| 93 | Gate DST-B-VES: the Phase B cloud in a closed 20 L sphere, replayed from its records - the AICC end pressure and the thin-flame half time (SPEC-LIT 159.12) | **11/18** | 0.0 | **11/18** | 0.0 |
+| 94 | Gate 68-C coupled leg: Theobald test 3 through ofgpu-lowmach with Rosin-Rammler sizes, replayed from its records (SPEC-LIT 147.2) | **9/10** | 0.0 | **9/10** | 0.0 |
+| 95 | Gate DST-REMBE: the vented REMBE explosion, key J.3 NOT RUN, and a REDUCED smoke on the PLACEHOLDER vessel (SPEC-LIT 158.7, 158.10) | 9/9 | 35.8 | **7/9** | 42.7 |
+<!-- validate-run:sections:ko end -->
+
+실행이 등록한 게이트이며, MISSES가 먼저, OPEN이 다음이고 각 묶음 안에서는 실행이 이름을 부른 순서입니다(같은 이름이 되풀이되면 다리마다 한 번씩 등록된 것입니다):
+
+<!-- validate-run:gates:ko begin -->
+| # | 게이트 | f64 | f32 | 비교 대상: 판정 |
+|---|---|---|---|---|
+| 1 | SPEC-LIT S60.5 Gate 5 | MISSES | MISSES | Kaminski & Prakash (1986), conjugate natural convection in a square enclosure - through the open-access SECONDARY table of Belazizia et al. (2012), the primary being paywalled and never read - bar 3 % at every conductivity ratio: worst disagreement 7.11 %, and it is at the SMALLEST conductivity ratio - the CONDUCTION-DOMINATED end - shrinking to 0.07 % at Kr = 10; reference-limited at Kr <= 1, SPEC-LIT 115 (O1, D-VAL-4) |
+| 2 | SPEC-LIT S68.12 Gate 68-C | MISSES | MISSES | Theobald (1981), 90 hose streams, maximum throw, at the shape of the FDS Validation Guide's own metric for this quantity - +-10 % bias, 30 % scatter: with the gas at rest this solver throws the stream 61.2858 % of the measured distance on average |
+| 3 | Gate 95-A cantilever | MISSES | MISSES | Timoshenko & Goodier ch. 3, plane strain, block-coupled (SPEC-LIT 109.6), four meshes r = 2, orders on the finest pair, the tip study on the finest three: 5:1: converged 3/4, p_u 1.42, p_sigma 1.46 (n_y 16 -> 32), finest tip 9.76e-5 |
+| 4 | Gate 95-A cantilever | MISSES | MISSES | Timoshenko & Goodier ch. 3, plane strain, block-coupled (SPEC-LIT 109.6), four meshes r = 2, orders on the finest pair, the tip study on the finest three: 10:1: converged 3/4, p_u 1.90, p_sigma 1.45 (n_y 16 -> 32), finest tip 1.52e-4 |
+| 5 | Gate 95-A cantilever | MISSES | MISSES | Timoshenko & Goodier ch. 3, plane strain, block-coupled (SPEC-LIT 109.6), four meshes r = 2, orders on the finest pair, the tip study on the finest three: 5:1 GMRES(50): converged 4/4, p_u 1.42, p_sigma 1.46 (n_y 16 -> 32), finest tip 9.83e-5 |
+| 6 | Gate 95-A cantilever | MISSES | MISSES | Timoshenko & Goodier ch. 3, plane strain, block-coupled (SPEC-LIT 109.6), four meshes r = 2, orders on the finest pair, the tip study on the finest three: 10:1 GMRES(50): converged 4/4, p_u 1.75, p_sigma 1.45 (n_y 16 -> 32), finest tip 1.67e-4 |
+| 7 | SPEC-LIT S110.3 Gate 110-B backward-facing step reattachment (Driver & Seegmiller 1985) | MISSES | MISSES | Driver & Seegmiller (1985) x_r/H = 6.26 +- 0.10, reference/driver_seegmiller_1985/reattachment.txt: study not formed: the dx = 0.1H level stopped - run ended: refused \| ofgpu-lowmach: max Mach number 3.615 at cell 56 (step 1232); the dx = 0.05H level stopped - run ended: refused \| ofgpu-lowmach: max Mach number 1.920 at cell 917604 (step 30); on the finest level that converged, dx = 0.2H, x_r/H = 5.637 against 6.26, E = -0.623 (-9.9% of D), outside the datum's own +-0.10 at that level, with no u_num |
+| 8 | SPEC-LIT S110.3 Gate 110-B backward-facing step reattachment (Driver & Seegmiller 1985) | MISSES | MISSES | Driver & Seegmiller (1985) x_r/H = 6.26 +- 0.10, reference/driver_seegmiller_1985/reattachment.txt: class R: the single build's dx = 0.2H run left no record - run ended: refused \| ofgpu-lowmach: max Mach number 10255882.000 at cell 57149 (step 0) |
+| 9 | SPEC-LIT 146.2 Gate 78-D measured leg, mundo | MISSES | MISSES | Riboux & Gordillo, Phys. Rev. Lett. 113 (2014) 024507 (arXiv:1401.6943v3): the splash threshold speeds of Fig. 4(c), eight liquids on smooth dry glass in air, band +-20 % per row: 0 of 8 liquids inside the band (146.6), 6 needed; 0 of 17 rows inside (146.5), e from -0.734 to -0.214 |
+| 10 | SPEC-LIT 146.2 Gate 78-D measured leg, baiGosman | MISSES | MISSES | Riboux & Gordillo, Phys. Rev. Lett. 113 (2014) 024507 (arXiv:1401.6943v3): the splash threshold speeds of Fig. 4(c), eight liquids on smooth dry glass in air, band +-20 % per row: 1 of 8 liquids inside the band (146.6), 6 needed; 3 of 17 rows inside (146.5), e from -0.396 to +0.690 |
+| 11 | SPEC-LIT 144.4 Gate 88-T leg 4, kOmegaSSTLM, transition onset Re_x against Roach & Brierley | MISSES | MISSES | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A key (SPEC-LIT 144.6): kOmegaSSTLM onset Re_x (least C_f) against (144.4a): E = -35.88 % at Re_x 8.8932e4 on the finest mesh, band 15 %, u_val 6.53 % (u_num 6.53 %, u_D 0 %) |
+| 12 | SPEC-LIT 144.4 Gate 88-T leg 4, kOmegaSSTLM, laminar C_f against Blasius | MISSES | MISSES | Blasius' 0.664/sqrt(Re_x) (SPEC-LIT 88.7) over the part of the plate the key measures laminar: kOmegaSSTLM worst laminar C_f against Blasius (144.4c): E = +16.29 % at Re_x 7.5000e4 on the finest mesh, band 10 %, u_val 0.62 % (u_num 0.62 %, u_D 0 %) |
+| 13 | SPEC-LIT 144.4 Gate 90-T leg 4, kOmegaSSTGamma, laminar C_f against Blasius | MISSES | MISSES | Blasius' 0.664/sqrt(Re_x) (SPEC-LIT 88.7) over the part of the plate the key measures laminar: kOmegaSSTGamma worst laminar C_f against Blasius (144.4c): E = +15.78 % at Re_x 1.0000e5 on the finest mesh, band 10 %, u_val 1.46 % (u_num 1.46 %, u_D 0 %) |
+| 14 | SPEC-LIT 143.5 Gate 131-P turbulent pipe, kOmegaSST, Re_tau 576.69, the core defect | MISSES | MISSES | Nikuradse's core defect (U_axis - U_b)/u_tau = 4.07 (Schlichting NACA TM 1218 eq 16.22): kOmegaSST at Re_tau 576.69, defect against 4.07: E = -11.21 % on the finest level (n = 160), bar 10 %, u_val 0.01 % |
+| 15 | SPEC-LIT 143.5 Gate 131-P turbulent pipe, kOmegaSST, Re_tau 2358, the log law | MISSES | MISSES | the log law u+ = 2.5 ln y+ + 5.5 over 30 <= y+ <= 0.2 Re_tau (Schlichting NACA TM 1218 eq 16.14): kOmegaSST at Re_tau 2358, log-law deviation: E = 1.230 in u+ on the finest level (n = 160), bar 1.0 in u+, u_val 0.173 |
+| 16 | SPEC-LIT 143.5 Gate 131-P turbulent pipe, kOmegaSST, Re_tau 2358, the core defect | MISSES | MISSES | Nikuradse's core defect (U_axis - U_b)/u_tau = 4.07 (Schlichting NACA TM 1218 eq 16.22): kOmegaSST at Re_tau 2358, defect against 4.07: E = -18.39 % on the finest level (n = 160), bar 10 %, u_val 0.04 % |
+| 17 | SPEC-LIT 127.6 Gate CMP-SOD Sod shock tube | MISSES | MISSES | the exact Riemann solution of Sod's (1978) shock tube, (127.5)-(127.7b), evaluated live (CMP-07): PISO, 800 cells: worst plateau rho*_L 45.98 % (bar 1 %), shock not found inside the tube (bar 0.5 % of the length); L1(rho) order 0.015 (bar >= 0.6) |
+| 18 | SPEC-LIT 127.6 Gate CMP-AC acoustic pulse speed | MISSES | MISSES | linear acoustics: c_0 = sqrt(gamma R_s T_0), (122.4): the solver's default coupling (nOuterCorrectors 1, nCorrectors 2), 400 cells: the pulse travels at 1.1895 c_0 (bar: within 1 %) |
+| 19 | SPEC-LIT 127.6 Gate CMP-NOZ quasi-1-D nozzle | MISSES | MISSES | the quasi-1-D keys (127.23)-(127.25), SPEC-LIT §127.2's isentropic and shocked nozzle relations evaluated live by compressible::exact (CMP-06): Gate CMP-NOZ subsonic: M(x) within 0.5 % of the key's M(xi), all 200 cells (SPEC-LIT 127.6): 6.0014e-3 against 0.005; Gate CMP-NOZ supersonic: M(x) within 0.5 % of the key's M(xi), all 200 cells (SPEC-LIT 127.6): no field, the march stopped on a bound; Gate CMP-NOZ supersonic: exit p within 0.5 % of the key at the last cell centre (SPEC-LIT 127.6): no field, the march stopped on a bound; Gate CMP-NOZ shocked: shock position within 1 % of the length, 200 cells (SPEC-LIT 127.6): no field, the march stopped on a bound; Gate CMP-NOZ shocked: p_t2/p_t1 within 1 % of (127.25)'s, the last cell (SPEC-LIT 127.6): no field, the march stopped on a bound; Gate CMP-NOZ shocked: exit p within 0.5 % of the key at the last cell centre (SPEC-LIT 127.6): no field, the march stopped on a bound |
+| 20 | SPEC-LIT 127.6 Gate CMP-RING Ringleb flow | MISSES | - | the isentropic Ringleb field of (127.8)-(127.11a), SPEC-LIT section 127.3's smooth answer key evaluated live by compressible::exact (CMP-07): the L2 entropy error reads E = 1.0304e-2 / 1.4008e-2 / 1.9372e-2 (finest first, 96 x 24 / 48 x 12 / 24 x 6); pair orders 0.469 (h/2 vs h), 0.443 (h/4 vs h/2), fitted order 0.456 against the bar 1.5; iterations 10000 / 10000 / 10000 |
+| 21 | SPEC-LIT 127.6 Gate CMP-RAE RAE 2822 | MISSES | MISSES | RAE 2822 Case 6 (the corrected conditions M 0.729, alpha 2.31 degrees, Re 6.5e6) of Cook, McDonald & Firmin, AGARD AR-138 (1979), as the NPARC archive reproduces it - the answer key rae2822-cp-case6: the smoke's residual did not fall to a tenth of its first chunk's; f64 L0 stopped on a bound at step 5968 (the first out-of-bounds cell 6312); f64 L1 stopped on a bound at step 5454 (the first out-of-bounds cell 21072); f64 L2 stopped on a bound at step 5376 (the first out-of-bounds cell 75232); single L1 stopped on a bound at step 210 (the first out-of-bounds cell 151) |
+| 22 | Gate 116-P | MISSES | MISSES | Hagen-Poiseuille, 8 mu L Q / (pi R^4) (116.27): Hagen-Poiseuille on the L1 pipe at Re 100: f64 +15.49 %, single stopped (diverged), the solve 78.6 s, the single-build mesh refused (the known A28) |
+| 23 | SPEC-LIT 144.7 Gate 88-T leg 3, kOmegaSSTLM, T3B laminar C_f against Blasius | MISSES | MISSES | Blasius' 0.664/sqrt(Re_x) (SPEC-LIT 88.7) over the part of the plate the key measures laminar: kOmegaSSTLM worst laminar C_f against Blasius (144.4c): E = +58.30 % at Re_x 3.9360e4 on the finest mesh, band 10 %, u_val 8.97 % (u_num 8.97 %, u_D 0 %) |
+| 24 | SPEC-LIT 144.7 the T3A- inflow fit against ERCOFTAC's measured free-stream Tu(x) | MISSES | MISSES | the ERCOFTAC key's measured free-stream Tu(x), its TUFS column: fitted decay misses the measured Tu(x) by 3.63 % at Re_x 7.7200e5 (band 3 %); the run uses this inflow anyway (an input check, SPEC-LIT 144.7) |
+| 25 | SPEC-LIT 144.7 Gate 88-T leg 3, kOmegaSSTLM, T3A- turbulent C_f against Roach & Brierley | MISSES | MISSES | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A- key (ercoftac-t3am, SPEC-LIT 144.7): kOmegaSSTLM worst turbulent C_f against the station's (144.4b): E = +132.12 % at Re_x 2.0220e6 on the finest mesh, band 10 %, u_val 12.81 % (u_num 12.65 %, u_D 2 %) |
+| 26 | SPEC-LIT 144.7 Gate 88-T leg 3, kOmegaSSTLM, T3A- laminar C_f against Blasius | MISSES | MISSES | Blasius' 0.664/sqrt(Re_x) (SPEC-LIT 88.7) over the part of the plate the key measures laminar: kOmegaSSTLM worst laminar C_f against Blasius (144.4c): E = +27.55 % at Re_x 1.2097e6 on the finest mesh, band 10 %, u_val 0.63 % (u_num 0.63 %, u_D 0 %) |
+| 27 | SPEC-LIT 157.5 Gate DST-LEEDS Leeds fan-stirred cornflour bomb | MISSES | MISSES | Bradley, Chen & Swithenbank (1989) via Huang et al. (2020) Fig. 9, key huang2020-leeds-st-b: 5 of the gate's rows leave the bands of §157.5 |
+| 28 | SPEC-LIT 157.6 Gate DST-VES closed vessels: thin-flame spheres and the REMBE closed stage | MISSES | MISSES | Huang, Bloching & Lipatnikov (2022) Fig. 10, key huang2022-rembe-p-closed: 14 of the gate's rows leave the bands of §157.6 |
+| 29 | SPEC-LIT 133.12 Gate CHR-13 1-D freely propagating CH4-air flame, BFER phi 1.0 | MISSES | MISSES | the plan's S_L = U_in - dx_f/dt within 10 % of Konnov et al. 2018 (closed, so that comparison is NOT RUN); a level that stops before its end time gives no S_L at all: 3 of 3 levels stopped before 6 ms on the reactor's refusal (100 µm at 0.0006 s, 50 µm at 0.0006 s, 25 µm at 0.0006 s), so no S_L was measured |
+| 30 | SPEC-LIT 134.8 Gate CHR-16 Sandia Flame D, EDC + DRM19, k-epsilon C1 1.6, REDUCED | MISSES | MISSES | the plan's REDUCED gate: 300 iterations, finite fields, element and mass budgets within 1e-6: 40 of 300 steps: chemistry: EDC refused 1 cell(s); the first is cell 244 with status 8 (BELOW_NEGATIVE_ATOL) (SPEC-LIT §134.8); the worst inventory budget is C at 2.354e-1 against 1e-6 |
+| 31 | SPEC-LIT 136.7 Gate CHR-SLAB the isothermal grey slab | MISSES | MISSES | the exact slab 1 - 2 E_3(tau), (135.6) of SPEC-LIT 135.2: S8 N 256 tau 0.1: e_256 +2.1713e-2 outside 2 % on both walls, S8's own angular limit (136.13) e_lim +2.2191e-2 above 2 % |
+| 32 | SPEC-LIT 136.8 Gate CHR-CUBE scattering slab and cube | MISSES | MISSES | (136.6), the cube's wall-centre flux by the exact angular integral, SPEC-LIT 136.3: S8 kL 0.1 24^3: e -3.1005e-2 outside 3 %, by the step scheme's spatial error |
+| 33 | SPEC-LIT 159.11 Gate DST-B-LAM Phase B laminar dust flame: the fine-particle limit and the size order | MISSES | MISSES | (i) \|S_L,B(1 um)/S_L,gas - 1\| within 2 % and (ii) S_L(d_{j+1}) <= S_L(d_j) along d = 5, 10, 20, 40 um - the gate's own bands; no published measurement: 1 of the gate's rows leave the bands of 159.11 |
+| 34 | SPEC-LIT 159.12 Gate DST-B-VES Phase B cloud in a closed 20 L sphere: the AICC end pressure and the thin-flame half time | MISSES | MISSES | the cloud's host AICC (159.21) and the thin-flame half time (159.30) with S_u(p) of the 1-D Phase B tube: 7 of the gate's rows leave the bands of 159.12 |
+| 35 | SPEC-LIT 147.2 Gate 68-C coupled leg: Theobald test 3 through ofgpu-lowmach, replayed | MISSES | MISSES | Theobald (1981) test 3's measured maximum throw, 24.4 m, at the shape of the FDS Validation Guide's own metric for this quantity - +-10 % bias, 30 % scatter: 3 of the gate's rows leave the bars of 68.12 |
+| 36 | SPEC-LIT S32.4 verdict 2 (Reynolds analogy), wall-function leg | OPEN | OPEN | Gnielinski (1976) evaluated at this leg's own MEASURED wall friction factor, +-10 % band: WF Nu is +34.4% of Gnielinski at the MEASURED f and +15.2% at the viscous form of it - outside the band on both |
+| 37 | SPEC-LIT S32.4 verdict 2 (Reynolds analogy), wall-function leg, at PrtModel KaysCrawford (opt-in, S37) | OPEN | OPEN | Gnielinski (1976) evaluated at this leg's own MEASURED wall friction factor, +-10 % band, on the PrtModel KaysCrawford record: WF Nu is +34.0% of Gnielinski at the MEASURED f, at PrtModel KaysCrawford (opt-in, S37) - outside the band |
+| 38 | SPEC-LIT S32.4 verdict 1 (absolute prediction), resolved leg | OPEN | OPEN | Gnielinski (1976) evaluated at the Petukhov smooth-PIPE f, +-10 % band: resolved leg Nu is +11.9% of it - outside the band by 1.9 points, against an energy-balance uncertainty of 0.00000% which is now round-off, so the gate does NOT close and the miss is DECISIVE with nothing left to hide any of it behind (S32.4's UNDECIDED clause does not apply) |
+| 39 | SPEC-LIT S32.4 verdict 2 (Reynolds analogy), resolved leg | OPEN | OPEN | Gnielinski (1976) evaluated at this leg's own MEASURED wall friction factor, +-10 % band: resolved leg Nu is +14.9% of it at the MEASURED f = 2.3832e-02 - outside the band |
+| 40 | SPEC-LIT S88 Gate 88-T | OPEN | OPEN | the ERCOFTAC T3A flat plate's measured transition, on the NASA/TMBWG 2D T3A rig (U = 69.44 m/s, Re/m = 2.00e5, Tu = 3.300 % at the leading edge): the model's own onset criterion fires at Re_x = 85251.4, where the local Tu has decayed to 2.24405 % and Re_theta~ = 234.21 - but no published digit-level onset Re_x for T3A was found to hold it against, so the comparison is not closed |
+| 41 | SPEC-LIT S90 Gate 90-T | OPEN | OPEN | the ERCOFTAC T3A flat plate's measured transition, on the NASA/TMBWG 2D T3A rig (U = 69.44 m/s, Re/m = 2.00e5, Tu = 3.300 % at the leading edge): the 2015 correlation's onset switch fires at Re_x = 22826.1, where the local Tu_L has decayed to 54.579 % and Re_thetac reads 100 - but no published digit-level onset Re_x for T3A was found to hold it against, so the comparison is not closed |
+| 42 | 78-D | OPEN | OPEN | Bai & Gosman SAE 950283 (1995) against Mundo, Sommerfeld & Tropea, Int. J. Multiphase Flow 21 (1995) 151: the two published splash criteria disagree by a factor of 4.78 in Weber number for the same 100 um water droplet - Mundo splashes it at 8.99 m/s (We 111), Bai-Gosman at 19.65 m/s (We 531) |
+| 43 | SPEC-LIT 105.14 Gate 105-C Turek-Hron | OPEN | OPEN | Turek & Hron (2006), CFD1/CFD2 level 6+0 and CFD3 level 4+0: the Turek-Hron meshes are not generated, so no comparison was run |
+| 44 | SPEC-LIT S110.2 Gate 110-A channel DNS (Moser, Kim & Mansour 1999) | OPEN | OPEN | Moser, Kim & Mansour (1999) DNS mean-velocity profiles, reference/mkm99/chan{180,395,590}.means, u_D = 0 (none stated): answer key missing: mkm99-chan180, mkm99-chan395, mkm99-chan590 - absent from reference/ or not its manifest digest (SPEC-LIT 110.1); no comparison was run |
+| 45 | SPEC-LIT S110.4 Gate 110-C buoyant plume centreline (McCaffrey 1979) | OPEN | OPEN | McCaffrey (1979) NBSIR 79-1910 Table 1 plume-region correlations at the declared Q, reference/mccaffrey_1979/centreline_table1.txt: P3: the finest centreline dT decays as z^(-2.130) over the six stations, outside -5/3 +- 0.25 - the correlation's exponent, so the gate is left open (S110.1) |
+| 46 | SPEC-LIT S110.4 Gate 110-C buoyant plume centreline (McCaffrey 1979) | OPEN | OPEN | McCaffrey (1979) NBSIR 79-1910 Table 1 plume-region correlations at the declared Q, reference/mccaffrey_1979/centreline_table1.txt: P1 worst +212.6% outside, P2 worst +76.1% undecided against the +-15% band at u_val/D = 1.422 - on the predicted high side but BEYOND what 20-40 % radiative loss accounts for (dT +16% to +41%, w +8% to +19%): radiation alone does not explain this miss (S110.4) |
+| 47 | SPEC-LIT 144.3 T3A leg 1 in 2-D, kOmegaSSTLM, against the TMR's 3.300 % | OPEN | OPEN | the NASA/TMBWG T3A page's stated leading-edge Tu, 3.300 % (SPEC-LIT 88.10): Tu at the leading edge 3.35332 % on the finest mesh, 1.616 % from 3.300 % (bar 0.5 %); the 1-D closed form of the same model is 1.607 % from it |
+| 48 | SPEC-LIT 144.3 T3A leg 1 in 2-D, kOmegaSSTGamma, against the TMR's 3.300 % | OPEN | OPEN | the NASA/TMBWG T3A page's stated leading-edge Tu, 3.300 % (SPEC-LIT 88.10): Tu at the leading edge 3.35332 % on the finest mesh, 1.616 % from 3.300 % (bar 0.5 %); the 1-D closed form of the same model is 1.607 % from it |
+| 49 | SPEC-LIT 144.4 Gate 88-T leg 4, kOmegaSSTLM, turbulent C_f against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A key (SPEC-LIT 144.6): undecided, within u_val of the band edge (SPEC-LIT 32.4, 110.1): kOmegaSSTLM worst turbulent C_f against the station's (144.4b): E = -7.07 % at Re_x 3.0930e5 on the finest mesh, band 10 %, u_val 5.22 % (u_num 4.82 %, u_D 2 %) |
+| 50 | SPEC-LIT 144.4 Gate 90-T leg 4, kOmegaSSTGamma, transition onset Re_x against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A key (SPEC-LIT 144.6): undecided, within u_val of the band edge (SPEC-LIT 32.4, 110.1): kOmegaSSTGamma onset Re_x (least C_f) against (144.4a): E = +12.72 % at Re_x 1.5633e5 on the finest mesh, band 15 %, u_val 6.99 % (u_num 6.99 %, u_D 0 %) |
+| 51 | SPEC-LIT 144.5 Gate 132-Z ZPG plate, SpalartAllmaras, C_f against Karman-Schoenherr | OPEN | OPEN | the Karman-Schoenherr C_f(Re_theta) as the NASA TMR tabulates it (a correlation, SPEC-LIT 144.5): undecided, within u_val of the bar (SPEC-LIT 32.4, 110.1): SpalartAllmaras worst C_f against K-S over Re_theta 4000..13000: E = -4.455% at Re_theta 4000 on the finest mesh, bar 3 %, u_val 6.344% |
+| 52 | SPEC-LIT 144.5 Gate 132-Z ZPG plate, kOmegaSST, C_f against Karman-Schoenherr | OPEN | OPEN | the Karman-Schoenherr C_f(Re_theta) as the NASA TMR tabulates it (a correlation, SPEC-LIT 144.5): outside the bar, against a correlation (SPEC-LIT 144.5): kOmegaSST worst C_f against K-S over Re_theta 4000..13000: E = -4.310% at Re_theta 4000 on the finest mesh, bar 3 %, u_val 0.626% |
+| 53 | SPEC-LIT 143.5 Gate 131-P turbulent pipe, kOmegaSST, Re_tau 576.69, f against Prandtl | OPEN | OPEN | Prandtl's smooth-pipe law at the input Re_tau (Nikuradse's measured pipes, Schlichting NACA TM 1218 eq 16.26): undecided, within u_val of the band edge (SPEC-LIT 32.4, 110.1): kOmegaSST at Re_tau 576.69, f against Prandtl: E = +5.18 % on the finest level (n = 160), bar 5 %, u_val 0.66 % |
+| 54 | SPEC-LIT 143.5 Gate 131-P turbulent pipe, kOmegaSST, Re_tau 576.69, the log law | OPEN | OPEN | the log law u+ = 2.5 ln y+ + 5.5 over 30 <= y+ <= 0.2 Re_tau (Schlichting NACA TM 1218 eq 16.14): undecided, within u_val of the band edge (SPEC-LIT 32.4, 110.1): kOmegaSST at Re_tau 576.69, log-law deviation: E = 1.177 in u+ on the finest level (n = 160), bar 1.0 in u+, u_val 0.237 |
+| 55 | SPEC-LIT 144.7 Gate 88-T leg 3, kOmegaSSTLM, T3B onset Re_x against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3B key (ercoftac-t3b, SPEC-LIT 144.7): undecided, within u_val of the band edge (SPEC-LIT 32.4, 110.1): kOmegaSSTLM onset Re_x (the first grid minimum (144.7e), the least face being the trailing edge) against (144.4a): E = -11.50 % at Re_x 4.9938e4 on the finest mesh, band 15 %, u_val 28.55 % (u_num 28.55 %, u_D 0 %) |
+| 56 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, T3B onset Re_x against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3B key (ercoftac-t3b, SPEC-LIT 144.7): no kOmegaSSTGamma T3B run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 57 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, T3B turbulent C_f against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3B key (ercoftac-t3b, SPEC-LIT 144.7): no kOmegaSSTGamma T3B run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 58 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, T3B laminar C_f against Blasius | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3B key (ercoftac-t3b, SPEC-LIT 144.7): no kOmegaSSTGamma T3B run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 59 | SPEC-LIT 144.7 Gate 88-T leg 3, kOmegaSSTLM, T3A- onset Re_x against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A- key (ercoftac-t3am, SPEC-LIT 144.7): undecided, within u_val of the band edge (SPEC-LIT 32.4, 110.1): kOmegaSSTLM onset Re_x (least C_f) against (144.4a): E = -16.13 % at Re_x 1.2106e6 on the finest mesh, band 15 %, u_val 5.68 % (u_num 5.68 %, u_D 0 %) |
+| 60 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, T3A- onset Re_x against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A- key (ercoftac-t3am, SPEC-LIT 144.7): no kOmegaSSTGamma T3A- run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 61 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, T3A- turbulent C_f against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A- key (ercoftac-t3am, SPEC-LIT 144.7): no kOmegaSSTGamma T3A- run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 62 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, T3A- laminar C_f against Blasius | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A- key (ercoftac-t3am, SPEC-LIT 144.7): no kOmegaSSTGamma T3A- run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 63 | SPEC-LIT 144.7 Gate 88-T leg 3, kOmegaSSTLM, T3A onset Re_x against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A key (ercoftac-t3a, SPEC-LIT 144.6): no kOmegaSSTLM T3A run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 64 | SPEC-LIT 144.7 Gate 88-T leg 3, kOmegaSSTLM, T3A turbulent C_f against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A key (ercoftac-t3a, SPEC-LIT 144.6): no kOmegaSSTLM T3A run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 65 | SPEC-LIT 144.7 Gate 88-T leg 3, kOmegaSSTLM, T3A laminar C_f against Blasius | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A key (ercoftac-t3a, SPEC-LIT 144.6): no kOmegaSSTLM T3A run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 66 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, T3A onset Re_x against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A key (ercoftac-t3a, SPEC-LIT 144.6): no kOmegaSSTGamma T3A run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 67 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, T3A turbulent C_f against Roach & Brierley | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A key (ercoftac-t3a, SPEC-LIT 144.6): no kOmegaSSTGamma T3A run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 68 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, T3A laminar C_f against Blasius | OPEN | OPEN | Roach & Brierley's measured C_f(Re_x), the ERCOFTAC T3A key (ercoftac-t3a, SPEC-LIT 144.6): no kOmegaSSTGamma T3A run recorded yet - run the record_t3fit_* tests of SPEC-LIT 144.7 |
+| 69 | SPEC-LIT 144.7 Gate 88-T leg 3, kOmegaSSTLM, onset spread Re_x(T3A-)/Re_x(T3B) against Roach & Brierley | OPEN | OPEN | Roach & Brierley's T3 series, the keys' own (144.4a) onsets and their ratio: undecided, within u_val of the band edge (SPEC-LIT 32.4, 110.1): the onset spread (144.7d): S_sim = 2.4242e1 against S_key = 2.5578e1, E = -5.22 %, band 15 %, u_val 32.97 % (u_num from the two onsets' studies) |
+| 70 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, onset ordering T3B < T3A < T3A- against Roach & Brierley | OPEN | OPEN | Roach & Brierley's T3 series, the keys' own (144.4a) onsets and their ratio: missing a T3B fine f64 run, a T3A- fine f64 run |
+| 71 | SPEC-LIT 144.7 Gate 90-T leg 3, kOmegaSSTGamma, onset spread Re_x(T3A-)/Re_x(T3B) against Roach & Brierley | OPEN | OPEN | Roach & Brierley's T3 series, the keys' own (144.4a) onsets and their ratio: missing a T3B fine f64 run, a T3A- fine f64 run |
+| 72 | SPEC-LIT S110.4 Gate 110-C leg 2 radiating plume centreline (McCaffrey 1979) | OPEN | OPEN | McCaffrey (1979) NBSIR 79-1910 Table 1 plume-region correlations at the declared Q, reference/mccaffrey_1979/centreline_table1.txt; the run's radiant fraction beside the report's 20-40 %: undecided: P1/P2 worst 1.539 is within u_val/D = 2.678 of the 15% edge (S32.4); the run's radiant fraction chi_r = 0.077 against McCaffrey's 0.20-0.40 |
+| 73 | Gate 95-A cantilever | - | MISSES | Timoshenko & Goodier ch. 3, plane strain, block-coupled (SPEC-LIT 109.6), four meshes r = 2, orders on the finest pair, the tip study on the finest three: 5:1 GMRES(50): converged 0/4, p_u 0.59, p_sigma 4.61 (n_y 16 -> 32), finest tip 9.71e-1 |
+| 74 | Gate 95-A cantilever | - | MISSES | Timoshenko & Goodier ch. 3, plane strain, block-coupled (SPEC-LIT 109.6), four meshes r = 2, orders on the finest pair, the tip study on the finest three: 10:1 GMRES(50): converged 0/4, p_u -53.62, p_sigma -inf (n_y 16 -> 32), finest tip 1.37e16 |
+| 75 | SPEC-LIT 98.6 Gate 98-B radiating slab | - | MISSES | the steady balance of a slab radiating to a large surround, (S98.8), SPEC-LIT 98.6: T_b rel 6.56e-7, residual 0.00e0, worst Newton ratio 1.092e4 against 2C = 1.725e-3, 5 ratios |
+| 76 | SPEC-LIT 98.9 Gate 98-C enclosure with a running flow | - | MISSES | the enclosure's own power balance, (S98.9), (S98.10), parallel_plate_flux and concentric_flux, SPEC-LIT 98.9: (a) power balance 3.39e-6 against 1e-10; (b) (S98.10) worst 5.77e-2 against 1e-9; (b) cell source rel 9.08e-8 against 1e-12; (b) closed form rel 5.02e-4 against 1e-10 over 100 faces; (c) not every radiationRelaxation converged within 4000 iterations |
+| 77 | SPEC-LIT 100.4 Gate 100-B published property tables | - | MISSES | Ho, Powell and Liley (1972), J. Phys. Chem. Ref. Data 1, 279, p. 394: silicon, recommended values: silicon: knots to the bit false, worst 1.55 % between them against 5 % |
+| 78 | SPEC-LIT 100.4 Gate 100-B published property tables | - | MISSES | McBride, Zehe and Gordon, NASA/TP-2002-211556 (2002), eq. (1), Appendix D and Table B1: cp/R: worst \|Cp(298.15) - Table B1\| 3.51e-4 J/(K mol) against 5e-4, worst jump at 1000 K 3.41e-7 against 1e-8 |
+| 79 | SPEC-LIT 100.15 Gate 100-C Brinkman plane Poiseuille | - | MISSES | Brinkman's fully developed plane Poiseuille with viscous heating, (S100.15) and (S100.16), SPEC-LIT 100.15: both walls held, ny = 8: converged false, balance 5.60e-6; both walls held, ny = 16: converged false, balance 1.68e-4; both walls held, ny = 32: converged false, balance 1.86e-4; top adiabatic, ny = 8: converged false, balance 3.15e-5; top adiabatic, ny = 16: converged false, balance 1.53e-4; top adiabatic, ny = 32: converged false, balance 1.50e-4 |
+| 80 | SPEC-LIT 158.7 Gate DST-REMBE: the vented REMBE explosion, REDUCED PLACEHOLDER smoke on the castellated vessel, key J.3 NOT RUN | - | MISSES | Huang, Bloching & Lipatnikov (2022) Fig. 11, key huang2022-rembe-p-vented: 2 row(s) of the REDUCED PLACEHOLDER smoke leave their bars (never compared with H22) |
+<!-- validate-run:gates:ko end -->
 
 **중요한 구분**: "`ofgpu-validate`가 실행하는 모든 항목이 통과한다"는 "이
 프로젝트가 비교하는 모든 발표된 벤치마크를 재현한다"와 다른 진술입니다. 둘을
@@ -1003,8 +1271,7 @@ ofgpu-validate
 - **MPI·다중 GPU 없음.** 분할·헤일로·분산 PCG/PBiCGStab이 구현되고 게이트되어
   있으나 한 장의 카드 위 한 프로세스에서 돕니다. 통신 라이브러리를 링크하지
   않으며 강한 확장성 수치도 발표하지 않습니다.
-- **압축성·천음속 없음.** 밀도 가중 시간미분은 VOF에서 쓰이지만 압력 방정식은
-  비압축성입니다.
+- **압축성 유동은 새로 들어왔고, 그 게이트 몇 개가 미달입니다.** `ofgpu-compressible`가 전속도 압력 기반 방정식을 풉니다(SPEC-LIT §122-§127). Gate CMP-LM, CMP-COU, CMP-OBL은 통과합니다(CMP-OBL은 수렴 정지 조건을 채우지 못한 채). CMP-SOD의 PISO 행, CMP-AC, CMP-NOZ, CMP-RING, CMP-RAE는 미달이며 `ofgpu-validate`가 매 실행마다 이름을 댑니다(§127.6). 동봉 케이스는 `cases/sodShockTube.jsonc`와 `cases/nozzle` 두 개입니다.
 - **유한율(아레니우스) 화학 없음** — 경직 ODE 적분기도, 반응 메커니즘도 없습니다.
 - **복사는 면대면만.** 투명 매질을 가로지르는 회색 확산 교환이며, 체적 안에서
   흡수·방출·산란하는 것은 없습니다.
@@ -1058,6 +1325,18 @@ ofgpu-validate
 (b) 구멍이 너무 많아(사이트의 15 % 초과) 복원을 거부한 경우입니다. 후자는
 "블록처럼 보이는 다른 격자"를 블록으로 읽지 않기 위한 의도된 거절입니다.
 
+격자 구조가 전혀 없는 polyMesh라도 단면(slice)과 평면(plane)은 거절되지 않습니다.
+스튜디오 서버가 셀을 평면으로 정확히 자르고(SPEC-LIT §148.1) 뷰어는 각 단면
+다각형을 그 셀의 값으로 칠합니다. 등값면, 유선, 화살표는 여전히 격자 구조가
+필요해 그런 격자에서는 `NO_STRUCTURED_GRID`로 답하며, 셀 중심이 격자를 이루지
+않는 VTU도 마찬가지입니다(자를 셀 면 정보가 없음).
+
+이런 polyMesh에서도 월드 좌표 probe(`probe {point}`)가 됩니다. 서버가 그 점을 품은
+셀을 찾습니다. 면이 평평한 볼록 셀은 면마다 정확히 판정하고, 뒤틀리거나 볼록하지
+않은 셀만 그 점을 품을 수 있을 때는 중심이 가장 가까운 셀이 답하며 검사기(와
+`gui_state`의 `selection.located`)가 `nearest-centre`라고 밝힙니다. 어느 셀에도
+없는 점은 `MISS`입니다.
+
 ### 뷰어가 케이스를 옆으로 눕혀 그림
 
 케이스에 `constant/g`가 없고, 바닥 패치 이름이 `bottomWall`/`floor`/`ground`가
@@ -1067,8 +1346,10 @@ ofgpu-validate
 
 ### 컷셀·경사 격자에서 `-output nvdb`가 거절됨
 
-`nvdb`/`vdb`는 균일 카테시안 상자에만 있는 복셀 격자입니다. 격자가 그 상자가 아니면
-솔버는 루프에 들어가기 전에 이유(예: `cell volumes are not uniform`)를 대고 거절합니다.
+`nvdb`/`vdb`는 복셀 격자입니다. 균일 카테시안 상자에서는 셀이 곧 복셀이고, 그 밖의
+격자에는 `output.visualisation.lattice`의 복셀 격자가 필요합니다(8장).
+모든 드라이버가 그 격자를 깔고, 격자를 깔 수 없을 때만 루프에 들어가기 전에 그 이유를 대고
+거절합니다.
 컷셀 해석의 산출물은 `-output foam,vtu`로 받으십시오. `-permissive`를 주면 `nvdb`만
 목록에서 빠지고 나머지 형식은 그대로 쓰입니다.
 

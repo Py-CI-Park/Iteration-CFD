@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { basename, useT } from '../../app/hooks'
 import { useEditorStore } from '../../state/editorStore'
-import { useUiStore, type Tab } from '../../state/uiStore'
+import { tabScreenLabel, useUiStore, type Tab } from '../../state/uiStore'
 import { Icon, type IconName } from '../common/Icon'
 import { useContextMenu } from '../common/Menu'
 
@@ -16,6 +16,7 @@ function tabIcon(tab: Tab): IconName {
     case 'geometry':
       return 'cube'
     case 'campaign':
+    case 'centerline':
       return 'chart'
     case 'file':
       return /\.jsonc?$/i.test(tab.path) ? 'braces' : /\.rs$/i.test(tab.path) ? 'gear' : 'file'
@@ -24,6 +25,7 @@ function tabIcon(tab: Tab): IconName {
 
 export function TabBar() {
   const t = useT()
+  const locale = useUiStore((s) => s.locale)
   const tabs = useUiStore((s) => s.tabs)
   const activeTabId = useUiStore((s) => s.activeTabId)
   const activateTab = useUiStore((s) => s.activateTab)
@@ -46,18 +48,7 @@ export function TabBar() {
     if (tab.kind === 'diff') removeDiff(tab.id)
   }
 
-  const label = (tab: Tab) =>
-    tab.kind === 'file'
-      ? basename(tab.path)
-      : tab.kind === 'viewer'
-        ? t('tab.viewer')
-        : tab.kind === 'residuals'
-          ? t('tab.residuals')
-          : tab.kind === 'geometry'
-            ? `${t('tab.geometry')}: ${basename(tab.path)}`
-            : tab.kind === 'campaign'
-              ? `${t('autonomy.tab')}: ${basename(tab.path) || '.'}`
-              : `${t('tab.diff')}: ${basename(tab.path)}`
+  const label = (tab: Tab) => tabScreenLabel(tab, locale)
 
   return (
     <div className="tabbar" data-testid="tabbar">

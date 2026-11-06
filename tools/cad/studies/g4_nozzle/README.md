@@ -19,17 +19,32 @@ docs/16 §H.4의 G4 노즐 연구: 축대칭 공기 수축 노즐, 입구 60 mm,
 - `report.json` - reqs.py check of the proposal against the brief / 심사 보고서
 - `requirements.json`, `requirements.lock` - the locked set, write-once / 잠긴 집합(일회 기록)
 - `start.json` - the study start: evaluator `cfd`, repeat_band 0.0, poly7 L/D 0.5 t_wall 0.004
-- `g4.py` - init, evaluate, judge_g4, report, record / 초기화·평가·판정·보고·기록
+- `g4.py` - init, evaluate, judge_g4, prefilter, report, record / 초기화·평가·판정·프리필터·보고·기록
+- `prefilter_subset.jsonl` - written into the study directory at run time, not committed (it can
+  name temp paths) / 실행 때 연구 디렉터리에 기록되며 커밋하지 않는다(임시 경로를 실을 수 있다)
 
 ## Commands / 명령
 ```
 python tools/cad/studies/g4_nozzle/g4.py init STUDY_DIR [--registry R]
 python tools/cad/studies/g4_nozzle/g4.py evaluate STUDY_DIR NAME LEVEL [PARAMS_JSON] [--registry R]
+python tools/cad/studies/g4_nozzle/g4.py prefilter STUDY_DIR N_PER_LAW [--registry R]
 python tools/cad/studies/g4_nozzle/g4.py record STUDY_DIR OUT_JSON [--registry R]
 python tools/cad/studies/g4_nozzle/g4.py report STUDY_DIR OUT_MD
 ```
 
 ## Status / 상태
+Under the cad-wedge/2 recipe the study start meshes and passes GC-6 at L0, L1 and L2, so the
+start can be evaluated through the mesh gate. `prefilter` runs the walk's own CAD prefilter on
+the first N Sobol points of each law (the REDUCED subset, at most `sobol_pool` per law), keys the
+rows by (law, sobol_index) in `prefilter_subset.jsonl` and reuses an existing row without
+recomputing it. The live numbers are in `g4_record.json`, written by `record`.
+
+cad-wedge/2 레시피에서 이 연구의 시작 설계는 L0, L1, L2 전부에서 메시가 만들어지고 GC-6를 통과하므로
+시작 설계를 메시 게이트 너머까지 평가할 수 있다. `prefilter`는 각 법칙의 첫 N개 Sobol 점(REDUCED
+부분집합, 법칙당 최대 `sobol_pool`)에 워크의 CAD 프리필터를 돌리고, 행을 (law, sobol_index)로
+`prefilter_subset.jsonl`에 기록하며 이미 있는 행은 다시 계산하지 않고 재사용한다. 살아있는 수치는
+`record`가 쓰는 `g4_record.json`에 있다.
+
 G4 stays OPEN until the full run - the walk's CAD prefilter of 4 x 256 candidates, at most 24
 L1 evaluations, the L2 confirmation at 6000 iterations and the deep replay - which is deferred
 to the supervisor. `cfd_u` is OPEN: the nominal record knows no gci_fine yet, so the loop must
@@ -38,3 +53,20 @@ not lock on this u (docs/16 §E.4).
 전체 실행(워크의 4 x 256 CAD 프리필터, 최대 24회 L1 평가, 6000 반복 L2 확인, 깊은 리플레이)은
 감독자에게 남겨 두었으므로 G4는 OPEN이다. `cfd_u`도 OPEN이다. 명목 기록이 아직 gci_fine을
 모르므로 루프는 이 u에 못을 박아서는 안 된다(docs/16 §E.4).
+
+## Cd basis / Cd 근거 (G5-RERUN, 2026-10-05)
+Every Cd in `g4_record.json` was solved after 9a13744 with `slip_upstream` typed `symmetry` (each
+cached case's boundary reads so). The only Cd values from the leaking `patch` typing were in the
+1c06cec record: nominal poly5 L/D 1 at 0.9593 and poly7 L/D 0.75 at 0.9561, both failing REQ-005.
+The nominal row now reads 0.9717 and passes REQ-005 (infeasible on REQ-004 alone); poly7 L/D 0.75,
+re-evaluated as `probe_poly7_ld075`, is SOLVE-UNSTEADY and not evaluable. The one feasible design
+(poly5 L/D 1.429, Cd 0.9678) was never measured with the leak. `cfd_u` now cites the 3000a60
+nominal record: gci_fine is known for Cd, not for theta_e, and the status stays OPEN.
+
+`g4_record.json`의 모든 Cd는 9a13744 이후 `slip_upstream`을 `symmetry`로 지정해 푼 값이다(캐시된
+각 케이스의 boundary가 그렇다). 새는 `patch` 지정으로 얻은 Cd는 1c06cec 기록에만 있었다: 명목
+poly5 L/D 1의 0.9593과 poly7 L/D 0.75의 0.9561, 둘 다 REQ-005 실패. 명목 행은 이제 0.9717로
+REQ-005를 통과한다(REQ-004만으로 불가능). poly7 L/D 0.75는 `probe_poly7_ld075`로 다시 평가해
+SOLVE-UNSTEADY, 판정 불가다. 유일한 실현가능 설계(poly5 L/D 1.429, Cd 0.9678)는 누설 상태로 측정된
+적이 없다. `cfd_u`는 이제 3000a60 명목 기록을 인용한다: Cd의 gci_fine은 알려졌고 theta_e는 아니며,
+상태는 OPEN 그대로다.

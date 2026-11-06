@@ -1548,6 +1548,165 @@ pub fn residual(psi: &[Scalar], a: &CpuLdu, m: &HostMesh) -> Scalar {
     s / norm_factor(psi, a, m)
 }
 
+// ==========================================================================
+//  The f64 twins - SPEC-LIT section 118.4
+//
+//  The mixed-precision refinement is measured in f64 on the SAME stored
+//  coefficients, widened exactly: a direct solve of the device's own matrix
+//  and a section 8.4 residual formed entirely in double. They compile in
+//  both builds; in the f64 build they are the same arithmetic spelled in
+//  f64, which is what `Scalar` already is there.
+// ==========================================================================
+
+/// [`dense_from_ldu`] with every coefficient widened `as f64` before it is
+/// added.
+pub fn dense_from_ldu64(a: &CpuLdu, m: &HostMesh) -> Vec<f64> {
+    let n = m.n_cells;
+    let mut d = vec![0.0f64; n * n];
+
+    for c in 0..n {
+        d[c * n + c] = a.diag[c] as f64;
+    }
+    for f in 0..m.n_internal_faces {
+        let p = m.owner[f] as usize;
+        let nb = m.neighbour[f] as usize;
+        d[p * n + nb] += a.upper[f] as f64;
+        d[nb * n + p] += a.lower[f] as f64;
+    }
+    for bf in 0..m.n_boundary_faces {
+        if !is_coupled_face(m, bf) {
+            continue;
+        }
+        let c = m.b_face_cells[bf] as usize;
+        let nb = m.b_nbr_cell[bf] as usize;
+        d[c * n + nb] -= a.boundary_coeffs[bf] as f64;
+    }
+    d
+}
+
+/// [`solve_dense`] in f64: the same Gaussian elimination with scaled partial
+/// pivoting, on an `f64` row-major matrix with an `f64` right-hand side.
+pub fn solve_dense64(mut a: Vec<f64>, b: &[f64]) -> Option<Vec<f64>> {
+    let n = b.len();
+    if a.len() != n * n {
+        return None;
+    }
+    let mut x = b.to_vec();
+
+    let mut scale = vec![0.0f64; n];
+    for r in 0..n {
+        let mut biggest = 0.0f64;
+        for c in 0..n {
+            biggest = biggest.max(a[r * n + c].abs());
+        }
+        if !(biggest > 0.0) {
+            return None;
+        }
+        scale[r] = 1.0 / biggest;
+    }
+
+    for k in 0..n {
+        let mut piv = k;
+        let mut best = a[k * n + k].abs() * scale[k];
+        for r in (k + 1)..n {
+            let v = a[r * n + k].abs() * scale[r];
+            if v > best {
+                best = v;
+                piv = r;
+            }
+        }
+        if !(best > 0.0) || !best.is_finite() {
+            return None;
+        }
+        if piv != k {
+            for c in 0..n {
+                a.swap(k * n + c, piv * n + c);
+            }
+            x.swap(k, piv);
+            scale.swap(k, piv);
+        }
+
+        let akk = a[k * n + k];
+        for r in (k + 1)..n {
+            let f = a[r * n + k] / akk;
+            if f == 0.0 {
+                continue;
+            }
+            a[r * n + k] = 0.0;
+            for c in (k + 1)..n {
+                a[r * n + c] -= f * a[k * n + c];
+            }
+            x[r] -= f * x[k];
+        }
+    }
+
+    for k in (0..n).rev() {
+        let mut s = x[k];
+        for c in (k + 1)..n {
+            s -= a[k * n + c] * x[c];
+        }
+        x[k] = s / a[k * n + k];
+    }
+
+    if x.iter().any(|v| !v.is_finite()) {
+        return None;
+    }
+    Some(x)
+}
+
+/// The gather row product [`amul`] spells in `Scalar`, in f64: every
+/// coefficient widened exactly, the same scatter loop and the same order.
+fn amul64(out: &mut Vec<f64>, psi: &[f64], a: &CpuLdu, m: &HostMesh) {
+    out.clear();
+    out.resize(m.n_cells, 0.0);
+
+    for c in 0..m.n_cells {
+        out[c] = a.diag[c] as f64 * psi[c];
+    }
+    for f in 0..m.n_internal_faces {
+        let p = m.owner[f] as usize;
+        let n = m.neighbour[f] as usize;
+        out[p] += a.upper[f] as f64 * psi[n];
+        out[n] += a.lower[f] as f64 * psi[p];
+    }
+    for bf in 0..m.n_boundary_faces {
+        if !is_coupled_face(m, bf) {
+            continue;
+        }
+        let c = m.b_face_cells[bf] as usize;
+        out[c] -= a.boundary_coeffs[bf] as f64 * psi[m.b_nbr_cell[bf] as usize];
+    }
+}
+
+/// [`residual`] and [`norm_factor`] in f64 - the SPEC-LIT section 8.4
+/// measure of the DOUBLE solution `psi` on the stored coefficients widened
+/// exactly, with the eps of that precision (`f64::EPSILON`).
+pub fn residual64(psi: &[f64], a: &CpuLdu, m: &HostMesh) -> f64 {
+    let n = m.n_cells;
+    if n == 0 {
+        return 0.0;
+    }
+
+    let x_ref: f64 = psi.iter().sum::<f64>() / (n as f64);
+    let uniform = vec![x_ref; n];
+
+    let mut a_psi = Vec::new();
+    amul64(&mut a_psi, psi, a, m);
+    let mut a_ref = Vec::new();
+    amul64(&mut a_ref, &uniform, a, m);
+
+    let mut norm = 0.0f64;
+    for c in 0..n {
+        norm += (a_psi[c] - a_ref[c]).abs() + (a.source[c] as f64 - a_ref[c]).abs();
+    }
+
+    let mut res = 0.0f64;
+    for c in 0..n {
+        res += (a.source[c] as f64 - a_psi[c]).abs();
+    }
+    res / (norm + f64::EPSILON)
+}
+
 /// SPEC-LIT section 8.4 on the rows `rows` of `a`, as the region's own
 /// system: `x_ref` is the mean over `rows`, the reference vector is `psi`
 /// outside `rows` and `x_ref` inside, and both sums run over `rows` only.
@@ -1651,7 +1810,6 @@ mod tests {
     /// SPEC-LIT section 10, row "Gradient": the Gauss gradient of a linear
     /// field is exact on a closed mesh.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_gauss_gradient_of_a_linear_field_is_exact() {
         let m = mesh("grad", [6, 5, 4], false, 3.0);
         let a = Vec3::new(1.7, -0.9, 0.35);
@@ -1664,13 +1822,12 @@ mod tests {
         fvc_grad_scalar(&mut g, &f, &bf, &m);
 
         let worst = g.iter().fold(0.0 as Scalar, |w, v| w.max((*v - a).mag()));
-        assert!(worst / a.mag() < 1e-12, "gradient error {worst:e}");
+        assert!(((worst / a.mag()) as f64) < crate::precision::roundoff_tol(1e-12), "gradient error {worst:e}");
     }
 
     /// SPEC-LIT section 10, row "Divergence": a uniform flux is solenoidal on
     /// any closed cell.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_divergence_of_a_uniform_flux_is_zero() {
         let m = mesh("div", [5, 4, 3], false, 1.0);
         let u = Vec3::new(0.83, -0.21, 0.44);
@@ -1681,14 +1838,13 @@ mod tests {
         let mut d = Vec::new();
         fvc_div_surface(&mut d, &phi, &bphi, &m);
 
-        assert!(inf_norm(&d) / u.mag() < 1e-10, "divergence {:e}", inf_norm(&d));
+        assert!(((inf_norm(&d) / u.mag()) as f64) < crate::precision::roundoff_tol(1e-10), "divergence {:e}", inf_norm(&d));
     }
 
     /// The laplacian of section 3.2 must annihilate a constant: a uniform
     /// `psi` with zero-gradient everywhere has no diffusive flux, so the
     /// folded matrix times a constant is zero.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_laplacian_annihilates_a_constant() {
         let m = mesh("lap", [5, 4, 3], false, 2.0);
 
@@ -1705,14 +1861,13 @@ mod tests {
         amul(&mut ap, &psi, &a, &m);
 
         let scale = inf_norm(&a.diag) * 2.75;
-        assert!(inf_norm(&ap) / scale < 1e-13, "A.const = {:e}", inf_norm(&ap));
+        assert!(((inf_norm(&ap) / scale) as f64) < crate::precision::roundoff_tol(1e-13), "A.const = {:e}", inf_norm(&ap));
     }
 
     /// Convection of a uniform field on a solenoidal flux is likewise zero -
     /// SPEC-LIT section 3.1's statement about the diagonal, checked rather
     /// than assumed.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn convection_of_a_uniform_field_on_a_closed_flux_is_zero() {
         let m = mesh("conv", [5, 4, 3], false, 1.0);
         let u = Vec3::new(0.4, 0.9, -0.3);
@@ -1737,13 +1892,12 @@ mod tests {
         amul(&mut ap, &psi, &a, &m);
 
         let scale = inf_norm(&a.diag).max(1e-30) * 1.3;
-        assert!(inf_norm(&ap) / scale < 1e-11, "div(phi, const) = {:e}", inf_norm(&ap));
+        assert!(((inf_norm(&ap) / scale) as f64) < crate::precision::roundoff_tol(1e-11), "div(phi, const) = {:e}", inf_norm(&ap));
     }
 
     /// The direct solve has to actually solve. Measured by its own residual,
     /// not against another solver.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_dense_direct_solve_leaves_no_residual() {
         let m = mesh("dense", [3, 3, 2], false, 1.0);
 
@@ -1761,7 +1915,7 @@ mod tests {
         let x = solve_dense(dense, &a.source).expect("non-singular");
         let r = residual(&x, &a, &m);
 
-        assert!(r < 1e-13, "residual {r:e}");
+        assert!((r as f64) < crate::precision::roundoff_tol(1e-13), "residual {r:e}");
     }
 
     /// Every limiter of the section 7 table must vanish for `r <= 0`, which is
@@ -1849,7 +2003,6 @@ mod tests {
     /// region residuals partition the global one - the host mirror of the
     /// device's ranged reduction.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_ranged_norm_over_every_row_is_the_norm_to_the_bit() {
         let m = mesh("ranged", [3, 3, 2], false, 1.0);
 
@@ -1878,7 +2031,7 @@ mod tests {
                 * norm_factor_ranged(&psi, &a, &m, rows);
         }
         let err = (lhs - sum).abs() / lhs;
-        assert!(err <= 1e-12, "host partition error {err:e}");
+        assert!((err as f64) <= crate::precision::roundoff_tol(1e-12), "host partition error {err:e}");
     }
 
     /// The safe reciprocal is mirrored in all THREE of its branches, on a
@@ -1923,7 +2076,6 @@ mod tests {
     /// `(Dt + U) y = Dt w`. Run on the matrix as assembled, and again with
     /// `lower` shrunk face by face, which makes it asymmetric.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_incomplete_factorisation_keeps_the_diagonal_and_its_sweeps_invert_it() {
         let m = mesh("dilu", [3, 3, 2], false, 1.0);
 
@@ -1991,7 +2143,7 @@ mod tests {
                 .map(|c| ((mm[c * n + c] - a.diag[c]) / a.diag[c]).abs())
                 .fold(0.0 as Scalar, |w, x| w.max(x));
             assert!(
-                diag_err <= 1e-12,
+                (diag_err as f64) <= crate::precision::roundoff_tol(1e-12),
                 "diag(M) != diag(A), symmetric={symmetric}: {diag_err:e}"
             );
 
@@ -2009,7 +2161,7 @@ mod tests {
                 .fold(0.0 as Scalar, |w, x| w.max(x))
                 / w_max;
             assert!(
-                sweep_err <= 1e-10,
+                (sweep_err as f64) <= crate::precision::roundoff_tol(1e-10),
                 "the sweeps do not invert M, symmetric={symmetric}: {sweep_err:e}"
             );
             println!(

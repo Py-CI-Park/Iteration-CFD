@@ -37,8 +37,9 @@ use std::path::{Path, PathBuf};
 
 use ofgpu::io::case::CaseControls;
 use ofgpu::io::case_json::{read_case_jsonc, LoweredCase};
-use ofgpu::io::polymesh::{build_host_mesh, read_poly_mesh};
+use ofgpu::io::polymesh::{build_host_mesh_local, read_poly_mesh, PolyMeshRaw};
 use ofgpu::models::RasModel;
+use ofgpu::types::DVec3;
 use ofgpu::{Error, Gpu, HostMesh, Result, Scalar};
 
 // ==========================================================================
@@ -85,18 +86,156 @@ pub fn json_case_output_dir(path: &Path) -> PathBuf {
 /// mesh straight into memory with `blockgen::build_mesh` - no disk polyMesh
 /// at any point, which is `docs/05-io-redesign.md`'s whole point 4.
 pub fn load_case(case_path: &Path) -> Result<(HostMesh, CaseControls, Option<LoweredCase>)> {
+    load_case_with(case_path, false)
+}
+
+/// [`load_case`], with a JSONC case's `species`, `chemistry` and `combustion`
+/// blocks let through when `allow_chemistry` is set - SPEC-LIT §133.11:
+/// `ofgpu-lowmach` is the one driver that runs them (CHR-12b), and every
+/// other driver keeps §137.7's refusal through [`load_case`]. The same flag
+/// also lets `parcels` and `radiation` through, which the same driver runs
+/// from a JSONC case (SPEC-LIT §137.8, §137.10). The dictionary
+/// route is refused on both, by `read_case_controls`.
+pub fn load_case_with(
+    case_path: &Path,
+    allow_chemistry: bool,
+) -> Result<(HostMesh, CaseControls, Option<LoweredCase>)> {
+    load_case_inner(case_path, allow_chemistry, false, allow_chemistry)
+}
+
+/// [`load_case`], with a JSONC case's `vent` block AND its `dust` block let
+/// through - SPEC-LIT §158.8: `ofgpu-compressible` is the one driver of the
+/// vent, and SPEC-LIT §158.6 makes it the one driver of the dust model on
+/// the mixture gas, so this loader is that driver's alone. The chemistry
+/// refusal stays: the two combustions never share a case.
+pub fn load_case_vented(
+    case_path: &Path,
+) -> Result<(HostMesh, CaseControls, Option<LoweredCase>)> {
+    load_case_inner(case_path, false, true, true)
+}
+
+/// [`load_case_with`]'s body, with the vent refusal of its own key and the
+/// dust seam's own.
+fn load_case_inner(
+    case_path: &Path,
+    allow_chemistry: bool,
+    allow_vent: bool,
+    allow_dust: bool,
+) -> Result<(HostMesh, CaseControls, Option<LoweredCase>)> {
     if is_json_case(case_path) {
         let json = read_case_jsonc(case_path)?;
         let lowered = json.lower()?;
-        let hm = ofgpu::blockgen::build_mesh(&lowered.block)?;
+        // SPEC-LIT §159.10: a dust cloud is run by ofgpu-lowmach alone
+        // (`allow_chemistry`); every other loader refuses it below through
+        // `refuse_parcels`, whose first call is `refuse_cloud`.
+        // SPEC-LIT §137.6/§137.10: parcels are run by ofgpu-lowmach only (the
+        // same flag).
+        // SPEC-LIT §137.7: a case's chemistry is refused by every driver but
+        // the one that asks for it (§133.11) - and the same flag names
+        // radiation, which §137.8 hands to the same single driver.
+        if !allow_chemistry {
+            lowered.refuse_parcels()?;
+            lowered.refuse_chemistry()?;
+            lowered.refuse_radiation()?;
+        }
+        // SPEC-LIT §157.4: a case's dust model is refused the same way -
+        // DST-06's part 3 wires it into ofgpu-lowmach, DST-10's part 3 into
+        // ofgpu-compressible, and every other driver refuses it here.
+        if allow_chemistry {
+            // SPEC-LIT §158.6: ofgpu-lowmach's route runs the dust model on
+            // its OWN two pseudo-species; a gas block beside the model would
+            // be lowered here and then ignored, which is the substitution
+            // §13.4 exists to stop.
+            if lowered.dust.is_some() && lowered.compressible.is_some() {
+                return Err(Error::Refused(
+                    "physics.compressible: a dust case with a gas block runs on \
+                     ofgpu-compressible (SPEC-LIT §158.6); ofgpu-lowmach would ignore \
+                     the gas"
+                        .into(),
+                ));
+            }
+        } else if !allow_dust {
+            lowered.refuse_dust()?;
+        }
+        // SPEC-LIT §158.8: a case's vent block is refused the same way -
+        // DST-09's part 3 wires it into ofgpu-compressible only.
+        if !allow_vent {
+            lowered.refuse_vent()?;
+        }
+        // SPEC-LIT 119.3: `build_host_mesh` is `blockgen::build_mesh` for
+        // every case without `mesh.wedge` (bit for bit what the line below
+        // always built) and the 119.0 wedge mesh - with the case's own
+        // boundary names - for a wedge one.
+        let hm = lowered.build_host_mesh()?;
         let cc = lowered.to_case_controls();
         Ok((hm, cc, Some(lowered)))
     } else {
         let raw = read_poly_mesh(case_path)?;
-        let hm = build_host_mesh(&raw)?;
+        // SPEC-LIT 118.7 (F32-10): the OpenFOAM path stores the mesh about a
+        // LOCAL origin, so the kernels' absolute f32 differences stay small
+        // however far from the axis the case sits. One line says so when the
+        // case actually moved; an axis through zero is never shifted.
+        let hm = build_host_mesh_local(&raw)?;
+        if hm.origin != DVec3::ZERO {
+            println!(
+                "local origin: ({}, {}, {}) m (SPEC-LIT 118.7)",
+                hm.origin.x, hm.origin.y, hm.origin.z
+            );
+        }
         let cc = ofgpu::io::case::read_case_controls(case_path)?;
         Ok((hm, cc, None))
     }
+}
+
+/// The raw polyMesh of the case [`load_case`] loaded, which it does not keep:
+/// the lattice of SPEC-LIT 117.4 is laid from it (VIO-05a). A JSONC case
+/// builds it again from its lowering (`lowered` is `load_case`'s third
+/// value); an OpenFOAM case reads `constant/polyMesh` again. Called only by
+/// a run that writes `vdb`/`nvdb` on a mesh that is not a uniform Cartesian
+/// box, once, before the time loop.
+pub fn case_raw_mesh(case_path: &Path, lowered: Option<&LoweredCase>) -> Result<PolyMeshRaw> {
+    match lowered {
+        Some(l) => l.build_raw_mesh(),
+        None => read_poly_mesh(case_path),
+    }
+}
+
+/// SPEC-LIT 117.12 on the command-line route of a driver that reads its
+/// polyMesh itself and has no `output` block (`ofgpu-sa`, `ofgpu-vof`,
+/// `ofgpu-buoyant`; VIO-05b): what `-output` writes and what the volume
+/// writers sample onto, decided once, after the mesh is read and before the
+/// time loop. The command line states no lattice, so the 117.3 defaults
+/// apply.
+///
+/// Returns `(formats, cart, volume)`: `formats` is `output` with `vdb`/`nvdb`
+/// dropped under `-permissive` when no lattice can be laid (strict: the
+/// refusal of `drop_volume_formats_without_a_lattice`); `cart` is
+/// `cartesian::detect` as a `CartesianInfo` (`None` off a uniform box), the
+/// `WriteCtx.cart` of every write; `volume` is `Some` only when a volume
+/// format is written, and its `vox()` is every write's `WriteCtx.vox`.
+pub fn command_line_volume(
+    raw: &PolyMeshRaw,
+    hm: &HostMesh,
+    output: &[OutputFormat],
+    do_write: bool,
+) -> Result<(Vec<OutputFormat>, Option<ofgpu::io::CartesianInfo>, Option<ofgpu::io::VolumeTarget>)> {
+    let defaults = ofgpu::io::voxelmap::LatticeSpec::default();
+    let cart = ofgpu::pressure::cartesian::detect(hm).ok().map(|c| ofgpu::io::cartesian_info(hm, &c));
+    let mut formats = output.to_vec();
+    if do_write && cart.is_none() && ofgpu::io::has_volume_format(&formats) {
+        let no_lattice = ofgpu::io::voxelmap::lattice_shape(raw, hm, &defaults).err().map(|e| e.to_string());
+        formats = ofgpu::io::output_plan::drop_volume_formats_without_a_lattice(&formats, no_lattice.as_deref())?;
+    }
+    let volume = if do_write && ofgpu::io::has_volume_format(&formats) {
+        let t = ofgpu::io::volume_target(Some(raw), hm, cart, &defaults)?;
+        for line in t.report_lines() {
+            println!("{line}");
+        }
+        Some(t)
+    } else {
+        None
+    };
+    Ok((formats, cart, volume))
 }
 
 // ==========================================================================
@@ -725,11 +864,16 @@ pub fn output_plan(json: Option<&LoweredCase>) -> Result<Option<OutputPlan>> {
 //
 // `ofgpu::restart` gives the format; every driver still has to say WHICH of
 // its fields go in, which is genuinely driver-specific (a buoyant run has
-// `k`/`epsilon`/`T`, a VOF run has `alpha`/`p_rgh`). What is NOT driver-
-// specific is the `Scalar`/`Vec3` <-> `f64` conversion at the seam, which is
-// only here so it is written once.
+// `k`/`epsilon`/`T`, a VOF run has `alpha`/`p_rgh`). The `Scalar`/`Vec3` <->
+// `f64` conversion at the seam now lives in `ofgpu::restart`
+// (`widen_scalars`/`widen_vectors`/`narrow_scalars`/`narrow_vectors`,
+// SPEC-LIT §118.6) so the integration test exercises the production seam;
+// these thin wrappers keep the drivers' call sites unchanged.
 
-use ofgpu::restart::{FieldKind, RestartData, RestartField};
+use ofgpu::restart::{
+    narrow_scalars, narrow_vectors, widen_scalars, widen_vectors, FieldKind, RestartData,
+    RestartField,
+};
 use ofgpu::Vec3;
 
 /// A `CellScalar` [`RestartField`] from a field's own `Scalar` buffers.
@@ -737,21 +881,18 @@ pub fn restart_scalar(name: &str, internal: &[Scalar], boundary: &[Scalar]) -> R
     RestartField {
         name: name.to_string(),
         kind: FieldKind::CellScalar,
-        internal: internal.iter().map(|&v| f64::from(v)).collect(),
-        boundary: boundary.iter().map(|&v| f64::from(v)).collect(),
+        internal: widen_scalars(internal),
+        boundary: widen_scalars(boundary),
     }
 }
 
 /// A `CellVector` [`RestartField`], xyz-interleaved.
 pub fn restart_vector(name: &str, internal: &[Vec3], boundary: &[Vec3]) -> RestartField {
-    let flat = |v: &[Vec3]| -> Vec<f64> {
-        v.iter().flat_map(|p| [f64::from(p.x), f64::from(p.y), f64::from(p.z)]).collect()
-    };
     RestartField {
         name: name.to_string(),
         kind: FieldKind::CellVector,
-        internal: flat(internal),
-        boundary: flat(boundary),
+        internal: widen_vectors(internal),
+        boundary: widen_vectors(boundary),
     }
 }
 
@@ -761,8 +902,8 @@ pub fn restart_surface(name: &str, internal: &[Scalar], boundary: &[Scalar]) -> 
     RestartField {
         name: name.to_string(),
         kind: FieldKind::SurfaceScalar,
-        internal: internal.iter().map(|&v| f64::from(v)).collect(),
-        boundary: boundary.iter().map(|&v| f64::from(v)).collect(),
+        internal: widen_scalars(internal),
+        boundary: widen_scalars(boundary),
     }
 }
 
@@ -770,15 +911,13 @@ pub fn restart_surface(name: &str, internal: &[Scalar], boundary: &[Scalar]) -> 
 /// this build's `Scalar` (identity under `f64`, a narrowing cast under
 /// `single`).
 pub fn from_restart_scalars(v: &[f64]) -> Vec<Scalar> {
-    v.iter().map(|&x| x as Scalar).collect()
+    narrow_scalars(v)
 }
 
 /// The inverse of [`restart_vector`] - de-interleave `f64` triples back into
 /// `Vec3`.
 pub fn from_restart_vectors(v: &[f64]) -> Vec<Vec3> {
-    v.chunks_exact(3)
-        .map(|c| Vec3::new(c[0] as Scalar, c[1] as Scalar, c[2] as Scalar))
-        .collect()
+    narrow_vectors(v)
 }
 
 /// The named field, or a named error - a restart file missing a field this

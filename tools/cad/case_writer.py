@@ -57,7 +57,9 @@ SWIRL_TOL = 1e-12                  # a normalised inlet direction's y or z compo
 POLYMESH_FILES = ("boundary", "faces", "neighbour", "owner", "points")
 FIELDS = ("U", "p", "T")
 ROLES = ("velocity_inlet", "pressure_outlet", "wall", "slip", "wedge")
-ROLE_TYPES = {"velocity_inlet": "patch", "pressure_outlet": "patch", "wall": "wall", "slip": "patch",
+# slip is typed symmetry: the solver then prescribes the patch's boundary flux to zero
+# (momentum.cu momFluxIsPrescribed), so the slip section of docs/16 §H.2 carries no mass.
+ROLE_TYPES = {"velocity_inlet": "patch", "pressure_outlet": "patch", "wall": "wall", "slip": "symmetry",
               "wedge": "wedge"}
 NOZZLE_ROLES = {"version": "cad-roles/1",
                 "patches": {"inlet": {"role": "velocity_inlet", "direction": [1.0, 0.0, 0.0]},
@@ -179,7 +181,7 @@ def bc_table(role, u_in, t_k) -> dict:
     if role == "wall":
         return {"U": {"type": "noSlip"}, "p": {"type": "zeroGradient"}, "T": {"type": "zeroGradient"}}
     if role == "slip":
-        return {"U": {"type": "slip"}, "p": {"type": "slip"}, "T": {"type": "slip"}}
+        return {"U": {"type": "symmetry"}, "p": {"type": "symmetry"}, "T": {"type": "symmetry"}}
     if role == "wedge":
         return {"U": {"type": "wedge"}, "p": {"type": "wedge"}, "T": {"type": "wedge"}}
     raise ValueError("bc_table: unknown role %r" % (role,))
@@ -645,6 +647,13 @@ DIFFERENCES_NOZZLE_TURB = (
     " the run; the pipe keeps its rest state",
 )
 
+PIPE_TURB_TOLERANCE = "1e-12"     # SPEC-LIT 114.5 O1: the pipe's k and omega solver tolerance
+DIFFERENCES_PIPE = (
+    "k and omega tolerance (pipe): 1e-12 with relTol 0.01 - SPEC-LIT 114.2 and 114.5 O1 (solver f3f145c): at"
+    " tolerance 1e-08 the L1 pipe's omega solve stops changing omega (f +9.74 % against Prandtl, +4.48 % at"
+    " 1e-12, the independent 1-D's value); an input change, the solver untouched; the nozzle keeps 1e-08",
+)
+
 def turb_refs(u_ref, intensity, mixing_length_m):
     """(k_ref, omega_ref) by the solver's own inlet formulas (field_setup.rs inlet_turb):
     k = 3/2 (I |U|)^2 and omega = k^(1/2) / (C_mu^(1/4) l), with C_mu 0.09 (betaStar)."""
@@ -740,20 +749,21 @@ def turb_constant_files(model, nu, g_x=None):
     return out
 
 
-def turb_system_files():
+def turb_system_files(turb_tolerance="1e-08"):
     """controlDict as the laminar one; fvSchemes with div(phi,k) and div(phi,omega) right after div(phi,T);
     fvSolution with k and omega solver blocks after the T block and k/omega 0.7 after the T relaxation -
-    blockgen.rs write_system()'s turbulent entries."""
+    blockgen.rs write_system()'s turbulent entries; the k and omega blocks carry turb_tolerance (the
+    pipe writes PIPE_TURB_TOLERANCE, SPEC-LIT 114.5 O1, the nozzle keeps the solver's default)."""
     sch = list(_FV_SCHEMES)
     j = sch.index("    div(phi,T)      bounded Gauss upwind;") + 1
     sch[j:j] = ["    div(phi,k)      bounded Gauss upwind;", "    div(phi,omega)  bounded Gauss upwind;"]
     sol = list(_FV_SOLUTION)
     j = sol.index("    }", sol.index("    T"))
     sol[j + 1:j + 1] = ["", "    k", "    {", "        solver          PBiCGStab;",
-                        "        preconditioner  diagonal;", "        tolerance       1e-08;",
+                        "        preconditioner  diagonal;", "        tolerance       " + turb_tolerance + ";",
                         "        relTol          0.01;", "        maxIter         200;", "    }", "",
                         "    omega", "    {", "        solver          PBiCGStab;",
-                        "        preconditioner  diagonal;", "        tolerance       1e-08;",
+                        "        preconditioner  diagonal;", "        tolerance       " + turb_tolerance + ";",
                         "        relTol          0.01;", "        maxIter         200;", "    }"]
     e = sol.index("        T               0.7;") + 1
     sol[e:e] = ["        k               0.7;", "        omega           0.7;"]
@@ -994,7 +1004,8 @@ def _write_pipe_body(pipe_dir, level, re_tau, tmp, turb, roles):
     internal = {"U": "(0.0 0.0 0.0)", "p": "0.0", "T": fmt(t_k), "k": fmt(k_ref),
                 "omega": fmt(omega_ref), "nut": "0.0"}
     written = sorted(turb_constant_files(spec["model"], wedge_mesh.NU_TURB, g_x=g_x).items()) \
-        + sorted(turb_system_files().items()) + sorted(turb_field_files(patch_rows, internal).items())
+        + sorted(turb_system_files(PIPE_TURB_TOLERANCE).items()) \
+        + sorted(turb_field_files(patch_rows, internal).items())
     case = {"version": CASE_TURB_VERSION, "case_writer_version": CASE_WRITER_VERSION, "status": "ok",
             "kind": "pipe", "level": level, "inputs": dict((k, inputs[k]) for k in INPUT_KEYS_PIPE),
             "files": files,
@@ -1018,7 +1029,8 @@ def _write_pipe_body(pipe_dir, level, re_tau, tmp, turb, roles):
             "patches": patch_rows, "fields": _turb_fields_doc(t_k, k_ref, omega_ref),
             "numerics": {"transcribed": [list(r) for r in TRANSCRIBED]
                          + [list(r) for r in TRANSCRIBED_TURB],
-                         "differences": list(DIFFERENCES) + list(DIFFERENCES_TURB)},
+                         "differences": list(DIFFERENCES) + list(DIFFERENCES_TURB)
+                         + list(DIFFERENCES_PIPE)},
             "sources": _sources_all(), "cold_start": True}
     _emit_turb(tmp, case, written)
     return case
@@ -1372,6 +1384,26 @@ def selftest() -> None:
         assert sha_map(c0) == gold["sha256"], sorted(set(sha_map(c0).items()) ^ set(gold["sha256"].items()))
         print("[ok] nominal case byte-identical to golden (14 files)")
 
+        # T3b: the slip section is written type symmetry (the solver prescribes its flux to zero, docs/16
+        # §H.2), and a boundary still carrying patch there refuses CASE-NOBC
+        for rel in ("0/U", "0/p", "0/T"):
+            with open(os.path.join(c0, rel.replace("/", os.sep)), "r", encoding="utf-8") as f:
+                blk = re.search(r"slip_upstream\s*\{[^}]*\}", f.read()).group(0)
+            assert "type            symmetry;" in blk, rel
+        wp = wedge_copy("w_slip_patch")
+        bpath = os.path.join(wp, "L0", "case", "constant", "polyMesh", "boundary")
+        with open(bpath, "r", encoding="utf-8") as f:
+            btxt = f.read()
+        assert btxt.count("symmetry;") == 1, "slip_upstream is not the only symmetry in the boundary"
+        common.atomic_write(bpath, btxt.replace("symmetry;", "patch;"))
+        rebind(wp)
+        res = write_case(wp, 0, gdir, sdir, os.path.join(td, "case_slip_patch"))
+        refused(res, "CASE-NOBC", os.path.join(td, "case_slip_patch"))
+        assert res["message"] == "patch slip_upstream (role slip) has boundary type patch, want symmetry", \
+            res["message"]
+        print("[ok] slip_upstream carries type symmetry in 0/U, 0/p and 0/T; the patch-typed boundary"
+              " refuses CASE-NOBC")
+
         # T4: the inputs map holds the nine snapshot shas; the copied polyMesh equals the wedge record's shas
         for key, path in _input_paths(wdir, 0, gdir, sdir).items():
             snap = common.stable_file_snapshot(path)
@@ -1639,9 +1671,23 @@ def selftest() -> None:
 
         # T11: the TG0 pipe case at Re_tau 576.69 - the oracle numbers, the drive line, the six field
         # files, the canonical path-free case.json, byte-identity with the golden (18 files); Re_tau
-        # 2358.0 writes ok
+        # 2358.0 writes ok; TG0-REDO: the pipe's k and omega solvers at 1e-12, the nozzle's at 1e-08
+        with open(os.path.join(ctp, "system", "fvSolution"), "r", encoding="utf-8") as f:
+            fsol_pipe = f.read()
+        with open(os.path.join(ctn, "system", "fvSolution"), "r", encoding="utf-8") as f:
+            fsol_nozz = f.read()
+        assert fsol_pipe.count("tolerance       1e-12;") == 2, fsol_pipe.count("tolerance       1e-12;")
+        assert fsol_pipe.count("tolerance       1e-08;") == 1
+        assert fsol_pipe.count("relTol          0.01;") == 3
+        assert fsol_nozz.count("tolerance       1e-12;") == 0
+        assert fsol_nozz.count("tolerance       1e-08;") == 3
+        assert fsol_nozz.count("relTol          0.01;") == 3
+        with open(os.path.join(ctn, "case.json"), "rb") as f:
+            nj_doc = json.loads(f.read().decode("utf-8"))
         with open(os.path.join(ctp, "case.json"), "rb") as f:
             pj = json.loads(f.read().decode("utf-8"))
+        assert pj["numerics"]["differences"][-1] == DIFFERENCES_PIPE[0]
+        assert DIFFERENCES_PIPE[0] not in nj_doc["numerics"]["differences"]
         opj, tj = pj["operating_point"], pj["turbulence"]
         for key, want in (("u_tau_m_s", 0.34970481600000003), ("g_x_m_s2", 9.78347666668751),
                           ("U_b_m_s", 6.159250975292723), ("mach", 0.01794470646570164)):
@@ -1678,7 +1724,8 @@ def selftest() -> None:
         assert abs(j2["turbulence"]["yplus1_apriori"] - 0.999048500820617) <= 1e-9
         turb_cases.append(("pipe 2358", p2))
         print("[ok] TG0 pipe at Re_tau 576.69: oracle numbers, the drive line, six field files, canonical "
-              "path-free case.json, byte-identical to the golden (18 files); Re_tau 2358 writes ok")
+              "path-free case.json, k/omega at 1e-12 (nozzle 1e-08) with the pipe-only differences row, "
+              "byte-identical to the golden (18 files); Re_tau 2358 writes ok")
 
         # T12: the turbulent nozzle at U_e 60 - the oracle numbers, no fvSources anywhere, byte-identity
         # with the golden (17 files)

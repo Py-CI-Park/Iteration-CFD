@@ -98,10 +98,154 @@ pub const REGISTRY: &[(&str, Stance)] = &[
     ),
     ("src/adapt/rebuild.rs", Stance::Via("src/adapt.rs")),
     ("src/adapt/transfer.rs", Stance::Via("src/adapt.rs")),
+    (
+        "src/amg/coarse.rs",
+        Stance::Gate("coarse_solve_replays_under_capture"),
+    ),
+    (
+        "src/amg/cycle.rs",
+        Stance::Gate("vcycle_replays_under_capture"),
+    ),
+    (
+        "src/amg/distcycle.rs",
+        Stance::Refused(
+            "the distributed V-cycle fills every level's halo through \
+             SpmdHalo and allgathervs the coarsest right-hand side on every \
+             cycle - host round trips by construction; DistGamg::cycle \
+             refuses a capture by name (SPEC-LIT 141.11, \
+             a_distributed_gamg_request_that_cannot_be_served_is_refused_by_name). \
+             Alternative: the one-process V-cycle amg::Gamg, gated by \
+             vcycle_replays_under_capture",
+        ),
+    ),
+    (
+        "src/amg/galerkin.rs",
+        Stance::Gate("galerkin_replays_under_capture"),
+    ),
+    (
+        "src/amg/single.rs",
+        Stance::Gate("single_cycle_replays_under_capture"),
+    ),
+    (
+        "src/amg/smooth.rs",
+        Stance::Gate("smoothers_replay_under_capture"),
+    ),
+    (
+        "src/chem/device.rs",
+        Stance::Gate("chem_device_replays_under_capture"),
+    ),
+    (
+        "src/chem/reactor.rs",
+        Stance::Outside(
+            "the constant-pressure reactor is the f64 host twin of SPEC-LIT \
+             132.8; it launches nothing, and its device counterpart is \
+             src/chem/device.rs",
+        ),
+    ),
+    (
+        "src/chem/source.rs",
+        Stance::Gate("chem_source_replays_under_capture"),
+    ),
+    (
+        "src/chem/tci.rs",
+        Stance::Gate("tci_replays_under_capture"),
+    ),
+    (
+        "src/compressible/energy.rs",
+        Stance::Gate("the_compressible_energy_equation_replays_bitwise"),
+    ),
+    (
+        "src/compressible/momentum.rs",
+        Stance::Gate("the_compressible_momentum_predictor_replays_bitwise"),
+    ),
+    (
+        "src/compressible/pressure.rs",
+        Stance::Gate("the_compressible_pressure_corrector_replays_bitwise"),
+    ),
+    (
+        "src/compressible/thermo.rs",
+        Stance::Gate("the_compressible_thermo_update_replays_bitwise"),
+    ),
+    (
+        "src/dust/device.rs",
+        Stance::Gate("dust_fsc_replays_under_capture"),
+    ),
+    (
+        "src/dust/particle.rs",
+        Stance::Outside(
+            "the reacting dust parcel's step is the f64 host twin of SPEC-LIT \
+             159.7; it launches nothing, and its device counterpart \
+             particle_step in src/dust/device.rs is gated there by \
+             dust_particle_step_replays_under_capture",
+        ),
+    ),
+    (
+        "src/dust/progress.rs",
+        Stance::Refused(
+            "`ProgressEquation::solve` is one outer iteration of the c~ equation \
+             of SPEC-LIT 155.2, and it READS BACK the bounds counter after every \
+             solve: 155.2 reports each cell outside [0, 1] and clips none, so the \
+             count must reach the host. The linear solve's residual check reads \
+             back too. Its kernels' launchers in src/dust/device.rs are gated \
+             there by dust_progress_kernels_replay_under_capture",
+        ),
+    ),
+    (
+        "src/dust/source.rs",
+        Stance::Refused(
+            "one dust step calls ProgressEquation::solve, which reads the bounds \
+             counter back after every solve (SPEC-LIT 155.2 reports each cell \
+             outside [0, 1] and clips none, so the count must reach the host), \
+             and its predicted_courant downloads the closures' U_t,ISP. Its \
+             three thermo kernels are gated in src/dust/device.rs by \
+             dust_source_kernels_replay_under_capture",
+        ),
+    ),
+    (
+        "src/dust/vent.rs",
+        Stance::Refused(
+            "the one-domain vent's trigger (SPEC-LIT 158.1) gathers the \
+             membrane's cell pressures with presGather and DOWNLOADS them after \
+             every step, because the opening is a host decision that swaps the \
+             mesh the run steps on (SPEC-LIT §158.8); the opening itself is a host round \
+             trip of every field. Nothing in it belongs inside a captured step",
+        ),
+    ),
     // ---- physics with an iteration of its own -----------------------------
     (
         "src/cht.rs",
         Stance::Gate("the_solid_side_iteration_replays_bitwise"),
+    ),
+    (
+        "src/compressible/mod.rs",
+        Stance::Refused(
+            "`Compressible::step` is the outer loop of SPEC-LIT 125.3, and its \
+             step 8 READS BACK `T`, `p`, `rho`, `u` and `mdot` after every outer \
+             iteration: SPEC-LIT 122.3 counts the out-of-bounds cells on the \
+             host and stops the run on a nonzero count, and residualControl \
+             stops a steady run on the solvers' residuals. A data-dependent \
+             stop is the one thing a graph cannot hold. Its equations are each \
+             gated on their own (thermo, momentum, pressure, energy). \
+             Alternative: a captured inner region per outer iteration with the \
+             count reduced on the device; not implemented",
+        ),
+    ),
+    // SPEC-LIT 125.7: the local step is formed at the top of each pseudo
+    // step of `Compressible::step`, and its three time-term kernels run only
+    // in the equations `Compressible::new` attached it to.
+    ("src/compressible/lts.rs", Stance::Via("src/compressible/mod.rs")),
+    // SPEC-LIT 126.8: the inlets are rewritten at the top of each outer
+    // iteration of `Compressible::step`, so they live inside its loop.
+    ("src/compressible/bc.rs", Stance::Via("src/compressible/mod.rs")),
+    (
+        "src/compressible/exact/riemann.rs",
+        Stance::Outside(
+            "the exact Riemann solution is a host answer key in f64 - a \
+             bisection for the star pressure and a sampler at (x, t) - that a \
+             gate compares a computed field against after the run. It launches \
+             no kernel and no time loop calls it, so there is nothing to \
+             capture or replay. SPEC-LIT 127.2",
+        ),
     ),
     ("src/contact_angle.rs", Stance::Via("src/vof.rs")),
     (
@@ -125,17 +269,62 @@ pub const REGISTRY: &[(&str, Stance)] = &[
         ),
     ),
     (
+        "src/distsolve/spmd.rs",
+        Stance::Refused(
+            "the SPMD PCG and PBiCGStab fill their halos through SpmdHalo \
+             and reduce through SpmdReduction, and both copy to the host \
+             and hand the bytes to a Comm on every step - host round trips \
+             by construction; both are refused by name at run time \
+             (an_spmd_pcg_refuses_by_name, an_spmd_pbicgstab_refuses_by_name). \
+             Alternative: dist_pcg or dist_pbicgstab in one process, whose \
+             exchange and gather are device-only, or a fixed sweep count \
+             between exchanges",
+        ),
+    ),
+    (
         "src/energy.rs",
         Stance::Gate("the_energy_correction_replays_bitwise"),
     ),
     ("src/exactsum.rs", Stance::Via("src/distsolve.rs")),
     (
+        "src/exactsum/spmd.rs",
+        Stance::Refused(
+            "the SPMD exact reduction copies the rank's maximum, limbs or \
+             gathered partial to the host and hands the bytes to a \
+             Comm::allgather on EVERY collective - host round trips by \
+             construction; it is refused by name at run time \
+             (an_spmd_reduction_refuses_by_name). Alternative: \
+             ExactReduction, whose gather is a device-to-device copy and \
+             is the one-process form",
+        ),
+    ),
+    (
         "src/fan.rs",
         Stance::Gate("the_fan_source_replays_bitwise"),
     ),
+    (
+        "src/field/advective.rs",
+        Stance::Via("src/field_ops.rs"),
+    ),
     ("src/field_ops.rs", Stance::Via("src/momentum.rs")),
+    (
+        "src/function1/device.rs",
+        Stance::Gate("the_ramped_inlet_replays_bitwise"),
+    ),
     ("src/fv.rs", Stance::Via("src/momentum.rs")),
     ("src/halo.rs", Stance::Via("src/distsolve.rs")),
+    (
+        "src/halo/spmd.rs",
+        Stance::Refused(
+            "the SPMD exchange copies the packed cells to the host, hands \
+             them to a Comm and copies the halo back, synchronising the \
+             stream twice - host round trips by construction; it is refused \
+             by name at run time (an_spmd_halo_refuses_by_name). \
+             Alternative: capture the device work BETWEEN two exchanges, or, \
+             in one process, use HaloExchange, whose pack and copy are \
+             device-only",
+        ),
+    ),
     ("src/ldu_ops.rs", Stance::Via("src/solver.rs")),
     ("src/les.rs", Stance::Via("src/models/les.rs")),
     ("src/marangoni.rs", Stance::Via("src/vof.rs")),
@@ -178,6 +367,10 @@ pub const REGISTRY: &[(&str, Stance)] = &[
     (
         "src/models/spalart_allmaras.rs",
         Stance::Gate("the_spalart_allmaras_correction_replays_bitwise"),
+    ),
+    (
+        "src/models/spalart_allmaras/conservative.rs",
+        Stance::Via("src/models/spalart_allmaras.rs"),
     ),
     (
         "src/models/transition.rs",
@@ -262,7 +455,34 @@ pub const REGISTRY: &[(&str, Stance)] = &[
         "src/psychro.rs",
         Stance::Gate("the_psychrometric_update_replays_bitwise"),
     ),
+    (
+        "src/radiation/dom.rs",
+        Stance::Gate("dom_replays_under_capture"),
+    ),
+    (
+        "src/radiation/p1.rs",
+        Stance::Gate("p1_solve_replays_under_capture"),
+    ),
+    (
+        "src/radiation/wsgg.rs",
+        Stance::Gate("wsgg_p1_replays_under_capture"),
+    ),
     ("src/rheology.rs", Stance::Via("src/momentum.rs")),
+    (
+        "src/rigid_body.rs",
+        Stance::Refused(
+            "the rigid body is loosely coupled through the HOST: every time \
+             step downloads the twelve numbers of the force reduction, \
+             integrates Euler's equations on the host, and writes the jets' \
+             world velocities with Gpu::write - a host round trip and a host \
+             write, both refused inside a capture by name (SPEC-LIT 81.3, \
+             SPEC-LIT 161.6). The point map and the wall condition are pure \
+             device maps and the step that moves the mesh is \
+             src/mesh/ale.rs's, which is gated. Alternative: integrate the \
+             body on the device from the resident force and pass the state \
+             through device memory; not implemented",
+        ),
+    ),
     (
         "src/s2s.rs",
         Stance::Gate("the_s2s_exchange_replays_bitwise"),
@@ -325,6 +545,16 @@ pub const REGISTRY: &[(&str, Stance)] = &[
              implemented",
         ),
     ),
+    (
+        "src/vv/rans1d.rs",
+        Stance::Outside(
+            "the 1-D RANS pipe oracle is a host answer key in f64 - its sweeps \
+             are its own fixed-point iteration on the radial cell set, run \
+             before or after a solve for a gate to compare against. It launches \
+             no kernel and no time loop calls it, so there is nothing to \
+             capture or replay. SPEC-LIT 143.1",
+        ),
+    ),
     ("src/wallfunctions.rs", Stance::Via("src/models/k_epsilon.rs")),
 ];
 
@@ -354,8 +584,12 @@ pub const UNGATED_CEILING: usize = 0;
 /// does not match the source code of the predicate.
 const NOT_PHYSICS: &[&str] = &["src/capture.rs", "src/capture/registry.rs"];
 
-/// Method names that mean "advance this module by one iteration".
-const ITERATION_ENTRIES: &[&str] = &["correct", "step", "update", "solve", "advance"];
+/// Method names that mean "advance this module by one iteration". The dust
+/// step's entry is `before_flow` (SPEC-LIT 157.4): it drives other modules'
+/// kernels and has none of its own, and the population must see it for the
+/// same reason the four turbulence names are here.
+const ITERATION_ENTRIES: &[&str] =
+    &["before_flow", "correct", "step", "update", "solve", "advance"];
 
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf()

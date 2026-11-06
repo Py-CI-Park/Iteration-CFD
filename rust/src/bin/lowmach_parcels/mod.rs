@@ -1,0 +1,534 @@
+// meteor-cfd - Copyright (c) 2026 주식회사 이터레이션즈 (Iterations Co., Ltd.)
+// Source-available, not Open Source. Teaching and academic research are
+// free; commercial and non-academic research require a licence.
+// Enquiries: simul@msimul.com
+// See LICENSE at the repository root.
+// Provenance: see PROVENANCE.md. No GPL-licensed source was consulted.
+
+//! `ofgpu-lowmach`'s parcels step - SPEC-LIT §137.10 (docs/17 CHR-26).
+//!
+//! A JSONC case's `parcels` block (lowered by CHR-25 onto
+//! [`ofgpu::io::case_parcels::LoweredParcels`]) runs the pool every time
+//! step in §68.7's order - parcel step, sort + CSR, deposit, coupling
+//! gather - and hands the gas its two-way sources: momentum into
+//! [`ofgpu::momentum::MomentumSources`] once per step (68.4), energy into
+//! [`ofgpu::energy::EnergySources`] every outer iteration (68.9)/(77.2),
+//! and an evaporating pool's vapour `mdot'''` (77.6) into the named species
+//! of a reacting case through [`crate::lowmach_chem::VapourSource`],
+//! (137.8)-(137.9). This module only orders the library's pieces and
+//! refuses, by name, the runs this driver cannot honour - the settings a
+//! parcels case cannot survive are §137.10's, each with its key.
+//!
+//! Written from SPEC-LIT §68, §77, §133.10 and §137.10. No GPL-licensed
+//! source was consulted.
+
+use std::path::Path;
+
+use ofgpu::device::DevBuf;
+use ofgpu::energy::{EnergySources, GasMixture};
+use ofgpu::field::GpuVectorField;
+use ofgpu::io::case_parcels::LoweredParcels;
+use ofgpu::momentum::MomentumSources;
+use ofgpu::parcels::couple::{live_parcel_impulse, ParcelCoupling};
+use ofgpu::parcels::deposit::ParcelDeposition;
+use ofgpu::parcels::{ParcelPhysics, ParcelStats, Parcels, SeedParcel};
+use ofgpu::{Error, Gpu, GpuMesh, HostMesh, Result, Scalar, Vec3};
+
+use crate::lowmach_chem::VapourSource;
+
+fn refused(key: &str, msg: &str) -> Error {
+    Error::Refused(format!("{key}: {msg} (SPEC-LIT §137.10)"))
+}
+
+/// The run settings §137.10 refuses with a parcels case, by name, before a
+/// field is set up. `species` is the reacting case the vapour would go to:
+/// the solved names, in [`ofgpu::species::Species`] order, and the inert
+/// one; `None` without chemistry.
+pub struct ParcelRunShape<'a> {
+    pub transient: bool,
+    pub restart: bool,
+    pub motion: bool,
+    pub species: Option<(&'a [String], &'a str)>,
+}
+
+/// §137.10's refusals for `lp` in a run of `shape`.
+pub fn refuse_settings(lp: &LoweredParcels, shape: &ParcelRunShape<'_>) -> Result<()> {
+    if !shape.transient {
+        return Err(refused(
+            "parcels",
+            "a steady run: the pool walks over a physical time step (SPEC-LIT 66.8 \
+             fixes the injection interval in whole steps); run transient with \
+             -endTime/-deltaT",
+        ));
+    }
+    if shape.restart {
+        return Err(refused(
+            "parcels",
+            "a checkpoint, -restartFrom, -restartWrite or an output restart series: \
+             the .mcr format carries no parcels",
+        ));
+    }
+    if shape.motion {
+        return Err(refused(
+            "parcels",
+            "a motion block or -rigidBody: the pool is built on a fixed mesh",
+        ));
+    }
+    if lp.controls.physics == ParcelPhysics::Evaporating && lp.vapour.is_none() {
+        return Err(refused(
+            "parcels.physics",
+            "evaporating needs coupling.mass evaporation and its vapour: the vapour \
+             species' field is the Y_v (76.7) reads, and this driver has no other",
+        ));
+    }
+    if let Some(name) = &lp.vapour {
+        let Some((solved, inert)) = shape.species else {
+            return Err(refused(
+                "parcels.coupling.vapour",
+                "needs the species, chemistry and combustion blocks of a reacting case \
+                 (SPEC-LIT 133.11)",
+            ));
+        };
+        if name == inert {
+            return Err(refused(
+                "parcels.coupling.vapour",
+                "the inert member is closed by 1 - sum and takes no source; name a \
+                 solved species",
+            ));
+        }
+        if !solved.iter().any(|n| n == name) {
+            return Err(refused(
+                "parcels.coupling.vapour",
+                &format!("\"{name}\" is not one of the solved species {solved:?}"),
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// The vapour's place in the reacting mixture: its index `k` among the
+/// solved members of `mix`, and (137.9)'s
+/// `factor = (1/W_N)/(1/W_v - 1/W_N)` as [`Scalar`]. Refused by name when
+/// the vapour and the inert member have one molar mass, where the factor
+/// divides by zero - the mass the parcels add would change nothing the
+/// mixture's `rho` or its constraint could see.
+pub fn vapour_member(mix: &GasMixture, name: &str) -> Result<(usize, Scalar)> {
+    let k = mix.names().iter().position(|n| n == name).ok_or_else(|| {
+        Error::Config(format!(
+            "parcels.coupling.vapour: \"{name}\" is not among the solved species {:?} \
+             (SPEC-LIT §137.10)",
+            mix.names()
+        ))
+    })?;
+    let c = mix.coefficient(k);
+    let inv_wn = mix.inverse_molar_mass(&[]);
+    if c == 0.0 {
+        return Err(refused(
+            "parcels.coupling.vapour",
+            "the vapour and the inert member have one molar mass, so (137.9)'s factor \
+             (1/W_N)/(1/W_v - 1/W_N) is undefined",
+        ));
+    }
+    Ok((k, (inv_wn / c) as Scalar))
+}
+
+/// SPEC-LIT 147.2: the stop point of a parcel that ended on a face within
+/// this distance above the plane is ON the plane. Far below any length of
+/// the case, far above the position round-off of a face point, about 1e-14
+/// m at 50 m.
+pub(crate) const ON_PLANE: f64 = 1.0e-9;
+
+/// SPEC-LIT 147.2: the x of a parcel's DOWNWARD crossing of the plane
+/// `z = zp`, linear between the two endpoints of the step - `Some(x)` iff
+/// the parcel was above the plane and is not, `None` otherwise. Pure and
+/// host-side, so the tests hold it exactly.
+pub(crate) fn plane_crossing(z0: f64, x0: f64, z1: f64, x1: f64, zp: f64) -> Option<f64> {
+    if z0 > zp && z1 <= zp {
+        Some(x0 + (z0 - zp) / (z0 - z1) * (x1 - x0))
+    } else {
+        None
+    }
+}
+
+/// SPEC-LIT 147.2: the smallest `x` in `hits` (given in x order, each
+/// `(x, liquid mass kg)`) whose running mass sum reaches `q` of the total -
+/// the landed mass's percentile. `None` for no hits, or a total mass of 0.
+pub(crate) fn mass_percentile(hits_sorted_by_x: &[(f64, f64)], q: f64) -> Option<f64> {
+    let total: f64 = hits_sorted_by_x.iter().map(|(_, m)| m).sum();
+    if hits_sorted_by_x.is_empty() || total == 0.0 {
+        return None;
+    }
+    let mut sum = 0.0;
+    for (x, m) in hits_sorted_by_x {
+        sum += m;
+        if sum >= q * total {
+            return Some(*x);
+        }
+    }
+    None
+}
+
+/// SPEC-LIT 147.2: the landing ledger one pool keeps when its case states a
+/// plane - the plane itself, every slot's previous state
+/// `(x, z, live)` from the snapshot's f64 world positions, and the hits
+/// `(crossing x, liquid mass kg)` recorded so far.
+struct Landing {
+    z: f64,
+    prev: Vec<(f64, f64, bool)>,
+    hits: Vec<(f64, f64)>,
+}
+
+/// SPEC-LIT 147.2: the throw a landing ledger has recorded - the crossing
+/// count, the farthest x and the landed liquid's mass percentiles.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LandingSummary {
+    /// The plane the crossings were recorded on, m.
+    pub z: f64,
+    /// How many downward crossings the pool has recorded.
+    pub crossings: usize,
+    /// The farthest crossing's x, m.
+    pub farthest: Option<f64>,
+    /// The mass median landing x, m - 50 % of the landed mass at or below.
+    pub x50: Option<f64>,
+    /// The 90 % mass percentile of the landed x, m.
+    pub x90: Option<f64>,
+    /// The 99 % mass percentile of the landed x, m.
+    pub x99: Option<f64>,
+}
+
+/// One run's parcel pool, its deposit and its coupling, run in §68.7's
+/// order. The pool is built for one `dt` (SPEC-LIT 66.8) and one fixed
+/// mesh; the vapour holds the reacting case's end of the mass coupling.
+pub struct CaseParcels<'m> {
+    parcels: Parcels<'m>,
+    dep: ParcelDeposition<'m>,
+    cp: ParcelCoupling<'m>,
+    vapour: Option<(usize, Scalar)>,
+    steps: usize,
+    /// SPEC-LIT §159.10: a dust cloud's (159.20) temperature-equation source
+    /// `q`, W/m3, one buffer per cell, handed in by `enable_cloud_energy`
+    /// and registered on every outer iteration's freshly cleared registry
+    /// beside this step's (68.9). `None` for every case without a cloud,
+    /// which registers exactly what it always registered.
+    cloud_q: Option<DevBuf<Scalar>>,
+    /// SPEC-LIT 147.2: the landing ledger when the case states a plane.
+    /// `None` changes nothing at all - no extra read-back in the step and
+    /// not one byte in the reports.
+    landing: Option<Landing>,
+}
+
+impl<'m> CaseParcels<'m> {
+    /// Build the pool for `dt` from the lowered block. The library's own
+    /// refusals stand (`Parcels::new`'s `validate`, `ParcelCoupling::new`'s
+    /// §77.7 consistency rules). `vapour` is handed in iff the mass coupling
+    /// is on - `Some` without it, or `None` with it, is the caller's
+    /// mistake, refused as [`Error::Config`].
+    pub fn new(
+        gpu: &Gpu,
+        hm: &HostMesh,
+        m: &'m GpuMesh,
+        lp: &LoweredParcels,
+        dt: Scalar,
+        vapour: Option<(usize, Scalar)>,
+    ) -> Result<Self> {
+        if lp.coupling.mass.is_on() != vapour.is_some() {
+            return Err(Error::Config(format!(
+                "parcels: coupling.mass is {} and the vapour is {}; they go together \
+                 (SPEC-LIT §137.10)",
+                if lp.coupling.mass.is_on() { "on" } else { "off" },
+                if vapour.is_some() { "set" } else { "absent" },
+            )));
+        }
+        let parcels = Parcels::new(gpu, hm, m, lp.controls.clone(), &lp.injectors, dt)?;
+        let dep = ParcelDeposition::new(gpu, &parcels)?;
+        let cp = ParcelCoupling::new(gpu, &parcels, lp.coupling)?;
+        Ok(Self {
+            parcels,
+            dep,
+            cp,
+            vapour,
+            steps: 0,
+            cloud_q: None,
+            landing: lp.landing.map(|z| Landing { z, prev: Vec::new(), hits: Vec::new() }),
+        })
+    }
+
+    /// Place parcels directly, at setup, with no injector - the seeding
+    /// route [`Parcels::seed`] owns, through to the cloud's driver (SPEC-LIT
+    /// §159.10) and every verification case.
+    pub fn seed(&mut self, gpu: &Gpu, hm: &HostMesh, seeds: &[SeedParcel]) -> Result<()> {
+        self.parcels.seed(gpu, hm, seeds)
+    }
+
+    /// The pool, mutable - the dust cloud's step copies the shrunken char
+    /// diameters into it once per step (`Parcels::set_diameters`, SPEC-LIT
+    /// §159.10).
+    pub fn parcels_mut(&mut self) -> &mut Parcels<'m> {
+        &mut self.parcels
+    }
+
+    /// Allocate the cloud's per-cell temperature-equation source, zeroed.
+    /// Setup only; a case without a cloud never calls it and never carries
+    /// the buffer.
+    pub fn enable_cloud_energy(&mut self, gpu: &Gpu, n: usize) -> Result<()> {
+        self.cloud_q = Some(gpu.upload(&vec![0.0 as Scalar; n.max(1)])?);
+        Ok(())
+    }
+
+    /// The cloud's source buffer, for the step to overwrite.
+    pub fn cloud_energy_mut(&mut self) -> Option<&mut DevBuf<Scalar>> {
+        self.cloud_q.as_mut()
+    }
+
+    /// The vapour's solved-species index, when the mass coupling is on.
+    pub fn vapour_index(&self) -> Option<usize> {
+        self.vapour.map(|(k, _)| k)
+    }
+
+    /// §68.7's steps 1-4: the walk, the sort + CSR, the deposit and the
+    /// coupling gather. The gas temperature goes to the pool and to the
+    /// coupling exactly when each reads one (`physics.is_thermal()`, the
+    /// energy coupling); the vapour field when the physics evaporates and
+    /// when the mass coupling is on - the library refuses the other pairing
+    /// by name.
+    #[allow(clippy::too_many_arguments)]
+    pub fn step(
+        &mut self,
+        gpu: &Gpu,
+        u: &GpuVectorField,
+        rho: &DevBuf<Scalar>,
+        t: &DevBuf<Scalar>,
+        y_vapour: Option<&DevBuf<Scalar>>,
+        dt: Scalar,
+    ) -> Result<()> {
+        let thermal = self.parcels.controls().physics.is_thermal();
+        let evap = self.parcels.controls().physics == ParcelPhysics::Evaporating;
+        let energy_on = self.cp.controls().energy.is_on();
+        let mass_on = self.cp.controls().mass.is_on();
+        self.parcels.step(
+            gpu,
+            u,
+            rho,
+            if thermal { Some(t) } else { None },
+            if evap { y_vapour } else { None },
+            dt,
+        )?;
+        // SPEC-LIT 147.2: the landing ledger, from this step's own snapshot.
+        // Only where the case states a plane; a pool without one makes no
+        // extra read-back and records nothing. A slot whose previous state
+        // was live and came down through the plane adds its crossing with
+        // the liquid mass it carries; then every slot stores this step's
+        // state. A parcel removed at a wall keeps the face point as its
+        // position, so a floor AT the plane counts its landing.
+        if self.landing.is_some() {
+            let s = self.parcels.snapshot(gpu)?;
+            let rho_l = f64::from(self.parcels.controls().rho_liquid);
+            let ledger = self.landing.as_mut().expect("the landing ledger");
+            if ledger.prev.len() < s.n_slots {
+                ledger.prev.resize(s.n_slots, (0.0, 0.0, false));
+            }
+            for i in 0..s.n_slots {
+                // SPEC-LIT 147.2: a slot still live keeps the exact test -
+                // no tolerance, so no parcel can be counted twice. A slot
+                // that ended this step on a face stops at the face point,
+                // computed in position precision, a few ulps either side
+                // of the plane; a stop within ON_PLANE above the plane is
+                // ON it, so the ledger takes its height as the plane.
+                let now_live = s.cell[i] >= 0;
+                let z_stop = if !now_live && s.x64[i].z - ledger.z <= ON_PLANE {
+                    ledger.z.min(s.x64[i].z)
+                } else {
+                    s.x64[i].z
+                };
+                if let Some(&(x0, z0, true)) = ledger.prev.get(i) {
+                    if let Some(x) = plane_crossing(z0, x0, z_stop, s.x64[i].x, ledger.z) {
+                        let d = f64::from(s.d[i]);
+                        let mass = f64::from(s.n_p[i])
+                            * rho_l
+                            * std::f64::consts::PI
+                            / 6.0
+                            * d
+                            * d
+                            * d;
+                        ledger.hits.push((x, mass));
+                    }
+                }
+                ledger.prev[i] = (s.x64[i].x, s.x64[i].z, now_live);
+            }
+        }
+        self.dep.update(gpu, &self.parcels)?;
+        self.cp.update(
+            gpu,
+            &self.parcels,
+            &self.dep,
+            rho,
+            u,
+            if energy_on { Some(t) } else { None },
+            if mass_on { y_vapour } else { None },
+            dt,
+        )?;
+        self.steps += 1;
+        Ok(())
+    }
+
+    /// §68.7's step 5, momentum half: clear the registry and register this
+    /// step's impulse - once per time step, read by every outer iteration.
+    /// With the coupling off, nothing at all: an unregistered registry moves
+    /// not one bit of the momentum matrix (Gate 68-B).
+    pub fn register_momentum(&self, gpu: &Gpu, s: &mut MomentumSources) -> Result<()> {
+        if self.cp.controls().momentum.is_on() {
+            s.clear(gpu)?;
+            self.cp.register_momentum(gpu, s)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Step 5's energy half: register this step's heat, every outer
+    /// iteration - the caller clears the registry, so NO clear here.
+    pub fn register_energy(&self, gpu: &Gpu, s: &mut EnergySources) -> Result<()> {
+        if self.cp.controls().energy.is_on() {
+            self.cp.register_energy(gpu, s)
+        } else {
+            Ok(())
+        }?;
+        // SPEC-LIT §159.10 (159.20): a dust cloud's q, explicit, every outer
+        // iteration - the step overwrote it once per time step. Beside the
+        // branch above, never instead of it; `None` registers nothing and
+        // the run makes exactly the calls it made.
+        if let Some(q) = &self.cloud_q {
+            s.register_explicit(gpu, q)?;
+        }
+        Ok(())
+    }
+
+    /// The vapour source for the reacting step, from this step's `mdot'''`
+    /// (77.6) and (137.9)'s factor.
+    pub fn vapour(&self) -> Option<VapourSource<'_>> {
+        let (index, factor) = self.vapour?;
+        Some(VapourSource { index, mdot: self.cp.vapour_production(), factor })
+    }
+
+    /// The live parcels beside the fields, as `<time>/parcels.vtp` in `dir`.
+    pub fn write_vtp(&self, gpu: &Gpu, dir: &Path, t: Scalar) -> Result<()> {
+        self.parcels.write_vtp(gpu, &dir.join("parcels.vtp"), Some(t))
+    }
+
+    /// One line for the periodic report. `slots` is `ParcelStats::n_slots`,
+    /// the pool's high-water mark (dead slots included), not a live count.
+    /// With a landing plane (SPEC-LIT 147.2) the throw's tail is appended,
+    /// exactly the format the supervisor's record parser reads; without
+    /// one the line is byte for byte what this driver has always printed.
+    pub fn report_line(&self, gpu: &Gpu) -> Result<String> {
+        let s = self.parcels.stats(gpu)?;
+        let mut line = format!(
+            "parcels: slots {} | injected {} | escaped {} | wall {} | evaporated {} | lost {}",
+            s.n_slots, s.n_injected, s.n_escaped, s.n_wall, s.n_evaporated, s.n_lost
+        );
+        if let Some(sum) = self.landing_summary() {
+            let n = |v: Option<f64>| v.map_or("-".to_string(), |x| x.to_string());
+            line.push_str(&format!(
+                " | landing z {}: crossings {} | farthest {} m | x50 {} m | x90 {} m | x99 {} m",
+                sum.z, sum.crossings, n(sum.farthest), n(sum.x50), n(sum.x90), n(sum.x99)
+            ));
+        }
+        Ok(line)
+    }
+
+    /// SPEC-LIT 147.2: the throw recorded so far, `None` without a landing
+    /// plane. The percentiles are [`mass_percentile`] at 0.5, 0.9 and 0.99
+    /// over the hits taken in x order.
+    pub fn landing_summary(&self) -> Option<LandingSummary> {
+        let l = self.landing.as_ref()?;
+        let mut hits = l.hits.clone();
+        hits.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+        let p = |q: f64| mass_percentile(&hits, q);
+        Some(LandingSummary {
+            z: l.z,
+            crossings: l.hits.len(),
+            farthest: l.hits.iter().map(|(x, _)| *x).reduce(f64::max),
+            x50: p(0.5),
+            x90: p(0.9),
+            x99: p(0.99),
+        })
+    }
+
+    /// SPEC-LIT 147.2: the raw hits `(crossing x, liquid mass kg)` in x
+    /// order - the tests' look at the ledger's book, `None`'s twin of
+    /// [`Self::landing_summary`].
+    #[cfg(test)]
+    pub(crate) fn landing_hits(&self) -> Vec<(f64, f64)> {
+        let mut hits = self.landing.as_ref().map_or(Vec::new(), |l| l.hits.clone());
+        hits.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+        hits
+    }
+
+    /// The banner's parcels lines: the pool's own settings, then the
+    /// coupling's, then the vapour's.
+    pub fn describe(&self) -> String {
+        let vap = match self.vapour {
+            Some((k, f)) => format!(
+                "\nparcels/coupling.vapour: solved species {k}, (137.9) factor {f} \
+                 (SPEC-LIT §137.10)"
+            ),
+            None => String::new(),
+        };
+        format!(
+            "{}\n{}{}",
+            self.parcels.controls().describe(),
+            self.cp.controls().describe(),
+            vap
+        )
+    }
+
+    /// The run's last step, for the report and the tests: the momentum the
+    /// gas was given by it, (68.4), what the live parcels lost, the stats,
+    /// and the step count.
+    pub fn finish(&mut self, gpu: &Gpu) -> Result<ParcelsEnd> {
+        let gained = self.cp.total_impulse(gpu)?;
+        let lost = live_parcel_impulse(&self.parcels.snapshot(gpu)?);
+        let stats = self.parcels.stats(gpu)?;
+        Ok(ParcelsEnd { steps: self.steps, stats, gained, lost, cloud: None })
+    }
+
+    /// The pool, for the tests.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub fn parcels(&self) -> &Parcels<'m> {
+        &self.parcels
+    }
+
+    /// The deposit, for the tests.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub fn deposition(&self) -> &ParcelDeposition<'m> {
+        &self.dep
+    }
+
+    /// The coupling, for the tests.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub fn coupling(&self) -> &ParcelCoupling<'m> {
+        &self.cp
+    }
+}
+
+/// How a run's parcels ended - SPEC-LIT 137.10's report, and the tests' own
+/// read of the last step.
+#[derive(Debug, Clone)]
+pub struct ParcelsEnd {
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub steps: usize,
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub stats: ParcelStats,
+    /// The momentum the gas was given this last step, N s - (68.4).
+    pub gained: Vec3,
+    /// What the live parcels lost, N s - `live_parcel_impulse`.
+    pub lost: Vec3,
+    /// SPEC-LIT §159.10: the run's dust cloud - its ledgers, its seeded and
+    /// final particle states and its last step's (159.20) sources. `None`
+    /// for every case without one; the cloud's driver fills it after this
+    /// struct is built.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub cloud: Option<crate::lowmach_cloud::CloudEnd>,
+}
+
+#[cfg(test)]
+pub(crate) mod tests;

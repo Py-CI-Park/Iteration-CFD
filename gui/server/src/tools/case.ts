@@ -4,7 +4,7 @@
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { applyEdits, findNodeAtLocation, modify, parseTree, type JSONPath, type Node } from 'jsonc-parser'
-import { driversFor, getModel, isJsonCase, MESH_PRESETS, MODELS, PICK_LISTS, type CaseFormat, type Problem } from '@cfd/shared'
+import { driversFor, getModel, isJsonCase, MESH_PRESETS, MODELS, PICK_LISTS, statesCompressible, type CaseFormat, type Problem } from '@cfd/shared'
 import { z } from 'zod'
 import { caseInfoFromText, type CaseJsoncInfo } from '../formats/casejsonc.js'
 import { getChtSchema, schemaFileFor, type CaseSchemaFile } from '../registry/schema.js'
@@ -52,11 +52,13 @@ export function structuralValidate(json: unknown): PointerError[] {
   for (const key of REQUIRED_TOP) if (!(key in obj)) errors.push({ pointer: `/${key}`, message: `must have required property '${key}'` })
   const mesh = obj.mesh as Record<string, unknown> | undefined
   if (mesh && typeof mesh === 'object') {
-    if (mesh.kind !== 'cartesian') errors.push({ pointer: '/mesh/kind', message: `must be one of ${PICK_LISTS.meshKinds.join(', ')}` })
+    if (typeof mesh.kind !== 'string' || !PICK_LISTS.meshKinds.includes(mesh.kind)) errors.push({ pointer: '/mesh/kind', message: `must be one of ${PICK_LISTS.meshKinds.join(', ')}` })
+    // A missing cells/bounds is meshKindChecks' `required` error (SPEC-LIT §158.10), so only the
+    // shape of a stated key is checked here, and only for the cartesian kind that states one.
     const cells = mesh.cells
-    if (!Array.isArray(cells) || cells.length !== 3 || !cells.every((n) => Number.isInteger(n) && n >= 1)) errors.push({ pointer: '/mesh/cells', message: 'must be three positive integers' })
+    if (mesh.kind === 'cartesian' && cells !== undefined && (!Array.isArray(cells) || cells.length !== 3 || !cells.every((n) => Number.isInteger(n) && n >= 1))) errors.push({ pointer: '/mesh/cells', message: 'must be three positive integers' })
     const bounds = mesh.bounds as Record<string, unknown> | undefined
-    if (!bounds || !Array.isArray(bounds.min) || !Array.isArray(bounds.max)) errors.push({ pointer: '/mesh/bounds', message: 'must have min and max' })
+    if (mesh.kind === 'cartesian' && bounds !== undefined && (!bounds || !Array.isArray(bounds.min) || !Array.isArray(bounds.max))) errors.push({ pointer: '/mesh/bounds', message: 'must have min and max' })
   }
   return errors
 }
@@ -163,10 +165,70 @@ function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
+// --- mesh.kind (SPEC-LIT §158.10) -------------------------------------------
+// The solver's text-level refusals (rust/src/io/case_json.rs polymesh_of),
+// answered beside the schema: a polymesh case carries only mesh.path, a
+// cartesian case states its own geometry, and anything without a mesh.kind is
+// the schema's business. Every offence is reported, not just the first one the
+// solver would stop at.
+
+const UNSET_BOUNDS = { min: [0, 0, 0], max: [0, 0, 0] }
+const STATED_BESIDE_POLYMESH =
+  'stated beside mesh.kind "polymesh" - the mesh is the polyMesh mesh.path names, with its own geometry, cells and patches (SPEC-LIT §158.10)'
+
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) return false
+  if (Array.isArray(a) || Array.isArray(b)) return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => deepEqual(x, (b as unknown[])[i]))
+  const ka = Object.keys(a)
+  const kb = Object.keys(b)
+  return ka.length === kb.length && ka.every((k) => deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]))
+}
+
+/** "Unset" (SPEC-LIT §158.10): absent, null, or exactly the solver's default. */
+function isUnset(v: unknown, def: unknown): boolean {
+  return v === undefined || v === null || deepEqual(v, def)
+}
+
+function isUnsetList(v: unknown): boolean {
+  return v === undefined || v === null || (Array.isArray(v) && v.length === 0)
+}
+
+function isUnsetBoundaries(v: unknown): boolean {
+  if (v === undefined || v === null) return true
+  return isObject(v) && ['xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax'].every((f) => v[f] === '')
+}
+
+/** The mesh.kind refusals the solver gives before any mesh is read; [] for a case the schema answers. */
+export function meshKindChecks(json: unknown): PointerError[] {
+  const errors: PointerError[] = []
+  if (!isObject(json) || !isObject(json.mesh)) return errors
+  const mesh = json.mesh
+  if (mesh.kind === 'polymesh') {
+    for (const key of ['bounds', 'cells', 'boundaries', 'regions', 'grading', 'cyclic', 'wedge', 'sector'] as const) {
+      const v = mesh[key]
+      const unset = key === 'bounds' ? isUnset(v, UNSET_BOUNDS) : key === 'cells' ? isUnset(v, [0, 0, 0]) : key === 'boundaries' ? isUnsetBoundaries(v) : key === 'regions' || key === 'cyclic' ? isUnsetList(v) : v === undefined || v === null
+      if (!unset) errors.push({ pointer: `/mesh/${key}`, message: STATED_BESIDE_POLYMESH })
+    }
+    if (json.motion !== undefined && json.motion !== null) errors.push({ pointer: '/motion', message: 'a moving mesh beside mesh.kind "polymesh" is refused - the motion path moves a block mesh\'s points (SPEC-LIT §158.10)' })
+    if (mesh.path === undefined || mesh.path === null) errors.push({ pointer: '/mesh/path', message: 'required with mesh.kind "polymesh" (SPEC-LIT §158.10)' })
+  } else if (mesh.kind === 'cartesian') {
+    if (isUnset(mesh.bounds, UNSET_BOUNDS)) errors.push({ pointer: '/mesh/bounds', message: 'required with mesh.kind "cartesian" (SPEC-LIT §158.10)' })
+    if (isUnset(mesh.cells, [0, 0, 0])) errors.push({ pointer: '/mesh/cells', message: 'required with mesh.kind "cartesian" (SPEC-LIT §158.10)' })
+    if (isUnsetBoundaries(mesh.boundaries)) errors.push({ pointer: '/mesh/boundaries', message: 'required with mesh.kind "cartesian" (SPEC-LIT §158.10)' })
+    if (mesh.path !== undefined && mesh.path !== null) {
+      const p = typeof mesh.path === 'string' ? mesh.path : JSON.stringify(mesh.path)
+      errors.push({ pointer: '/mesh/path', message: `"${p}" names a polyMesh, which is read only with mesh.kind "polymesh" - a cartesian case builds its own mesh (SPEC-LIT §158.10)` })
+    }
+  }
+  return errors
+}
+
 export function semanticChecks(json: unknown): { errors: PointerError[]; warnings: PointerError[] } {
   const errors: PointerError[] = []
   const warnings: PointerError[] = []
   if (!isObject(json)) return { errors, warnings }
+  errors.push(...meshKindChecks(json))
   const turbulence = isObject(json.turbulence) ? json.turbulence : null
   const initial = isObject(json.initial) ? json.initial : {}
   if (turbulence && typeof turbulence.model === 'string') {
@@ -326,12 +388,12 @@ export async function validateCaseText(text: string, relPath: string, workspaceR
   }
   const errors = [...parseErrors, ...schemaErrors, ...sem.errors]
   const format: CaseFormat = 'jsonc'
-  const suggestedDrivers = info.regions.length > 0 ? ['ofgpu-cht'] : driversFor(info.model && getModel(info.model) ? info.model : null, format)
+  const suggestedDrivers = info.regions.length > 0 ? ['ofgpu-cht'] : driversFor(info.model && getModel(info.model) ? info.model : null, format, statesCompressible(info.json))
   const problems = [...toProblems(relPath, text, 'schema', 'error', [...parseErrors, ...schemaErrors]), ...toProblems(relPath, text, 'semantic', 'error', sem.errors), ...toProblems(relPath, text, 'semantic', 'warning', warnings)]
   return { ok: errors.length === 0, format, errors, warnings, suggestedDrivers, problems, model: info.model }
 }
 
-function broadcastProblems(ctx: ToolContext, relPath: string, problems: Problem[]): void {
+export function broadcastProblems(ctx: ToolContext, relPath: string, problems: Problem[]): void {
   ctx.hub.broadcast({ t: 'problems', source: 'schema', path: relPath, runId: null, items: problems.filter((p) => p.source === 'schema') })
   ctx.hub.broadcast({ t: 'problems', source: 'semantic', path: relPath, runId: null, items: problems.filter((p) => p.source === 'semantic') })
 }
@@ -344,11 +406,14 @@ function jsoncSummary(info: CaseJsoncInfo) {
   const json = isObject(info.json) ? info.json : {}
   const patches = Array.isArray(json.patches) ? json.patches.filter(isObject).map((p) => ({ match: String(p.match ?? ''), kind: p.kind === undefined ? null : String(p.kind) })) : []
   const cellsOf = (spec: { cells: [number, number, number] }): number => spec.cells[0] * spec.cells[1] * spec.cells[2]
+  const mesh = isObject(json.mesh) ? json.mesh : null
   return {
     name: info.name,
     cells: info.mesh ? info.mesh.cells[0] * info.mesh.cells[1] * info.mesh.cells[2] : null,
     cellsPerAxis: info.mesh?.cells ?? null,
     bounds: info.mesh?.bounds ?? null,
+    meshKind: mesh && typeof mesh.kind === 'string' ? mesh.kind : null,
+    meshPath: mesh && typeof mesh.path === 'string' ? mesh.path : null,
     model: info.model,
     kind: info.turbulenceKind,
     patches,
@@ -398,6 +463,7 @@ async function readFoamDir(abs: string, rel: string) {
   const endTime = controlDict?.match(/^\s*endTime\s+([-+\d.eE]+);/m)
   const deltaT = controlDict?.match(/^\s*deltaT\s+([-+\d.eE]+);/m)
   const zeroFields = await listIfDir(path.join(abs, '0'))
+  const constantFiles = await listIfDir(path.join(abs, 'constant'))
   const summary = {
     name: path.basename(rel),
     cells: nCells ? Number(nCells[1]) : null,
@@ -409,8 +475,11 @@ async function readFoamDir(abs: string, rel: string) {
     output: null,
     initialFields: zeroFields,
   }
-  const text = [`OpenFOAM case directory ${rel}`, `0/: ${zeroFields.join(', ') || '(none)'}`, `constant/: ${(await listIfDir(path.join(abs, 'constant'))).join(', ') || '(none)'}`, `system/: ${(await listIfDir(path.join(abs, 'system'))).join(', ') || '(none)'}`, `polyMesh: ${boundary ? 'present' : 'missing'}`].join('\n')
-  return { format: 'foamDir' as const, text, summary, outputDir: rel, suggestedDrivers: driversFor(summary.model && getModel(summary.model) ? summary.model : null, 'foamDir') }
+  const text = [`OpenFOAM case directory ${rel}`, `0/: ${zeroFields.join(', ') || '(none)'}`, `constant/: ${constantFiles.join(', ') || '(none)'}`, `system/: ${(await listIfDir(path.join(abs, 'system'))).join(', ') || '(none)'}`, `polyMesh: ${boundary ? 'present' : 'missing'}`].join('\n')
+  // Without constant/thermophysicalProperties the gas drivers refuse the case; with it, the
+  // file alone cannot say which family it is for, so nothing is filtered.
+  const gas = constantFiles.includes('thermophysicalProperties') ? undefined : false
+  return { format: 'foamDir' as const, text, summary, outputDir: rel, suggestedDrivers: driversFor(summary.model && getModel(summary.model) ? summary.model : null, 'foamDir', gas) }
 }
 
 const ReadSchema = z.object({ path: z.string().describe('Workspace-relative case: a .jsonc file or an OpenFOAM case directory') })
@@ -435,7 +504,7 @@ export const caseRead: ToolDef<typeof ReadSchema> = {
       summary: jsoncSummary(info),
       outputDir: info.outputDir,
       parseErrors: info.errors.map((e) => `${e.line}:${e.col} ${e.message}`),
-      suggestedDrivers: info.regions.length > 0 ? ['ofgpu-cht'] : driversFor(info.model && getModel(info.model) ? info.model : null, 'jsonc'),
+      suggestedDrivers: info.regions.length > 0 ? ['ofgpu-cht'] : driversFor(info.model && getModel(info.model) ? info.model : null, 'jsonc', statesCompressible(info.json)),
     })
   },
 }
@@ -474,7 +543,8 @@ export const caseValidate: ToolDef<typeof ValidateSchema> = {
 
 export interface CaseEdit {
   pointer: string
-  op: 'set' | 'remove'
+  /** insert: the value goes in before the array element the pointer names (or at the end for "/-"). */
+  op: 'set' | 'remove' | 'insert'
   valueJson: string | null
 }
 
@@ -487,9 +557,9 @@ export function applyCaseEdits(text: string, edits: CaseEdit[]): { text: string;
       continue
     }
     let value: unknown
-    if (e.op === 'set') {
+    if (e.op === 'set' || e.op === 'insert') {
       if (e.valueJson === null) {
-        errors.push(`${e.pointer}: set needs valueJson`)
+        errors.push(`${e.pointer}: ${e.op} needs valueJson`)
         continue
       }
       try {
@@ -505,8 +575,16 @@ export function applyCaseEdits(text: string, edits: CaseEdit[]): { text: string;
       errors.push(`${e.pointer}: nothing to remove`)
       continue
     }
+    if (e.op === 'insert') {
+      const parent = root ? findNodeAtLocation(root, jsonPath.slice(0, -1)) : undefined
+      const at = jsonPath[jsonPath.length - 1]
+      if (parent?.type !== 'array' || typeof at !== 'number' || at < 0 || at > (parent.children?.length ?? 0)) {
+        errors.push(`${e.pointer}: insert needs an index of an existing array`)
+        continue
+      }
+    }
     try {
-      const appending = e.pointer.endsWith('/-')
+      const appending = e.pointer.endsWith('/-') || e.op === 'insert'
       const edits = modify(cur, jsonPath, value, { formattingOptions: FORMATTING, isArrayInsertion: appending }).map((ed) => ({ ...ed, content: compactArrays(ed.content) }))
       cur = applyEdits(cur, edits)
     } catch (err) {
@@ -522,7 +600,7 @@ const EditSchema = z.object({
     .array(
       z.object({
         pointer: z.string().describe('JSON pointer, e.g. /run/endTime, /numerics/relaxation/p, /patches/0/U, /mesh/cells/2'),
-        op: z.enum(['set', 'remove']),
+        op: z.enum(['set', 'remove', 'insert']).describe('insert puts the value before the array element the pointer names (/patches/0 = first)'),
         valueJson: z.string().nullable().describe('New value as a JSON string ("0.3", "\\"kOmegaSST\\"", "[0,0,-9.81]"); null for remove'),
       }),
     )

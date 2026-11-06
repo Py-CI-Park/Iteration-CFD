@@ -56,7 +56,7 @@
 use crate::device::Gpu;
 use crate::error::Result;
 use crate::field::GpuScalarField;
-use crate::field_ops::{advance_time_levels, correct_boundary_conditions};
+use crate::field_ops::advance_time_levels;
 use crate::fv::{fvm_sp, fvm_su, fvm_susp};
 use crate::mesh::{GpuMesh, HostMesh};
 use crate::solver::SolverPerformance;
@@ -250,8 +250,8 @@ impl<'m> KEpsilon<'m> {
             n,
         )?;
 
-        correct_boundary_conditions(gpu, &self.core.fld, &mut self.k, self.core.mesh)?;
-        correct_boundary_conditions(gpu, &self.core.fld, &mut self.epsilon, self.core.mesh)?;
+        self.core.correct_bc(gpu, &mut self.k)?;
+        self.core.correct_bc(gpu, &mut self.epsilon)?;
 
         self.correct_nut(gpu, flow)?;
         self.core.store_k_prev(gpu, &self.k.f)?;
@@ -419,7 +419,7 @@ impl<'m> KEpsilon<'m> {
             ctrl.epsilon_min,
             n,
         )?;
-        correct_boundary_conditions(gpu, &self.core.fld, &mut self.epsilon, self.core.mesh)?;
+        self.core.correct_bc(gpu, &mut self.epsilon)?;
 
         // 5. k. Its source is G itself - no coefficient, no division - so it
         //    goes straight to fvm_su without passing through a kernel.
@@ -473,7 +473,7 @@ impl<'m> KEpsilon<'m> {
             .solve_equation(gpu, &mut self.k, ctrl.k_relax, &sc, false)?;
 
         bound_k(gpu, &self.core.turb, &mut self.k.f, ctrl.k_min, n)?;
-        correct_boundary_conditions(gpu, &self.core.fld, &mut self.k, self.core.mesh)?;
+        self.core.correct_bc(gpu, &mut self.k)?;
 
         // 6. nu_t.
         self.correct_nut(gpu, flow)?;
@@ -503,7 +503,7 @@ impl<'m> KEpsilon<'m> {
         // Faces with a triple first, then the ones the model owns, then the
         // wall faces - each stage overwriting only what the previous one had
         // no opinion about.
-        correct_boundary_conditions(gpu, &self.core.fld, &mut self.core.nut, self.core.mesh)?;
+        self.core.correct_nut_bc(gpu)?;
         nut_boundary(gpu, &self.core.turb, &mut self.core.nut, self.core.mesh)?;
         self.core.wd.update_nut(
             gpu,
@@ -523,6 +523,40 @@ impl<'m> KEpsilon<'m> {
     /// [`RasCore::convergence_measure`]; this is the one host round-trip.
     pub fn convergence_measure(&mut self, gpu: &Gpu) -> Result<Scalar> {
         self.core.convergence_measure(gpu, &self.k.f)
+    }
+}
+
+// ==========================================================================
+//  The decomposed seams - SPEC-LIT 139.6 (PAR-12)
+// ==========================================================================
+
+impl<'m> KEpsilon<'m> {
+    /// Set the exchange a decomposed k-epsilon runs through - the scalar
+    /// halos and boundary evaluations of `k`, `epsilon` and `nut`, the wall
+    /// cell constraint across the cut, and the world's convergence maxima.
+    /// The refusals are [`RasCore::set_exchange`]'s (SPEC-LIT 139.6's table);
+    /// k-epsilon's constant `sigma` makes the coupled diffusivity algebraic,
+    /// so nothing else is refused here. `None` leaves every serial call
+    /// launch for launch.
+    pub fn set_exchange(
+        &mut self,
+        gpu: &Gpu,
+        hm: &HostMesh,
+        x: Option<Box<dyn crate::distflow::FlowExchange + 'm>>,
+    ) -> Result<()> {
+        self.core.set_exchange(gpu, hm, x)
+    }
+
+    /// Set where `k` and `epsilon` are solved - the part's SPMD Krylov
+    /// behind [`crate::momentum::ComponentRoute`]; `None` keeps the
+    /// rank-local [`crate::solver::solve`], launch for launch.
+    pub fn set_route(&mut self, route: Option<Box<dyn crate::momentum::ComponentRoute + 'm>>) {
+        self.core.set_route(route)
+    }
+
+    /// True when a decomposed run's exchange is set.
+    pub fn has_exchange(&self) -> bool {
+        self.core.has_exchange()
     }
 }
 
@@ -573,15 +607,16 @@ mod tests {
     /// The coefficients' own decay law, which is a statement about the model
     /// and not about this implementation.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_decay_exponent_follows_from_c2() {
         let c = KEpsilonCoeffs::default();
-        assert!((c.decay_exponent() - 1.0 / 0.92).abs() < 1e-13);
+        assert!(((c.decay_exponent() - 1.0 / 0.92).abs() as f64)
+            < crate::precision::roundoff_tol(1e-13));
 
         // n(n+1) = C_2 n² is the equation it solves; check it directly rather
         // than checking the algebra against itself.
         let n = c.decay_exponent();
-        assert!((n * (n + 1.0) - c.c2 * n * n).abs() < 1e-13);
+        assert!(((n * (n + 1.0) - c.c2 * n * n).abs() as f64)
+            < crate::precision::roundoff_tol(1e-13));
     }
 
     /// Decaying homogeneous isotropic turbulence.
@@ -601,7 +636,6 @@ mod tests {
     /// This is the analytic check SPEC-LIT §10 asks for: no other code is
     /// consulted, and the answer comes from the coefficients themselves.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn decaying_isotropic_turbulence_follows_the_model_exponent() -> Result<()> {
         let Some(gpu) = gpu() else {
             return Ok(());
@@ -667,7 +701,8 @@ mod tests {
             // "no transport" premise is false and the rest is meaningless.
             for (i, &v) in k_num.iter().enumerate() {
                 assert!(
-                    (v - k_end).abs() <= 1e-12 * k_end,
+                    ((v - k_end).abs() as f64)
+                        <= crate::precision::roundoff_tol(1e-12) * k_end as f64,
                     "C2 {c2}: cell {i} holds k = {v}, cell 0 holds {k_end}: \
                      the field is not homogeneous"
                 );

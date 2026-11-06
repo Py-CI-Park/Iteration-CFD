@@ -138,7 +138,11 @@ impl PointInterpolator {
             let mut cs = cell[offset[p] as usize..offset[p + 1] as usize].to_vec();
             cs.sort_unstable();
             cs.dedup();
-            let xp = raw.points[p];
+            // `raw.points` is world, `m.c` local (SPEC-LIT 118.7): the point
+            // comes to the mesh's local frame with `local`, ONE rounding -
+            // exactly what `to_vec3` alone did before this unit. The f64
+            // build's `local` is the identity, so `xp` is HEAD's value.
+            let xp = m.local(raw.points[p]);
             let ws: Vec<Scalar> = cs
                 .iter()
                 .map(|&c| 1.0 / (xp - m.c[c as usize]).mag().max(Scalar::MIN_POSITIVE))
@@ -341,7 +345,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_linear_field_is_exact_at_interior_points_and_bounded_at_boundary_points() {
         let (raw, m) = block_6x5x4();
         let interp = PointInterpolator::new(&raw, &m).expect("new");
@@ -357,7 +360,7 @@ mod tests {
             (0.0, 0.0, 0.0);
         for p in 0..raw.points.len() {
             let x = raw.points[p];
-            let exact = phi(x.x, x.y, x.z);
+            let exact = phi(x.x as Scalar, x.y as Scalar, x.z as Scalar);
             max_phi = max_phi.max(exact.abs());
             let err = (point[p] - exact).abs();
             if is_b[p] {
@@ -369,16 +372,15 @@ mod tests {
         println!("max interior error = {max_int:.3e} (tol 1e-12 * max|phi| = {:.3e})",
             1e-12 * max_phi);
         println!("max boundary error = {max_bnd:.3e} (bound {bound:.3e})");
-        assert!(max_int <= 1e-12 * max_phi, "interior {max_int:.3e}");
-        assert!(max_bnd <= bound + 1e-12, "boundary {max_bnd:.3e} > {bound:.3e}");
+        assert!(max_int as f64 <= crate::precision::roundoff_tol(1e-12 * max_phi as f64), "interior {max_int:.3e}");
+        assert!(max_bnd <= bound + crate::precision::roundoff_tol(1e-12) as Scalar, "boundary {max_bnd:.3e} > {bound:.3e}");
     }
 
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_vertex_mean_of_a_linear_point_field_is_the_cell_centre_value() {
         let (raw, m) = block_6x5x4();
         let interp = PointInterpolator::new(&raw, &m).expect("new");
-        let point: Vec<Scalar> = raw.points.iter().map(|x| phi(x.x, x.y, x.z)).collect();
+        let point: Vec<Scalar> = raw.points.iter().map(|x| phi(x.x as Scalar, x.y as Scalar, x.z as Scalar)).collect();
         let back = interp.point_to_cell(&point).expect("point_to_cell");
 
         let mut max_rel = 0.0 as Scalar;
@@ -388,11 +390,10 @@ mod tests {
             max_rel = max_rel.max(err);
         }
         println!("max relative vertex-mean error = {max_rel:.3e}");
-        assert!(max_rel <= 1e-12, "vertex mean {max_rel:.3e}");
+        assert!(max_rel as f64 <= crate::precision::roundoff_tol(1e-12), "vertex mean {max_rel:.3e}");
     }
 
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_round_trip_is_exact_on_interior_cells_of_a_uniform_block() {
         let (raw, m) = block_6x5x4();
         let interp = PointInterpolator::new(&raw, &m).expect("new");
@@ -416,7 +417,7 @@ mod tests {
         }
         println!("qualifying cells = {qualifying}, max relative round-trip error = {max_rel:.3e}");
         assert_eq!(qualifying, 4 * 3 * 2);
-        assert!(max_rel <= 1e-12, "round trip {max_rel:.3e}");
+        assert!(max_rel as f64 <= crate::precision::roundoff_tol(1e-12), "round trip {max_rel:.3e}");
     }
 
     /// The k-th row-major component of a tensor, for the componentwise check.
@@ -474,7 +475,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn weights_sum_to_one_and_the_adjacency_of_a_block_is_what_geometry_says() {
         let (raw, m) = block_6x5x4();
         let interp = PointInterpolator::new(&raw, &m).expect("new");
@@ -485,7 +485,7 @@ mod tests {
             *tally.entry(n).or_insert(0) += 1;
             let wsum: Scalar = interp.weight[s..e].iter().sum();
             assert!(
-                (wsum - 1.0).abs() <= 1e-15 * n as Scalar,
+                (wsum - 1.0).abs() as f64 <= crate::precision::roundoff_tol((1e-15 * n as Scalar) as f64),
                 "point {p}: sum of {n} weights = {wsum:.3e}"
             );
         }

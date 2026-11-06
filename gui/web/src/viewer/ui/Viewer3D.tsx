@@ -5,6 +5,7 @@ import { demoDatasetPath, getViewerController, type ViewerOverlayInfo } from '..
 import { fieldTitle, type ViewerController } from '../controller/ViewerController'
 import type { LayerEntry, ViewerTool } from '../controller/model'
 import { assertLittleEndian } from '../data/DatasetLoader'
+import { selectionOfProbe, useUiStore } from '../../state/uiStore'
 import { ThreeSceneView } from '../engine/ThreeSceneView'
 import { DomainCard } from './DomainCard'
 import { LayerPanel, type ClipUi } from './LayerPanel'
@@ -12,6 +13,7 @@ import { Legend } from './Legend'
 import { OverlayInfo, overlayLines } from './OverlayInfo'
 import { SettingsPopover } from './SettingsPopover'
 import { TimeScrubber } from './TimeScrubber'
+import { applyRepresentationPreset, representationOf } from './representation'
 import { Toolbar, fieldOptionValue, type RepresentationPreset } from './Toolbar'
 import './viewer.css'
 
@@ -22,8 +24,6 @@ export interface Viewer3DProps {
   /** Which viewport half this instance drives; 'A' is the original singleton. */
   view?: ViewId
 }
-
-const PRESET_IDS = { streamlines: 'preset-streamlines', slice: 'preset-slice', iso: 'preset-iso' } as const
 
 function useViewerState(controller: ViewerController): ViewerState {
   const [state, setState] = useState(() => controller.getState())
@@ -38,6 +38,12 @@ function isErrorMessage(m: string | null): boolean {
 export function Viewer3D({ overlay, locale, view: viewId = 'A' }: Viewer3DProps) {
   const controller = useMemo(() => getViewerController(viewId), [viewId])
   const state = useViewerState(controller)
+  const showAxes = useUiStore((s) => s.showAxes)
+  const showColorBars = useUiStore((s) => s.showColorBars)
+  // The mount effect reads this instead of showAxes so attaching a view does
+  // not re-run (and re-create the renderer) when only the triad toggles.
+  const showAxesRef = useRef(showAxes)
+  showAxesRef.current = showAxes
   const hostRef = useRef<HTMLDivElement>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [clipUi, setClipUi] = useState<ClipUi | null>(null)
@@ -69,6 +75,7 @@ export function Viewer3D({ overlay, locale, view: viewId = 'A' }: Viewer3DProps)
         observer = new ResizeObserver(resize)
         observer.observe(host)
         controller.attachView(v)
+        v.setTriadVisible(showAxesRef.current)
         // Dev only: the controller that actually owns a canvas, published so a
         // script can drive the viewer the way the assistant does. Importing the
         // module from outside is not enough -- an HMR pass gives the module a
@@ -101,46 +108,15 @@ export function Viewer3D({ overlay, locale, view: viewId = 'A' }: Viewer3DProps)
     controller.setOverlayTextProvider(() => lines.map(([k, v]) => `${k}: ${v}`))
   }, [controller, lines])
 
-  const layers = useMemo(() => [...controller.layers.values()], [controller, state.layers])
-  const representation = useMemo<RepresentationPreset>(() => {
-    if (controller.layers.has(PRESET_IDS.streamlines)) return 'surfaceStreamlines'
-    if (controller.layers.has(PRESET_IDS.slice)) return 'slice'
-    if (controller.layers.has(PRESET_IDS.iso)) return 'iso'
-    return state.representation
-  }, [controller, state.layers, state.representation])
+  // The axes triad follows show_overlay / the store (a detached view is a no-op).
+  useEffect(() => {
+    controller.getView()?.setTriadVisible?.(showAxes)
+  }, [controller, showAxes])
 
-  const applyRepresentation = useCallback(
-    async (r: RepresentationPreset) => {
-      for (const id of Object.values(PRESET_IDS)) if (controller.layers.has(id)) await run({ type: 'remove', id })
-      const b = controller.dataset?.manifest.bounds
-      const extents = b ? [b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]] : [1, 1, 1]
-      const axes = ['x', 'y', 'z'] as const
-      const rep = (mode: ViewerState['representation'], opacity: number | null = 1) => run({ type: 'setRepresentation', mode, opacity, patches: null, shading: null })
-      switch (r) {
-        case 'surfaceStreamlines': {
-          await rep('surface', 0.3)
-          const longest = axes[extents.indexOf(Math.max(...extents))]
-          await run({ type: 'addStreamlines', id: PRESET_IDS.streamlines, field: null, seed: { plane: longest, position: { fraction: 0.03 }, grid: [7, 5] }, style: null, maxLength: null, direction: null })
-          return
-        }
-        case 'slice': {
-          await rep('outline')
-          const thinnest = axes[extents.indexOf(Math.min(...extents))]
-          await run({ type: 'addSlice', id: PRESET_IDS.slice, axis: thinnest, position: { fraction: 0.5 } })
-          return
-        }
-        case 'iso': {
-          await rep('outline')
-          const range = state.range ?? [0, 1]
-          await run({ type: 'addIsoSurface', id: PRESET_IDS.iso, field: state.field ?? 'U', values: [range[0] + 0.6 * (range[1] - range[0])] })
-          return
-        }
-        default:
-          await rep(r)
-      }
-    },
-    [controller, run, state.field, state.range],
-  )
+  const layers = useMemo(() => [...controller.layers.values()], [controller, state.layers])
+  const representation = useMemo<RepresentationPreset>(() => representationOf(controller, state), [controller, state.layers, state.representation])
+
+  const applyRepresentation = useCallback((r: RepresentationPreset) => applyRepresentationPreset(controller, r, { field: state.field, range: state.range }), [controller, state.field, state.range])
 
   const applyClip = useCallback(
     (c: ClipUi | null) => {
@@ -165,9 +141,14 @@ export function Viewer3D({ overlay, locale, view: viewId = 'A' }: Viewer3DProps)
     else if (clipUi) applyClip(null)
   }
 
+  const setSelection = useUiStore((s) => s.setSelection)
   const onStageClick = (e: React.MouseEvent) => {
     if (controller.tool !== 'select') return
-    const hit = controller.pick(e.clientX, e.clientY)
+    // The pick is also the selection Inspector shows (STU-08a); the probe reads the same cell as pick.
+    const outcome = controller.probePixel(e.clientX, e.clientY)
+    const selection = selectionOfProbe(outcome)
+    if (selection) setSelection(selection)
+    const hit = outcome.ok ? outcome.hit : null
     const rect = hostRef.current?.getBoundingClientRect()
     if (!hit || !rect) {
       setTip(null)
@@ -178,7 +159,7 @@ export function Viewer3D({ overlay, locale, view: viewId = 'A' }: Viewer3DProps)
   }
 
   const screenshot = async () => {
-    const r = await run({ type: 'screenshot', width: null, height: null, includeLegend: true })
+    const r = await run({ type: 'screenshot', width: null, height: null, includeLegend: showColorBars })
     if (!r.image) return
     const a = document.createElement('a')
     a.href = `data:image/png;base64,${r.image.base64}`
@@ -192,7 +173,7 @@ export function Viewer3D({ overlay, locale, view: viewId = 'A' }: Viewer3DProps)
   const backendLabel = state.backend === 'webgpu' ? 'WebGPU' : state.backend === 'webgl2' ? 'WebGL2' : null
 
   return (
-    <div className="v3d" data-testid="viewer3d" data-backend={state.backend}>
+    <div className="v3d" data-testid="viewer3d" data-backend={state.backend} data-axes={showAxes ? 'on' : 'off'} data-colorbars={showColorBars ? 'on' : 'off'}>
       <Toolbar
         locale={locale}
         fields={manifest?.fields ?? []}
@@ -223,8 +204,8 @@ export function Viewer3D({ overlay, locale, view: viewId = 'A' }: Viewer3DProps)
           </span>
         )}
         <OverlayInfo lines={lines} />
-        {legend && <Legend legend={legend} />}
-        {manifest && <DomainCard locale={locale} manifest={manifest} projection={state.camera.projection} onToggleProjection={() => void run({ type: 'setCamera', preset: null, position: null, target: null, projection: state.camera.projection === 'perspective' ? 'orthographic' : 'perspective' })} />}
+        {legend && showColorBars && <Legend legend={legend} />}
+        {manifest && <DomainCard locale={locale} manifest={manifest} projection={state.camera.projection} hiddenPatches={state.patches?.hidden ?? []} onToggleProjection={() => void run({ type: 'setCamera', preset: null, position: null, target: null, projection: state.camera.projection === 'perspective' ? 'orthographic' : 'perspective' })} />}
         {manifest && manifest.times.length > 1 && state.time && <TimeScrubber times={manifest.times} index={state.time.index} onChange={(i) => void run({ type: 'setTime', index: i })} />}
         <LayerPanel layers={layers} onToggle={(id, v) => controller.setLayerVisible(id, v)} onRemove={(id) => void run({ type: 'remove', id })} clip={clipUi} onClipChange={applyClip} />
         {tip && (

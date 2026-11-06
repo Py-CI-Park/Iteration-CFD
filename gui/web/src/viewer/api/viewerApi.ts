@@ -36,8 +36,11 @@ export interface ViewerApi {
   viewport(): ViewportRect | null
   /** Cell under a window pixel and the coloured field's value there. */
   probePixel(clientX: number, clientY: number): ProbeOutcome
-  /** Cell containing a world point (structured grids only) and the coloured field's value there. */
-  probePoint(point: [number, number, number]): ProbeOutcome
+  /**
+   * Cell containing a world point and the coloured field's value there: the structured grid's cell,
+   * or on a polyMesh the cell the server locates (docs/17 STU-13), which may answer asynchronously.
+   */
+  probePoint(point: [number, number, number]): ProbeOutcome | Promise<ProbeOutcome>
 }
 
 const controllers = new Map<ViewId, ViewerController>()
@@ -97,8 +100,27 @@ class RealViewerApi implements ViewerApi {
   probePixel(clientX: number, clientY: number): ProbeOutcome {
     return getViewerController(this.view).probePixel(clientX, clientY)
   }
-  probePoint(point: [number, number, number]): ProbeOutcome {
-    return getViewerController(this.view).probePoint(point)
+  probePoint(point: [number, number, number]): Promise<ProbeOutcome> {
+    return getViewerController(this.view).locatePoint(point)
+  }
+}
+
+/** A ViewerApi over an explicit controller: the shell surface (execute,
+ *  getState, subscribe, tools, probes) against any controller — tests drive a
+ *  headless one through the same object the canvas wires up. setBaseUrl is a
+ *  no-op: that controller owns its transport. */
+export function controllerViewerApi(controller: ViewerController): ViewerApi {
+  return {
+    execute: (cmd) => controller.execute(cmd),
+    getState: () => controller.getState(),
+    subscribe: (listener) => controller.subscribe(listener),
+    isMounted: () => controller.isMounted(),
+    setBaseUrl: () => {},
+    setTool: (tool) => controller.setTool(tool),
+    getTool: () => controller.tool,
+    viewport: () => controller.viewport(),
+    probePixel: (clientX, clientY) => controller.probePixel(clientX, clientY),
+    probePoint: (point) => controller.locatePoint(point),
   }
 }
 

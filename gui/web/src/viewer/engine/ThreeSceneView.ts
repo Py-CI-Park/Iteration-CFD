@@ -1,5 +1,5 @@
 // SceneView implementation on top of Engine + the layer objects.
-import type { CameraPreset, ViewerDataset } from '@cfd/shared'
+import type { CameraPreset, GeometryBounds, ViewerDataset } from '@cfd/shared'
 import { Color, Plane, Vector3, type Object3D } from 'three/webgpu'
 import type { CameraPose, ClipBox, DisplaySettings, LayerEntry, QualityLevel, ViewerTool } from '../controller/model'
 import type { SceneView, ScreenshotRequest, ScreenshotResult, SurfaceColoring } from '../controller/SceneView'
@@ -7,13 +7,14 @@ import type { LoadedDataset } from '../data/DatasetLoader'
 import { colormapTable, type ColorTable } from '../gpu/colormaps'
 import { GlyphLayer } from '../layers/GlyphLayer'
 import { ImageLayer } from '../layers/ImageLayer'
+import { UnstructuredSliceLayer } from '../layers/UnstructuredSliceLayer'
 import { IsoLayer } from '../layers/IsoLayer'
 import { StreamlineLayer } from '../layers/StreamlineLayer'
 import { SurfaceLayer } from '../layers/SurfaceLayer'
 import { Engine, type EngineOptions } from './Engine'
 import { composeScreenshot, downscale, toPngBase64 } from './screenshot'
 
-type SceneLayer = ImageLayer | IsoLayer | StreamlineLayer | GlyphLayer
+type SceneLayer = ImageLayer | UnstructuredSliceLayer | IsoLayer | StreamlineLayer | GlyphLayer
 
 const ISO_PALETTE = [0x4f93f0, 0xf2a33a, 0x22a35c, 0x8a4fd6, 0xe0483f, 0x0ea5b7]
 
@@ -89,6 +90,10 @@ export class ThreeSceneView implements SceneView {
     if (result.op === 'slice' || result.op === 'plane') {
       const layer = object instanceof ImageLayer ? object : new ImageLayer()
       layer.update(result, this.display?.interpolate ?? true)
+      object = layer
+    } else if (result.op === 'cut') {
+      const layer = object instanceof UnstructuredSliceLayer ? object : new UnstructuredSliceLayer()
+      layer.update(result)
       object = layer
     } else if (result.op === 'iso' && spec.type === 'iso') {
       const layer = object instanceof IsoLayer ? object : new IsoLayer()
@@ -168,7 +173,7 @@ export class ThreeSceneView implements SceneView {
     this.engine.invalidate()
   }
 
-  setCamera(opts: { preset: CameraPreset | null; position: [number, number, number] | null; target: [number, number, number] | null; projection: 'perspective' | 'orthographic' | null }): void {
+  setCamera(opts: { preset: CameraPreset | null; position: [number, number, number] | null; target: [number, number, number] | null; projection: 'perspective' | 'orthographic' | null; fitBounds?: GeometryBounds | null }): void {
     this.engine.setCamera(opts)
   }
 
@@ -182,6 +187,10 @@ export class ThreeSceneView implements SceneView {
 
   setQuality(level: QualityLevel): void {
     this.engine.setQuality(level)
+  }
+
+  setTriadVisible(on: boolean): void {
+    this.engine.setTriadVisible(on)
   }
 
   setTool(tool: ViewerTool): void {

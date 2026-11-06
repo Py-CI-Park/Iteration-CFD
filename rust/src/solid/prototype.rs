@@ -146,6 +146,7 @@ use crate::reference::{
     add_boundary_contributions, amul, fvc_grad_vector, fvm_laplacian,
     fvm_laplacian_non_orth_correction, is_empty_face, CpuLdu, CpuScalarBc,
 };
+use crate::types::{to_dvec3, to_vec3};
 use crate::{Result, Scalar, Tensor, Vec3};
 use crate::fv::SnGradScheme;
 
@@ -281,16 +282,17 @@ pub fn jittered_block(n: usize, amplitude: Scalar) -> Result<HostMesh> {
     let h = 1.0 / (n as Scalar);
     let interior = |v: Scalar| v > 1e-12 && v < 1.0 - 1e-12;
     for p in raw.points.iter_mut() {
-        if !(interior(p.x) && interior(p.y) && interior(p.z)) {
+        let q = to_vec3(*p);
+        if !(interior(q.x) && interior(q.y) && interior(q.z)) {
             continue;
         }
-        let (a, b, c) = (7.0 * p.x, 5.0 * p.y, 3.0 * p.z);
+        let (a, b, c) = (7.0 * q.x, 5.0 * q.y, 3.0 * q.z);
         let d = Vec3::new(
             (a + 2.0 * b).sin() * c.cos(),
             (b + 2.0 * c).sin() * a.cos(),
             (c + 2.0 * a).sin() * b.cos(),
         );
-        *p += d * (amplitude * h);
+        *p = to_dvec3(q + d * (amplitude * h));
     }
     build_host_mesh(&raw)
 }
@@ -1338,14 +1340,14 @@ mod tests {
     /// `(mu + lambda)/(2 mu + lambda)` and `1/(2(1 - nu))` are the same
     /// number. The plan asserts that identity in prose; here it is arithmetic.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_predicted_contraction_is_one_over_two_one_minus_nu() {
         for nu in [-0.5, 0.0, 0.2, 0.3, 0.45, 0.49, 0.499] {
             let m = Material::steel(nu);
             let closed = 1.0 / (2.0 * (1.0 - nu));
             let from_lame = m.predicted_contraction();
             assert!(
-                (from_lame - closed).abs() <= 1e-14 * closed.abs(),
+                ((from_lame - closed).abs() as f64)
+                    <= crate::precision::roundoff_tol(1e-14) * closed.abs() as f64,
                 "nu = {nu}: (mu+lambda)/(2mu+lambda) = {from_lame}, 1/(2(1-nu)) = {closed}"
             );
         }
@@ -1356,7 +1358,6 @@ mod tests {
     /// module produces is about a different equation than the one the plan's
     /// §D.3 writes down.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_split_reassembles_the_traction() {
         let m = Material { e: 7.3e10, nu: 0.34, alpha: 2.31e-5 };
         let g = Tensor {
@@ -1372,7 +1373,8 @@ mod tests {
         for i in 0..3 {
             let (a, b) = (from_stress.component(i), from_split.component(i));
             assert!(
-                (a - b).abs() <= 1e-12 * a.abs().max(1.0),
+                ((a - b).abs() as f64)
+                    <= crate::precision::roundoff_tol(1e-12) * a.abs().max(1.0) as f64,
                 "component {i}: sigma.Sf = {a}, implicit + deferred = {b}"
             );
         }
@@ -1401,6 +1403,7 @@ mod tests {
     /// stress. The field is linear, so the discrete answer is the exact one
     /// and the only thing between the two is the iteration.
     #[test]
+    // f32 (F32-16): free-expansion residual stress 1.0e-5 of scale in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn free_expansion_carries_no_stress() {
         let mat = Material::steel(0.3);
@@ -1486,6 +1489,8 @@ mod tests {
     /// makes bare Picard stable, or quietly makes Aitken stop paying, fails
     /// here and is looked at.
     #[test]
+    // f32 (VAL-81): Aitken does not reach six decades in 300 iterations in f32
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn bare_picard_diverges_at_nu_0_45_where_aitken_converges() {
         let mat = Material::steel(0.45);
         let bare = {
@@ -1718,6 +1723,7 @@ mod tests {
     /// run. `kappa` buys whatever iteration count it buys by changing the
     /// answer, and that is the sentence it is refused on.
     #[test]
+    // f32 (F32-16): both runs hit the 400-iteration cap in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_larger_implicit_coefficient_moves_the_converged_displacement() {
         let mat = Material::steel(0.3);

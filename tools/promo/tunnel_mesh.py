@@ -32,6 +32,10 @@ and the two wings are refinement boxes (`box_table`, SPEC-LIT §92.16, the
 mesher's `refinement.boxes`); the distance bands are near-wall only
 (`band_table`).
 
+Snap's feature attraction asks for half a FINEST cell
+(`snap.feature_tolerance = 0.5 * 2**-max_level`, SPEC-LIT §92.12's erratum:
+the default 0.5 is half a BASE cell, 2^(max_level-1) finest cells wide).
+
 CC BY 4.0 rule: the source is the "F1 2026 concept" render model by
 Qvist_Designs (CC BY 4.0, via Sketchfab). The geometry and every file made
 from it are NEVER written inside the repository - all outputs go to --out -
@@ -57,6 +61,12 @@ import numpy as np
 REQUIRED_PATCHES = ["inlet", "outlet", "side_ymin", "side_ymax", "top", "ground",
                     "body", "front_wing", "rear_wing", "wheels", "floor"]
 LAYER_PATCHES = ["body", "front_wing", "rear_wing", "wheels", "floor"]
+# SPEC-LIT (92.74): the fraction of a patch's wall area that carries the
+# WHOLE stack thickness - stack_area_frac, the KEEP faces plus the faces of M
+# - which the face-mode ladder's cuts and merges leave standing. The film's
+# two hero patches must HOLD 80 % of their wall; the wings and wheels ride
+# whatever the ladder leaves them.
+LAYER_COVERAGE = {"body": 0.80, "floor": 0.80}
 BAND_PATCHES = ["body", "wheels", "floor", "front_wing", "rear_wing"]
 BANDS_FULL = {
     "body": [(0.15, 5), (0.45, 4), (0.8, 3)],
@@ -216,7 +226,11 @@ def box_table(lo, hi, wings):
 
 
 def build_config(geom_dir, out_dir, lo, hi, args, wings):
-    """The AutomeshConfig; `snap` is omitted so the mesher's defaults apply."""
+    """The AutomeshConfig. `snap.feature_tolerance` asks for half a FINEST
+    cell (SPEC-LIT §92.12's erratum: the default 0.5 is half a base cell,
+    2^(max_level-1) finest cells wide at the wall's level - the far
+    attraction drags whole bands of points onto one feature line); the rest
+    of snap uses the mesher's defaults."""
     L = hi[0] - lo[0]
     extent = tunnel_extent(lo, hi, args.base)
     surfaces = [{"path": _posix(os.path.join(geom_dir, name + ".stl")), "name": name}
@@ -229,9 +243,10 @@ def build_config(geom_dir, out_dir, lo, hi, args, wings):
                        "boxes": box_table(lo, hi, wings)},
         "castellation": {"keep_region": "seed",
                          "seed_point": [lo[0] - 1.5 * L, 0.0, 0.5 * extent[5]]},
+        "snap": {"feature_tolerance": 0.5 * 2.0 ** -args.max_level},
         "layers": {"patches": list(LAYER_PATCHES), "n": args.layers,
                    "first_thickness": first_layer(L, args.speed_kmh, args.nu, args.yplus)["t1"],
-                   "growth": args.growth},
+                   "growth": args.growth, "terminate": "face"},
         "quality": {"max_closure": 1e-10, "max_non_orth_deg": 70.0,
                     "report_non_orth_deg": 60.0, "min_thickness_ratio": 0.05,
                     "max_cond": 10000.0},
@@ -327,7 +342,9 @@ def parse_check(text):
 
 
 def judge(run_rc, summary, check_rc, chk, reduced):
-    """The gate: run, check, non_orth (STRICT < 70), patches, cells (or REDUCED)."""
+    """The gate: run, check, non_orth (STRICT < 70), patches, cells (or
+    REDUCED), and layers - LAYER_COVERAGE's patches must keep their STACK
+    share of the wall (SPEC-LIT (92.74), stack_area_frac)."""
     reasons = []
     run = run_rc == 0 and summary is not None
     check = check_rc == 0 and bool(chk.get("passed"))
@@ -336,6 +353,12 @@ def judge(run_rc, summary, check_rc, chk, reduced):
     missing = []
     n = None
     cells = False
+    stack_rows = {}
+    if summary is not None:
+        stage = next((r for r in summary.get("stages", [])
+                      if r.get("stage") == "layers"), None)
+        stack_rows = {r.get("name"): r.get("stack_area_frac")
+                      for r in (stage or {}).get("patches", [])}
     if summary is None:
         patches = False
     else:
@@ -345,7 +368,16 @@ def judge(run_rc, summary, check_rc, chk, reduced):
         patches = not missing
         n = summary.get("mesh", {}).get("n_cells")
         cells = "REDUCED" if reduced else (isinstance(n, int) and 3_000_000 <= n <= 6_000_000)
-    ok = run and check and non_orth and patches and (cells is True or cells == "REDUCED")
+    layers_ok = True
+    for p, bar in LAYER_COVERAGE.items():
+        stack = stack_rows.get(p)
+        if isinstance(stack, (int, float)) and stack >= bar:
+            continue
+        layers_ok = False
+        shown = f"{stack:.3f}" if isinstance(stack, (int, float)) else repr(stack)
+        reasons.append(f"layers: {p} stack {shown} < {bar:.2f}")
+    ok = (run and check and non_orth and patches
+          and (cells is True or cells == "REDUCED") and layers_ok)
     if not run:
         reasons.append("run: returncode " + str(run_rc) +
                        ("" if summary is not None else ", no summary"))
@@ -358,7 +390,7 @@ def judge(run_rc, summary, check_rc, chk, reduced):
     if not (cells is True or cells == "REDUCED"):
         reasons.append("cells: " + (repr(n) if summary is not None else "no summary"))
     return {"run": run, "check": check, "non_orth": non_orth, "patches": patches,
-            "cells": cells, "pass": ok, "reasons": reasons}
+            "cells": cells, "layers": layers_ok, "pass": ok, "reasons": reasons}
 
 
 def build_report(args, lo, hi, L, floor_gap_m, attribution, extent, slab, wf,
@@ -386,7 +418,11 @@ def build_report(args, lo, hi, L, floor_gap_m, attribution, extent, slab, wf,
         stage = next((r for r in summary.get("stages", []) if r.get("stage") == "layers"), None)
         if stage is not None:
             keep = ("name", "n_layers", "t1_requested", "t1_min", "t1_mean",
-                    "full_area_frac", "drop_cause", "dropped")
+                    "full_area_frac", "drop_cause", "dropped",
+                    "kept_area_frac", "ring_area_frac", "n_keep_faces",
+                    "n_ring_faces", "n_off_faces", "n_anchored_points",
+                    "stack_area_frac", "n_merged_faces", "merged_area_frac",
+                    "n_cut_faces")
             layers = [{k: r.get(k) for k in keep} for r in stage.get("patches", [])]
     return {
         "tool": "tools/promo/tunnel_mesh.py",
@@ -520,9 +556,11 @@ def _t5():
     wings = {"front_wing": ([0.0002, -0.9, 0.0879], [0.9151, 0.9, 0.5538]),
              "rear_wing": ([4.7974, -0.575, 0.3956], [5.3938, 0.575, 0.9072])}
     cfg = build_config("C:/g", "C:/o", _LO, _HI, args, wings)
-    if set(cfg) != {"input", "domain", "refinement", "castellation", "layers",
-                    "quality", "output"}:
+    if set(cfg) != {"input", "domain", "refinement", "castellation", "snap",
+                    "layers", "quality", "output"}:
         raise AssertionError("top-level keys " + repr(sorted(cfg)))
+    if cfg["snap"] != {"feature_tolerance": 0.0078125}:
+        raise AssertionError("snap " + repr(cfg["snap"]))
     sur = cfg["input"]["surfaces"]
     if [s["name"] for s in sur] != ["body", "front_wing", "rear_wing", "wheels",
                                     "floor", "ground"]:
@@ -538,6 +576,8 @@ def _t5():
     t1 = first_layer(5.393565138409031, 250, 1.5e-5, 50)["t1"]
     if not _close(cfg["layers"]["first_thickness"], t1):
         raise AssertionError("first_thickness " + repr(cfg["layers"]["first_thickness"]))
+    if cfg["layers"].get("terminate") != "face":
+        raise AssertionError("layers.terminate " + repr(cfg["layers"].get("terminate")))
     if cfg["quality"] != {"max_closure": 1e-10, "max_non_orth_deg": 70.0,
                           "report_non_orth_deg": 60.0, "min_thickness_ratio": 0.05,
                           "max_cond": 10000.0}:
@@ -577,12 +617,15 @@ def _t6():
 def _t7():
     chk = parse_check(F_CHECK)
 
-    def summ(n_cells, floor_size=10):
+    def summ(n_cells, floor_size=10, kept_body=0.9, kept_floor=0.9):
         rows = [{"name": p, "size": floor_size} for p in REQUIRED_PATCHES]
-        return {"mesh": {"n_cells": n_cells, "patches": rows}}
+        lays = [{"name": p, "stack_area_frac": k} for p, k in
+                (("body", kept_body), ("floor", kept_floor))]
+        return {"mesh": {"n_cells": n_cells, "patches": rows},
+                "stages": [{"stage": "layers", "patches": lays}]}
 
     g = judge(0, summ(3500000), 0, chk, False)
-    if g["pass"] is not True or g["cells"] is not True:
+    if g["pass"] is not True or g["cells"] is not True or g["layers"] is not True:
         raise AssertionError("(a) " + repr(g))
     g = judge(0, summ(2900000), 0, chk, False)
     if g["pass"] is not False or not any(r.startswith("cells") for r in g["reasons"]):
@@ -598,6 +641,13 @@ def _t7():
     g = judge(0, summ(3500000, floor_size=0), 0, chk, False)
     if g["pass"] is not False or not any(r.startswith("patches") for r in g["reasons"]):
         raise AssertionError("(e) " + repr(g))
+    g = judge(0, summ(3500000, kept_body=0.412), 0, chk, False)
+    if g["pass"] is not False or g["layers"] is not False \
+            or "layers: body stack 0.412 < 0.80" not in g["reasons"]:
+        raise AssertionError("(f) " + repr(g))
+    g = judge(0, summ(3500000, kept_floor=0.4116), 0, chk, False)
+    if g["pass"] is not False or "layers: floor stack 0.412 < 0.80" not in g["reasons"]:
+        raise AssertionError("(g) " + repr(g))
 
 
 def _t8():
@@ -771,6 +821,22 @@ def main(argv=None):
                                        os.path.join(args.out, "check.log"),
                                        timeout=args.timeout)
     chk = parse_check(chk_text)
+
+    if summary is not None:
+        stage = next((r for r in summary.get("stages", [])
+                      if r.get("stage") == "layers"), None)
+        for r in (stage or {}).get("patches", []):
+            kept = r.get("kept_area_frac")
+            ring = r.get("ring_area_frac")
+            stack = r.get("stack_area_frac")
+            print("layers " + str(r.get("name"))
+                  + ": n " + str(r.get("n_layers"))
+                  + " kept " + (f"{kept * 100:.1f} %" if isinstance(kept, (int, float)) else repr(kept))
+                  + " ring " + (f"{ring * 100:.1f} %" if isinstance(ring, (int, float)) else repr(ring))
+                  + " stack " + (f"{stack * 100:.1f} %" if isinstance(stack, (int, float)) else repr(stack))
+                  + " cut " + str(r.get("n_cut_faces"))
+                  + " off " + str(r.get("n_off_faces")) + " face(s)"
+                  + ", drop " + str(r.get("drop_cause")))
 
     gate = judge(run_rc, summary, check_rc, chk, reduced)
     report = build_report(args, lo, hi, L, floor_gap_m, attribution, extent, slab, wf,

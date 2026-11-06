@@ -297,7 +297,6 @@ fn solve(gpu: &Gpu, text: &str) -> crate::cht::ChtSolution {
 /// `q = dT/(L1/k1 + Rc + L2/k2)` - SPEC-LIT §47.12 Gate 1, reached from a
 /// case document rather than from a rig.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_case_file_route_reproduces_gate_1() {
     let Some(gpu) = gpu() else { return };
     let sol = solve(&gpu, &default_slab());
@@ -311,7 +310,7 @@ fn the_case_file_route_reproduces_gate_1() {
     let q_got = -sol.interface.into_a / area;
     let q_exact = (380.0 - 300.0) / (0.010 / 1.4 + 0.020 / 148.0);
     assert!(
-        (q_got / q_exact - 1.0).abs() < 1e-12,
+        ((q_got / q_exact - 1.0).abs() as f64) < crate::precision::roundoff_tol(1e-12),
         "q = {q_got}, exact {q_exact}"
     );
     assert!(sol.interface.imbalance() < 1e-12);
@@ -321,7 +320,6 @@ fn the_case_file_route_reproduces_gate_1() {
 /// **The §13.4.1 pair test for `Rc`, on two case DOCUMENTS differing in one
 /// entry.** They are required to produce different output.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn two_cases_differing_only_in_rc_produce_different_output() {
     let Some(gpu) = gpu() else { return };
 
@@ -352,7 +350,6 @@ fn two_cases_differing_only_in_rc_produce_different_output() {
 
 /// **The §13.4.1 pair test for `kappa`.**
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn two_cases_differing_only_in_kappa_produce_different_output() {
     let Some(gpu) = gpu() else { return };
     let sa = solve(&gpu, &slab_case("1.4", "148.0", "", "", ""));
@@ -368,7 +365,6 @@ fn two_cases_differing_only_in_kappa_produce_different_output() {
 /// **The §13.4.1 pair test for an ANISOTROPIC `kappa`.** `[1.4 1.4 1.4]` and
 /// `[1.4 1.4 14]` are two different materials.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn two_cases_differing_only_in_the_anisotropy_produce_different_output() {
     let Some(gpu) = gpu() else { return };
 
@@ -401,7 +397,6 @@ fn two_cases_differing_only_in_the_anisotropy_produce_different_output() {
 /// **The §13.4.1 pair test for `source`.** A die that dissipates must be
 /// hotter than one that does not.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn two_cases_differing_only_in_the_volumetric_source_produce_different_output() {
     let Some(gpu) = gpu() else { return };
     let sa = solve(&gpu, &slab_case("1.4", "148.0", "", "", ""));
@@ -424,6 +419,7 @@ fn two_cases_differing_only_in_the_volumetric_source_produce_different_output() 
 /// reached through this format. `q` into a slab whose other face is held
 /// gives a linear profile with `dT = q L/k` exactly.
 #[test]
+// f32 (F32-16): interface flux 1.4e-5 relative, over the 1e-5 cap
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn a_fixed_flux_patch_delivers_exactly_the_flux_it_names() {
     let Some(gpu) = gpu() else { return };
@@ -451,7 +447,6 @@ fn a_fixed_flux_patch_delivers_exactly_the_flux_it_names() {
 /// A transient case runs the number of steps it asks for, and relaxes toward
 /// the steady answer.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn a_transient_case_runs_its_own_steps_and_approaches_the_steady_answer() {
     let Some(gpu) = gpu() else { return };
     let steady = solve(&gpu, &default_slab());
@@ -482,7 +477,6 @@ fn a_transient_case_runs_its_own_steps_and_approaches_the_steady_answer() {
 /// The contact resistance shows as a temperature JUMP in the reported face
 /// values - the thing §47.3 says the cyclic branch could not have carried.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_reported_face_values_carry_the_contact_resistance_jump() {
     let Some(gpu) = gpu() else { return };
     let r_c = 2.0e-3 as Scalar;
@@ -529,6 +523,7 @@ fn the_reported_face_values_carry_the_contact_resistance_jump() {
 /// discretisation is exact. `q = 1e6 W/m^2`, the whole 100 W over the
 /// 10 x 10 mm footprint.
 #[test]
+// f32 (F32-16): interface flow off 2.1e-4 W, over the absolute 1e-8 pin
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_shipped_die_stack_case_matches_its_closed_form() {
     let Some(gpu) = gpu() else { return };
@@ -592,6 +587,7 @@ fn the_shipped_die_stack_case_matches_its_closed_form() {
 /// resistance in `cases/dieStack.cht.jsonc` and the junction temperature must
 /// move - by `q dRc`, which is a number the case's own arithmetic predicts.
 #[test]
+// f32 (F32-16): junction rise 2.2e-2 K absolute, over the 1e-5 cap
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn perturbing_one_contact_resistance_in_the_shipped_case_moves_the_junction() {
     let Some(gpu) = gpu() else { return };
@@ -947,6 +943,7 @@ fn a_transient_fluid_case_is_refused_naming_what_is_not_gated() {
 /// applies unchanged - a fluid that dissipates must be hotter than one that
 /// does not.
 #[test]
+// f32 (F32-16): run diverges, Ux Uy Uz p residuals NaN in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn a_source_on_a_fluid_region_reaches_the_energy_balance() {
     crate::io::contract::reset_warnings();
@@ -1027,7 +1024,6 @@ fn run_case_refuses_a_fluid_case_naming_the_function_that_solves_it() {
 /// test asserts that the solid twin really is a pure-conduction case
 /// (`has_fluid() == false`) before comparing.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_the_region_kind_itself_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
     let fluid = run_flow(&gpu, &kp_pair_base());
@@ -1133,7 +1129,6 @@ fn kp_solid_twin(n: usize) -> String {
 }
 
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_the_solid_conductivity_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
     // SPEC-LIT §47.12 Gate 5's own parameter: the conductivity ratio.
@@ -1146,6 +1141,7 @@ fn pair_the_solid_conductivity_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): run diverges, Ux Uy Uz p residuals NaN in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_the_body_force_and_the_reference_temperature_change_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -1154,6 +1150,7 @@ fn pair_the_body_force_and_the_reference_temperature_change_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): run diverges, Ux Uy Uz p residuals NaN in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_every_fluid_property_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -1169,7 +1166,6 @@ fn pair_every_fluid_property_changes_the_answer() {
 }
 
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_the_contact_resistance_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
     pair_differs(
@@ -1184,7 +1180,6 @@ fn pair_the_contact_resistance_changes_the_answer() {
 /// iterates identical, so the two runs are stopped at a fixed count rather
 /// than at a residual - the only way this pair can be tested at all.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_the_relaxation_factor_changes_the_iterate() {
     let Some(gpu) = gpu() else { return };
     pair_differs(&gpu, r#""relaxU": 0.7"#, r#""relaxU": 0.4"#, "numerics/flow/relaxU");
@@ -1200,7 +1195,6 @@ fn pair_the_relaxation_factor_changes_the_iterate() {
 /// the answer because they move a dimensionless group, not because the reader
 /// happened to pass the number through.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn changing_rho_cp_and_mu_together_at_fixed_nu_alpha_and_rho_cp_leaves_the_answer() {
     let Some(gpu) = gpu() else { return };
     let a = kp_pair_base();
@@ -1364,6 +1358,7 @@ fn duct_pair_differs(gpu: &Gpu, base: &str, from: &str, to: &str, what: &str) {
 }
 
 #[test]
+// f32 (F32-16): absolute 1e-9 on Re=140; f32 misses by 2e-5
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_shipped_qu_mudawar_case_reads_and_lowers_as_a_forced_flow_case() {
     let path =
@@ -1531,9 +1526,67 @@ fn buoyancy_is_required_by_a_closed_cavity_and_optional_once_there_is_an_inlet()
     assert!(err.contains("inlet"), "the refusal names the alternative: {err}");
 }
 
+/// SPEC-LIT 121.7's table through `buoyancy.model`/`buoyancy.beta`: the
+/// boussinesq row lowers to the form, and the two bad rows are refused
+/// naming the beta key.
+#[test]
+fn the_cht_buoyancy_block_lowers_the_boussinesq_form() {
+    // (a) model boussinesq + beta: the form reaches the lowered flow case.
+    let low = read(&duct_case(
+        "inlet",
+        DUCT_U,
+        DUCT_TIN,
+        "outlet",
+        DUCT_TOUT,
+        "\n  \"buoyancy\": { \"g\": [0.0, -9.81, 0.0], \"TRef\": 300.0, \
+         \"model\": \"boussinesq\", \"beta\": 3.4e-3 },",
+    ))
+    .expect("parse")
+    .lower()
+    .expect("a boussinesq block with a beta lowers");
+    let flow = low.flow_case().expect("a fluid case lowers to a FlowCase");
+    let b = flow.buoyancy.expect("the case carries a buoyancy block");
+    assert_eq!(b.form, BuoyancyForm::Boussinesq { beta: 3.4e-3 as Scalar });
+    assert_eq!(b.t_ref, 300.0);
+
+    // (b) boussinesq without beta: refused, naming the beta key.
+    let err = read(&duct_case(
+        "inlet",
+        DUCT_U,
+        DUCT_TIN,
+        "outlet",
+        DUCT_TOUT,
+        "\n  \"buoyancy\": { \"g\": [0.0, -9.81, 0.0], \"TRef\": 300.0, \
+         \"model\": \"boussinesq\" },",
+    ))
+    .expect("parse")
+    .lower()
+    .err()
+    .expect("boussinesq without beta is refused")
+    .to_string();
+    assert!(err.contains("buoyancy.beta"), "{err}");
+
+    // (c) beta under the density ratio: refused - nothing reads it.
+    let err = read(&duct_case(
+        "inlet",
+        DUCT_U,
+        DUCT_TIN,
+        "outlet",
+        DUCT_TOUT,
+        "\n  \"buoyancy\": { \"g\": [0.0, -9.81, 0.0], \"TRef\": 300.0, \
+         \"model\": \"densityRatio\", \"beta\": 3.4e-3 },",
+    ))
+    .expect("parse")
+    .lower()
+    .err()
+    .expect("beta under the density ratio is refused")
+    .to_string();
+    assert!(err.contains("buoyancy.beta"), "{err}");
+    assert!(err.contains("densityRatio"), "{err}");
+}
+
 /// SPEC-LIT §79.11 pair 1. The inlet velocity is this case's whole forcing.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_the_inlet_velocity_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
     duct_pair_differs(
@@ -1548,7 +1601,6 @@ fn pair_the_inlet_velocity_changes_the_answer() {
 /// SPEC-LIT §79.11 pair 2. The inlet temperature is the enthalpy datum
 /// everything downstream is measured from.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_the_inlet_temperature_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
     duct_pair_differs(
@@ -1564,7 +1616,6 @@ fn pair_the_inlet_temperature_changes_the_answer() {
 /// switches on §9's body force AND §25's variable density, and §79.6 says the
 /// absence of it is a model and not a default.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_buoyancy_on_a_forced_case_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
     let a = run_flow(&gpu, &duct_base());
@@ -1590,6 +1641,7 @@ fn pair_buoyancy_on_a_forced_case_changes_the_answer() {
 /// Reverse the inlet velocity and every outlet face is an inflow face, and
 /// then the same entry moves the answer by a lot.
 #[test]
+// f32 (F32-16): backflow inletValue 300->900 moved the field 0 K in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_the_outlet_inlet_value_moves_nothing_until_the_flow_comes_back_in() {
     let Some(gpu) = gpu() else { return };
@@ -1638,7 +1690,6 @@ fn pair_the_outlet_inlet_value_moves_nothing_until_the_flow_comes_back_in() {
 /// SPEC-LIT §79.5's other claim: while the flow is leaving, `inletOutlet` is
 /// `zeroGradient` in every bit - not approximately, and not eventually.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn inlet_outlet_is_bitwise_zero_gradient_while_the_flow_leaves() {
     let Some(gpu) = gpu() else { return };
     let a = duct_base();
@@ -1667,6 +1718,7 @@ fn inlet_outlet_is_bitwise_zero_gradient_while_the_flow_leaves() {
 /// SPEC-LIT §79.7: what goes in comes out, and the bulk temperature rise is
 /// `Q/(m cp)` - an identity, not a correlation.
 #[test]
+// f32 (F32-16): enthalpy balance exceeds its 1e-5 band in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_openings_close_the_global_balance_and_the_bulk_rise_is_the_identity() {
     let Some(gpu) = gpu() else { return };
@@ -1712,6 +1764,7 @@ fn the_openings_close_the_global_balance_and_the_bulk_rise_is_the_identity() {
 /// a matched orthogonal mesh IS the internal-face coefficient it replaced, so
 /// the cut is not an approximation - and this test says by how much.
 #[test]
+// f32 (F32-16): 1e-9 cell-centre keys scramble f32 centres; cell 120 unmatched
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_nine_box_decomposition_is_the_single_box_it_was_cut_from() {
     let Some(gpu) = gpu() else { return };
@@ -2420,18 +2473,53 @@ fn an_unknown_run_mode_is_refused_listing_both() {
     assert!(msg.contains("stress"), "{msg}");
 }
 
-/// Row 17: the `output` block on this format accepts exactly
-/// `exact.format: "vtu"`, once - four sub-cases, the fourth in both
-/// steady and transient dress.
+/// Row 17: the `output` block on this format accepts `exact.format:
+/// "vtu"` once, and `visualisation` in `vdb`/`nvdb`, one file per region
+/// (SPEC-LIT 117.3, VIO-05b) - the refusals in four sub-cases, the fourth in
+/// both steady and transient dress.
 #[test]
 fn the_output_block_on_cht_accepts_exactly_vtu_once() {
-    // (1) `output.visualisation` - a multi-region mesh is not one Cartesian
-    // lattice, so there is no voxel grid to sample onto.
+    // Every refusal below is strict; a test elsewhere that turns
+    // `-permissive` on holds this guard while it does.
+    let _guard = crate::io::contract::permissive_test_guard();
+    crate::io::contract::set_permissive(false);
+    // (1a) `output.visualisation` in vdb lowers: every region gets its own
+    // target, and on these block regions the default lattice is always laid.
     let vis = with_output(&default_stress(), r#"{ "visualisation": { "format": "vdb" } }"#);
-    let e = read(&vis).expect("parse").lower().expect_err("must refuse");
+    let low = read(&vis).expect("parse").lower().expect("vdb per region lowers");
+    let plan = low.output.expect("the plan");
+    assert_eq!(plan.vis.expect("vis").formats, vec![OutputFormat::Vdb]);
+
+    // (1b) a graded region is not a uniform box, so its lattice is laid on
+    // it alone, and an explicit voxel the budget would coarsen past s = 16
+    // (117.3) is refused before the run, naming the region.
+    let graded = default_slab().replace(
+        r#""cells": [12, 1, 1],"#,
+        r#""cells": [12, 1, 1], "grading": { "x": { "expansion": 4.0 } },"#,
+    );
+    assert_ne!(graded, default_slab(), "the grading slot must exist");
+    let fine = with_output(
+        &graded,
+        r#"{ "visualisation": { "format": "vdb", "lattice": { "voxel": 1e-5, "maxVoxels": 1000 } } }"#,
+    );
+    let e = read(&fine).expect("parse").lower().expect_err("must refuse");
     let msg = e.to_string();
     assert!(msg.contains("visualisation"), "{msg}");
-    assert!(msg.contains("Cartesian"), "{msg}");
+    assert!(msg.contains("region 'insulation'"), "{msg}");
+    assert!(msg.contains("16"), "{msg}");
+    let ok = with_output(&graded, r#"{ "visualisation": { "format": "nvdb" } }"#);
+    assert!(read(&ok).expect("parse").lower().is_ok(), "the 117.3 defaults always lay a lattice");
+
+    // (1c) the usda scene (`usdScene: true` adds the scene writer) is
+    // refused by name, and so is a field this run does not have (SPEC-LIT
+    // 44.2).
+    let usda = with_output(&default_stress(), r#"{ "visualisation": { "format": "vdb", "usdScene": true } }"#);
+    let msg = read(&usda).expect("parse").lower().expect_err("must refuse").to_string();
+    assert!(msg.contains("output/visualisation/format"), "{msg}");
+    assert!(msg.contains("`usda`"), "{msg}");
+    let p = with_output(&default_slab(), r#"{ "visualisation": { "format": "vdb", "fields": ["p"] } }"#);
+    let msg = read(&p).expect("parse").lower().expect_err("must refuse").to_string();
+    assert!(msg.contains("output.visualisation.fields"), "{msg}");
 
     // (2) `output.restart` - the driver writes no checkpoint of any kind.
     let restart = with_output(&default_stress(), r#"{ "restart": { "keep": 2 } }"#);
@@ -2466,6 +2554,11 @@ fn the_output_block_on_cht_accepts_exactly_vtu_once() {
     let text = with_output(&transient, r#"{ "exact": { "format": "vtu", "interval": 2.0 } }"#);
     let e = read(&text).expect("parse").lower().expect_err("must refuse");
     let msg = e.to_string();
+    assert!(msg.contains("one state"), "{msg}");
+    // ... and the visualisation interval the same way, by its own key.
+    let text = with_output(&transient, r#"{ "visualisation": { "format": "vdb", "interval": 2.0 } }"#);
+    let msg = read(&text).expect("parse").lower().expect_err("must refuse").to_string();
+    assert!(msg.contains("output/visualisation/interval"), "{msg}");
     assert!(msg.contains("one state"), "{msg}");
 }
 
@@ -2560,7 +2653,6 @@ fn vm_max(s: &[RegionStress]) -> Scalar {
 /// `numerics.tolerance` no f64 solve can reach, so the refusal names the
 /// region and the number the case asked for.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn stress_on_an_unconverged_thermal_solve_is_refused_naming_the_region() {
     let Some(gpu) = gpu() else { return };
     let a = default_stress().replace(r#""tolerance": 1e-12"#, r#""tolerance": 1e-30"#);
@@ -2593,6 +2685,7 @@ fn the_stress_banner_names_every_zone() {
 // ==========================================================================
 
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_alpha_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2614,6 +2707,7 @@ fn pair_alpha_changes_the_answer() {
 /// independent of `E` - the displacement equation is homogeneous in `E` -
 /// so this pair asserts on the STRESS, which scales with `E`.
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_e_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2632,6 +2726,7 @@ fn pair_e_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_nu_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2650,6 +2745,7 @@ fn pair_nu_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_tref_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2668,6 +2764,7 @@ fn pair_tref_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_traction_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2686,6 +2783,7 @@ fn pair_traction_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_fixed_displacement_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2704,6 +2802,7 @@ fn pair_fixed_displacement_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_symmetry_versus_free_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2719,6 +2818,7 @@ fn pair_symmetry_versus_free_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_tolerance_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2735,6 +2835,7 @@ fn pair_tolerance_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_max_outer_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2757,6 +2858,7 @@ fn pair_max_outer_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_bond_treatment_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -2777,6 +2879,7 @@ fn pair_bond_treatment_changes_the_answer() {
 /// constant) to 10 % with the right sign. `kappa` is rebuilt here from the
 /// case's own constants, never transcribed.
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_bimetal_strip_case_reproduces_timoshenko() {
     let Some(gpu) = gpu() else { return };
@@ -2823,7 +2926,6 @@ fn the_bimetal_strip_case_reproduces_timoshenko() {
 /// reader: 1536 cells, `sigma` 9 and symmetric, `u` on points, `T` in both
 /// blocks.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_written_region_vtu_is_read_back() {
     let Some(gpu) = gpu() else { return };
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -2871,6 +2973,7 @@ fn the_written_region_vtu_is_read_back() {
 /// conjugate field, the grease is skipped, and every run converges
 /// (SPEC-LIT 96.2). Prints the summary the driver prints.
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_shipped_die_stack_case_runs_in_stress_mode() {
     let Some(gpu) = gpu() else { return };
@@ -3199,7 +3302,7 @@ fn a_msh_with_several_volumes_is_refused_naming_the_layout_route() {
 /// type is the caller's, because what is under test is exactly the mesh's
 /// own patch TYPE.
 fn cube_raw(name: &str, type_name: &str, kind: crate::mesh::PatchKind) -> PolyMeshRaw {
-    let v = |x: Scalar, y: Scalar, z: Scalar| crate::Vec3::new(x, y, z);
+    let v = |x: Scalar, y: Scalar, z: Scalar| crate::types::DVec3::new(x as f64, y as f64, z as f64);
     PolyMeshRaw {
         points: vec![
             v(0.0, 0.0, 0.0),
@@ -3336,7 +3439,6 @@ fn an_opening_on_an_imported_wall_typed_patch_is_refused() {
 /// `build_host_mesh` from the same five numbers, so any difference is a mesh
 /// path and not a physics.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_shipped_case_round_trips_through_poly_mesh_bit_for_bit() {
     let Some(gpu) = gpu() else { return };
     let path =
@@ -3439,7 +3541,6 @@ fn a_preconditioner_of_none_lowers_to_none() {
 /// the preconditioner may change the path, not the answer a converged solve
 /// writes.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn two_cases_differing_only_in_the_preconditioner_produce_different_output() {
     let Some(gpu) = gpu() else { return };
 
@@ -3480,7 +3581,7 @@ fn two_cases_differing_only_in_the_preconditioner_produce_different_output() {
         let q_exact = (380.0 - 300.0) / (0.010 / 1.4 + 0.020 / 148.0);
         println!("{name}: q_got/q_exact = {}", q_got / q_exact);
         assert!(
-            (q_got / q_exact - 1.0).abs() < 1e-10,
+            ((q_got / q_exact - 1.0).abs() as f64) < crate::precision::roundoff_tol(1e-10),
             "{name}: q = {q_got}, exact {q_exact}"
         );
         assert!(
@@ -3528,6 +3629,7 @@ fn the_banner_names_the_block_coupled_solve() {
 /// (13.4.1) but agree to first order in h ((109.7): the operators differ at
 /// `O(h)`).
 #[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_coupled_changes_the_solve_and_keeps_the_answer() {
     let Some(gpu) = gpu() else { return };
@@ -3554,6 +3656,92 @@ fn pair_coupled_changes_the_solve_and_keeps_the_answer() {
         "two discretisations of one problem differ by more than O(h): \
          max|du| = {d:.3e}, 0.1 max|u_a| = {:.3e}",
         0.1 * ua
+    );
+}
+
+// ==========================================================================
+//  SPEC-LIT 96.3 row 23 and 142.2 - `mechanics.solver.outer`
+// ==========================================================================
+
+/// The `coupled: true` document of pair 11 with `outer` added.
+fn coupled_stress_with_outer(outer: &str) -> String {
+    default_stress().replace(
+        r#""maxOuter": 500 }"#,
+        &format!(r#""maxOuter": 500, "coupled": true, "outer": "{outer}" }}"#),
+    )
+}
+
+/// 96.1: `outer` absent lowers to Anderson of depth five, `"anderson"`
+/// to the same, and `"gmres"` with `coupled: true` to GMRES(50).
+#[test]
+fn the_outer_knob_lowers_to_its_relaxation() {
+    use crate::solid::outer::{Relaxation, ANDERSON_DEPTH, GMRES_RESTART};
+    let lowered = |text: &str| {
+        let low = read(text).expect("parse").lower().expect("lower");
+        low.mechanics[0].as_ref().expect("mechanics").solver.outer
+    };
+    assert_eq!(lowered(&default_stress()), Relaxation::Anderson(ANDERSON_DEPTH));
+    assert_eq!(
+        lowered(&coupled_stress_with_outer("anderson")),
+        Relaxation::Anderson(ANDERSON_DEPTH)
+    );
+    assert_eq!(lowered(&coupled_stress_with_outer("gmres")), Relaxation::Gmres(GMRES_RESTART));
+}
+
+/// Row 23 and the name check: an unknown `outer` is refused listing both
+/// names, and `"gmres"` without `coupled: true` is refused naming the knob
+/// that admits it.
+#[test]
+fn an_unknown_or_segregated_outer_is_refused_by_name() {
+    let text = coupled_stress_with_outer("newton");
+    let msg = read(&text).expect("parse").lower().expect_err("must refuse").to_string();
+    assert!(msg.contains("solver/outer"), "{msg}");
+    assert!(msg.contains("newton"), "{msg}");
+    assert!(msg.contains("\"anderson\"") && msg.contains("\"gmres\""), "{msg}");
+
+    let text = default_stress()
+        .replace(r#""maxOuter": 500 }"#, r#""maxOuter": 500, "outer": "gmres" }"#);
+    assert_ne!(text, default_stress(), "the substitution must change the text");
+    let msg = read(&text).expect("parse").lower().expect_err("must refuse").to_string();
+    assert!(msg.contains("solver/outer"), "{msg}");
+    assert!(msg.contains("coupled: true"), "{msg}");
+    assert!(msg.contains("row 23"), "{msg}");
+}
+
+/// Pair 12 (96.4 row 12): `solver.outer` `"anderson"` -> `"gmres"` on the
+/// block-coupled bar. The two iterations solve for ONE fixed point (142.2),
+/// so what must differ is the iteration count, and the answers must agree
+/// to the outer tolerance.
+#[test]
+// f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
+#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
+fn pair_outer_changes_the_iteration_and_keeps_the_fixed_point() {
+    let Some(gpu) = gpu() else { return };
+    let a = coupled_stress_with_outer("anderson");
+    let b = coupled_stress_with_outer("gmres");
+    assert_ne!(a, b, "the two documents must actually differ");
+    let (_, _, sa) = run_stress_doc(&gpu, &a);
+    let (low_b, _, sb) = run_stress_doc(&gpu, &b);
+    let banner = case::banner_lines(&low_b).join("\n");
+    assert!(banner.contains("GMRES(50)"), "{banner}");
+    let (na, nb) = (sa[0].report.iterations, sb[0].report.iterations);
+    let d = du(&sa[0].u, &sb[0].u);
+    let ua = umax(&sa[0].u);
+    println!("pair outer: iterations(a) = {na}, iterations(b) = {nb}");
+    println!("pair outer: max|du| = {d:.3e}, max|u_a| = {ua:.3e}");
+    assert!(
+        sa[0].report.converged && sb[0].report.converged,
+        "both outer loops must converge"
+    );
+    assert_ne!(
+        na, nb,
+        "the case said solver.outer and the solver ignored it (SPEC-LIT 13.4.1)"
+    );
+    assert!(
+        d <= 1e-6 * ua,
+        "Anderson and GMRES on one block map land on two states: max|du| = {d:.3e}, \
+         1e-6 max|u_a| = {:.3e}",
+        1e-6 * ua
     );
 }
 
@@ -3687,6 +3875,8 @@ fn every_external_refusal_fires_and_names_the_setting() {
 }
 
 #[test]
+// f32 (VAL-81): externalSlab Newton stalls at 4.6e-4 K against 1e-10 (SPEC-LIT 98.3)
+#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_every_external_entry_changes_the_answer() {
     let Some(gpu) = gpu() else { return };
     let pairs = [
@@ -3717,6 +3907,7 @@ fn pair_every_external_entry_changes_the_answer() {
 }
 
 #[test]
+// f32 (F32-16): closed-form flux 3.0e-5 relative, over the 1e-5 cap
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn a_convective_face_conducts_exactly_what_it_convects() {
     let Some(gpu) = gpu() else { return };
@@ -3745,6 +3936,7 @@ fn a_convective_face_conducts_exactly_what_it_convects() {
 }
 
 #[test]
+// f32 (F32-16): Newton pass count 7 vs the 3..=6 band; f32 stalls at ulp
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn a_radiating_face_meets_the_quartic_in_quadratic_newton_passes() {
     let Some(gpu) = gpu() else { return };
@@ -3804,6 +3996,7 @@ fn a_case_without_an_external_face_takes_one_solve_and_no_newton_pass() {
 }
 
 #[test]
+// f32 (F32-16): Robin balance 6.6e-3 relative, over the 1e-5 cap
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn an_external_face_on_a_fluid_wall_meets_its_robin_identity() {
     let Some(gpu) = gpu() else { return };
@@ -3844,6 +4037,8 @@ fn an_external_face_on_a_fluid_wall_meets_its_robin_identity() {
 }
 
 #[test]
+// f32 (VAL-81): linearisation residual 7.8e-4 and 9.0e-4 in f32 (SPEC-LIT 98.5)
+#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn pair_the_external_entries_change_a_conjugate_answer() {
     let Some(gpu) = gpu() else { return };
     let rows = [
@@ -4038,6 +4233,7 @@ mod curves {
     }
 
     #[test]
+    // f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn pair_an_alpha_curve_moves_the_bar_and_its_twin_at_the_zone_mean_does_not() {
         let Some(gpu) = gpu() else { return };
@@ -4079,6 +4275,7 @@ mod curves {
     }
 
     #[test]
+    // f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn pair_an_e_curve_moves_the_stress_and_its_twin_at_the_zone_mean_does_not() {
         let Some(gpu) = gpu() else { return };
@@ -4121,6 +4318,7 @@ mod curves {
     }
 
     #[test]
+    // f32 (F32-16): thermal non-convergence refusal fires before the curve refusal in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_zone_whose_temperatures_leave_its_curve_is_refused_by_name() {
         let Some(gpu) = gpu() else { return };
@@ -4162,6 +4360,7 @@ mod curves {
     }
 
     #[test]
+    // f32 (F32-16): stress-mode thermal solve misses its convergence criterion in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_bimetal_strip_with_a_brass_alpha_curve_moves_the_tip_and_meets_timoshenko() {
         let Some(gpu) = gpu() else { return };
@@ -4419,7 +4618,7 @@ mod conduction {
             base.worst_alignment
         );
         assert!(
-            r.worst_residual <= crate::cht::ANISOTROPY_RESIDUAL_LIMIT,
+            r.worst_residual as f64 <= crate::cht::ANISOTROPY_RESIDUAL_LIMIT,
             "the rebuilt residual {} is over the limit",
             r.worst_residual
         );
@@ -4474,7 +4673,6 @@ mod conduction {
     }
 
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_flat_curve_takes_two_passes_and_lands_on_the_number_it_stands_for() {
         let Some(gpu) = gpu() else { return };
         let a = solve(&gpu, &slab_with(FACE_300, K_FLAT));
@@ -4500,6 +4698,7 @@ mod conduction {
     }
 
     #[test]
+    // f32 (F32-16): externalSlab outer loop misses the 1e-10 §100.7 bar in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn pair_a_conductivity_curve_bends_the_profile_and_keeps_kirchhoffs_heat_flow() {
         let Some(gpu) = gpu() else { return };
@@ -4548,6 +4747,7 @@ mod conduction {
     }
 
     #[test]
+    // f32 (F32-16): externalSlab outer loop misses the 1e-10 §100.7 bar in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_fixed_flux_face_delivers_its_q_through_a_conductivity_curve() {
         let Some(gpu) = gpu() else { return };
@@ -4573,6 +4773,7 @@ mod conduction {
     }
 
     #[test]
+    // f32 (F32-16): externalSlab outer loop misses the 1e-10 §100.7 bar in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_convective_face_meets_its_robin_identity_through_a_conductivity_curve() {
         let Some(gpu) = gpu() else { return };
@@ -4600,6 +4801,7 @@ mod conduction {
     }
 
     #[test]
+    // f32 (F32-16): externalSlab outer loop misses the 1e-10 §100.7 bar in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_radiating_face_and_a_conductivity_curve_share_one_loop() {
         let Some(gpu) = gpu() else { return };
@@ -4667,6 +4869,7 @@ mod conduction {
     }
 
     #[test]
+    // f32 (F32-16): externalSlab outer loop misses the 1e-10 §100.7 bar in f32
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn pair_a_heat_capacity_curve_moves_a_transient_and_its_flat_twin_does_not() {
         let Some(gpu) = gpu() else { return };
@@ -4741,6 +4944,8 @@ mod conjugate_curves {
 
     /// SPEC-LIT §100.10 check: the curves lower onto the case's regions.
     #[test]
+    // f32 (VAL-81): the curve at 300 K reads 0.99999994, asserted exactly 1.0
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_fluid_and_a_solid_conductivity_curve_lower_on_a_conjugate_case() {
         let base = kp_pair_base();
         let text = with_wall_k(&with_fluid_k(&base, K_SLOPED), r#"{ "table": [[200.0, 1.0], [400.0, 2.0]] }"#);
@@ -4764,7 +4969,6 @@ mod conjugate_curves {
 
     /// SPEC-LIT §100.10 check: a flat curve is the number it stands for.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_flat_fluid_conductivity_curve_lands_on_the_number_it_stands_for() {
         let Some(gpu) = gpu() else { return };
         let base = kp_pair_base();
@@ -4789,6 +4993,7 @@ mod conjugate_curves {
 
     /// SPEC-LIT §100.10 check: the Robin identity survives a moving `C_b`.
     #[test]
+    // f32 (F32-16): Robin balance 1.2e-3 relative, over the 1e-5 cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn an_external_face_on_a_fluid_wall_meets_its_robin_identity_through_a_conductivity_curve() {
         let Some(gpu) = gpu() else { return };
@@ -4828,7 +5033,6 @@ mod conjugate_curves {
     /// SPEC-LIT §100.10 check: a solid curve takes effect; its flat twin does
     /// not.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_solid_conductivity_curve_on_a_conjugate_case_takes_effect_and_its_flat_twin_does_not() {
         let Some(gpu) = gpu() else { return };
         let base = kp_pair_base();
@@ -5129,6 +5333,7 @@ mod enclosure {
     }
 
     #[test]
+    // f32 (F32-16): net power 8.3e-5 of gross, over the 1e-5 cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn an_enclosure_on_a_live_run_balances_its_power_splits_every_wall_and_sources_the_interface_once() {
         let Some(gpu) = gpu() else { return };
@@ -5187,6 +5392,7 @@ mod enclosure {
     }
 
     #[test]
+    // f32 (F32-16): two-surface flux 2.0e-4 relative, over the 1e-5 cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn an_interface_radiating_into_a_black_closure_meets_the_two_surface_closed_form_face_by_face() {
         let Some(gpu) = gpu() else { return };
@@ -5253,6 +5459,7 @@ mod enclosure {
     /// interface - step 4d registers both, and `interface_source` is still
     /// (S98.9)'s alone.
     #[test]
+    // f32 (F32-16): cell source 5.4e-5 of radiated, over the 1e-5 cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_source_curve_beside_a_radiating_interface_leaves_its_cell_source_the_radiated_power() {
         let Some(gpu) = gpu() else { return };
@@ -5286,6 +5493,7 @@ mod enclosure {
     /// SPEC-LIT §100.13: viscous dissipation beside a radiating interface -
     /// step 4d registers both, and `interface_source` stays (S98.9)'s.
     #[test]
+    // f32 (F32-16): cell source 1.8e-4 of radiated, over the 1e-5 cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn viscous_dissipation_beside_a_radiating_interface_leaves_its_cell_source_the_radiated_power() {
         let Some(gpu) = gpu() else { return };
@@ -5446,7 +5654,6 @@ mod sources {
     /// SPEC-LIT §100.12: a flat curve is its number; a flat table in t is the
     /// transient number to the bit.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_flat_curve_and_a_flat_time_table_give_the_number_s_field() {
         let Some(gpu) = gpu() else { return };
         let number = solve(&gpu, &slab_with(r#""source": 5.0e6,"#));
@@ -5463,6 +5670,7 @@ mod sources {
     /// SPEC-LIT §100.12: a curve linear in T is exact after one split, and
     /// its power leaves through the two held faces.
     #[test]
+    // f32 (F32-16): wall balance 4.0e-5 relative, over the 1e-5 cap
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_source_linear_in_t_is_exact_after_one_split_and_its_power_leaves_through_the_walls() {
         let Some(gpu) = gpu() else { return };
@@ -5481,7 +5689,6 @@ mod sources {
     /// SPEC-LIT §13.4.1, three pairs: a curve against its value at 340 K, a
     /// ramp in t against its flat twin, a box against none.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn pair_a_curve_in_t_a_ramp_in_time_and_a_box_each_move_the_field() {
         let Some(gpu) = gpu() else { return };
         let a = solve(&gpu, &slab_with(CURVE));
@@ -5506,7 +5713,6 @@ mod sources {
 
     /// SPEC-LIT §100.11 row 7: a step past the table's end is refused.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_time_outside_the_table_is_refused_mid_run() {
         let Some(gpu) = gpu() else { return };
         let text = transient_with(r#""source": { "time": [[0.0, 5.0e6], [0.3, 5.0e6]] },"#);
@@ -5524,7 +5730,6 @@ mod sources {
     /// SPEC-LIT §100.12 on the conjugate path: a flat curve on the wall is
     /// its number, with the same source_power; a sloped one moves the field.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_flat_source_curve_on_the_conjugate_path_gives_the_number_s_field() {
         let Some(gpu) = gpu() else { return };
         let a = run_flow(&gpu, &kp_with("1.0"));
@@ -5605,7 +5810,6 @@ mod dissipation {
     /// SPEC-LIT §100.14: a flat mu curve is its number; a sloped one moves
     /// the answer (SPEC-LIT 13.4.1).
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_flat_mu_curve_gives_the_number_s_field_and_a_sloped_one_moves_it() {
         let Some(gpu) = gpu() else { return };
         let a = run_flow(&gpu, &duct_base());
@@ -5632,6 +5836,7 @@ mod dissipation {
     /// leaves U where it was, is positive, and every watt of it leaves through
     /// the openings - by the outlet's enthalpy and by conduction.
     #[test]
+    // f32 (F32-16): openings carry 14% of Phi, over the 1e-4 band
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn viscous_dissipation_is_metered_and_leaves_through_the_openings() {
         let Some(gpu) = gpu() else { return };

@@ -27,12 +27,18 @@ The refit (--refit) re-fits the same ensemble on the extra bundles' rows in
 front of the AM-14 training set and writes optimise/aml/ (the shipped model
 since 2026-10-03); a refit runs no refinement round, so the tuning ablation
 half is not measured and the optimiser ships DISABLED until G-OPT passes.
+Since AUT-11 the ship rule is gate-driven (prior.USER_SHIP): load_model enables
+the hook only from the G-OPT.json beside the model - PASS, non-vacuous (the
+ablation measured and beating the rules), its sha the one the model recorded, its
+model sha the model's (gate_status) - and otherwise records OPT-DISABLED with the
+reasons.
 
     python tools/autonomy/optimise.py --selftest
     python tools/autonomy/optimise.py --plan
     python tools/autonomy/optimise.py --refine --work DIR [--rounds N] [--streams N]
     python tools/autonomy/optimise.py --cv --extra PATH [--extra PATH ...]
     python tools/autonomy/optimise.py --refit --extra PATH [--extra PATH ...]
+    python tools/autonomy/optimise.py --hurdle --extra PATH [--extra PATH ...]
     python tools/autonomy/optimise.py --check
 """
 import argparse
@@ -81,6 +87,7 @@ class OptError(ValueError):
 
 REPORT_DIR = os.path.join(HERE, "optimise")
 SHIP_DIR = os.path.join(REPORT_DIR, "aml")
+HURDLE_DIR = os.path.join(REPORT_DIR, "aml2")   # AUT-09's one pre-registered run
 # the shipped model since 2026-10-03: refit on the AM-L rows (optimise/ keeps
 # the AM-14 gate as the record of that run)
 MODEL_NAME = "opt_model.json"
@@ -123,6 +130,12 @@ CONFIG_FEATURES = ("wall_level", "log10_base_over_lmax", "log10_hwall_over_lmax"
                    "growth", "log10_hwall_over_t1", "layers_n",
                    "log10_predicted_cells", "on_plane", "max_level")
 FEATURES = tuple(prior.FEATURES) + CONFIG_FEATURES          # 17 + 14 = 31
+# the hurdle surrogate (AUT-09, 2026-10-11, pre-registered): the same ensemble
+# with a two-part BLC_8 head and three R-WIN margin features
+MARGIN_FEATURES = ("win_depth", "log10_g5_margin", "log10_stack_margin")
+FEATURES_H = FEATURES + MARGIN_FEATURES                     # 31 + 3 = 34
+HOLDOUT_SALT = "AUT-09 holdout "
+HOLDOUT_MOD = 5
 OPT_IDS = ("OPT-PICK", "OPT-NOFEAS", "OPT-PLANE", "OPT-DISABLED")
 MODEL_SCHEMA = "autonomy-opt-model/1"
 GATE_SCHEMA = "autonomy-opt-gate/1"
@@ -130,6 +143,8 @@ TRAIN_SCHEMA = "autonomy-opt-train/1"
 CHECK_SCHEMA = "autonomy-opt-check/1"
 HEADER = baseline.HEADER                   # the "$comment" of every JSON it writes
 _MODEL = {"path": os.path.join(SHIP_DIR, MODEL_NAME), "v": None, "key": None}
+# the ship rule (AUT-11): the optimiser is enabled only by its gate file
+SHIP_RULE = prior.USER_SHIP["rule"]
 
 
 # --- (C2) the rebuild: every tuning attempt's config from its row ------------
@@ -216,6 +231,8 @@ def rows_from(bundle, source, mrows, gates, knobs):
     ftr = rules.ft_radius_of(bundle.get("records") or [])
     w21 = rules.win_2to1_of(bundle.get("records") or [])
     glb = rules.glb_of(bundle.get("records") or [])
+    rsn = rules.r_snap_of(bundle.get("records") or [])
+    rec_on = rules.r_econ_of(bundle.get("records") or [])
     for gid in sorted(by_geom):
         att = by_geom[gid]
         if sorted(att) != list(range(1, max(att) + 1)):
@@ -228,7 +245,8 @@ def rows_from(bundle, source, mrows, gates, knobs):
         else:
             s = rules.setup(mrows[gid], fp, campaign.stl_rel(gid),
                             campaign.case_rel(gid), gid, gates=gates, knobs=knobs,
-                            ft_radius=ftr, win_2to1=w21, glb=glb)
+                            ft_radius=ftr, win_2to1=w21, glb=glb, r_snap=rsn,
+                            r_econ=rec_on)
             if s["refused"]:
                 raise OptError("rules.setup refuses %s (%s): %s"
                                % (gid, source, ", ".join(s["refused"])))
@@ -343,6 +361,37 @@ def x_of(cfg, fp):
     return list(prior.features(fp)) + config_features(cfg, fp)
 
 
+def margin_features(cfg):
+    """The three R-WIN margin features (AUT-09): the (92.45) depth d, log10 of
+    the G5 margin over the snapped-wall limit and log10 of the stack limit.
+    Pre-registered simplification: the config's own wall h, not R-WIN's
+    h/ratio; NaN when the config layers nothing."""
+    lay = cfg.get("layers")
+    if not lay or lay.get("n", 0) == 0 or not lay.get("first_thickness"):
+        return [float("nan"), float("nan"), float("nan")]
+    n = lay["n"]
+    t1 = lay["first_thickness"]
+    g = lay.get("growth", preflight.MESHER_DEFAULTS["/layers/growth"])
+    h = cfg["domain"]["base_size"] / 2 ** remedies.wall_level(cfg)
+    T = rules.stack_total(t1, g, n)
+    d = min(1.0, rules.CELL_FRAC * h / T)
+    g5d = rules.G5_FACTOR * t1 * d / h
+    return [d, math.log10(g5d / (rules.G5_RATIO * rules.SNAP_G5_K)),
+            math.log10(rules.CELL_FRAC * h / T)]
+
+
+def x_h_of(cfg, fp):
+    """The 34 hurdle features: x_of, then the three margin features."""
+    return x_of(cfg, fp) + margin_features(cfg)
+
+
+def holdout_of(gid):
+    """True for the 20 % in-tuning geometry hold-out (AUT-09): a salted sha256
+    over the id, independent of the crc32 folds."""
+    return int(hashlib.sha256((HOLDOUT_SALT + gid).encode("ascii"))
+               .hexdigest()[:8], 16) % HOLDOUT_MOD == 0
+
+
 # --- (C4) the bootstrap ensemble and the cross-fit ---------------------------
 
 
@@ -372,18 +421,84 @@ def fit_ensemble(X, y_fail, y_blc, y_lc, groups, members=MEMBERS, seed=BOOT_SEED
     return ens
 
 
+def fit_hurdle(X, y_fail, y_blc, y_lc, groups, members=MEMBERS, seed=BOOT_SEED):
+    """MEMBERS (fail, pos, cond, cells) hurdles (AUT-09); the bootstrap draws
+    geometries exactly as fit_ensemble's.  pos is p(BLC_8 > 0), cond is the
+    clipped BLC_8 given positive; each a single-class or empty-row constant
+    where it has to be."""
+    ids = sorted(set(groups))
+    ens = []
+    for m in range(members):
+        rng = numpy.random.default_rng([seed, m])
+        draw = rng.choice(len(ids), size=len(ids), replace=True)
+        cnt = collections.Counter(ids[i] for i in draw)
+        w = numpy.array([cnt.get(g, 0) for g in groups], dtype=float)
+        sel = w > 0
+        if len(set(bool(v) for v in y_fail[sel])) == 1:
+            fail = {"const": 1.0 if y_fail[sel][0] else 0.0}
+        else:
+            fail = HistGradientBoostingClassifier(random_state=m, **HYPER)
+            fail.fit(X[sel], y_fail[sel], sample_weight=w[sel])
+        y_pos = y_blc > 0
+        if len(set(bool(v) for v in y_pos[sel])) == 1:
+            pos = {"const": 1.0 if y_pos[sel][0] else 0.0}
+        else:
+            pos = HistGradientBoostingClassifier(random_state=m, **HYPER)
+            pos.fit(X[sel], y_pos[sel], sample_weight=w[sel])
+        ok = sel & y_pos
+        if ok.any():
+            cond = HistGradientBoostingRegressor(random_state=m, **HYPER)
+            cond.fit(X[ok], y_blc[ok], sample_weight=w[ok])
+        else:
+            cond = {"const": 0.0}
+        okc = sel & numpy.isfinite(y_lc)
+        if not okc.any():
+            raise OptError("no cell counts in the training rows")
+        cells = HistGradientBoostingRegressor(random_state=m, **HYPER)
+        cells.fit(X[okc], y_lc[okc], sample_weight=w[okc])
+        ens.append((fail, pos, cond, cells))
+    return ens
+
+
+def hurdle_members(ens, Xq):
+    """(P, E, B) member x rows arrays out of the 4-tuple hurdle members."""
+    ps, es = [], []
+    for _fail, pos, cond, _cells in ens:
+        if isinstance(pos, dict):
+            ps.append(numpy.full(len(Xq), pos["const"], dtype=float))
+        else:
+            col = list(pos.classes_).index(True)
+            ps.append(pos.predict_proba(Xq)[:, col])
+        if isinstance(cond, dict):
+            es.append(numpy.full(len(Xq), cond["const"], dtype=float))
+        else:
+            es.append(numpy.clip(cond.predict(Xq), 0.0, 1.0))
+    P, E = numpy.array(ps), numpy.array(es)
+    return P, E, P * E
+
+
 def predict(ens, Xq):
-    """Mean and std (ddof 0) over the members of p_fail, BLC_8 and log10 cells."""
+    """Mean and std (ddof 0) over the members of p_fail, BLC_8 and log10 cells;
+    4-tuple hurdle members take BLC_8 from the two-part head (AUT-09)."""
     ps, bs, ls = [], [], []
-    for fail, blc, cells in ens:
+    H = hurdle_members(ens, Xq) if len(ens[0]) == 4 else None
+    for member in ens:
+        fail = member[0]
         if isinstance(fail, dict):
             ps.append(numpy.full(len(Xq), fail["const"], dtype=float))
         else:
             col = list(fail.classes_).index(True)
             ps.append(fail.predict_proba(Xq)[:, col])
-        bs.append(numpy.clip(blc.predict(Xq), 0.0, 1.0))
-        ls.append(cells.predict(Xq))
-    P, B, L = numpy.array(ps), numpy.array(bs), numpy.array(ls)
+        if H is None:
+            bs.append(numpy.clip(member[1].predict(Xq), 0.0, 1.0))
+        ls.append(member[-1].predict(Xq))
+    P, L = numpy.array(ps), numpy.array(ls)
+    if H is not None:
+        return {"p_fail": P.mean(0), "p_fail_std": P.std(0),
+                "blc8": H[2].mean(0), "blc8_std": H[2].std(0),
+                "log_cells": L.mean(0), "log_cells_std": L.std(0),
+                "p_pos": H[0].mean(0), "e_pos": H[1].mean(0)}
+    B = numpy.array(bs)
     return {"p_fail": P.mean(0), "p_fail_std": P.std(0),
             "blc8": B.mean(0), "blc8_std": B.std(0),
             "log_cells": L.mean(0), "log_cells_std": L.std(0)}
@@ -393,7 +508,7 @@ def fold_of(gid):
     return zlib.crc32(gid.encode("ascii")) % FOLDS
 
 
-def _oof(X, y_fail, y_blc, y_lc, groups):
+def _oof(X, y_fail, y_blc, y_lc, groups, fit=fit_ensemble):
     """cross_fit's engine: (fold ensembles, out-of-fold p/b/l, per-fold rows)."""
     folds = [fold_of(g) for g in groups]
     ens_by_fold = {}
@@ -407,8 +522,8 @@ def _oof(X, y_fail, y_blc, y_lc, groups):
             continue
         fold_rows[f] = int(te.sum())
         tr = ~te
-        ens_by_fold[f] = fit_ensemble(X[tr], y_fail[tr], y_blc[tr], y_lc[tr],
-                                      [groups[i] for i in numpy.where(tr)[0]])
+        ens_by_fold[f] = fit(X[tr], y_fail[tr], y_blc[tr], y_lc[tr],
+                             [groups[i] for i in numpy.where(tr)[0]])
         pr = predict(ens_by_fold[f], X[te])
         p[te], b[te], l[te] = pr["p_fail"], pr["blc8"], pr["log_cells"]
     return ens_by_fold, p, b, l, fold_rows
@@ -433,9 +548,10 @@ def _metrics(y_fail, p, b, l, y_blc, y_lc, groups, fold_rows):
         "fold_rows": {str(f): n for f, n in sorted(fold_rows.items())}}
 
 
-def cross_fit(X, y_fail, y_blc, y_lc, groups):
+def cross_fit(X, y_fail, y_blc, y_lc, groups, fit=fit_ensemble):
     """Fold ensembles (fold f trains without fold f) and the out-of-fold CV."""
-    ens_by_fold, p, b, l, fold_rows = _oof(X, y_fail, y_blc, y_lc, groups)
+    ens_by_fold, p, b, l, fold_rows = _oof(X, y_fail, y_blc, y_lc, groups,
+                                           fit=fit)
     return ens_by_fold, _metrics(y_fail, p, b, l, y_blc, y_lc, groups, fold_rows)
 
 
@@ -449,11 +565,15 @@ def sobol(gid):
 
 
 def l1_of(ctx, gates, knobs):
-    """The L1 config the box is relative to, from the row-less facts only."""
+    """The L1 config the box is relative to, from the row-less facts only.  Its bands
+    are the rules' before R-ECON (AUT-07, r_econ=False): every row the surrogate was
+    fitted on was meshed under them, and the box scales the band distances, so a box
+    around R-ECON's 3-cell bands would sit outside the training rows until a refit on
+    R-ECON campaigns (AUT-12's L-run)."""
     gid = ctx["geometry_id"]
     s = rules.setup({"geometry_id": gid, "flow": ctx["flow"]}, ctx["fingerprint"],
                     campaign.stl_rel(gid), campaign.case_rel(gid), gid,
-                    flow=ctx["flow"], gates=gates, knobs=knobs)
+                    flow=ctx["flow"], gates=gates, knobs=knobs, r_econ=False)
     if s["refused"]:
         raise OptError("rules.setup refuses %s: %s" % (gid, ", ".join(s["refused"])))
     return s["config"]
@@ -699,24 +819,32 @@ def _pick_decision(candidates, pred, order, counts, ctx, gates, meta):
             "counts": counts, "pick": pk, "runners_up": runners}
 
 
-def disabled_decision(gate):
-    """The OPT-DISABLED abstain a disabled hook returns on every geometry."""
+def disabled_decision(gate, status=None):
+    """The OPT-DISABLED abstain a disabled hook returns on every geometry;
+    `status` (gate_status, AUT-11) records why the gate file keeps it off."""
     g = gate or {}
+    inputs = [{"name": "verdict", "value": g.get("verdict"), "unit": ""},
+              {"name": "auc", "value": g.get("auc"), "unit": "1"},
+              {"name": "blc8_rmse", "value": g.get("blc8_rmse"), "unit": "1"},
+              {"name": "beats_rules", "value": g.get("beats_rules"), "unit": ""},
+              {"name": "model_sha256", "value": g.get("model_sha256"),
+               "unit": ""}]
+    tail = ""
+    if status is not None:
+        why = "; ".join(status["reasons"])
+        inputs.append({"name": "ship_rule", "value": SHIP_RULE, "unit": ""})
+        inputs.append({"name": "gate_reasons", "value": why, "unit": ""})
+        tail = " by its gate file (%s: %s)" % (SHIP_RULE, why)
     auc, rmse = g.get("auc"), g.get("blc8_rmse")
     beats, verdict = g.get("beats_rules"), g.get("verdict")
     rec = _record(
         "OPT-DISABLED", "abstain",
         {"observable": "optimiser.enabled", "value": False, "threshold": False,
          "op": "==", "source": "optimise/aml/G-OPT.json (docs/15 §F G-OPT)"},
-        [{"name": "verdict", "value": verdict, "unit": ""},
-         {"name": "auc", "value": auc, "unit": "1"},
-         {"name": "blc8_rmse", "value": rmse, "unit": "1"},
-         {"name": "beats_rules", "value": beats, "unit": ""},
-         {"name": "model_sha256", "value": g.get("model_sha256"), "unit": ""}],
-        FORMULA, [], CITE,
-        "OPT-DISABLED: the optimiser ships disabled (G-OPT %s: CV AUC %s, BLC_8 "
+        inputs, FORMULA, [], CITE,
+        "OPT-DISABLED: the optimiser ships disabled%s (G-OPT %s: CV AUC %s, BLC_8 "
         "RMSE %s, beats the rules %s); the remedies' terminal stands"
-        % (explain.fmt(verdict), explain.fmt(auc), explain.fmt(rmse),
+        % (tail, explain.fmt(verdict), explain.fmt(auc), explain.fmt(rmse),
            explain.fmt(beats)), 0.0)
     return _abstain("OPT-DISABLED", rec, None)
 
@@ -730,14 +858,15 @@ def model_sha(model):
                                     if k not in ("enabled", "gate")})
 
 
-def make_hook(ens_of, *, model_sha256, importances=(), enabled=True, gate=None):
+def make_hook(ens_of, *, model_sha256, importances=(), enabled=True, gate=None,
+              status=None):
     """hook(ctx, history) for campaign.py; gates and knobs load once."""
     gates = schema.load_gates()
     knobs = schema.load_knobs()
 
     def hook(ctx, history):
         if not enabled:
-            return disabled_decision(gate)
+            return disabled_decision(gate, status)
         try:
             ens, fold = ens_of(ctx["geometry_id"])
         except KeyError as e:
@@ -782,8 +911,14 @@ def load_model(path=None):
                        "sha256" % train_path)
     train = json.loads(gzip.decompress(data).decode("utf-8"))
     X, yf, yb, ylc, gr = _train_rows_of(train)
-    ens = fit_ensemble(X, yf, yb, ylc, gr)
-    pred = predict(ens, X[:PRED_CHECK_N])
+    if model.get("kind") == "hurdle":
+        keep = numpy.array([not r["holdout"] for r in train["rows"]], dtype=bool)
+        ens = fit_hurdle(X[keep], yf[keep], yb[keep], ylc[keep],
+                         [gr[i] for i in numpy.where(keep)[0]])
+        pred = predict(ens, X[keep][:PRED_CHECK_N])
+    else:
+        ens = fit_ensemble(X, yf, yb, ylc, gr)
+        pred = predict(ens, X[:PRED_CHECK_N])
     for i, want in enumerate(model["pred_check"]):
         got = (float(pred["p_fail"][i]), float(pred["blc8"][i]),
                float(pred["log_cells"][i]))
@@ -791,12 +926,73 @@ def load_model(path=None):
             raise OptError("refit drift: row %d predicts %r, the model says %r"
                            % (i, got, want))
     msha = model_sha(model)
+    st = gate_status(model, os.path.join(os.path.dirname(os.path.abspath(path)),
+                                         REPORT_NAME))
     v = {"path": path, "model": model, "ensemble": ens, "sha": msha,
+         "ship": st,
          "hook": make_hook(lambda gid: (ens, None), model_sha256=msha,
                            importances=model.get("importances") or (),
-                           enabled=model["enabled"], gate=model["gate"])}
+                           enabled=st["enabled"], gate=model["gate"],
+                           status=st)}
     _MODEL["v"], _MODEL["key"] = v, key
     return v
+
+
+def gate_status(model, gate_path):
+    """The gate-driven ship rule (AUT-11, prior.USER_SHIP's): {"enabled",
+    "reasons", "path", "gate_sha256"} of an optimiser model from the G-OPT.json
+    beside it.  Enabled only when the file's verdict is PASS and non-vacuous
+    (its tuning ablation was measured and beats the rules: a CV-only PASS of a
+    refit or the hurdle is vacuous), its canonical sha256 is the one the model's
+    gate record holds, its model_sha256 is this model's (and the gate record's),
+    and the model's own enabled flag is set; every check that fails is a
+    reason."""
+    rel = prior._rel_here(gate_path)
+    rep = _read_json_or_none(gate_path)
+    if not isinstance(rep, dict):
+        return {"enabled": False, "path": rel, "gate_sha256": None,
+                "reasons": ["no readable gate file at %s" % rel]}
+    reasons = []
+    g = model.get("gate") if isinstance(model.get("gate"), dict) else {}
+    gsha = schema.canonical_sha256(rep)
+    want = g.get("report_sha256")
+    if want is None:
+        reasons.append("the model records no sha of its gate file (gated "
+                       "before AUT-11)")
+    elif want != gsha:
+        reasons.append("the gate file is sha %s but the model recorded %s (it "
+                       "was edited or replaced after the gate)"
+                       % (gsha[:12], str(want)[:12]))
+    if rep.get("verdict") != "PASS":
+        reasons.append("the gate's verdict is %s" % rep.get("verdict"))
+    beats = (rep.get("conditions") or {}).get("beats_rules")
+    if beats is None:
+        reasons.append("the pass is vacuous: the tuning ablation was not "
+                       "measured (beats the rules: none)")
+    elif beats is not True:
+        reasons.append("the optimiser does not beat the rules on the tuning "
+                       "split")
+    msha = model_sha(model)
+    if rep.get("model_sha256") != msha:
+        reasons.append("the gate file is for model %s, this model is %s"
+                       % (str(rep.get("model_sha256"))[:12], msha[:12]))
+    elif g.get("model_sha256") != msha:
+        reasons.append("the model's gate record names model %s, this model is %s"
+                       % (str(g.get("model_sha256"))[:12], msha[:12]))
+    if not model.get("enabled"):
+        reasons.append("the model's enabled flag is false")
+    return {"enabled": not reasons, "path": rel, "gate_sha256": gsha,
+            "reasons": reasons}
+
+
+def _dump_gate(report_dir, model_obj, rep):
+    """G-OPT.json, then the model with its gate record holding that file's
+    canonical sha256 as written (AUT-11)."""
+    rp = os.path.join(report_dir, REPORT_NAME)
+    _dump_json(rp, rep)
+    model_obj["gate"]["report_sha256"] = schema.canonical_sha256(
+        _read_json_or_none(rp))
+    _dump_json(os.path.join(report_dir, MODEL_NAME), model_obj)
 
 
 def propose(ctx, history):
@@ -1008,22 +1204,30 @@ DEPARTURES = (
 # --- (C10) refine: the rounds, the gate and the artefacts ---------------------
 
 
-def _train_and_model(rows, named, yf, gr, cv, pred_check, importances):
-    """(train_obj, train_bytes, model_obj) as refine builds them (refit too)."""
-    train_rows = [{"geometry_id": r["geometry_id"], "family": r["family"],
-                   "source": r["source"], "attempt": r["attempt"],
-                   "config_sha256": r["config_sha256"],
-                   "x": [None if isinstance(v, float) and math.isnan(v)
-                         else v for v in r["x"]],
-                   "fail": bool(r["fail"]), "blc8": float(r["blc8"]),
-                   "log_cells": r["log_cells"]} for r in rows]
+def _train_and_model(rows, named, yf, gr, cv, pred_check, importances, *,
+                     features=FEATURES, model_extra=None,
+                     extra_row_fields=None):
+    """(train_obj, train_bytes, model_obj) as refine builds them (refit too;
+    the hurdle passes features/model_extra/extra_row_fields)."""
+    train_rows = []
+    for i, r in enumerate(rows):
+        row = {"geometry_id": r["geometry_id"], "family": r["family"],
+               "source": r["source"], "attempt": r["attempt"],
+               "config_sha256": r["config_sha256"],
+               "x": [None if isinstance(v, float) and math.isnan(v)
+                     else v for v in r["x"]],
+               "fail": bool(r["fail"]), "blc8": float(r["blc8"]),
+               "log_cells": r["log_cells"]}
+        if extra_row_fields is not None:
+            row.update(extra_row_fields[i])
+        train_rows.append(row)
     train_obj = {"$comment": HEADER, "schema": TRAIN_SCHEMA,
-                 "features": list(FEATURES), "sources": [n for n, _b, _s in named],
+                 "features": list(features), "sources": [n for n, _b, _s in named],
                  "rows": train_rows}
     train_bytes = gzip.compress(baseline._canonical(train_obj), compresslevel=9,
                                 mtime=0)
     model_obj = {"$comment": HEADER, "schema": MODEL_SCHEMA,
-                 "features": list(FEATURES), "hyper": dict(HYPER),
+                 "features": list(features), "hyper": dict(HYPER),
                  "members": MEMBERS, "boot_seed": BOOT_SEED, "folds": FOLDS,
                  "p_fail_max": P_FAIL_MAX,
                  "box": {"wall_offsets": list(WALL_OFFSETS),
@@ -1042,6 +1246,8 @@ def _train_and_model(rows, named, yf, gr, cv, pred_check, importances):
                            "n_rows": len(rows), "n_fail": int(yf.sum()),
                            "n_geometries": len(set(gr))},
                  "pred_check": pred_check, "importances": importances, "cv": cv}
+    if model_extra:
+        model_obj.update(model_extra)
     return train_obj, train_bytes, model_obj
 
 
@@ -1105,7 +1311,8 @@ def refine(work, *, sources=None, rounds=ROUNDS, streams=6,
                 {"manifest": "tuning", "mode": "rules+opt", "ids": R, "out": out,
                  "run_id": "opt-refine-r%d" % j, "streams": streams,
                  "audit_mod": AUDIT_OFF,
-                 "binary": binary or campaign.BINARY_DEFAULT, "quiet": quiet},
+                 "binary": binary or campaign.BINARY_DEFAULT, "quiet": quiet,
+                 "r_te": rules.r_te_of(rules_bundle["records"])},
                 attempt_fn=A, probe_fn=P, snap_fn=S,
                 hooks={"optimiser": make_hook(
                     lambda gid: (folds[fold_of(gid)], fold_of(gid)),
@@ -1256,8 +1463,7 @@ def refine(work, *, sources=None, rounds=ROUNDS, streams=6,
         else:
             with open(train_path, "wb") as f:
                 f.write(train_bytes)
-        _dump_json(os.path.join(report_dir, MODEL_NAME), model_obj)
-        _dump_json(os.path.join(report_dir, REPORT_NAME), rep)
+        _dump_gate(report_dir, model_obj, rep)
         _write_text(os.path.join(report_dir, REPORT_MD), report_md(rep))
     else:
         for i, r in enumerate(rounds_out):
@@ -1464,14 +1670,20 @@ def check(report_dir=SHIP_DIR):
             mrows = {r["geometry_id"]: r
                      for r in campaign.load_manifest("tuning", "rules")}
             rows, _dup = training_rows(named + round_named, mrows, gates, knobs)
+            hurdle_kind = model.get("kind") == "hurdle"
             def shape(r):
-                return {"geometry_id": r["geometry_id"], "family": r["family"],
-                        "source": r["source"], "attempt": r["attempt"],
-                        "config_sha256": r["config_sha256"],
-                        "x": [None if isinstance(v, float) and math.isnan(v)
-                              else v for v in r["x"]],
-                        "fail": bool(r["fail"]), "blc8": float(r["blc8"]),
-                        "log_cells": r["log_cells"]}
+                x = x_h_of(r["config"], r["fingerprint"]) if hurdle_kind \
+                    else r["x"]
+                row = {"geometry_id": r["geometry_id"], "family": r["family"],
+                       "source": r["source"], "attempt": r["attempt"],
+                       "config_sha256": r["config_sha256"],
+                       "x": [None if isinstance(v, float) and math.isnan(v)
+                             else v for v in x],
+                       "fail": bool(r["fail"]), "blc8": float(r["blc8"]),
+                       "log_cells": r["log_cells"]}
+                if hurdle_kind:
+                    row["holdout"] = holdout_of(r["geometry_id"])
+                return row
             got = [schema.canonical_sha256(shape(r)) for r in rows]
             want = [schema.canonical_sha256(r) for r in train_obj["rows"]]
             rebuild_ok = got == want
@@ -1772,8 +1984,7 @@ def refit(extra, *, base=None, report_dir=SHIP_DIR, write=True, quiet=False):
         else:
             with open(train_path, "wb") as f:
                 f.write(train_bytes)
-        _dump_json(os.path.join(report_dir, MODEL_NAME), model_obj)
-        _dump_json(os.path.join(report_dir, REPORT_NAME), rep)
+        _dump_gate(report_dir, model_obj, rep)
         _write_text(os.path.join(report_dir, REPORT_MD), refit_md(rep))
     if not quiet:
         print("G-OPT %s (refit): rows %d (%d new), AUC %.6f (>= %.2f %s), "
@@ -1806,6 +2017,188 @@ def refit_md(rep):
                    % (s["file"], s["sha256"][:12], s["n_rows_kept"]))
     out += ["", "## Departures", ""]
     out += ["- %s" % d for d in rep["departures"]]
+    return "\n".join(out) + "\n"
+
+
+# --- the hurdle surrogate (AUT-09, 2026-10-11, pre-registered) ------------------
+
+HURDLE_PREREG = (
+    "the BLC_8 regressor becomes a two-part hurdle (Cragg 1971, DOI "
+    "10.2307/1909582; Mullahy 1986, DOI 10.1016/0304-4076(86)90002-3): "
+    "p(BLC_8 > 0) times E[clip(BLC_8, 0, 1) | BLC_8 > 0]",
+    "three R-WIN margin features join the 31 (win_depth, log10_g5_margin, "
+    "log10_stack_margin; 34 features, the config's own wall h, not R-WIN's "
+    "h/ratio)",
+    "a 20 % in-tuning geometry hold-out: sha256('AUT-09 holdout ' + id) "
+    "mod 5 == 0, independent of the crc32 folds",
+    "the CV half runs out-of-geometry on the train part only, the same five "
+    "crc32 folds and the same five-member bootstrap",
+    "the hold-out is scored once by the full train-part model and reported "
+    "beside the CV, never a condition",
+    "the thresholds do not change: fail AUC >= 0.75, BLC_8 RMSE <= 0.15; "
+    "beats_rules is not measured",
+    "enabled is written False whatever the verdict; enabling is AUT-11's "
+    "gate-file rule",
+    "one pre-registered run on the committed data by the supervisor, the "
+    "result published whatever it is")
+
+
+def hurdle(extra, *, base=None, report_dir=HURDLE_DIR, write=True,
+           quiet=False):
+    """The pre-registered hurdle fit (AUT-09): refit's rows with the 34-feature
+    x, the CV half on the train part and the geometry hold-out scored once by
+    the full train-part model; the four files go to optimise/aml2/ (never
+    optimise/ or optimise/aml/).  One run, then the result is published."""
+    if write and os.path.abspath(report_dir) in (os.path.abspath(REPORT_DIR),
+                                                 os.path.abspath(SHIP_DIR)):
+        raise OptError("the hurdle never writes into %s (the committed AM-14 "
+                       "record or the shipped refit); use %s"
+                       % (report_dir, HURDLE_DIR))
+    named_extra = load_sources(extra)
+    named_base = load_sources(_am14_base_paths()) if base is None \
+        else load_sources(base)
+    named = named_extra + named_base
+    for name, bundle, _sha in named:
+        check_bundle(bundle, name)
+    gates = schema.load_gates()
+    knobs = schema.load_knobs()
+    mrows = {r["geometry_id"]: r for r in campaign.load_manifest("tuning", "rules")}
+    rows, dup = training_rows([(n, b) for n, b, _s in named], mrows, gates, knobs)
+    for r in rows:
+        r["x"] = x_h_of(r["config"], r["fingerprint"])
+        r["holdout"] = holdout_of(r["geometry_id"])
+    X, yfa, yba, yla, gra = matrix(rows)
+    m = numpy.array([not r["holdout"] for r in rows], dtype=bool)
+    Xt, yft, ybt, ylt = X[m], yfa[m], yba[m], yla[m]
+    grt = [gra[i] for i in numpy.where(m)[0]]
+    _folds, p_o, b_o, l_o, fold_rows = _oof(Xt, yft, ybt, ylt, grt,
+                                            fit=fit_hurdle)
+    cvm = _metrics(yft, p_o, b_o, l_o, ybt, ylt, grt, fold_rows)
+    full = fit_hurdle(Xt, yft, ybt, ylt, grt)
+    ho = {k: None for k in EXTRA_OOF_KEYS}
+    ho["blc8_rmse_pos"] = None
+    if (~m).any():
+        Xh, yfh, ybh, ylh = X[~m], yfa[~m], yba[~m], yla[~m]
+        grh = [gra[i] for i in numpy.where(~m)[0]]
+        ph = predict(full, Xh)
+        hm = _metrics(yfh, ph["p_fail"], ph["blc8"], ph["log_cells"], ybh,
+                      ylh, grh, {})
+        ho = {k: hm[k] for k in EXTRA_OOF_KEYS}
+        ho["blc8_rmse_pos"] = hm["blc8_rmse_pos"]
+    pf_all = predict(full, Xt)
+    pred_check = [[float(pf_all["p_fail"][i]), float(pf_all["blc8"][i]),
+                   float(pf_all["log_cells"][i])] for i in range(PRED_CHECK_N)]
+    if cvm["auc"] is not None:
+        base_auc = float(roc_auc_score(yft, pf_all["p_fail"]))
+        imp = []
+        for jf in range(Xt.shape[1]):
+            X2 = Xt.copy()
+            X2[:, jf] = Xt[numpy.random.default_rng([IMP_SEED, jf]).permutation(
+                len(Xt)), jf]
+            auc2 = float(roc_auc_score(yft, predict(full, X2)["p_fail"]))
+            imp.append({"feature": FEATURES_H[jf],
+                        "auc_drop": round(base_auc - auc2, 6)})
+        imp.sort(key=lambda d: (-d["auc_drop"], d["feature"]))
+        importances = imp[:5]
+    else:
+        importances = []
+    conditions = {"auc_ge": cvm["auc"] is not None and cvm["auc"] >= AUC_MIN,
+                  "rmse_le": cvm["blc8_rmse"] <= RMSE_MAX,
+                  "beats_rules": None}
+    verdict = "PASS" if conditions["auc_ge"] and conditions["rmse_le"] \
+        else "FAIL"
+    enabled = False
+    if verdict == "FAIL":
+        why = ("the CV half fails, so G-OPT fails and the optimiser stays off "
+               "(AUT-09: one pre-registered run, the miss is published)")
+    else:
+        why = ("the CV half holds; the tuning ablation half is not measured "
+               "here (AUT-12's L-run) and enabling is AUT-11's gate-file rule, "
+               "so the optimiser stays off")
+    train_obj, train_bytes, model_obj = _train_and_model(
+        rows, named, yfa, gra, cvm, pred_check, importances,
+        features=FEATURES_H,
+        extra_row_fields=[{"holdout": bool(r["holdout"])} for r in rows],
+        model_extra={"kind": "hurdle",
+                     "holdout": {"salt": HOLDOUT_SALT, "mod": HOLDOUT_MOD,
+                                 "n_rows": int((~m).sum()),
+                                 "n_geometries": len({gra[i] for i in
+                                                      numpy.where(~m)[0]})}})
+    msha = model_sha(model_obj)
+    model_obj["enabled"] = enabled
+    model_obj["gate"] = {"verdict": verdict, "auc": cvm["auc"],
+                         "blc8_rmse": cvm["blc8_rmse"], "beats_rules": None,
+                         "model_sha256": msha, "report": REPORT_NAME}
+    kept = collections.Counter(r["source"] for r in rows)
+    n_new = int(sum(kept[n] for n in {n for n, _b, _s in named_extra}))
+    rep = {"$comment": HEADER, "schema": GATE_SCHEMA,
+           "date": time.strftime("%Y-%m-%d"), "kind": "hurdle",
+           "verdict": verdict, "enabled": enabled, "conditions": conditions,
+           "thresholds": {"auc_min": AUC_MIN, "rmse_max": RMSE_MAX,
+                          "mfr_gain_min": MFR_GAIN_MIN,
+                          "blc_gain_min": BLC_GAIN_MIN, "p_fail_max": P_FAIL_MAX},
+           "cv": cvm, "rounds": [],
+           "sources": [{"file": n, "sha256": s,
+                        "content_sha256": hashlib.sha256(
+                            baseline._canonical(b)).hexdigest(),
+                        "n_rows_kept": int(kept.get(n, 0))}
+                       for n, b, s in named],
+           "n_duplicates": dup, "n_new_rows": n_new,
+           "model_sha256": msha, "train": dict(model_obj["train"]),
+           "importances": importances, "ship": {"enabled": enabled, "why": why},
+           "departures": list(REFIT_DEPARTURES),
+           "holdout": ho, "prereg": list(HURDLE_PREREG)}
+    if write:
+        os.makedirs(report_dir, exist_ok=True)
+        train_path = os.path.join(report_dir, TRAIN_NAME)
+        if os.path.exists(train_path):
+            with open(train_path, "rb") as f:
+                if f.read() != train_bytes:
+                    raise OptError("exists: %s holds a different train file"
+                                   % train_path)
+        else:
+            with open(train_path, "wb") as f:
+                f.write(train_bytes)
+        _dump_gate(report_dir, model_obj, rep)
+        _write_text(os.path.join(report_dir, REPORT_MD), hurdle_md(rep))
+    if not quiet:
+        print("G-OPT %s (hurdle): rows %d train, %d hold-out, AUC %.6f, "
+              "BLC_8 RMSE %.6f (thresholds %.2f / %.2f), hold-out BLC_8 RMSE "
+              "%.6f; the optimiser stays off"
+              % (verdict, cvm["n"], int((~m).sum()), cvm["auc"],
+                 cvm["blc8_rmse"], AUC_MIN, RMSE_MAX, ho["blc8_rmse"]))
+    return rep
+
+
+def hurdle_md(rep):
+    """The hurdle's G-OPT report as markdown; every number from the report."""
+    cvm, ho = rep["cv"], rep["holdout"]
+    out = ["<!-- %s -->" % HEADER, "",
+           "# G-OPT - the hurdle surrogate (AUT-09)", "",
+           "- date: %s" % rep["date"],
+           "- verdict: %s" % rep["verdict"],
+           "- rows: %d train, %d hold-out (%d geometries), %d duplicates"
+           % (cvm["n"], ho["n"], ho["n_geometries"], rep["n_duplicates"]),
+           "- CV: fail AUC %.6f (>= %.2f %s), BLC_8 RMSE %.6f (<= %.2f %s)"
+           % (cvm["auc"], rep["thresholds"]["auc_min"],
+              rep["conditions"]["auc_ge"], cvm["blc8_rmse"],
+              rep["thresholds"]["rmse_max"], rep["conditions"]["rmse_le"]),
+           "- the zero predictor's BLC_8 RMSE: %.6f" % cvm["blc8_rmse_zero"],
+           "- hold-out (reported beside the CV, not a condition): %d rows, "
+           "%d geometries, fail AUC %s, BLC_8 RMSE %s"
+           % (ho["n"], ho["n_geometries"], _rate(ho["auc"]),
+              "n/a" if ho["blc8_rmse"] is None else "%.6f" % ho["blc8_rmse"]),
+           "- beats the rules: not measured here (AUT-12's L-run does)",
+           "- the optimiser ships %s; %s"
+           % ("enabled" if rep["ship"]["enabled"] else "DISABLED",
+              rep["ship"]["why"]),
+           "", "## Sources (row order)", "",
+           "| file | sha256 | rows kept |", "| --- | --- | --- |"]
+    for s in rep["sources"]:
+        out.append("| %s | %s | %d |"
+                   % (s["file"], s["sha256"][:12], s["n_rows_kept"]))
+    out += ["", "## Pre-registered (AUT-09)", ""]
+    out += ["- %s" % d for d in rep["prereg"]]
     return "\n".join(out) + "\n"
 
 
@@ -1887,6 +2280,11 @@ def main(argv=None):
                     help="refit on the --extra bundles' rows in front of the "
                          "AM-14 training set: optimise/aml/G-OPT.json, .md, "
                          "opt_model.json, train.json.gz; never ships enabled")
+    ap.add_argument("--hurdle", action="store_true",
+                    help="the pre-registered hurdle surrogate (AUT-09) on the "
+                         "--extra bundles' rows: optimise/aml2/G-OPT.json, "
+                         ".md, opt_model.json, train.json.gz; one run, ships "
+                         "off whatever the verdict")
     ap.add_argument("--extra", action="append", default=None,
                     help="an extra training bundle path (repeatable; --cv and "
                          "--refit)")
@@ -1915,6 +2313,11 @@ def main(argv=None):
                 ap.exit(2, "optimise: --refit needs --extra\n")
             refit(a.extra, report_dir=a.report_dir or SHIP_DIR)
             return 0
+        if a.hurdle:
+            if not a.extra:
+                ap.exit(2, "optimise: --hurdle needs --extra\n")
+            hurdle(a.extra, report_dir=a.report_dir or HURDLE_DIR)
+            return 0
         if a.refine:
             if not a.work:
                 ap.exit(2, "optimise: --refine needs --work\n")
@@ -1929,8 +2332,8 @@ def main(argv=None):
             split.SplitSealed, split.SplitError) as e:
         sys.stderr.write("optimise: %s\n" % e)
         return 2
-    ap.error("one of --selftest, --plan, --refine, --cv, --refit, --check is "
-             "required")
+    ap.error("one of --selftest, --plan, --refine, --cv, --refit, --hurdle, "
+             "--check is required")
 
 
 # --- (C14) the selftest ---------------------------------------------------------
@@ -1939,10 +2342,25 @@ IDS16 = prior.IDS8 + ("D-1-001", "D-1-027", "E-1-003", "E-1-011", "F-1-025",
                       "G-1-052", "E-1-014", "D-1-073")
 
 
+def _before_econ(fn, *args, **kw):
+    """fn with rules.setup on the rules before R-ECON (AUT-07, r_econ=False): the
+    oracle campaigns' counts and predictions were written against §B's bands, which
+    the surrogate reads, and campaign.py takes no rule-set flag."""
+    setup0 = rules.setup
+    rules.setup = functools.partial(setup0, r_econ=False)
+    try:
+        return fn(*args, **kw)
+    finally:
+        rules.setup = setup0
+
+
 def _oracle_run(out, ids, mode, attempt_fn):
-    return campaign.run_campaign(
+    # r_te False: the wall oracle models G-PILOT's cure (one wall level coarser), the
+    # remedy table before AUT-04's RM-TE that these selftest counts were written against
+    return _before_econ(
+        campaign.run_campaign,
         {"manifest": "tuning", "ids": list(ids), "out": out, "mode": mode,
-         "streams": 2, "quiet": True}, attempt_fn=attempt_fn,
+         "streams": 2, "quiet": True, "r_te": False}, attempt_fn=attempt_fn,
         probe_fn=campaign._fake_probe(1000), snap_fn=campaign._fake_snap)
 
 
@@ -1971,7 +2389,7 @@ def _harness(H):
 
 
 def selftest():
-    """(C14): thirteen [ok] groups, then SELFTEST PASS; the mesher runs in group 10."""
+    """(C14): fourteen [ok] groups, then SELFTEST PASS; the mesher runs in group 10."""
     t0 = time.perf_counter()
     tmp = tempfile.mkdtemp()
     H = {"tmp": tmp}
@@ -1981,7 +2399,7 @@ def selftest():
               (_g7_hook, "hook seam"), (_g8_refine, "refine"),
               (_g9_refine_a, "refine A"), (_g10_live, "live"),
               (_g11_check_cli, "check and CLI"), (_g12_cv, "cv"),
-              (_g13_refit, "refit"))
+              (_g13_refit, "refit"), (_g14_hurdle, "hurdle"))
     try:
         try:
             _harness(H)
@@ -2100,7 +2518,9 @@ def _g3_pool(H):
                     campaign.case_rel(gid), gid, gates=H["gates"],
                     knobs=H["knobs"], ft_radius=rules.ft_radius_of(H["rb"]["records"]),
                     win_2to1=rules.win_2to1_of(H["rb"]["records"]),
-                    glb=rules.glb_of(H["rb"]["records"]))
+                    glb=rules.glb_of(H["rb"]["records"]),
+                    r_snap=rules.r_snap_of(H["rb"]["records"]),
+                    r_econ=rules.r_econ_of(H["rb"]["records"]))
     assert not s["refused"], s["refused"]
     l1 = s["config"]
     assert schema.canonical_sha256(l1).startswith("e31caabef618")
@@ -2214,8 +2634,10 @@ def _g5_decide(H):
     assert pk["sobol_index"] == 54, pk["sobol_index"]
     # GLB-CONFIG: the box is centred on today's margined L1 (wall 4, growth 1.0,
     # the margin's choice, not the recorded 1.34), and the sharp-body radius is
-    # tau/h_f/2 of the point's own max_level, so the pick's config and scores moved
-    assert pk["config_sha256"].startswith("c06684029fe7"), \
+    # tau/h_f/2 of the point's own max_level, so the pick's config and scores moved.
+    # AUT-05: today's L1 carries R-SNAP's snap.tolerance and snap.iterations, which
+    # no surrogate feature reads, so the pick's config sha moved and its scores did not
+    assert pk["config_sha256"].startswith("2596dc125008"), \
         pk["config_sha256"][:12]
     assert abs(pk["p_fail"] - 0.013131) <= 1e-6, pk["p_fail"]
     assert abs(pk["p_fail_std"] - 0.003979) <= 1e-6, pk["p_fail_std"]
@@ -2308,10 +2730,10 @@ def _g8_refine(H):
     tmp = H["tmp"]
     w8 = os.path.join(tmp, "w8")
     rep8 = os.path.join(tmp, "rep8")
-    rep = refine(w8, sources=H["osrc"], rounds=2, streams=2, report_dir=rep8,
-                 attempt_fn=prior._wall_oracle,
-                 probe_fn=campaign._fake_probe(1000),
-                 snap_fn=campaign._fake_snap, quiet=True)
+    rep = _before_econ(refine, w8, sources=H["osrc"], rounds=2, streams=2,
+                       report_dir=rep8, attempt_fn=prior._wall_oracle,
+                       probe_fn=campaign._fake_probe(1000),
+                       snap_fn=campaign._fake_snap, quiet=True)
     # GLB-CONFIG: F-1-009 is banked again on the margin's level 4, and D-1-073 and
     # F-1-025 pass the wall oracle on their margined attempt 1, so the set is three
     assert rep["refinement_set"]["geometry_ids"] == \
@@ -2359,10 +2781,10 @@ def _g8_refine(H):
     H["rep8"] = rep8
     m1 = os.stat(os.path.join(w8, "round_1", "campaign.json")).st_mtime_ns
     m2 = os.stat(os.path.join(w8, "round_2", "campaign.json")).st_mtime_ns
-    rep2 = refine(w8, sources=H["osrc"], rounds=2, streams=2, report_dir=rep8,
-                  attempt_fn=prior._wall_oracle,
-                  probe_fn=campaign._fake_probe(1000),
-                  snap_fn=campaign._fake_snap, quiet=True)
+    rep2 = _before_econ(refine, w8, sources=H["osrc"], rounds=2, streams=2,
+                        report_dir=rep8, attempt_fn=prior._wall_oracle,
+                        probe_fn=campaign._fake_probe(1000),
+                        snap_fn=campaign._fake_snap, quiet=True)
     assert os.stat(os.path.join(w8, "round_1", "campaign.json")).st_mtime_ns == m1
     assert os.stat(os.path.join(w8, "round_2", "campaign.json")).st_mtime_ns == m2
     a = _read_json_or_none(os.path.join(rep8, "G-OPT.json"))
@@ -2395,6 +2817,15 @@ def _g8_refine(H):
                  "rule_id": None}]
         d = om.propose(ctx, hist)
         assert schema.errors(d["record"], "DecisionRecord") == []
+        # AUT-11: rep8's gate file (PASS, beats the rules, sha and model sha
+        # matching) enables the model; the property cases keep it off
+        assert om.load_model()["ship"] == {
+            "enabled": True, "reasons": [], "path": prior._rel_here(
+                os.path.join(rep8, REPORT_NAME)),
+            "gate_sha256": schema.canonical_sha256(
+                _read_json_or_none(os.path.join(rep8, REPORT_NAME)))}
+        assert d["rule_id"] != "OPT-DISABLED", d["rule_id"]
+        ship = _g8_ship(H, rep8, ctx, hist)
     finally:
         om._MODEL.clear()
         om._MODEL.update(saved)
@@ -2402,7 +2833,85 @@ def _g8_refine(H):
           "sharp bodies and D-1-027's proposal comes at attempt 4 (index 0, p_fail "
           "0.098546) and passes, round 0 rescues D-1-027, MFR 0.1875, the CV half "
           "PASSes and beats_rules holds so the optimiser ships enabled; a re-run "
-          "reuses both rounds and gives an equal report; check PASS")
+          "reuses both rounds and gives an equal report; check PASS; %s" % ship)
+
+
+def _g8_ship(H, rep8, ctx, hist):
+    """AUT-11's property cases on copies of rep8: a FAIL, a vacuous PASS, a
+    tampered gate file, a missing one and a model sha mismatch each keep the
+    optimiser off and OPT-DISABLED carries the reason."""
+    def case(name, edit_rep=None, rerecord=True, drop=False):
+        d = os.path.join(H["tmp"], "ship8-" + name)
+        shutil.copytree(rep8, d)
+        rp, mp = os.path.join(d, REPORT_NAME), os.path.join(d, MODEL_NAME)
+        r, m = _read_json_or_none(rp), _read_json_or_none(mp)
+        if edit_rep:
+            edit_rep(r)
+            _dump_json(rp, r)
+        if rerecord and not drop:
+            m["gate"]["report_sha256"] = schema.canonical_sha256(
+                _read_json_or_none(rp))
+        _dump_json(mp, m)
+        if drop:
+            os.remove(rp)
+        return mp, m
+
+    def fail(r):
+        r["verdict"], r["enabled"] = "FAIL", False
+
+    def vacuous(r):        # a CV-only PASS: the ablation was not measured
+        r["conditions"]["beats_rules"] = None
+
+    def tamper(r):
+        r["cv"]["auc"] = 0.5
+
+    def other(r):
+        r["model_sha256"] = "0" * 64
+
+    m8 = _read_json_or_none(os.path.join(rep8, MODEL_NAME))
+    msha = model_sha(m8)
+    miss = os.path.join(H["tmp"], "ship8-missing", REPORT_NAME)
+    want = {
+        "fail": (case("fail", fail), ["the gate's verdict is FAIL"]),
+        "vacuous": (case("vacuous", vacuous),
+                    ["the pass is vacuous: the tuning ablation was not "
+                     "measured (beats the rules: none)"]),
+        "tampered": (case("tampered", tamper, rerecord=False), None),
+        "missing": (case("missing", drop=True),
+                    ["no readable gate file at %s" % prior._rel_here(miss)]),
+        "model": (case("model", other),
+                  ["the gate file is for model 000000000000, this model is %s"
+                   % msha[:12]]),
+    }
+    for name, ((mp, m), reasons) in want.items():
+        st = gate_status(m, os.path.join(os.path.dirname(mp), REPORT_NAME))
+        if name == "tampered":
+            assert len(st["reasons"]) == 1 and st["reasons"][0].startswith(
+                "the gate file is sha ") and "edited or replaced" \
+                in st["reasons"][0], st["reasons"]
+        else:
+            assert st["reasons"] == reasons, (name, st["reasons"])
+        assert st["enabled"] is False, (name, st)
+        rec = disabled_decision(m["gate"], st)["record"]
+        assert rec["rule_id"] == "OPT-DISABLED" and rec["inputs"][-1] == \
+            {"name": "gate_reasons", "value": "; ".join(st["reasons"]),
+             "unit": ""}, rec["inputs"][-1]
+        assert explain.ungrounded(explain.card(rec)["line"], [rec]) == []
+    # through load_model's hook: the tampered copy abstains with its reason
+    v = load_model(want["tampered"][0][0])
+    d = v["hook"](ctx, hist)
+    assert d["rule_id"] == "OPT-DISABLED" and "edited or replaced" in \
+        d["record"]["message"], d["record"]["message"]
+    # the committed gates stay off under the rule
+    for sub in ("aml", "aml2"):
+        mp = os.path.join(REPORT_DIR, sub, MODEL_NAME)
+        st = gate_status(_read_json_or_none(mp),
+                         os.path.join(REPORT_DIR, sub, REPORT_NAME))
+        assert st["enabled"] is False and "the gate's verdict is FAIL" in \
+            st["reasons"], (sub, st["reasons"])
+    return ("AUT-11: a FAIL, a vacuous PASS, a tampered gate file, a missing one "
+            "and a model sha mismatch keep it off with the reason in OPT-DISABLED, "
+            "and the committed optimise/aml and aml2 stay off")
 
 
 def _g9_refine_a(H):
@@ -2419,12 +2928,12 @@ def _g9_refine_a(H):
         baseline.write_bundle(baseline.bundle_dir(out),
                               os.path.join(srcA, name + ".json.gz"))
     rep9 = os.path.join(tmp, "rep9")
-    rep = refine(os.path.join(tmp, "w9"),
-                 sources=[os.path.join(srcA, n + ".json.gz")
-                          for n in ("rules", "tmpl", "lhs")],
-                 rounds=1, streams=2, report_dir=rep9, attempt_fn=a_oracle,
-                 probe_fn=campaign._fake_probe(1000),
-                 snap_fn=campaign._fake_snap, quiet=True)
+    rep = _before_econ(refine, os.path.join(tmp, "w9"),
+                       sources=[os.path.join(srcA, n + ".json.gz")
+                                for n in ("rules", "tmpl", "lhs")],
+                       rounds=1, streams=2, report_dir=rep9, attempt_fn=a_oracle,
+                       probe_fn=campaign._fake_probe(1000),
+                       snap_fn=campaign._fake_snap, quiet=True)
     assert rep["refinement_set"]["geometry_ids"] == ["A-1-000"]
     r1 = baseline.read_bundle(os.path.join(rep9, "refine_r1.json.gz"))
     row4 = next(r for r in r1["attempts"]
@@ -2456,12 +2965,15 @@ def _g10_live(H):
     rules.setup = functools.partial(
         setup0, ft_radius=rules.ft_radius_of(H["rb"]["records"]),
         win_2to1=rules.win_2to1_of(H["rb"]["records"]),
-        glb=rules.glb_of(H["rb"]["records"]))
+        glb=rules.glb_of(H["rb"]["records"]),
+        r_snap=rules.r_snap_of(H["rb"]["records"]),
+        r_econ=rules.r_econ_of(H["rb"]["records"]))
     try:
         end = campaign.run_campaign(
             {"manifest": "tuning", "ids": ["D-1-073"], "out": live,
              "mode": "rules+opt", "streams": 2, "audit_mod": AUDIT_OFF,
-             "quiet": True}, attempt_fn=A, probe_fn=P, snap_fn=S,
+             "quiet": True, "r_te": rules.r_te_of(H["rb"]["records"])},
+            attempt_fn=A, probe_fn=P, snap_fn=S,
             hooks={"optimiser": make_hook(lambda gid: (H["folds"][4], 4),
                                           model_sha256="selftest")})
         rows = [r for r in campaign.load_rows(live)
@@ -2719,6 +3231,166 @@ def _g13_refit(H):
           "--extra exits 2"
           % (rc["cv"]["n"], rc["n_new_rows"], rc["cv"]["auc"],
              rc["cv"]["blc8_rmse"], rc["verdict"], rc["model_sha256"][:12]))
+
+
+def _g14_hurdle(H):
+    tmp = H["tmp"]
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    # (a) margin_features to 1e-12 on minimal configs
+    def cfg_of(bands, layers):
+        return {"domain": {"base_size": 0.5},
+                "refinement": {"levels": [{"bands": bands}]},
+                "layers": layers}
+    cases = (
+        (cfg_of([{"distance": 0.1, "level": 4}],
+                {"n": 8, "first_thickness": 0.0005, "growth": 1.2}),
+         [1.0, -0.05912145211865665, 0.27739016700153996]),
+        (cfg_of([{"distance": 0.1, "level": 3}],
+                {"n": 8, "first_thickness": 0.0007296, "growth": 1.0}),
+         [1.0, -0.19603662679829695, 0.7286752093677907]),
+        (cfg_of([{"distance": 0.1, "level": 4}],
+                {"n": 8, "first_thickness": 0.0005}),
+         [1.0, -0.05912145211865665, 0.11722161775163942]),
+        (cfg_of([{"distance": 0.1, "level": 6}, {"distance": 1.0, "level": 2}],
+                {"n": 8, "first_thickness": 0.0005, "growth": 1.3}),
+         [0.32746254020302135, 0.058100165632982724, -0.484838373576323]))
+    for cfg, want in cases:
+        got = margin_features(cfg)
+        assert all(abs(a - b) <= 1e-12 for a, b in zip(got, want)), (got, want)
+    assert all(math.isnan(v)
+               for v in margin_features({"domain": {"base_size": 0.5}}))
+    assert all(math.isnan(v) for v in margin_features(
+        cfg_of([{"distance": 0.1, "level": 4}],
+               {"n": 0, "first_thickness": 0.0005})))
+    # (b) the hold-out census over the tuning manifest
+    ids = [r["geometry_id"] for r in campaign.load_manifest("tuning", "rules")]
+    held = [g for g in ids if holdout_of(g)]
+    assert len(ids) == 420 and len(held) == 84, (len(ids), len(held))
+    assert holdout_of("E-1-015") and not holdout_of("A-1-000") \
+        and not holdout_of("D-1-073") and not holdout_of("G-1-054") \
+        and not holdout_of("B-1-001")
+    assert held[:6] == ["A-1-005", "A-1-007", "A-1-023", "A-1-026", "A-1-039",
+                        "A-1-044"], held[:6]
+    # (c) the hurdle head: |B - P*E| <= 1e-12, blc8 the mean of B, one-class
+    # and all-zero cases exact
+    rng = numpy.random.default_rng(3)
+    X = rng.normal(size=(200, 4))
+    groups = ["g%03d" % (i // 4) for i in range(200)]
+    y_fail = X[:, 0] > 0.3
+    y_blc = numpy.where(X[:, 1] > 0, numpy.clip(0.5 + 0.2 * X[:, 2], 0.0, 1.0),
+                        0.0)
+    y_lc = 3.0 + X[:, 3]
+    for members in (1, MEMBERS):
+        ens = fit_hurdle(X, y_fail, y_blc, y_lc, groups, members=members)
+        P, E, B = hurdle_members(ens, X)
+        assert numpy.abs(B - P * E).max() <= 1e-12
+        pr = predict(ens, X)
+        assert numpy.abs(pr["blc8"] - B.mean(0)).max() <= 1e-12
+        assert 0.0 <= P.min() and P.max() <= 1.0 \
+            and 0.0 <= E.min() and E.max() <= 1.0
+        if members == 1:
+            assert numpy.abs(pr["blc8"] - pr["p_pos"] * pr["e_pos"]).max() \
+                <= 1e-12
+    ens0 = fit_hurdle(X, y_fail, numpy.zeros(200), y_lc, groups)
+    assert numpy.all(predict(ens0, X)["blc8"] == 0.0)
+    _g14_hurdle_run(H, tmp, env, ids, held)
+
+
+def _g14_hurdle_run(H, tmp, env, ids, held):
+    # (d) a hurdle run into a fresh dir: four files, check PASS, the model
+    # ships off and its hook abstains OPT-DISABLED; the re-run is equal beyond
+    # the date and byte-identical in both files; a flipped train byte FAILs
+    ra = os.path.join(tmp, "hurdle_a")
+    rep = hurdle([H["osrc"][0]], base=[H["osrc"][1], H["osrc"][2]],
+                 report_dir=ra, quiet=True)
+    for n in (REPORT_NAME, REPORT_MD, MODEL_NAME, TRAIN_NAME):
+        assert os.path.isfile(os.path.join(ra, n)), n
+    res = check(ra)
+    assert res["verdict"] == "PASS", [i for i in res["items"] if not i["ok"]]
+    assert rep["kind"] == "hurdle" and rep["enabled"] is False \
+        and rep["conditions"]["beats_rules"] is None
+    assert rep["train"]["n_rows"] == rep["cv"]["n"] + rep["holdout"]["n"]
+    om = importlib.import_module("optimise")
+    saved = dict(om._MODEL)
+    try:
+        v = load_model(os.path.join(ra, MODEL_NAME))
+        assert v["model"]["enabled"] is False
+        res_h = v["hook"](H["d_ctx"],
+                          [{"attempt": 1, "config_sha256": "x",
+                            "rule_id": None}])
+        assert res_h["verdict"] == "abstain" \
+            and res_h["rule_id"] == "OPT-DISABLED"
+    finally:
+        om._MODEL.clear()
+        om._MODEL.update(saved)
+    tp = os.path.join(ra, TRAIN_NAME)
+    train0 = open(tp, "rb").read()
+    model0 = open(os.path.join(ra, MODEL_NAME), "rb").read()
+    rep2 = hurdle([H["osrc"][0]], base=[H["osrc"][1], H["osrc"][2]],
+                  report_dir=ra, quiet=True)
+    a, b = dict(rep), dict(rep2)
+    a.pop("date"), b.pop("date")
+    assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+    assert open(tp, "rb").read() == train0
+    assert open(os.path.join(ra, MODEL_NAME), "rb").read() == model0
+    bad = bytearray(train0)
+    bad[len(bad) // 2] ^= 0x01
+    with open(tp, "wb") as f:
+        f.write(bytes(bad))
+    assert check(ra)["verdict"] == "FAIL"
+    with open(tp, "wb") as f:
+        f.write(train0)
+    # (d') the hurdle never writes into optimise/ or optimise/aml/
+    sha_m = _file_sha256(os.path.join(REPORT_DIR, MODEL_NAME))
+    sha_g = _file_sha256(os.path.join(REPORT_DIR, REPORT_NAME))
+    for rd in (REPORT_DIR, SHIP_DIR):
+        try:
+            hurdle([H["osrc"][0]], base=[H["osrc"][1], H["osrc"][2]],
+                   report_dir=rd, quiet=True)
+        except OptError as e:
+            assert rd in str(e) and HURDLE_DIR in str(e), str(e)
+        else:
+            raise AssertionError("hurdle into %s was not refused" % rd)
+    assert _file_sha256(os.path.join(REPORT_DIR, MODEL_NAME)) == sha_m
+    assert _file_sha256(os.path.join(REPORT_DIR, REPORT_NAME)) == sha_g
+    # (e) the committed optimise/aml2, once the supervisor's run lands,
+    # reproduces beyond the date; never written here (write=False only)
+    aml2 = os.path.join(REPORT_DIR, "aml2")
+    src_l5 = os.path.abspath(os.path.join(HERE, "aml",
+                                          "tuning_rules_L5.json.gz"))
+    if os.path.isfile(os.path.join(aml2, REPORT_NAME)):
+        rc = hurdle([src_l5], write=False, quiet=True)
+        want = _read_json_or_none(os.path.join(aml2, REPORT_NAME))
+        a, b = dict(rc), dict(want)
+        a.pop("date"), b.pop("date")
+        assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True), \
+            "the committed optimise/aml2 does not reproduce"
+        wmodel = _read_json_or_none(os.path.join(aml2, MODEL_NAME))
+        assert rc["model_sha256"] == wmodel["gate"]["model_sha256"]
+        pc = subprocess.run([sys.executable, __file__, "--check",
+                             "--report-dir", aml2], capture_output=True,
+                            text=True, encoding="utf-8", env=env, timeout=300)
+        assert pc.returncode == 0 and "CHECK PASS" in pc.stdout, \
+            (pc.returncode, pc.stdout[-400:], pc.stderr[-400:])
+        done = "the committed optimise/aml2 reproduces (model sha %s)" \
+            % rc["model_sha256"][:12]
+    else:
+        done = "optimise/aml2 not committed yet"
+    # (f) the CLI refuses --hurdle without --extra
+    ph = subprocess.run([sys.executable, __file__, "--hurdle"],
+                        capture_output=True, text=True, encoding="utf-8",
+                        errors="replace", env=env, timeout=300)
+    assert ph.returncode == 2 and "--hurdle needs --extra" in (ph.stderr or ""), \
+        (ph.returncode, ph.stderr)
+    print("[ok] hurdle: margin_features to 1e-12 (4 configs, layers NaN), the "
+          "hold-out holds %d of %d geometries, |B - P*E| <= 1e-12 with blc8 "
+          "the B mean and the all-zero case exact; verdict %s, CV AUC %.6f, "
+          "BLC_8 RMSE %.6f, hold-out RMSE %.6f; four files, check PASS, the "
+          "hook abstains OPT-DISABLED, the re-run byte-identical, a flipped "
+          "train byte FAILs check, optimise/ and optimise/aml refused "
+          "unchanged, %s; --hurdle without --extra exits 2"
+          % (len(held), len(ids), rep["verdict"], rep["cv"]["auc"],
+             rep["cv"]["blc8_rmse"], rep["holdout"]["blc8_rmse"], done))
 
 
 if __name__ == "__main__":

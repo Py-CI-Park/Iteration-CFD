@@ -1,21 +1,90 @@
 // Layout and preference state, persisted to localStorage (versioned).
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Locale, ViewId } from '@cfd/shared'
+import type { Locale, MeshDraft, UiCommand, UiSelection, ViewId } from '@cfd/shared'
+import type { ProbeOutcome } from '../viewer/controller/ViewerController'
+import { tx } from '../i18n/extra'
 
 export type Theme = 'light' | 'dark'
 export type ActivityView = 'explorer' | 'search' | 'scm' | 'run' | 'extensions' | 'cfd'
 export type BottomTab = 'terminal' | 'logs' | 'problems' | 'output'
+/** What the one residuals tab draws (show_chart's chart; STU-03 adds surface). */
+export type ChartKind = 'residuals' | 'metrics' | 'surface'
+export type LogStream = 'stdout' | 'stderr' | 'system'
+/** The Log tab's filter (set_log_filter's target), kept in the store so the pane and ui.state agree. */
+export interface LogFilter {
+  text: string
+  streams: LogStream[]
+  follow: boolean
+}
+/** The metrics chart's mode: the metric picker or the linear-solver sweep counts (show_metric). */
+export type MetricMode = 'metrics' | 'sweeps'
+
+/** The line the centreline tab samples: set_centerline as gui_control resolved it on the server (STU-09). */
+export interface CenterlineLine {
+  /** Workspace-relative result root. */
+  path: string
+  field: string
+  component: 'magnitude' | 'x' | 'y' | 'z'
+  /** Time directory label the server sampled. */
+  time: string | null
+  p0: [number, number, number]
+  p1: [number, number, number]
+}
 
 export type Tab =
   | { id: string; kind: 'file'; path: string }
   | { id: 'viewer'; kind: 'viewer' }
-  | { id: 'residuals'; kind: 'residuals'; runId: string | null; compareRunId?: string | null }
+  | { id: 'residuals'; kind: 'residuals'; runId: string | null; compareRunId?: string | null; chart?: ChartKind }
   | { id: string; kind: 'diff'; path: string; toolUseId: string | null }
   | { id: string; kind: 'geometry'; path: string }
   | { id: string; kind: 'campaign'; path: string }
+  | { id: 'centerline'; kind: 'centerline'; line: CenterlineLine }
 
 export type PanelLayout = Record<string, number>
+
+/** The answer the server gave the Mesh dialog's last mesh.draft / mesh.start. */
+export interface MeshStatus {
+  action: 'draft' | 'start'
+  ok: boolean
+  code: string | null
+  error: string | null
+}
+
+/** The Mesh dialog on screen (STU-06b): the session's draft as the server last sent it, the mesh run Start began, and the last answer. */
+export interface MeshDialogState {
+  draft: MeshDraft
+  runId: string | null
+  status: MeshStatus | null
+}
+
+/** A right-column panel (STU-08a): the panels open_panel names, in the column's tab order. */
+export type RightPanelId = Extract<UiCommand, { type: 'open_panel' }>['panel']
+export const RIGHT_PANELS: readonly RightPanelId[] = ['AI Assistant', 'Post', 'Inspector', 'Properties']
+
+/** What the Properties panel shows (STU-08a): the selected tree node and its keys. STU-08b's project tree sets it. */
+export interface PropertiesNode {
+  id: string
+  label: string
+  keys: Record<string, unknown>
+}
+
+/** The selection a probe outcome leaves (STU-08a): a hit selects its cell, a miss selects nothing, and
+ *  an outcome that read nothing (no viewer, no dataset, no structured grid) leaves the selection as it was (null). */
+export function selectionOfProbe(o: ProbeOutcome): UiSelection | null {
+  if (o.ok) {
+    // `located` only when the server located a point (STU-13), so a pick's selection keeps its shape.
+    const located = o.hit.located ? { located: o.hit.located } : {}
+    return { kind: 'cell', id: o.hit.cell, center: o.hit.center, value: o.hit.value, field: o.hit.field, patch: null, ...located }
+  }
+  return o.code === 'MISS' ? { kind: 'none' } : null
+}
+
+/** The Boundary editor on screen (STU-07b). */
+export interface BoundaryEditorState {
+  path: string
+  rev: number
+}
 
 export interface UiState {
   theme: Theme
@@ -42,6 +111,26 @@ export interface UiState {
   viewSplit: boolean
   focusedView: ViewId
   camerasLinked: boolean
+  showAxes: boolean
+  showColorBars: boolean
+  /** The Log tab's filter (text, stream chips, follow-tail); set_log_filter writes it. */
+  logFilter: LogFilter
+  /** What the metrics chart draws: slot 1 (left axis) and slot 2 (right axis) metric picks. */
+  metricSlots: [string | null, string | null]
+  /** metrics or the sweeps view of the same chart. */
+  metricMode: MetricMode
+  /** The Mesh dialog; null when it is closed. Transient: the draft lives on the server. */
+  meshDialog: MeshDialogState | null
+  /** The Boundary editor (STU-07b): the case it shows, and a count that makes an open editor read its table again; null when it is closed. Transient. */
+  boundaryEditor: BoundaryEditorState | null
+  /** The right column's active panel (STU-08a); the column itself shows while assistantVisible. Transient. */
+  rightTab: RightPanelId
+  /** The last probe or screen pick (STU-08a), what Inspector shows; null before the first. Transient. */
+  selection: UiSelection | null
+  /** The node Properties shows (STU-08a); null when nothing is selected. Transient. */
+  propertiesNode: PropertiesNode | null
+  /** The project tree's selected node id (STU-08b), what gui_state reports as activeStep; null before the first. Transient. */
+  activeStep: string | null
 }
 
 export interface UiActions {
@@ -53,6 +142,8 @@ export interface UiActions {
   toggleBottom(): void
   toggleAssistant(): void
   setBottomVisible(v: boolean): void
+  /** Toggles the viewer's axes triad or colour bars (show_overlay's target). */
+  setOverlay(what: 'axes' | 'colorbars', on: boolean): void
   setLayout(which: 'mainLayout' | 'centerLayout' | 'bottomLayout', layout: PanelLayout): void
   setActivity(view: ActivityView): void
   openTab(tab: Tab): void
@@ -60,7 +151,14 @@ export interface UiActions {
   openViewerTab(): void
   openGeometryTab(path: string): void
   openCampaignTab(path: string): void
-  openResidualsTab(runId: string | null): void
+  /** Opens (or re-aims) the one centreline chart tab on a resolved set_centerline line. */
+  openCenterlineTab(line: CenterlineLine): void
+  openResidualsTab(runId: string | null, chart?: ChartKind): void
+  /** Merges a set_log_filter patch; streams land de-duplicated in canonical order. */
+  setLogFilter(patch: Partial<LogFilter>): void
+  /** Puts a metric on slot 1 (left axis) or slot 2 (right axis); null clears the slot. */
+  setMetricSlot(slot: 1 | 2, metric: string | null): void
+  setMetricMode(mode: MetricMode): void
   setCompareRun(runId: string | null): void
   setViewSplit(on: boolean): void
   setFocusedView(view: ViewId): void
@@ -81,6 +179,21 @@ export interface UiActions {
   setSettingsOpen(open: boolean): void
   setCursor(cursor: { line: number; col: number } | null): void
   prefillComposer(text: string): void
+  /** Opens the Mesh dialog on a draft, or shows a new draft in the open one (its run and answer stay). */
+  showMeshDialog(draft: MeshDraft): void
+  closeMeshDialog(): void
+  /** Records the server's mesh.status; a start that began a run points the dialog's log at it. */
+  setMeshStatus(status: MeshStatus, runId: string | null): void
+  /** Opens the Boundary editor on a case, or has the open one read its table again. */
+  showBoundaryEditor(path: string): void
+  closeBoundaryEditor(): void
+  /** Shows the right column on one of its panels (open_panel's target). */
+  openPanel(panel: RightPanelId): void
+  setSelection(selection: UiSelection | null): void
+  /** Puts a node in the Properties panel (null clears it). */
+  selectNode(node: PropertiesNode | null): void
+  /** Selects a project tree node (STU-08b): it becomes the activeStep, fills Properties and opens that panel. */
+  selectStep(node: PropertiesNode): void
 }
 
 export type UiStore = UiState & UiActions
@@ -114,10 +227,65 @@ const INITIAL: UiState = {
   viewSplit: false,
   focusedView: 'A',
   camerasLinked: false,
+  showAxes: true,
+  showColorBars: true,
+  logFilter: { text: '', streams: ['stdout', 'stderr', 'system'], follow: true },
+  metricSlots: [null, null],
+  metricMode: 'metrics',
+  meshDialog: null,
+  boundaryEditor: null,
+  rightTab: 'AI Assistant',
+  selection: null,
+  propertiesNode: null,
+  activeStep: null,
 }
 
 export function fileTabId(path: string): string {
   return `file:${path}`
+}
+
+/** Same as app/hooks.ts's basename, local so this module stays free of React hooks. */
+function basename(path: string): string {
+  const i = path.lastIndexOf('/')
+  return i >= 0 ? path.slice(i + 1) : path
+}
+
+/** The text TabBar shows for a tab (moved verbatim from TabBar's label). */
+export function tabScreenLabel(tab: Tab, locale: Locale): string {
+  return tab.kind === 'file'
+    ? basename(tab.path)
+    : tab.kind === 'viewer'
+      ? tx(locale, 'tab.viewer')
+      : tab.kind === 'residuals'
+        ? tab.chart === 'metrics'
+          ? tx(locale, 'residuals.metricsTitle')
+          : tab.chart === 'surface'
+            ? tx(locale, 'residuals.surfaceTitle')
+            : tx(locale, 'tab.residuals')
+        : tab.kind === 'geometry'
+          ? `${tx(locale, 'tab.geometry')}: ${basename(tab.path)}`
+          : tab.kind === 'campaign'
+            ? `${tx(locale, 'autonomy.tab')}: ${basename(tab.path) || '.'}`
+            : tab.kind === 'centerline'
+              ? `${tx(locale, 'charts.centerline')}: ${tab.line.field}`
+              : `${tx(locale, 'tab.diff')}: ${basename(tab.path)}`
+}
+
+/** The label ui.state reports for a tab: its path, its chart, or 'viewer'. */
+export function tabStateLabel(tab: Tab): string {
+  switch (tab.kind) {
+    case 'file':
+    case 'geometry':
+    case 'campaign':
+    case 'diff':
+      return tab.path
+    case 'residuals':
+      return tab.chart ?? 'residuals'
+    case 'viewer':
+      return 'viewer'
+    case 'centerline':
+      return 'centerline'
+  }
 }
 
 function upsertTab(tabs: Tab[], tab: Tab): Tab[] {
@@ -128,7 +296,7 @@ function upsertTab(tabs: Tab[], tab: Tab): Tab[] {
   return out
 }
 
-type PersistedUi = Pick<UiState, 'theme' | 'locale' | 'sideVisible' | 'bottomVisible' | 'assistantVisible' | 'mainLayout' | 'centerLayout' | 'bottomLayout' | 'activity' | 'tabs' | 'activeTabId' | 'bottomTab' | 'explorerExpanded' | 'activeRunId' | 'terminalRunId' | 'composerDraft'>
+type PersistedUi = Pick<UiState, 'theme' | 'locale' | 'sideVisible' | 'bottomVisible' | 'assistantVisible' | 'mainLayout' | 'centerLayout' | 'bottomLayout' | 'activity' | 'tabs' | 'activeTabId' | 'bottomTab' | 'explorerExpanded' | 'activeRunId' | 'terminalRunId' | 'composerDraft' | 'showAxes' | 'showColorBars'>
 
 function partialize(s: UiState): PersistedUi {
   return {
@@ -149,6 +317,8 @@ function partialize(s: UiState): PersistedUi {
     activeRunId: s.activeRunId,
     terminalRunId: s.terminalRunId,
     composerDraft: s.composerDraft,
+    showAxes: s.showAxes,
+    showColorBars: s.showColorBars,
   }
 }
 
@@ -179,6 +349,10 @@ export const useUiStore = create<UiStore>()(
       },
       setBottomVisible(bottomVisible) {
         set({ bottomVisible })
+      },
+      setOverlay(what, on) {
+        if (what === 'axes') set({ showAxes: on })
+        else set({ showColorBars: on })
       },
       setLayout(which, layout) {
         set({ [which]: layout } as Partial<UiState>)
@@ -211,14 +385,20 @@ export const useUiStore = create<UiStore>()(
         const p = path.replace(/\/+$/, '')
         get().openTab({ id: `campaign:${p}`, kind: 'campaign', path: p })
       },
-      openResidualsTab(runId) {
+      openCenterlineTab(line) {
+        get().openTab({ id: 'centerline', kind: 'centerline', line: { ...line, p0: [...line.p0], p1: [...line.p1] } })
+      },
+      openResidualsTab(runId, chart) {
         set((s) => {
           const existing = s.tabs.find((t) => t.kind === 'residuals')
+          // No chart given keeps the tab's current chart, else the residuals chart.
+          const nextChart = chart ?? (existing?.kind === 'residuals' ? (existing.chart ?? 'residuals') : 'residuals')
           const tab: Tab = {
             id: 'residuals',
             kind: 'residuals',
             runId: runId ?? (existing?.kind === 'residuals' ? existing.runId : null),
             compareRunId: existing?.kind === 'residuals' ? (existing.compareRunId ?? null) : null,
+            chart: nextChart,
           }
           return { tabs: upsertTab(s.tabs, tab), activeTabId: 'residuals', activeRunId: runId ?? s.activeRunId }
         })
@@ -227,9 +407,31 @@ export const useUiStore = create<UiStore>()(
         set((s) => {
           const existing = s.tabs.find((t) => t.kind === 'residuals')
           const primary = existing?.kind === 'residuals' ? existing.runId : s.activeRunId
-          const tab: Tab = { id: 'residuals', kind: 'residuals', runId: primary, compareRunId: runId }
+          // The compare overlay never switches the tab's chart.
+          const tab: Tab = { id: 'residuals', kind: 'residuals', runId: primary, compareRunId: runId, chart: existing?.kind === 'residuals' ? (existing.chart ?? 'residuals') : 'residuals' }
           return { tabs: upsertTab(s.tabs, tab), activeTabId: 'residuals' }
         })
+      },
+      setLogFilter(patch) {
+        set((s) => {
+          const next = { ...s.logFilter, ...patch }
+          if (patch.streams) {
+            // Canonical order stdout, stderr, system, duplicates dropped.
+            const canon: LogStream[] = ['stdout', 'stderr', 'system']
+            next.streams = canon.filter((c) => patch.streams!.includes(c))
+          }
+          return { logFilter: next }
+        })
+      },
+      setMetricSlot(slot, metric) {
+        set((s) => {
+          const metricSlots: [string | null, string | null] = [s.metricSlots[0], s.metricSlots[1]]
+          metricSlots[slot - 1] = metric
+          return { metricSlots }
+        })
+      },
+      setMetricMode(metricMode) {
+        set({ metricMode })
       },
       setViewSplit(on) {
         set(on ? { viewSplit: true } : { viewSplit: false, focusedView: 'A', camerasLinked: false })
@@ -304,6 +506,33 @@ export const useUiStore = create<UiStore>()(
       },
       prefillComposer(text) {
         set((s) => ({ composerPrefill: { text, nonce: (s.composerPrefill?.nonce ?? 0) + 1 } }))
+      },
+      showMeshDialog(draft) {
+        set((s) => ({ meshDialog: { draft, runId: s.meshDialog?.runId ?? null, status: s.meshDialog?.status ?? null } }))
+      },
+      closeMeshDialog() {
+        set({ meshDialog: null })
+      },
+      setMeshStatus(status, runId) {
+        set((s) => (s.meshDialog ? { meshDialog: { ...s.meshDialog, status, runId: runId ?? s.meshDialog.runId } } : {}))
+      },
+      showBoundaryEditor(path) {
+        set((s) => ({ boundaryEditor: { path, rev: (s.boundaryEditor?.rev ?? 0) + 1 } }))
+      },
+      closeBoundaryEditor() {
+        set({ boundaryEditor: null })
+      },
+      openPanel(panel) {
+        set({ rightTab: panel, assistantVisible: true })
+      },
+      setSelection(selection) {
+        set({ selection })
+      },
+      selectNode(node) {
+        set({ propertiesNode: node })
+      },
+      selectStep(node) {
+        set({ activeStep: node.id, propertiesNode: node, rightTab: 'Properties', assistantVisible: true })
       },
     }),
     {

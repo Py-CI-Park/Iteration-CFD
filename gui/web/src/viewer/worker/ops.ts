@@ -4,7 +4,7 @@ import { StructuredGrid } from '../data/StructuredGrid'
 import type { TypedArray } from '../data/BlobCache'
 import { marchingCubes } from './marchingCubes'
 import type { ComputeRequest, ComputeResult, FieldRef, GridKeys } from './protocol'
-import { sampleGlyphs, samplePlane, sampleSlice, scalarOf, surfaceScalars, transformScalars } from './sampling'
+import { cutColors, sampleGlyphs, samplePlane, sampleSlice, scalarOf, surfaceScalars, transformScalars } from './sampling'
 import { integrateStreamlines } from './streamlines'
 
 export type BlobResolver = (key: string) => TypedArray | undefined
@@ -86,6 +86,26 @@ export function runCompute(req: ComputeRequest, resolve: BlobResolver): ComputeR
       const grid = gridOf(resolve, req.grid)
       const lines = integrateStreamlines(grid, vectorField(resolve, req.field), req.seeds, { direction: req.direction, maxLength: req.maxLength, planarAxis: req.planarAxis })
       return { op: 'streamlines', ...lines }
+    }
+    case 'cut': {
+      // Copies: the result is transferred out of the worker, and the blobs stay in its cache.
+      const positions = need(resolve, req.positions, Float32Array).slice()
+      const cells = need(resolve, req.cells, Uint32Array).slice()
+      const { values, colors } = cutColors(cells, scalarField(resolve, req.field), req.mapper)
+      return { op: 'cut', positions, cells, values, colors, triangleCount: cells.length }
+    }
+    case 'isoMesh': {
+      // Copies, as for a cut: the result is transferred out, and the blobs stay in the cache.
+      const positions = need(resolve, req.positions, Float32Array).slice()
+      const normals = need(resolve, req.normals, Float32Array).slice()
+      return { op: 'iso', positions, normals, triangleCount: positions.length / 9 }
+    }
+    case 'streamlineMesh': {
+      // Copies, as for a cut: the result is transferred out, and the blobs stay in the cache.
+      const points = need(resolve, req.points, Float32Array).slice()
+      const speeds = need(resolve, req.speeds, Float32Array).slice()
+      const offsets = need(resolve, req.offsets, Uint32Array).slice()
+      return { op: 'streamlines', points, speeds, offsets }
     }
     case 'glyphs': {
       const grid = gridOf(resolve, req.grid)

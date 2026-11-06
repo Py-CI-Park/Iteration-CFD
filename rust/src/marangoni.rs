@@ -428,6 +428,7 @@ pub fn body_force_flux(
     sn_grad_alpha: &GpuSurfaceScalarField,
     kappa_f: &GpuSurfaceScalarField,
     fr: &DevBuf<Scalar>,
+    u_kind: &DevBuf<Label>,
     g: Vec3,
     m: &GpuMesh,
 ) -> Result<()> {
@@ -467,6 +468,7 @@ pub fn body_force_flux(
                 .arg(&m.b_cf)
                 .arg(&m.b_kind)
                 .arg(fr)
+                .arg(u_kind)
                 .arg(&g.x)
                 .arg(&g.y)
                 .arg(&g.z)
@@ -505,6 +507,7 @@ mod tests {
     /// A guard justified by an assertion is a guard nobody will dare delete
     /// and nobody can check. This one is justified by a scan.
     #[test]
+    // f32 (F32-17): 77-of-700 is a count answer, not a tolerance
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_uniform_sigma_field_does_not_interpolate_to_itself() {
         // Weights a non-uniform mesh actually produces: a low-discrepancy
@@ -751,21 +754,31 @@ mod tests {
     /// `cuda/marangoni.cu` restates the predicate rather than sharing a
     /// header, because §87.5's argument turns on `cuda/vof.cu` not being
     /// edited. A restated predicate can drift, so it is pinned here across
-    /// every patch kind and both sides of the `fr >= 1` test.
+    /// every patch kind, both sides of the `fr >= 1` test, and the
+    /// DirectionMixed-velocity clause of SPEC-LIT 120.3.
     #[test]
     fn marangoni_restates_the_prescribed_flux_predicate() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
         let sigma: Scalar = 0.0728;
 
-        // Every patch kind 0..5, crossed with fr below, at, and above 1.
+        // Every patch kind 0..7, crossed with fr below, at, and above 1 -
+        // then the SPEC-LIT 120.3 clause: kind 0 at fr = 0 with the VELOCITY
+        // a DirectionMixed one (37) is prescribed all the same.
         let frs: [Scalar; 4] = [0.0, 0.5, 1.0, 1.5];
         let mut kinds: Vec<Label> = Vec::new();
         let mut fr: Vec<Scalar> = Vec::new();
-        for k in 0..6 {
+        let mut ukind: Vec<Label> = Vec::new();
+        for k in 0..8 {
             for f in frs {
                 kinds.push(k);
                 fr.push(f);
+                ukind.push(0);
             }
+        }
+        for k in 0..8 {
+            kinds.push(k);
+            fr.push(0.0);
+            ukind.push(37);
         }
         let n = kinds.len();
 
@@ -783,6 +796,7 @@ mod tests {
         let d_sig_f = g.upload(&vec![sigma; n])?;
         let d_kinds = g.upload(&kinds)?;
         let d_fr = g.upload(&fr)?;
+        let d_ukind = g.upload(&ukind)?;
         let mut old: DevBuf<Scalar> = g.zeros(n)?;
         let mut new: DevBuf<Scalar> = g.zeros(n)?;
 
@@ -801,6 +815,7 @@ mod tests {
                 .arg(&d_cf)
                 .arg(&d_kinds)
                 .arg(&d_fr)
+                .arg(&d_ukind)
                 .arg(&gx)
                 .arg(&gy)
                 .arg(&gz)
@@ -822,6 +837,7 @@ mod tests {
                 .arg(&d_cf)
                 .arg(&d_kinds)
                 .arg(&d_fr)
+                .arg(&d_ukind)
                 .arg(&gx)
                 .arg(&gy)
                 .arg(&gz)
@@ -846,15 +862,18 @@ mod tests {
                 zeroed += 1;
             }
         }
-        // 2 (empty) and 3 (symmetry) are prescribed at every fr; every other
-        // kind is prescribed only at fr >= 1, which is two of the four.
-        let expect_zero = 2 * frs.len() + 4 * 2;
+        // 2 (empty), 3 (symmetry) and 7 (wedge, SPEC-LIT 119.1) are
+        // prescribed at every fr; every other kind is prescribed only at
+        // fr >= 1, which is two of the four - and the eight DirectionMixed
+        // velocity faces of the 120.3 clause are prescribed at fr = 0.
+        let expect_zero = 3 * frs.len() + 5 * 2 + 8;
         assert_eq!(
             zeroed, expect_zero,
-            "the predicate zeroed {zeroed} of {n} faces; empty and symmetry at \
-             every fr, plus fr >= 1 elsewhere, is {expect_zero}"
+            "the predicate zeroed {zeroed} of {n} faces; empty, symmetry and \
+             wedge at every fr, fr >= 1 elsewhere, and a DirectionMixed \
+             velocity at fr = 0, is {expect_zero}"
         );
-        println!("  §87.5: {n} boundary faces across 6 patch kinds, 0 differing bits");
+        println!("  §87.5: {n} boundary faces across 8 patch kinds, 0 differing bits");
         Ok(())
     }
 
@@ -871,7 +890,6 @@ mod tests {
     ///   `epsN` normalisation makes `n̂` a zero vector there and the
     ///   `|grad alpha|` factor is zero as well.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_projector_annihilates_a_normal_sigma_gradient() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
 
@@ -926,7 +944,7 @@ mod tests {
         let residue = out[0].mag();
         let full = gs_par.mag() * mag;
         assert!(
-            residue / full < 1e-8,
+            ((residue / full) as f64) < crate::precision::roundoff_tol(1e-8),
             "a grad(sigma) parallel to n_hat left {residue:e} of {full:e} \
              ({:e} relative); the projector is not annihilating it",
             residue / full
@@ -936,7 +954,7 @@ mod tests {
         let expect = gs_perp.mag() * mag;
         let got = out[1].mag();
         assert!(
-            ((got - expect) / expect).abs() < 1e-12,
+            ((((got - expect) / expect).abs()) as f64) < crate::precision::roundoff_tol(1e-12),
             "a grad(sigma) orthogonal to n_hat came out {got:e} against \
              |grad sigma| |grad alpha| = {expect:e}"
         );
@@ -944,7 +962,7 @@ mod tests {
         let cosang = (out[1].x * gs_perp.x + out[1].y * gs_perp.y + out[1].z * gs_perp.z)
             / (got * gs_perp.mag());
         assert!(
-            (cosang - 1.0).abs() < 1e-12,
+            (((cosang - 1.0).abs()) as f64) < crate::precision::roundoff_tol(1e-12),
             "the tangential force is not along grad_s(sigma): cos = {cosang}"
         );
 

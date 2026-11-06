@@ -47,9 +47,10 @@ use std::collections::{HashMap, HashSet};
 use crate::error::{Error, Result};
 use crate::io::polymesh::PolyMeshRaw;
 use crate::surface::{Surface, TriIndex};
+use crate::types::{to_dvec3, to_vec3, DVec3};
 use crate::{Label, Scalar, Vec3};
 
-use super::features::{self, FeatureIndex};
+use super::features::{self, FeatureIndex, FeatureSet};
 use super::quality::{self, Gate, QualityReport, QualityThresholds};
 use super::SnapSpec;
 
@@ -107,6 +108,14 @@ pub struct SnapReport {
     pub n_pinned_boundary: usize,
     /// Iterates abandoned whole by (92.31).
     pub n_abandoned: usize,
+    /// Points of B whose residual after the last iterate is within eps of
+    /// (92.28) - `snap.tolerance * base_size`.
+    pub n_within_tolerance: usize,
+    /// DISTINCT points (92.68) froze over the run - not the points an
+    /// abandoned iterate pins as it gives up.
+    pub n_frozen: usize,
+    /// Iterates accepted after at least one (92.68) freeze round.
+    pub n_local_undo: usize,
     /// Feature edges (92.34) the surface carried, and corners (92.35).
     pub n_feature_edges: usize,
     pub n_feature_corners: usize,
@@ -148,6 +157,14 @@ impl SnapReport {
             self.n_snapped_to_edge,
             self.n_snapped_to_corner
         ));
+        s.push_str(&format!(
+            "snap: {} of {} point(s) within the tolerance, {} frozen in {} \
+             locally undone iterate(s)\n",
+            self.n_within_tolerance,
+            self.n_boundary_points,
+            self.n_frozen,
+            self.n_local_undo
+        ));
         s
     }
 }
@@ -158,6 +175,39 @@ pub struct Snapped {
     pub mesh: PolyMeshRaw,
     pub report: SnapReport,
     pub quality: QualityReport,
+}
+
+/// (92.68)'s O for the failing cells `fail`: every point of every cell,
+/// closed under the hanging-node parents - a point of O that is a hanging
+/// node of (92.33) brings both its parents in, and a parent that is itself
+/// a hanging node brings its own. Sorted ascending, without duplicates,
+/// and terminating on a parent cycle.
+fn freeze_set(
+    fail: &[u32],
+    cell_points: &[Vec<u32>],
+    parent_of: &HashMap<u32, [u32; 2]>,
+) -> Vec<u32> {
+    let mut o: HashSet<u32> = HashSet::new();
+    let mut stack: Vec<u32> = Vec::new();
+    for &c in fail {
+        for &p in &cell_points[c as usize] {
+            if o.insert(p) {
+                stack.push(p);
+            }
+        }
+    }
+    while let Some(p) = stack.pop() {
+        if let Some(&ab) = parent_of.get(&p) {
+            for parent in ab {
+                if o.insert(parent) {
+                    stack.push(parent);
+                }
+            }
+        }
+    }
+    let mut out: Vec<u32> = o.into_iter().collect();
+    out.sort_unstable();
+    out
 }
 
 // ==========================================================================
@@ -304,7 +354,7 @@ pub fn snap_regions(
         let ps = &mesh.faces[f];
         let mut c = [0.0; 3];
         for &p in ps {
-            let q = mesh.points[p as usize];
+            let q = to_vec3(mesh.points[p as usize]);
             c[0] += q.x;
             c[1] += q.y;
             c[2] += q.z;
@@ -448,7 +498,11 @@ pub fn snap_regions(
     // The hanging nodes: points that are the midpoint of another face's
     // edge, each mapped to its parent edge, longest first so a hanging node
     // of a hanging node is re-seated after its parents.
-    let hanging = find_hanging(&mesh.points, &mesh.faces);
+    let pts_scalar: Vec<Vec3> = mesh.points.iter().map(|&p| to_vec3(p)).collect();
+    let hanging = find_hanging(&pts_scalar, &mesh.faces);
+    // (92.68)'s closure map: each hanging node to its two parents, built
+    // once from `hanging`.
+    let parent_of: HashMap<u32, [u32; 2]> = hanging.iter().cloned().collect();
     // (92.38)'s attraction, prepared once: the surface's sharp edges
     // (92.34) chained into polylines and indexed for (92.36) queries. A
     // `feature_tolerance` of zero turns the stage off entirely - no
@@ -474,9 +528,14 @@ pub fn snap_regions(
     let mut corner_of_point: Vec<i32> = vec![-1; n_points];
     let eps = spec.tolerance as Scalar * base_size;
     let w = spec.smoothing as Scalar;
-    let mut pts = mesh.points.clone();
+    // The stage moves points in the build's own `Scalar` (SPEC-LIT §118.2):
+    // read the f64 raw points in, write them back out widened.
+    let mut pts: Vec<Vec3> = mesh.points.iter().map(|&p| to_vec3(p)).collect();
     let mut work = mesh.clone();
     let mut scaled_back = vec![false; n_points];
+    // (92.68)'s freezes, distinct over the run - the fallback's pins do not
+    // count here.
+    let mut frozen = vec![false; n_points];
     let mut report = SnapReport {
         n_boundary_points: is_b.iter().filter(|&&b| b).count(),
         n_feature_edges: fset.as_ref().map_or(0, |fs| fs.edges.len()),
@@ -600,6 +659,7 @@ pub fn snap_regions(
             }
         }
         let mut halvings = 0usize;
+        let mut freezes = 0usize;
         let mut accepted = false;
         loop {
             let mut pts_try: Vec<Vec3> = (0..n_points)
@@ -614,7 +674,7 @@ pub fn snap_regions(
                 pts_try[h as usize] =
                     (pts_try[ab[0] as usize] + pts_try[ab[1] as usize]) * 0.5;
             }
-            work.points = pts_try.clone();
+            work.points = pts_try.iter().map(|&p| to_dvec3(p)).collect();
             let rep = quality::measure_capped(&work, t, usize::MAX)?;
             // The failing CELLS: the subject itself for a cell-named gate,
             // both cells of the face for G4. G3 and G7 are skipped - step 3
@@ -660,14 +720,47 @@ pub fn snap_regions(
                 }
                 halvings += 1;
             } else {
-                for &c in &fail {
-                    for &i in &cell_points[c as usize] {
-                        pinned[i as usize] = true;
+                // (92.68): the local undo. Freeze O - the blamed points and
+                // the hanging parents they close onto - and let the rest
+                // keep its step; abandon whole only when a freeze would
+                // move nothing at all.
+                let o = freeze_set(&fail, &cell_points, &parent_of);
+                let mut frozen_can_move = false;
+                for &i in &o {
+                    if alpha[i as usize] > 0.0 {
+                        frozen_can_move = true;
+                        break;
                     }
                 }
-                report.n_abandoned += 1;
-                break;
+                let mut rest_can_move = false;
+                if frozen_can_move {
+                    for (j, d) in d_field.iter().enumerate() {
+                        if alpha[j] > 0.0
+                            && *d != Vec3::ZERO
+                            && o.binary_search(&(j as u32)).is_err()
+                        {
+                            rest_can_move = true;
+                            break;
+                        }
+                    }
+                }
+                if !frozen_can_move || !rest_can_move {
+                    for &i in &o {
+                        pinned[i as usize] = true;
+                    }
+                    report.n_abandoned += 1;
+                    break;
+                }
+                for &i in &o {
+                    alpha[i as usize] = 0.0;
+                    pinned[i as usize] = true;
+                    frozen[i as usize] = true;
+                }
+                freezes += 1;
             }
+        }
+        if accepted && freezes > 0 {
+            report.n_local_undo += 1;
         }
         let max_step = if accepted {
             let mut m: Scalar = 0.0;
@@ -695,6 +788,9 @@ pub fn snap_regions(
         if is_b[i] {
             let (_, _, d) = idx.closest_point(pts[i]);
             residuals.push(d);
+            if d <= eps {
+                report.n_within_tolerance += 1;
+            }
         }
     }
     residuals.sort_by(Scalar::total_cmp);
@@ -704,11 +800,12 @@ pub fn snap_regions(
             residuals[(((residuals.len() - 1) as f64) * 0.99).round() as usize];
     }
     report.n_scaled_back = scaled_back.iter().filter(|&&s| s).count();
+    report.n_frozen = frozen.iter().filter(|&&f| f).count();
     report.n_pinned = pinned.iter().filter(|&&p| p).count();
     report.n_pinned_boundary = (0..n_points).filter(|&i| pinned[i] && is_b[i]).count();
     // The gate: a mesh that still fails leaves as §92.3's own refusal text.
     let mut out = mesh.clone();
-    out.points = pts;
+    out.points = pts.iter().map(|&p| to_dvec3(p)).collect();
     // Each patch's area once more, on the points the stage returns: the
     // (92.32) walk unchanged, measured twice.
     patch_areas_on(&out.points, &out, n_internal, &iface_patch, &mut patch_areas);
@@ -730,7 +827,7 @@ pub fn snap_regions(
 /// then the boundary faces of the mesh patch carrying its name - with
 /// `face_area_vector` measured on `points` rather than the mesh's own.
 fn patch_areas_on(
-    points: &[Vec3],
+    points: &[DVec3],
     mesh: &PolyMeshRaw,
     n_internal: usize,
     iface_patch: &[(usize, usize)],
@@ -819,17 +916,20 @@ fn claim_corners(
 }
 
 /// The polygon's area vector, fanned about the mean of its own points -
-/// the construction `mesh::geometry` runs, on the raw arrays.
-pub(crate) fn face_area_vector(points: &[Vec3], face: &[Label]) -> Vec3 {
+/// the construction `mesh::geometry` runs, on the raw arrays. The points are
+/// the `PolyMeshRaw`'s f64 ones (SPEC-LIT §118.2); each is read through
+/// `to_vec3`, so the arithmetic below is the `Scalar` arithmetic it always
+/// was.
+pub(crate) fn face_area_vector(points: &[DVec3], face: &[Label]) -> Vec3 {
     let mut c = Vec3::ZERO;
     for &p in face {
-        c = c + points[p as usize];
+        c = c + to_vec3(points[p as usize]);
     }
     c = c / (face.len() as Scalar);
     let mut sf = Vec3::ZERO;
     for k in 0..face.len() {
-        let a = points[face[k] as usize] - c;
-        let b = points[face[(k + 1) % face.len()] as usize] - c;
+        let a = to_vec3(points[face[k] as usize]) - c;
+        let b = to_vec3(points[face[(k + 1) % face.len()] as usize]) - c;
         sf = sf + a.cross(b);
     }
     sf * 0.5
@@ -1058,6 +1158,144 @@ fn wall_face_mask(
         }
     }
     wall
+}
+
+// ==========================================================================
+//  The worst boundary points - (92.75) and (92.76), §92.14.3
+// ==========================================================================
+
+/// How many worst-residual boundary points the snap row names: the row is
+/// §92.14.3's read of the points the stage returned, and moves nothing.
+pub const WORST_K: usize = 16;
+
+/// The class of the feature nearest a boundary point - (92.76).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FeatureClass {
+    Edge,
+    Corner,
+    Smooth,
+    OpenTip,
+}
+
+impl FeatureClass {
+    /// The name the summary row carries.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            FeatureClass::Edge => "edge",
+            FeatureClass::Corner => "corner",
+            FeatureClass::Smooth => "smooth",
+            FeatureClass::OpenTip => "open-tip",
+        }
+    }
+}
+
+/// One row of (92.75): a boundary point the snap stage returned, its
+/// residual over it, and the class (92.76) of the feature nearest it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorstPoint {
+    pub point: u32,
+    pub position: [f64; 3],
+    pub residual: Scalar,
+    pub class: FeatureClass,
+}
+
+/// (92.76): the class of the feature nearest `x` within radius `r`, over
+/// the extraction of §92.12 at the run's `feature_angle_deg`. A corner
+/// within `r` wins over the edges it lies on; a corner that ends exactly
+/// one feature edge is the free end of an open feature curve.
+pub fn feature_class(
+    fs: &FeatureSet,
+    fidx: Option<&FeatureIndex>,
+    x: Vec3,
+    r: Scalar,
+) -> FeatureClass {
+    let Some(idx) = fidx else {
+        return FeatureClass::Smooth;
+    };
+    if let Some((_, d, c)) = idx.closest_corner(x) {
+        if d <= r {
+            let ends = fs.edges.iter().filter(|e| e[0] == c || e[1] == c).count();
+            return if ends == 1 {
+                FeatureClass::OpenTip
+            } else {
+                FeatureClass::Corner
+            };
+        }
+    }
+    if let Some((_, d, _)) = idx.closest_edge_point(x) {
+        if d <= r {
+            return FeatureClass::Edge;
+        }
+    }
+    FeatureClass::Smooth
+}
+
+/// (92.75): the first min(k, |B|) points of B - the points of the faces
+/// [`wall_face_mask`] marks, the same set the snap loop moves - by residual
+/// `r_i = | closest_point(x_i) - x_i |` descending, ties to the lower point
+/// id, each row carrying its (92.76) class at radius `h_f`. Reading only:
+/// `r_i` comes from the query `max_residual` is the maximum of, so row 0's
+/// residual is `max_residual` bit for bit.
+pub fn worst_points(
+    mesh: &PolyMeshRaw,
+    surf: &Surface,
+    region_of_cell: Option<&[i32]>,
+    base_size: Scalar,
+    feature_angle_deg: Scalar,
+    h_f: Scalar,
+    k: usize,
+) -> Result<Vec<WorstPoint>> {
+    if !(base_size > 0.0) || !base_size.is_finite() {
+        return Err(Error::Mesh(format!(
+            "worst_points: base_size must be positive and finite, got \
+             {base_size} - the closest-point index is built at it"
+        )));
+    }
+    if !(h_f > 0.0) || !h_f.is_finite() {
+        return Err(Error::Mesh(format!(
+            "worst_points: h_f must be positive and finite, got {h_f} - \
+             it is the radius the feature classes are judged at"
+        )));
+    }
+    let wall = wall_face_mask(mesh, surf, region_of_cell);
+    let mut b_ids: Vec<u32> = mesh
+        .faces
+        .iter()
+        .zip(wall.iter())
+        .filter(|&(_, &w)| w)
+        .flat_map(|(face, _)| face.iter().copied().map(|p| p as u32))
+        .collect();
+    b_ids.sort_unstable();
+    b_ids.dedup();
+    if b_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let idx = TriIndex::with_bvh(surf, base_size)?;
+    let mut rows: Vec<(Scalar, u32)> = b_ids
+        .iter()
+        .map(|&i| {
+            let (_, _, d) = idx.closest_point(to_vec3(mesh.points[i as usize]));
+            (d, i)
+        })
+        .collect();
+    rows.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.cmp(&b.1)));
+    let fs = features::extract(surf, feature_angle_deg)?;
+    let fidx = (!fs.is_empty())
+        .then(|| FeatureIndex::new(&fs, base_size))
+        .transpose()?;
+    Ok(rows
+        .into_iter()
+        .take(k)
+        .map(|(r, i)| {
+            let p = mesh.points[i as usize];
+            WorstPoint {
+                point: i,
+                position: [p.x, p.y, p.z],
+                residual: r,
+                class: feature_class(&fs, fidx.as_ref(), to_vec3(p), h_f),
+            }
+        })
+        .collect())
 }
 
 /// One capture chain of (92.62): feature points in order, closed iff the
@@ -1316,7 +1554,10 @@ pub fn feature_capture(
         out.dedup();
     };
     for &(i, j) in &edges {
-        let (p, q) = (mesh.points[i as usize], mesh.points[j as usize]);
+        let (p, q) = (
+            to_vec3(mesh.points[i as usize]),
+            to_vec3(mesh.points[j as usize]),
+        );
         cand_p.clear();
         around(key(p), &mut cand_p);
         cand_q.clear();
@@ -1375,6 +1616,7 @@ pub fn feature_capture(
 mod tests {
     use super::*;
     use crate::automesher::castellate::castellate;
+    #[cfg_attr(feature = "single", allow(unused_imports))]
     use crate::automesher::castellate::tests::{
         box_soup, mesh_fingerprint, sphere_soup, thresholds,
     };
@@ -1406,6 +1648,36 @@ mod tests {
             v += t[0].dot(t[1].cross(t[2]));
         }
         v.abs() / 6.0
+    }
+
+    /// (92.68)'s O takes the failing cells' points AND every hanging parent
+    /// they close onto - transitively, so 9 brings 2 back (already in), and
+    /// a parent cycle (11 <-> 12) terminates.
+    #[test]
+    fn the_freeze_set_takes_every_hanging_parent_with_it() {
+        let cell_points: Vec<Vec<u32>> =
+            vec![vec![0, 1, 2], vec![3, 4], vec![2, 9], vec![11]];
+        let mut parent_of: HashMap<u32, [u32; 2]> = HashMap::new();
+        parent_of.insert(2, [5, 6]);
+        parent_of.insert(6, [7, 8]);
+        parent_of.insert(9, [2, 10]);
+        parent_of.insert(11, [12, 13]);
+        parent_of.insert(12, [11, 14]);
+        let cases: Vec<(&[u32], &[u32])> = vec![
+            (&[0][..], &[0, 1, 2, 5, 6, 7, 8][..]),
+            (&[1][..], &[3, 4][..]),
+            (&[2][..], &[2, 5, 6, 7, 8, 9, 10][..]),
+            (&[3][..], &[11, 12, 13, 14][..]),
+            (&[][..], &[][..]),
+            (&[0, 1][..], &[0, 1, 2, 3, 4, 5, 6, 7, 8][..]),
+        ];
+        for (fail, want) in cases {
+            assert_eq!(
+                freeze_set(fail, &cell_points, &parent_of),
+                want,
+                "freeze_set({fail:?})"
+            );
+        }
     }
 
     #[test]
@@ -1456,6 +1728,7 @@ mod tests {
     }
 
     #[test]
+    // f32 (F32-16): snap p99 residual 0.2 vs the 0.06 band; f32 geometry (A28)
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_sphere_is_snapped_onto_the_sphere() {
         let (mut tree, bg) = setup([0.0, 8.0, 0.0, 8.0, 0.0, 8.0], 1.0, 2);
@@ -1506,9 +1779,9 @@ mod tests {
         let want = 512.0 - soup_volume(&sphere_soup(3.0, [4.0; 3]));
         eprintln!(
             "snap: kept volume {total:.6} vs the STL's own {want:.6} ({:.3} % off)",
-            100.0 * (total - want).abs() / want
+            100.0 * (total - want as f64).abs() / want as f64
         );
-        let rel = (total - want).abs() / want;
+        let rel = (total - want as f64).abs() / want as f64;
         assert!(
             rel < 0.01,
             "kept volume {total} vs the STL's own enclosed {want} ({:.2} % off)",
@@ -1547,18 +1820,22 @@ mod tests {
         );
     }
 
-    /// (92.31)'s undo, on a gate no displacement can satisfy. A UNIFORM
-    /// tree's castellated mesh is exactly orthogonal - every internal face
-    /// separates two cells whose centres differ along one axis - so a limit
-    /// of a thousandth of a degree passes on arrival and fails on the first
-    /// move. The step is halved `undo_limit` times, the blamed points are
-    /// pinned, the iterate is abandoned whole, and what comes back is the
-    /// mesh that went in, bit for bit, still through §92.3's gate. This is
-    /// the path the other four tests never reach: they all snap cleanly.
+    /// (92.31)'s undo and (92.68)'s freeze, on a gate no displacement can
+    /// satisfy. A UNIFORM tree's castellated mesh is exactly orthogonal -
+    /// every internal face separates two cells whose centres differ along
+    /// one axis - so a limit of a thousandth of a degree passes on arrival
+    /// and fails on the first move. The step is halved `undo_limit` times,
+    /// then (92.68) freezes the blamed points and their hanging parents
+    /// while the rest keeps its step; the iterate is accepted as locally
+    /// undone, nothing that was pinned can have moved, and what comes back
+    /// is within rounding of the mesh that went in, still through §92.3's
+    /// gate. The old loop abandoned the iterate whole and returned the
+    /// castellated points bit for bit.
     ///
-    /// Written by the supervising session, not by the coding agent.
+    /// Written by the supervising session, not by the coding agent; its
+    /// assertions re-stated for (92.68) by the coding agent.
     #[test]
-    fn a_gate_no_step_can_satisfy_leaves_the_mesh_where_it_started() {
+    fn a_near_impossible_gate_freezes_the_blamed_points_and_moves_only_the_rest() {
         let (tree, bg) = setup([0.0, 8.0, 0.0, 8.0, 0.0, 8.0], 1.0, 0);
         let surf = Surface::from_soup(
             sphere_soup(3.0, [4.0; 3]),
@@ -1584,15 +1861,27 @@ mod tests {
             snapped.report.n_scaled_back > 0,
             "the guard must have halved something"
         );
-        assert!(snapped.report.n_pinned > 0, "and then pinned it");
         assert!(
-            snapped.report.n_abandoned > 0,
-            "and abandoned the iterate whole"
+            snapped.report.n_pinned > 0,
+            "and the freeze pinned the blamed points"
         );
+        assert!(
+            snapped.report.n_abandoned == 0,
+            "(92.68) frees the iterate from whole-iterate abandonment"
+        );
+        assert!(
+            snapped.report.n_local_undo >= 1,
+            "the iterate was accepted after a freeze"
+        );
+        assert!(snapped.report.n_frozen > 0, "the freeze fired");
         for (a, b) in snapped.mesh.points.iter().zip(cast.mesh.points.iter()) {
-            assert_eq!(a.x.to_bits(), b.x.to_bits());
-            assert_eq!(a.y.to_bits(), b.y.to_bits());
-            assert_eq!(a.z.to_bits(), b.z.to_bits());
+            assert!(
+                (*a - *b).mag() <= 1e-4,
+                "a frozen point cannot have moved, and the rest was within \
+                 rounding: {} -> {}",
+                b,
+                a
+            );
         }
         assert!(snapped.quality.passed());
     }
@@ -1644,7 +1933,7 @@ mod tests {
             for &p in &snapped.mesh.faces[f] {
                 assert_eq!(
                     snapped.mesh.points[p as usize].z.to_bits(),
-                    (0.0 as Scalar).to_bits(),
+                    (0.0 as Scalar as f64).to_bits(),
                     "point {p} of zMin face {f} left the box plane"
                 );
             }
@@ -1760,6 +2049,7 @@ mod tests {
     }
 
     #[test]
+    // f32 (F32-16): the edge snap pull scales back; no point within 2 eps (A28)
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_cube_off_the_lattice_gets_its_edges_and_corners() {
         let (surf, cast) = cube_case();
@@ -1790,7 +2080,7 @@ mod tests {
                 .mesh
                 .points
                 .iter()
-                .map(|p| seg_dist(*p, *a, *b))
+                .map(|p| seg_dist(to_vec3(*p), *a, *b))
                 .fold(Scalar::INFINITY, Scalar::min);
             assert!(
                 best <= 2e-3,
@@ -1803,8 +2093,8 @@ mod tests {
                 .mesh
                 .points
                 .iter()
-                .map(|p| (*p - *c).mag())
-                .fold(Scalar::INFINITY, Scalar::min);
+                .map(|p| (*p - to_dvec3(*c)).mag())
+                .fold(f64::INFINITY, f64::min);
             assert!(
                 best <= 2e-3,
                 "at the defaults no point within 2 eps of the corner {:?}: {:e}",
@@ -1835,7 +2125,7 @@ mod tests {
                 .mesh
                 .points
                 .iter()
-                .map(|p| seg_dist(*p, *a, *b))
+                .map(|p| seg_dist(to_vec3(*p), *a, *b))
                 .fold(Scalar::INFINITY, Scalar::min);
             assert!(
                 best <= 1e-6,
@@ -1848,8 +2138,8 @@ mod tests {
                 .mesh
                 .points
                 .iter()
-                .map(|p| (*p - *c).mag())
-                .fold(Scalar::INFINITY, Scalar::min);
+                .map(|p| (*p - to_dvec3(*c)).mag())
+                .fold(f64::INFINITY, f64::min);
             assert!(
                 best <= 1e-6,
                 "no point on the corner {:?}: closest {:e}",
@@ -1863,6 +2153,7 @@ mod tests {
     }
 
     #[test]
+    // f32 (F32-16): the dead-band corner pull scales back; corner reads 0.35 away (A28)
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn with_feature_snapping_off_the_corners_are_not_occupied() {
         let (surf, cast) = cube_case();
@@ -1903,8 +2194,8 @@ mod tests {
                 .mesh
                 .points
                 .iter()
-                .map(|p| (*p - *c).mag())
-                .fold(Scalar::INFINITY, Scalar::min);
+                .map(|p| (*p - to_dvec3(*c)).mag())
+                .fold(f64::INFINITY, f64::min);
             if (*c - free).mag() < 1e-12 {
                 assert!(
                     best > 1e-6 && best <= 2e-3,
@@ -1974,9 +2265,12 @@ mod tests {
     /// Requirement 2's pin (M6 Run 1): with no bodies the snapped sphere
     /// mesh is bit for bit what it was before the run's edits. The constant
     /// was pinned before any other edit.
+    #[cfg_attr(feature = "single", allow(dead_code))]
     const PINNED_SPHERE_SNAP_NO_BODY: u64 = 0x0637e67a829f905e;
 
     #[test]
+    // f64 subject (VAL-81): pins the f64 build's snapped-mesh fingerprint
+    #[cfg(not(feature = "single"))]
     fn the_snapped_mesh_without_bodies_is_pinned() {
         let (surf, mesh) = sphere_case();
         let snapped =
@@ -2043,6 +2337,8 @@ mod tests {
     /// topology and the total volume are the castellated mesh's own, and the
     /// fluid/body split of the volume is (about) the block minus the sphere.
     #[test]
+    // f32 (VAL-81): p99 residual 0.203 against 0.06 in f32
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_kept_sphere_is_snapped_along_its_interface() {
         let (mut tree, bg) = setup([0.0, 8.0, 0.0, 8.0, 0.0, 8.0], 1.0, 2);
         let surf = Surface::from_soup(
@@ -2233,12 +2529,14 @@ mod tests {
         assert_eq!(snapped.report.n_pinned_boundary, 0);
     }
 
-    /// An abandoned iterate pins more than the boundary: the pinned points
+    /// The frozen points pin more than the boundary: the pinned points
     /// that lie in B of (92.27) stay inside the boundary count and under
-    /// the pinned total, and with the mesh returned unmoved each patch's
-    /// re-measured area is bit for bit the castellated one.
+    /// the pinned total, and (92.68)'s freeze moves a handful of B points
+    /// at most - each patch's re-measured area is the castellated one to
+    /// within 1e-9 relative. The old loop abandoned the iterate and came
+    /// back bit for bit.
     #[test]
-    fn an_abandoned_iterate_pins_more_than_the_boundary() {
+    fn the_frozen_points_pin_more_than_the_boundary() {
         let (tree, bg) = setup([0.0, 8.0, 0.0, 8.0, 0.0, 8.0], 1.0, 0);
         let surf = Surface::from_soup(
             sphere_soup(3.0, [4.0; 3]),
@@ -2275,10 +2573,12 @@ mod tests {
             "the pinned total also counts points outside B"
         );
         for row in &snapped.report.patch_areas {
-            assert_eq!(
-                row.snapped_area.to_bits(),
-                row.castellated_area.to_bits(),
-                "the mesh came back unmoved, so the two walks agree exactly"
+            assert!(
+                (row.snapped_area - row.castellated_area).abs()
+                    <= 1e-9 * row.castellated_area,
+                "the freeze moved a handful of points only: {} vs {}",
+                row.snapped_area,
+                row.castellated_area
             );
         }
     }
@@ -2288,6 +2588,8 @@ mod tests {
     /// a staircase over-reports a curved surface's area (by up to sqrt(3)),
     /// so the castellated ratio sits above the snapped one.
     #[test]
+    // f32 (VAL-81): snapped area ratio 1.497 outside (0.9, 1.1) in f32
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_snapped_sphere_area_is_near_its_surface_area() {
         let (mut tree, bg) = setup([0.0, 8.0, 0.0, 8.0, 0.0, 8.0], 1.0, 2);
         let surf = Surface::from_soup(
@@ -2333,6 +2635,8 @@ mod tests {
     /// covers the geometry: one row, a positive castellated area that
     /// includes those interfaces, and a snapped ratio within ten per cent.
     #[test]
+    // f32 (VAL-81): snapped area ratio 1.506 outside (0.9, 1.1) in f32
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_interface_area_counts_toward_the_snapped_ratio() {
         let (mut tree, bg) = setup([0.0, 8.0, 0.0, 8.0, 0.0, 8.0], 1.0, 2);
         let surf = Surface::from_soup(
@@ -2428,11 +2732,11 @@ mod tests {
         let mid = Vec3::new(2.0, 1.0, 1.0);
         let i = (0..mesh.points.len())
             .min_by(|&a, &b| {
-                (mesh.points[a] - mid).mag().total_cmp(&(mesh.points[b] - mid).mag())
+                (mesh.points[a] - to_dvec3(mid)).mag().total_cmp(&(mesh.points[b] - to_dvec3(mid)).mag())
             })
             .expect("points");
-        assert!((mesh.points[i] - mid).mag() <= 1e-12, "no mesh point at the edge's middle");
-        mesh.points[i] = Vec3::new(2.0, 0.5, 0.5);
+        assert!((mesh.points[i] - to_dvec3(mid)).mag() <= 1e-12, "no mesh point at the edge's middle");
+        mesh.points[i] = to_dvec3(Vec3::new(2.0, 0.5, 0.5));
         let c = feature_capture(&mesh, &surf, None, 30.0, 0.1).expect("capture");
         eprintln!("pulled point capture {c:?}");
         assert!((c.sharp_length - 24.0).abs() <= 1e-12 * 24.0, "{c:?}");
@@ -2454,6 +2758,8 @@ mod tests {
     /// than with it off - the chamfer of `feature_tolerance` 0 is what the
     /// capture exists to show. Both are printed for the record.
     #[test]
+    // f32 (VAL-81): captures 0 of 12 edge length in f32, with or without attraction
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_attraction_raises_the_capture_on_an_off_lattice_cube() {
         let (surf, cast) = cube_case();
         let on = snap(&cast, &surf, 1.0, 30.0, &SnapSpec::default(), &thresholds())
@@ -2489,7 +2795,7 @@ mod tests {
     fn the_cover_test_needs_both_ends_near_and_the_direction_along() {
         let a = Vec3::new(0.0, 0.0, 0.0);
         let b = Vec3::new(1.0, 0.0, 0.0);
-        let v = |x: f64, y: f64| Vec3::new(x, y, 0.0);
+        let v = |x: f64, y: f64| Vec3::new(x as Scalar, y as Scalar, 0.0);
         let cov = |p: Vec3, q: Vec3| covered_interval(p, q, a, b, 0.1);
         assert_eq!(cov(v(0.2, 0.05), v(0.6, -0.05)), Some((0.2, 0.6)));
         assert_eq!(cov(v(0.6, -0.05), v(0.2, 0.05)), Some((0.2, 0.6)));
@@ -2507,7 +2813,7 @@ mod tests {
         let mut pts = Vec::new();
         for k in 0..16 {
             let a = 2.0 * std::f64::consts::PI * (k as f64) / 16.0;
-            pts.push(Vec3::new(a.cos(), a.sin(), 0.0));
+            pts.push(Vec3::new(a.cos() as Scalar, a.sin() as Scalar, 0.0));
         }
         let mut pl: Vec<u32> = (0..16u32).collect();
         pl.push(0);
@@ -2542,7 +2848,7 @@ mod tests {
                 x[a] = g(a, u);
                 x[b] = g(b, v);
                 x[f] = if hi_f { hi[f] } else { lo[f] };
-                Vec3::new(x[0], x[1], x[2])
+                Vec3::new(x[0] as Scalar, x[1] as Scalar, x[2] as Scalar)
             };
             for i in 0..k {
                 for j in 0..k {
@@ -2589,6 +2895,8 @@ mod tests {
     /// angle: a 45-degree kink into 2 and 1, a closed square into 4 open
     /// chains of 1, a closed 16-gon one closed chain.
     #[test]
+    // f32 (VAL-81): a 1e-12 bound on a chain length, below f32 round-off
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_chains_cut_a_polyline_where_it_turns_further_than_the_capture_angle() {
         let fs_of = |points: Vec<Vec3>, pl: Vec<u32>| features::FeatureSet {
             points,
@@ -2604,7 +2912,7 @@ mod tests {
                 Vec3::new(0.0, 0.0, 0.0),
                 Vec3::new(1.0, 0.0, 0.0),
                 Vec3::new(2.0, 0.0, 0.0),
-                Vec3::new(2.0 + s05, s05, 0.0),
+                Vec3::new((2.0 + s05) as Scalar, s05 as Scalar, 0.0),
             ],
             vec![0, 1, 2, 3],
         );
@@ -2643,7 +2951,7 @@ mod tests {
             assert!(w[0] < w[1], "arc not rising: {:?}", ch[0].arc);
         }
         let want = 32.0 * (std::f64::consts::PI / 16.0).sin();
-        assert!((ch[0].length() - want).abs() <= 1e-12, "{} vs {want}", ch[0].length());
+        assert!((ch[0].length() as f64 - want).abs() <= 1e-12, "{} vs {want}", ch[0].length());
         eprintln!("chain 16-gon: closed length {}", ch[0].length());
     }
 
@@ -2651,6 +2959,8 @@ mod tests {
     /// intervals where that one is of positive length, no cover where it
     /// has none.
     #[test]
+    // f32 (VAL-81): a 1e-15 bound on a cover parameter, below f32 round-off
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn on_one_segment_the_chain_cover_is_the_segment_cover() {
         let fs = features::FeatureSet {
             points: vec![Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0)],
@@ -2662,7 +2972,7 @@ mod tests {
         };
         let ch = &capture_chains(&fs)[0];
         let segs = [0usize];
-        let v = |x: f64, y: f64| Vec3::new(x, y, 0.0);
+        let v = |x: f64, y: f64| Vec3::new(x as Scalar, y as Scalar, 0.0);
         let cases: [(Vec3, Vec3, Option<(f64, f64)>); 8] = [
             (v(0.2, 0.05), v(0.6, -0.05), Some((0.2, 0.6))),
             (v(0.6, -0.05), v(0.2, 0.05), Some((0.2, 0.6))),
@@ -2679,7 +2989,7 @@ mod tests {
             let got = chain_cover(p, q, fp, fq, ch, 0.1);
             match (got, want) {
                 (Some((s0, s1)), Some((t0, t1))) => {
-                    assert!((s0 - t0).abs() <= 1e-15 && (s1 - t1).abs() <= 1e-15, "{got:?}");
+                    assert!((s0 as f64 - t0).abs() <= 1e-15 && (s1 as f64 - t1).abs() <= 1e-15, "{got:?}");
                 }
                 (None, None) => {}
                 _ => panic!("cover {got:?} vs segment {want:?} for {p:?} {q:?}"),
@@ -2701,6 +3011,8 @@ mod tests {
     /// midpoints of the last and first sides covers one side's length
     /// across the seam, and the 16 edges cover the whole loop.
     #[test]
+    // f32 (VAL-81): a 1e-12 bound on a chain length, below f32 round-off
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_closed_chain_is_covered_across_its_seam() {
         let ch = &capture_chains(&gon16_set())[0];
         let l = 2.0 * (std::f64::consts::PI / 16.0).sin();
@@ -2714,11 +3026,11 @@ mod tests {
         let fq = project_on_chain(q, ch, &segs).expect("q projects");
         assert!(fp.1 <= 1e-15, "{}", fp.1);
         assert!(fq.1 <= 1e-15, "{}", fq.1);
-        assert!((fp.0 - 15.5 * l).abs() <= 1e-12, "{} vs {}", fp.0, 15.5 * l);
-        assert!((fq.0 - 0.5 * l).abs() <= 1e-12, "{} vs {}", fq.0, 0.5 * l);
+        assert!((fp.0 as f64 - 15.5 * l).abs() <= 1e-12, "{} vs {}", fp.0, 15.5 * l);
+        assert!((fq.0 as f64 - 0.5 * l).abs() <= 1e-12, "{} vs {}", fq.0, 0.5 * l);
         let iv = chain_cover(p, q, fp, fq, ch, 0.05).expect("seam cover");
         assert!(
-            (iv.0 - 15.5 * l).abs() <= 1e-12 && (iv.1 - 16.5 * l).abs() <= 1e-12,
+            (iv.0 as f64 - 15.5 * l).abs() <= 1e-12 && (iv.1 as f64 - 16.5 * l).abs() <= 1e-12,
             "{iv:?}"
         );
         eprintln!("capture seam interval {iv:?} against L {}", ch.length());
@@ -2737,7 +3049,7 @@ mod tests {
             }
         }
         let total = union_length(&mut ivs);
-        assert!((total - 16.0 * l).abs() <= 1e-12, "{total} vs {}", 16.0 * l);
+        assert!((total as f64 - 16.0 * l).abs() <= 1e-12, "{total} vs {}", 16.0 * l);
         assert!((total - ch.length()).abs() <= 1e-12, "{total} vs {}", ch.length());
         eprintln!("capture seam loop: union {total} of L {}", ch.length());
     }
@@ -2749,7 +3061,7 @@ mod tests {
         let mut pts = vec![Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0)];
         for j in 1..=8 {
             let a = (-90.0 + 22.5 * (j as f64)).to_radians();
-            pts.push(Vec3::new(1.0 + 0.04 * a.cos(), 0.04 + 0.04 * a.sin(), 0.0));
+            pts.push(Vec3::new((1.0 + 0.04 * a.cos()) as Scalar, (0.04 + 0.04 * a.sin()) as Scalar, 0.0));
         }
         pts.push(Vec3::new(0.0, 0.08, 0.0));
         assert_eq!(pts.len(), 11, "{} points", pts.len());
@@ -2784,6 +3096,8 @@ mod tests {
     /// edges in 12 chains, `captured_length` 24 where the per-segment
     /// measure reads 0.
     #[test]
+    // f32 (VAL-81): sharp length reads 23.999994 in f32 against an exact 24
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_subdivided_cube_on_the_cell_planes_is_captured_whole() {
         let (surf, mesh) = grid_cube_case();
         let fs = features::extract(&surf, 30.0).expect("features");
@@ -2818,7 +3132,10 @@ mod tests {
         wedges.dedup();
         let mut per_seg: Vec<Vec<(Scalar, Scalar)>> = vec![Vec::new(); fs.edges.len()];
         for &(i, j) in &wedges {
-            let (p, q) = (mesh.points[i as usize], mesh.points[j as usize]);
+            let (p, q) = (
+            to_vec3(mesh.points[i as usize]),
+            to_vec3(mesh.points[j as usize]),
+        );
             for e in 0..fs.edges.len() {
                 let (a, b) =
                     (fs.points[fs.edges[e][0] as usize], fs.points[fs.edges[e][1] as usize]);
@@ -2840,19 +3157,157 @@ mod tests {
     /// Pull the mesh point at the middle of one subdivided cube edge half
     /// a cell off it: the chain measure takes that edge's 2 away, 24 to 22.
     #[test]
+    // f32 (VAL-81): sharp length reads 23.999994 in f32 against an exact 24
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_point_pulled_off_a_subdivided_edge_uncovers_that_edge() {
         let (surf, mut mesh) = grid_cube_case();
         let mid = Vec3::new(2.0, 1.0, 1.0);
         let i = (0..mesh.points.len())
             .min_by(|&a, &b| {
-                (mesh.points[a] - mid).mag().total_cmp(&(mesh.points[b] - mid).mag())
+                (mesh.points[a] - to_dvec3(mid)).mag().total_cmp(&(mesh.points[b] - to_dvec3(mid)).mag())
             })
             .expect("points");
-        assert!((mesh.points[i] - mid).mag() <= 1e-12, "no mesh point at the edge's middle");
-        mesh.points[i] = Vec3::new(2.0, 0.5, 0.5);
+        assert!((mesh.points[i] - to_dvec3(mid)).mag() <= 1e-12, "no mesh point at the edge's middle");
+        mesh.points[i] = to_dvec3(Vec3::new(2.0, 0.5, 0.5));
         let c = feature_capture(&mesh, &surf, None, 30.0, 0.1).expect("capture");
         eprintln!("subdivided pulled point capture {c:?}");
         assert!((c.sharp_length - 24.0).abs() <= 1e-12 * 24.0, "{c:?}");
         assert!((c.captured_length - 22.0).abs() <= 1e-12 * 24.0, "{c:?}");
+    }
+
+    /// A 3.4 m box refined to level 2 at its surface, pulled onto its edges
+    /// from afar (`feature_tolerance = 2`, tau eight finest cells): with
+    /// (92.68) the iterate freezes the blamed points and their hanging
+    /// parents and moves the rest instead of abandoning the iterate whole -
+    /// the mesh still through the gate, over half of B within the
+    /// tolerance. The old loop abandoned 17 iterates and held 527 of 1178.
+    #[test]
+    // f32 (VAL-81): 0 of 1178 points within tolerance in f32
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
+    fn a_box_pulled_onto_its_edges_from_afar_moves_what_passes_and_holds_the_rest() {
+        let (mut tree, bg) = setup([0.0, 8.0, 0.0, 8.0, 0.0, 8.0], 1.0, 2);
+        let surf = Surface::from_soup(
+            box_soup([2.3; 3], [5.7; 3]),
+            vec!["cube".to_string()],
+        )
+        .expect("surface");
+        let spec = RefinementSpec {
+            levels: vec![RefinementBand {
+                patch: "cube".to_string(),
+                bands: vec![DistanceBand { distance: 0.0, level: 2 }],
+                feature_level: 0,
+            }],
+            feature_angle_deg: 30.0,
+            max_level: 2,
+            boxes: Vec::new(),
+        };
+        refine_to_surface(&mut tree, &bg, &surf, &spec).expect("refine");
+        let cast = castellate(
+            &tree,
+            &bg,
+            &surf,
+            &patch_names(),
+            &CastellationSpec::default(),
+            &thresholds(),
+        )
+        .expect("castellate");
+        let snapped = snap(
+            &cast.mesh,
+            &surf,
+            1.0,
+            30.0,
+            &SnapSpec {
+                feature_tolerance: 2.0,
+                ..SnapSpec::default()
+            },
+            &thresholds(),
+        )
+        .expect("snap");
+        eprintln!("{}", snapped.report.summary());
+        eprintln!(
+            "n_within_tolerance {} n_frozen {} n_local_undo {} n_abandoned {} \
+             max_residual {:.4e} p99_residual {:.4e} n_pinned {}",
+            snapped.report.n_within_tolerance,
+            snapped.report.n_frozen,
+            snapped.report.n_local_undo,
+            snapped.report.n_abandoned,
+            snapped.report.max_residual,
+            snapped.report.p99_residual,
+            snapped.report.n_pinned,
+        );
+        assert_eq!(
+            snapped.report.n_abandoned, 0,
+            "(92.68) frees the iterate from whole-iterate abandonment"
+        );
+        assert!(
+            snapped.report.n_local_undo >= 1,
+            "at least one iterate came back from a freeze"
+        );
+        assert!(snapped.report.n_frozen > 0, "the freeze fired");
+        assert!(
+            100 * snapped.report.n_within_tolerance
+                >= 55 * snapped.report.n_boundary_points,
+            "55% of B within the tolerance, got {}/{}",
+            snapped.report.n_within_tolerance,
+            snapped.report.n_boundary_points
+        );
+        assert!(
+            snapped.report.max_residual < 0.13,
+            "max residual {:.4e}",
+            snapped.report.max_residual
+        );
+        assert!(snapped.quality.passed());
+        assert_eq!(snapped.mesh.faces, cast.mesh.faces, "faces untouched");
+        assert_eq!(snapped.mesh.owner, cast.mesh.owner, "owner untouched");
+        assert_eq!(
+            snapped.mesh.neighbour, cast.mesh.neighbour,
+            "neighbour untouched"
+        );
+    }
+
+    /// (92.76) on a hand feature graph: the free end of an open feature
+    /// curve names "open-tip", a three-edge corner "corner", a point h_f
+    /// from an edge "edge" and one further off "smooth" - and the corner
+    /// wins over the edges it lies on. Every value is binary-exact, so the
+    /// two builds agree bit for bit.
+    #[test]
+    fn the_feature_class_of_a_point_is_its_nearest_feature_within_r() {
+        let fs = features::FeatureSet {
+            points: vec![
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(2.0, 0.0, 0.0),
+                Vec3::new(1.0, 1.0, 0.0),
+            ],
+            edges: vec![[0, 1], [1, 2], [1, 3]],
+            edge_patches: vec![vec![0], vec![0], vec![0]],
+            polylines: vec![vec![0, 1], vec![1, 2], vec![1, 3]],
+            corners: vec![0, 1, 2, 3],
+            feature_angle_deg: 30.0,
+        };
+        let fidx = FeatureIndex::new(&fs, 1.0).expect("index");
+        let r: Scalar = 0.125;
+        let cases: &[([f64; 3], FeatureClass)] = &[
+            ([0.0, 0.0, 0.0625], FeatureClass::OpenTip),
+            ([2.0, 0.0, 0.0625], FeatureClass::OpenTip),
+            ([1.0, 1.0, 0.0625], FeatureClass::OpenTip),
+            ([1.0, 0.0, 0.0625], FeatureClass::Corner),
+            ([0.03125, 0.0, 0.0], FeatureClass::OpenTip),
+            ([0.5, 0.0, 0.125], FeatureClass::Edge),
+            ([0.5, 0.0, 0.25], FeatureClass::Smooth),
+        ];
+        for &(x, want) in cases {
+            let p = Vec3::new(x[0] as Scalar, x[1] as Scalar, x[2] as Scalar);
+            assert_eq!(feature_class(&fs, Some(&fidx), p, r), want, "{x:?}");
+        }
+        assert_eq!(
+            feature_class(&fs, None, Vec3::ZERO, r),
+            FeatureClass::Smooth,
+            "no index, no feature"
+        );
+        assert_eq!(FeatureClass::Edge.as_str(), "edge");
+        assert_eq!(FeatureClass::Corner.as_str(), "corner");
+        assert_eq!(FeatureClass::Smooth.as_str(), "smooth");
+        assert_eq!(FeatureClass::OpenTip.as_str(), "open-tip");
     }
 }

@@ -20,6 +20,12 @@
 //!                     dimensionless variables of Martin & Moyce (1952)
 //!   -a A              the column width those variables are scaled by; the
 //!                     default is read from the initial alpha field
+//!   -forceSplitDouble single build only: evaluate the VOF face
+//!                     pressure/gravity force split in double precision, to
+//!                     cut the small spurious velocity (about 1e-5 m/s) that
+//!                     f32 round-off leaves at a large density jump such as
+//!                     water/air; a little slower. Off by default; no effect
+//!                     in the f64 build (SPEC-LIT 120.7)
 //!   -permissive       SPEC-LIT 13.4's escape hatch
 //! ```
 //!
@@ -48,11 +54,14 @@
 //! and `-surge` prints exactly those, together with the raw `t` and `z` in
 //! seconds and metres so a reader can rescale into whichever convention the
 //! copy of the paper in front of them uses. **The paper's tabulated data is
-//! not reproduced in this source**, because nobody here has the paper to
-//! transcribe it from, and a table of numbers attributed to a 1952 experiment
-//! and actually remembered is worse than no table at all.
+//! not reproduced in this source.** It is in the tree as an answer key,
+//! `reference/martin_moyce_1952/surge_front.csv` (Table 2, `n^2 = 2`, copied
+//! as printed, SPEC-LIT §145.1), whose `T` carries the factor `n` this report
+//! does not: `T_key = 2^(1/2) T` here (145.2). `ofgpu-validate`'s Gate 145-A
+//! (SPEC-LIT §145.2, `src/bin/validate_gates/martin_moyce.rs`) runs this
+//! sampler's dam break live and holds it against that key.
 //!
-//! What the code *does* assert about the surge front is in
+//! What the code *also* asserts about the surge front is in
 //! `ofgpu::vof`'s tests and in `ofgpu-validate`: the phase volume is conserved,
 //! `alpha` stays in `[0, 1]`, and the front never outruns `2 sqrt(g h0)`, the
 //! characteristic speed limit of the frictionless shallow-water dam break
@@ -70,8 +79,10 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
 
+use ofgpu::field_ops::{self, FieldKernels};
 use ofgpu::field_setup::{
-    harvest_scalar_field, harvest_vector_field, setup_scalar_field, setup_vector_field,
+    harvest_scalar_field, harvest_vector_field, setup_scalar_field_with, setup_vector_field_with,
+    BcInputs, PrghInputs,
 };
 use ofgpu::io::case::{find_start_time, format_time_name};
 use ofgpu::io::dict::FoamDict;
@@ -116,6 +127,8 @@ struct Options {
     /// `-reportEvery N` - print the per-step residual line every N steps
     /// (always also on step 1 and the last step).
     report_every: u64,
+    /// `-forceSplitDouble` - `VofControls::force_split_double`.
+    force_split_double: bool,
 }
 
 fn usage() {
@@ -123,7 +136,12 @@ fn usage() {
         "usage: ofgpu-vof <caseDir> [-endTime T] [-deltaT dt] [-maxCo C] \
          [-maxDeltaT dt]\n       \
          [-writeInterval W] [-noWrite] [-surge] [-a A] [-output LIST]\n       \
-         [-restartWrite N] [-restartFrom FILE] [-reportEvery N]\n\
+         [-restartWrite N] [-restartFrom FILE] [-reportEvery N]\n       \
+         [-forceSplitDouble]\n\
+         -forceSplitDouble: single build only - evaluate the VOF face pressure/gravity \
+         force split in double precision, to cut the ~1e-5 m/s spurious velocity f32 \
+         round-off leaves at a water/air density jump; a little slower. Off by default; \
+         no effect in the f64 build.\n\
          {}",
         ofgpu::io::contract::PERMISSIVE_USAGE
     );
@@ -163,6 +181,7 @@ fn parse(args: &[String]) -> Result<Options> {
         restart_write: None,
         restart_from: None,
         report_every: 20,
+        force_split_double: false,
     };
 
     let mut i = 2;
@@ -179,6 +198,7 @@ fn parse(args: &[String]) -> Result<Options> {
             }
             "-noWrite" => o.do_write = false,
             "-surge" => o.surge = true,
+            "-forceSplitDouble" => o.force_split_double = true,
             "-a" => o.column_width = parse_number("-a", &next_arg(args, &mut i)?)?,
             "-output" => o.output = parse_output_formats(&next_arg(args, &mut i)?)?,
             "-restartWrite" => {
@@ -378,6 +398,15 @@ fn run(o: &Options) -> Result<()> {
         );
     }
 
+    // ---- volume output (SPEC-LIT 117.6 / 117.12, VIO-05b) -----------------
+    //
+    // `-output vdb`/`nvdb` sample onto the cells of a uniform Cartesian box,
+    // or else onto the lattice of 117.3 on its defaults, laid once, here,
+    // before a kernel runs; a lattice that cannot be laid is refused here
+    // rather than at the first write, and `-permissive` drops only the
+    // volume formats.
+    let (output, cart, volume) = common::command_line_volume(&raw, &hm, &o.output, o.do_write)?;
+
     // ---- the case ---------------------------------------------------------
     let names = phase_names(case)?;
     let props = VofProperties::from_case(case)?;
@@ -392,6 +421,13 @@ fn run(o: &Options) -> Result<()> {
 
     if o.delta_t > 0.0 {
         ctrl.delta_t = o.delta_t as Scalar;
+    }
+    ctrl.force_split_double = o.force_split_double;
+    if o.force_split_double && !cfg!(feature = "single") {
+        println!(
+            "-forceSplitDouble: this is the f64 build, where the split is \
+             already double; nothing changes"
+        );
     }
     let end_time = if o.end_time > 0.0 {
         o.end_time as Scalar
@@ -494,9 +530,60 @@ fn run(o: &Options) -> Result<()> {
 
     let mut vof = Vof::new(&gpu, &hm, &m, props, ctrl)?;
 
-    setup_scalar_field(&gpu, vof.alpha_mut(), &raw_alpha, &hm)?;
-    setup_vector_field(&gpu, vof.u_mut(), &raw_u, &hm)?;
-    setup_scalar_field(&gpu, vof.p_rgh_mut(), &raw_p, &hm)?;
+    // SPEC-LIT 120.14: this driver runs `Vof::refresh_vof_family` every
+    // step, so it - and only it - honours the four VOF-family names, each
+    // weighted by this case's own phase fraction. A case naming none of the
+    // four takes the plain path it always took, bit for bit.
+    let vof_family = BcInputs {
+        vof_family: Some(alpha_name.as_str()),
+        ..BcInputs::default()
+    };
+    setup_scalar_field_with(&gpu, vof.alpha_mut(), &raw_alpha, &hm, vof_family)?;
+    setup_vector_field_with(&gpu, vof.u_mut(), &raw_u, &hm, vof_family)?;
+
+    // SPEC-LIT 120.7: `p_rgh` is the one field the buoyant pressure family
+    // can be written in, so this driver - and only this driver - honours the
+    // four names, in the ABSOLUTE form: `rho_f` is the face's mixture density
+    // from the initial `alpha`, and `u_b` the initial velocity's boundary
+    // faces. A case naming none of the four takes the plain path it always
+    // took, bit for bit; every other driver refuses the names (its pressure
+    // is not `p_rgh`).
+    const PRGH_NAMES: [&str; 4] = [
+        "prghPressure",
+        "prghTotalPressure",
+        "prghTotalHydrostaticPressure",
+        "uniformDensityHydrostaticPressure",
+    ];
+    if raw_p.boundary.values().any(|s| PRGH_NAMES.contains(&s.type_name.as_str())) {
+        // SPEC-LIT 120.14: the faces the family reads are the VOF-family
+        // conditions' own values, not their seeds (nothing, without one).
+        vof.refresh_vof_family(&gpu)?;
+        let fk = FieldKernels::new(&gpu)?;
+        let ub = {
+            let u = vof.u_mut();
+            field_ops::correct_boundary_conditions_vector(&gpu, &fk, u, &m)?;
+            gpu.download(&u.bf)?
+        };
+        let rho_b = vof.boundary_density(&gpu)?;
+        let g = vof.properties().g;
+        setup_scalar_field_with(
+            &gpu,
+            vof.p_rgh_mut(),
+            &raw_p,
+            &hm,
+            BcInputs {
+                prgh: Some(PrghInputs {
+                    g,
+                    rho_b: Some(&rho_b),
+                    u_b: Some(&ub),
+                    ph_rgh_b: None,
+                }),
+                ..vof_family
+            },
+        )?;
+    } else {
+        setup_scalar_field_with(&gpu, vof.p_rgh_mut(), &raw_p, &hm, vof_family)?;
+    }
 
     // SPEC-LIT S39: the contact angle, out of the SAME alpha field entries
     // `setup_scalar_field` just read. A case naming neither
@@ -691,8 +778,8 @@ fn run(o: &Options) -> Result<()> {
 
         if o.do_write && t + 1e-12 >= next_write {
             write_time(
-                &gpu, &vof, &hm, case, t, &o.output, &alpha_name, &mut raw_alpha, &mut raw_u,
-                &mut raw_p,
+                &gpu, &vof, &hm, case, t, &output, cart.as_ref(), volume.as_ref(), &alpha_name,
+                &mut raw_alpha, &mut raw_u, &mut raw_p,
             )?;
             next_write += write_interval;
         }
@@ -725,8 +812,8 @@ fn run(o: &Options) -> Result<()> {
 
     if o.do_write {
         write_time(
-            &gpu, &vof, &hm, case, t, &o.output, &alpha_name, &mut raw_alpha, &mut raw_u,
-            &mut raw_p,
+            &gpu, &vof, &hm, case, t, &output, cart.as_ref(), volume.as_ref(), &alpha_name,
+            &mut raw_alpha, &mut raw_u, &mut raw_p,
         )?;
     }
 
@@ -797,6 +884,8 @@ fn write_time(
     case: &Path,
     t: Scalar,
     output: &[OutputFormat],
+    cart: Option<&ofgpu::io::CartesianInfo>,
+    volume: Option<&ofgpu::io::VolumeTarget>,
     alpha_name: &str,
     raw_alpha: &mut ofgpu::io::fields::RawScalarField,
     raw_u: &mut ofgpu::io::fields::RawVectorField,
@@ -820,15 +909,13 @@ fn write_time(
         ofgpu::io::OutputField::vector("U", &raw_u.internal),
         ofgpu::io::OutputField::scalar("p_rgh", &raw_p.internal),
     ];
-    let cart = ofgpu::pressure::cartesian::detect(hm)
-        .ok()
-        .map(|c| ofgpu::io::cartesian_info(hm, &c));
     let ctx = ofgpu::io::WriteCtx {
         time: t,
         step: 0,
         name: &name,
         mesh: hm,
-        cart: cart.as_ref(),
+        cart,
+        vox: volume.and_then(|v| v.vox()),
         fields: &vis_fields,
         foam: &foam_fields,
     };
@@ -1018,6 +1105,61 @@ mod vof_tests {
             solution_only(run_knob(&k, false, "ca45a")),
             solution_only(run_knob(&k, true, "ca45b")),
             "a 45-degree contact angle wrote the same fields as no model at all"
+        );
+    }
+
+    /// **SPEC-LIT 120.7's driver gate.** The atmosphere is where a VOF case
+    /// names a buoyant pressure condition, and the knob turns the case's own
+    /// `fixedValue` of a static `p uniform 0` into `prghPressure` of the same
+    /// static `p`: (120.7b) writes `p - rho_f (g . x_f)` there, which is NOT
+    /// 0 unless the patch sits on the `g . x = 0` plane - so the two runs'
+    /// `p_rgh` levels differ, and both must run to the end without a refusal.
+    /// The refusals by name are `tests/bc_buoyant_pressure.rs`'s.
+    #[test]
+    fn prgh_pressure_on_the_atmosphere_changes_what_the_run_writes() {
+        if Gpu::new(0).is_err() {
+            return;
+        }
+        let k = Knob {
+            label: "0/p_rgh atmosphere prghPressure",
+            file: "0/p_rgh",
+            from: "    atmosphere\n    {\n        type            fixedValue;\n        value           uniform 0;\n    }",
+            to: "    atmosphere\n    {\n        type            prghPressure;\n        p               uniform 0;\n    }",
+            pre: NO_PRE,
+        };
+        assert_ne!(
+            solution_only(run_knob(&k, false, "prghaa")),
+            solution_only(run_knob(&k, true, "prghab")),
+            "prghPressure on the atmosphere wrote the same run as a plain \
+             fixedValue of the same static pressure"
+        );
+    }
+
+    /// **SPEC-LIT 120.14's driver gate.** This driver passes
+    /// `BcInputs::vof_family` and runs `Vof::refresh_vof_family` every step,
+    /// so a VOF-family name in a case is read and run, not refused. The knob
+    /// turns the atmosphere's `fixedValue 0` into (120.14d): the face is in
+    /// the AIR, so `fr = alpha_f = 0` and the patch is zero-gradient - the
+    /// level is no longer fixed there, and the run writes something else.
+    /// The closed forms, the refusals and the gates are
+    /// `tests/bc_vof_family.rs`'s.
+    #[test]
+    fn phase_hydrostatic_pressure_on_the_atmosphere_changes_what_the_run_writes() {
+        if Gpu::new(0).is_err() {
+            return;
+        }
+        let k = Knob {
+            label: "0/p_rgh atmosphere phaseHydrostaticPressure",
+            file: "0/p_rgh",
+            from: "    atmosphere\n    {\n        type            fixedValue;\n        value           uniform 0;\n    }",
+            to: "    atmosphere\n    {\n        type            phaseHydrostaticPressure;\n        rho             1000;\n        pRefValue       0;\n        pRefPoint       (0 0 0);\n        value           uniform 0;\n    }",
+            pre: NO_PRE,
+        };
+        assert_ne!(
+            solution_only(run_knob(&k, false, "phhaa")),
+            solution_only(run_knob(&k, true, "phhab")),
+            "phaseHydrostaticPressure on the dry atmosphere wrote the same run \
+             as a fixedValue level"
         );
     }
 

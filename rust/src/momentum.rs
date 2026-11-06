@@ -72,12 +72,22 @@
 //!
 //! `force` itself is `fvc::reconstruct` of a face flux, so even the predictor
 //! never sees a cell-centred pressure gradient.
+//!
+//! # Two buoyancy forms, one force
+//!
+//! [`BuoyancyCoeffs`] carries the force in either of two forms: §9's density
+//! ratio `g·(T_ref/T - 1)`, the default, and an opt-in Boussinesq
+//! `-β(T - T_ref)·g` for cases whose temperature differences are small
+//! enough to linearise. SPEC-LIT §121 states both, the relation between them,
+//! and when each is the right one; the two run in separate kernels so §9's
+//! SASS does not move.
 
 use std::path::Path;
 
 use cudarc::driver::{CudaFunction, PushKernelArg};
 
 use crate::device::{cfg_for, DevBuf, Gpu, KernelSet};
+use crate::distflow::FlowExchange;
 use crate::error::{Error, Result};
 use crate::field::{GpuScalarField, GpuSurfaceScalarField, GpuVectorField};
 use crate::field_ops::{self, FieldKernels};
@@ -94,8 +104,107 @@ use crate::solver::{self, SolverKernels, SolverPerformance, SolverWorkspace};
 use crate::{Label, Scalar, Tensor, Vec3};
 
 // ==========================================================================
+//  Where one component's system is solved - SPEC-LIT 139.3 (PAR-10b)
+// ==========================================================================
+
+/// Where one velocity component's system is solved.
+///
+/// `None` (the default, and every existing path) is [`solver::solve`], the
+/// call this module has always made, launch for launch. `Some` routes the
+/// solve elsewhere: a distributed run's
+/// [`SpmdMomentumRoute`](crate::distflow::SpmdMomentumRoute) puts the SPMD
+/// Krylov of SPEC-LIT 138.5/138.6 in its place, so the residual norms are
+/// the world's and every rank reports the same bits, instead of this rank's
+/// alone.
+pub trait ComponentRoute {
+    fn solve_component(
+        &mut self,
+        gpu: &Gpu,
+        psi: &mut DevBuf<Scalar>,
+        a: &GpuLduMatrix,
+        m: &GpuMesh,
+        ctrl: &SolverControls,
+    ) -> Result<SolverPerformance>;
+}
+
+// ==========================================================================
 //  Buoyancy - SPEC-LIT §9
 // ==========================================================================
+
+/// Which expression the face body force evaluates - SPEC-LIT §121.3.
+///
+/// The density ratio of §9 is the default, so every case written before the
+/// field existed keeps running §9's kernels bit for bit; Boussinesq is the
+/// opt-in second form for cases whose temperature differences are small.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum BuoyancyForm {
+    /// §9: b = g·(T_ref/T - 1). The default.
+    #[default]
+    DensityRatio,
+    /// §121: b = -β(T - T_ref)·g, β in 1/K.
+    Boussinesq { beta: Scalar },
+}
+
+impl BuoyancyForm {
+    /// The two spellings every case format shares, in the order a refusal
+    /// prints them - SPEC-LIT §121.7's lowering table has no third row.
+    pub const NAMES: [&'static str; 2] = ["densityRatio", "boussinesq"];
+
+    /// SPEC-LIT §121.7's lowering table, the ONE rule for all four case
+    /// formats (JSONC `physics.buoyancy`/`physics.fluid.beta`, the OpenFOAM
+    /// dictionary's `buoyancy`/`beta`, `buoyancy.model`/`buoyancy.beta`,
+    /// `air.buoyancy`/`air.beta`), so there is one §13.4 contract and not
+    /// four.
+    ///
+    /// `form_key`/`beta_key` are the keys AS THE CASE SPELLS THEM (e.g.
+    /// `"physics.buoyancy"`, `"physics.fluid.beta"`); every refusal names the
+    /// offending one. `beta` must be finite and `> 0` - a negative β (water
+    /// below 4 °C) is refused rather than run, because §121.6's sign argument
+    /// for `G_b` assumes `beta > 0`.
+    pub fn lower(form_key: &str, form: &str, beta_key: &str, beta: Option<f64>) -> Result<Self> {
+        match form {
+            "densityRatio" => {
+                if beta.is_some() {
+                    return Err(Error::Config(format!(
+                        "{beta_key}: the densityRatio form (b = g(TRef/T - 1)) reads \
+                         no beta, so a case that writes both is contradicting itself \
+                         (SPEC-LIT 13.4.1) - delete the beta entry, or write \
+                         `boussinesq` if the linearised form is what was meant"
+                    )));
+                }
+                Ok(Self::DensityRatio)
+            }
+            "boussinesq" => {
+                let Some(b) = beta else {
+                    return Err(Error::Config(format!(
+                        "{beta_key}: the boussinesq form needs a beta, and there is no \
+                         default - 1/T_ref is the ideal-gas value and a liquid's is an \
+                         order of magnitude smaller, so the reader is not entitled to \
+                         pick one (SPEC-LIT 121.7)"
+                    )));
+                };
+                if !b.is_finite() || !(b > 0.0) {
+                    return Err(Error::Config(format!(
+                        "{beta_key}: beta = {b} 1/K - the boussinesq form needs a \
+                         finite beta > 0, and the sign argument for G_b (SPEC-LIT \
+                         121.6) assumes it"
+                    )));
+                }
+                Ok(Self::Boussinesq { beta: b as Scalar })
+            }
+            other => Err(Error::Config(format!(
+                "{form_key}: \"{other}\" is not a buoyancy form this solver has; \
+                 available: {}",
+                Self::NAMES.join(", ")
+            ))),
+        }
+    }
+}
+
+/// The single number of SPEC-LIT §121.7's validity guard: the Boussinesq
+/// linearisation is this tree's business only while
+/// `beta * max|T - T_ref|` stays at or below it.
+pub const BOUSSINESQ_VALIDITY_LIMIT: f64 = 0.1;
 
 /// The body force per unit mass, `b = g·(T_ref/T - 1)`.
 ///
@@ -112,7 +221,9 @@ use crate::{Label, Scalar, Tensor, Vec3};
 /// The sign is the thing to check first and the thing this crate tests first:
 /// with `g = (0, 0, -9.81)` and `T_ref = 293.15`, a cell at 1173.15 K gives
 /// `b = (0, 0, +7.36)` - upward - and at `T = T_ref` it is zero exactly, so an
-/// isothermal case is undisturbed to the last bit.
+/// isothermal case is undisturbed to the last bit. SPEC-LIT §121 offers the
+/// Boussinesq form `-β(T - T_ref)·g` as an opt-in second form, for cases whose
+/// `ΔT/T` is genuinely small enough to linearise.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BuoyancyCoeffs {
     /// Gravitational acceleration, `constant/g`.
@@ -123,7 +234,15 @@ pub struct BuoyancyCoeffs {
     /// uninitialised zero would otherwise put an infinite force on one face
     /// and destroy the whole pressure field; 1 K is far below any temperature
     /// a real case carries, so it can only ever fire on nonsense.
+    ///
+    /// Only the density-ratio form reads it: (121.3) has no divide and no
+    /// floor, so a Boussinesq [`Self::form`] ignores it entirely.
     pub t_min: Scalar,
+    /// Which force law [`Self::at`] evaluates and
+    /// [`Momentum::update_buoyancy`] launches - SPEC-LIT §121.3. The default
+    /// names §9's density ratio, so every existing case runs bitwise the §9
+    /// kernels it always ran; `Boussinesq { beta }` selects (121.2) instead.
+    pub form: BuoyancyForm,
 }
 
 impl Default for BuoyancyCoeffs {
@@ -139,20 +258,110 @@ impl Default for BuoyancyCoeffs {
             g: Vec3::new(0.0, 0.0, -9.81),
             t_ref: 300.0,
             t_min: 1.0,
+            form: BuoyancyForm::DensityRatio,
         }
     }
 }
 
 impl BuoyancyCoeffs {
-    /// `b(T)` on the host - the same expression the kernel evaluates.
+    /// `b(T)` on the host - the same expression the kernel evaluates: §9's
+    /// density ratio, or §121's (121.2), as [`Self::form`] names. The
+    /// Boussinesq arm is written in exactly the order (121.3) states, the
+    /// bracketed product first, and has no temperature floor because it has
+    /// no divide.
     pub fn at(&self, t: Scalar) -> Vec3 {
-        let t = if t > self.t_min { t } else { self.t_min };
-        self.g * (self.t_ref / t - 1.0)
+        match self.form {
+            BuoyancyForm::DensityRatio => {
+                let t = if t > self.t_min { t } else { self.t_min };
+                self.g * (self.t_ref / t - 1.0)
+            }
+            BuoyancyForm::Boussinesq { beta } => self.g * (-(beta * (t - self.t_ref))),
+        }
     }
 
     /// True when gravity can do anything at all.
     pub fn is_active(&self) -> bool {
         self.g.mag_sqr() > 0.0
+    }
+
+    /// True when the case named the Boussinesq form - SPEC-LIT §121.7. The
+    /// validity guard and the drivers' END lines read this rather than
+    /// pattern-matching [`Self::form`], so the spelling of the test stays in
+    /// one place.
+    pub fn is_boussinesq(&self) -> bool {
+        matches!(self.form, BuoyancyForm::Boussinesq { .. })
+    }
+
+    /// (121.8) `delta_B = beta * max_i |T_i - T_ref|`, in f64 on the host.
+    /// `None` for [`BuoyancyForm::DensityRatio`], which has no beta to
+    /// measure with; empty input is `Some(0.0)` - an isothermal field is
+    /// inside the linearisation's reach by construction.
+    ///
+    /// A NaN temperature makes the result NaN. It must NOT be skipped by
+    /// `max()`, whose contract silently returns the other operand - a NaN
+    /// temperature is outside the guard's remit, not inside it.
+    pub fn boussinesq_departure<I: IntoIterator<Item = Scalar>>(&self, temps: I) -> Option<f64> {
+        let beta = match self.form {
+            BuoyancyForm::Boussinesq { beta } => beta,
+            BuoyancyForm::DensityRatio => return None,
+        };
+        let mut m = f64::NEG_INFINITY;
+        for t in temps {
+            let d = (f64::from(t) - f64::from(self.t_ref)).abs();
+            if d.is_nan() {
+                m = f64::NAN;
+            } else if d > m {
+                m = d;
+            }
+        }
+        if m == f64::NEG_INFINITY {
+            return Some(0.0);
+        }
+        Some(f64::from(beta) * m)
+    }
+
+    /// SPEC-LIT §121.7's validity guard, evaluated on the field the run
+    /// starts from. [`BuoyancyForm::DensityRatio`] is never refused - §9's
+    /// ratio is exact at any `ΔT`.
+    ///
+    /// * `delta_B <= 0.1`: the run proceeds.
+    /// * otherwise, NaN included: strict mode is `Error::Refused`; under
+    ///   `crate::io::contract::permissive()` the guard warns once and the
+    ///   run continues.
+    pub fn check_boussinesq_validity<I: IntoIterator<Item = Scalar>>(
+        &self,
+        setting: &str,
+        temps: I,
+    ) -> Result<()> {
+        if !self.is_boussinesq() {
+            return Ok(());
+        }
+        let Some(d) = self.boussinesq_departure(temps) else {
+            return Ok(());
+        };
+        if d <= BOUSSINESQ_VALIDITY_LIMIT {
+            return Ok(());
+        }
+        let beta = match self.form {
+            BuoyancyForm::Boussinesq { beta } => beta,
+            BuoyancyForm::DensityRatio => unreachable!("checked by is_boussinesq above"),
+        };
+        let msg = format!(
+            "{setting}: boussinesq is outside its validity - beta = {:e} 1/K and \
+             max|T - TRef| = {} K give beta*max|T - TRef| = {:.4}, past the 0.1 \
+             limit (SPEC-LIT 121.7). The linearisation does not hold over this \
+             temperature range: run the densityRatio form",
+            f64::from(beta),
+            d / f64::from(beta),
+            d
+        );
+        if crate::io::contract::permissive() {
+            crate::io::contract::warn_once(setting, &format!("-permissive: {msg}"));
+            return Ok(());
+        }
+        Err(Error::Refused(format!(
+            "{msg}\n  (run with -permissive to substitute a warning and continue)"
+        )))
     }
 
     /// Read `constant/g` and `TRef`.
@@ -196,6 +405,30 @@ impl BuoyancyCoeffs {
             if p.exists() {
                 let d = FoamDict::read(&p)?;
                 c.t_ref = d.scalar("TRef", c.t_ref);
+                // SPEC-LIT §121.7: the SAME file names the form and, under
+                // `boussinesq`, its beta. Absent `buoyancy` is the
+                // density ratio, as every case written before §121.7 was.
+                let word = d.get_or("buoyancy", "densityRatio").trim().trim_matches('"');
+                let beta = match d.get("beta") {
+                    None => None,
+                    Some(raw) => match crate::io::dict::last_number(raw) {
+                        Some(v) => Some(v),
+                        None => {
+                            return Err(Error::Parse {
+                                path: p.display().to_string(),
+                                msg: "beta: cannot read a number out of this entry - it is an \
+                                      OpenFOAM dimensioned scalar, `beta [0 0 0 -1 0 0 0] 3.4e-3`"
+                                    .to_string(),
+                            })
+                        }
+                    },
+                };
+                c.form = BuoyancyForm::lower(
+                    &format!("constant/{name}: buoyancy"),
+                    word,
+                    &format!("constant/{name}: beta"),
+                    beta,
+                )?;
                 break;
             }
         }
@@ -410,12 +643,22 @@ struct MomentumKernels {
     face_interp_boundary: CudaFunction,
     buoyancy: CudaFunction,
     buoyancy_boundary: CudaFunction,
+    // SPEC-LIT §121: the Boussinesq pair, launched only when
+    // `BuoyancyCoeffs::form` names `Boussinesq`. Kept beside the §9 pair, not
+    // instead of it, so the §9 kernels are untouched.
+    boussinesq: CudaFunction,
+    boussinesq_boundary: CudaFunction,
     phi_hbya: CudaFunction,
     phi_hbya_boundary: CudaFunction,
     force_flux: CudaFunction,
     force_flux_boundary: CudaFunction,
     correct_flux: CudaFunction,
     correct_flux_boundary: CudaFunction,
+    // SPEC-LIT 139.10 (PAR-14): the Rhie-Chow processor-face fix-ups,
+    // launched right after the boundary kernels on a mesh that has
+    // processor faces and never on any other (`n_proc_faces == 0`).
+    face_interp_proc: CudaFunction,
+    phi_hbya_proc: CudaFunction,
 }
 
 impl MomentumKernels {
@@ -438,12 +681,16 @@ impl MomentumKernels {
             face_interp_boundary: k.func("momFaceInterpBoundary")?,
             buoyancy: k.func("momBuoyancyFlux")?,
             buoyancy_boundary: k.func("momBuoyancyFluxBoundary")?,
+            boussinesq: k.func("momBoussinesqFlux")?,
+            boussinesq_boundary: k.func("momBoussinesqFluxBoundary")?,
             phi_hbya: k.func("momPhiHbyA")?,
             phi_hbya_boundary: k.func("momPhiHbyABoundary")?,
             force_flux: k.func("momForceFlux")?,
             force_flux_boundary: k.func("momForceFluxBoundary")?,
             correct_flux: k.func("momCorrectFlux")?,
             correct_flux_boundary: k.func("momCorrectFluxBoundary")?,
+            face_interp_proc: k.func("momFaceInterpProc")?,
+            phi_hbya_proc: k.func("momPhiHbyAProc")?,
         })
     }
 }
@@ -500,10 +747,12 @@ pub struct MomentumSources {
 impl MomentumSources {
     pub fn new(gpu: &Gpu, m: &GpuMesh) -> Result<Self> {
         let n = m.n_cells;
-        let one = n.max(1);
+        // SPEC-LIT 139.1: the accumulators carry the halo (`n_local`); `n`
+        // stays the owned count the launches run over.
+        let n_local = m.n_local().max(1);
         Ok(Self {
-            su: gpu.zeros(one)?,
-            sp: gpu.zeros(one)?,
+            su: gpu.zeros(n_local)?,
+            sp: gpu.zeros(n_local)?,
             fldk: FieldKernels::new(gpu)?,
             registered: 0,
             n,
@@ -611,6 +860,11 @@ pub struct Momentum<'m> {
     a: GpuLduMatrix,
     ws: SolverWorkspace,
 
+    /// SPEC-LIT 139.3 (PAR-10b): where the three component systems are
+    /// solved. `None` - the default from [`Self::new`], and every path the
+    /// crate shipped before it - is [`solver::solve`], launch for launch.
+    route: Option<Box<dyn ComponentRoute + 'm>>,
+
     /// The scalar view of one velocity component; refilled per component.
     uc: GpuScalarField,
 
@@ -694,24 +948,37 @@ impl<'m> Momentum<'m> {
                 buoyancy.t_ref, buoyancy.t_min
             )));
         }
+        // SPEC-LIT §121.3: the Boussinesq force is refused by name on a
+        // non-finite beta. There is no floor downstream to catch it - (121.3)
+        // propagates a NaN - so the refusal is the only guard.
+        if let BuoyancyForm::Boussinesq { beta } = buoyancy.form {
+            if !beta.is_finite() {
+                return Err(Error::Config(format!(
+                    "buoyancy: Boussinesq beta is {beta}; b = -beta*(T - TRef)*g \
+                     needs a finite expansion coefficient"
+                )));
+            }
+        }
 
-        let n = m.n_cells;
         let nif = m.n_internal_faces;
         let nbf = m.n_boundary_faces;
 
         // A zero-length device allocation is an error rather than an empty
         // buffer, so degenerate counts get one element nothing reads.
+        // SPEC-LIT 139.1: the cell buffers carry the halo (`n_local`); the
+        // face buffers stay face-sized.
         let one = |k: usize| k.max(1);
+        let n_local = m.n_local();
 
-        let mut ones = gpu.zeros::<Scalar>(one(n))?;
-        gpu.write(&mut ones, &vec![1.0 as Scalar; one(n)])?;
+        let mut ones = gpu.zeros::<Scalar>(one(n_local))?;
+        gpu.write(&mut ones, &vec![1.0 as Scalar; one(n_local)])?;
 
         // SPEC-LIT 38.5(i): the laminar viscosity is a FIELD, seeded with the
         // case's own uniform `nu`. Under a Newtonian model nothing ever
         // rewrites it, and `nu_lam[i] + nu_t[i]` is then the same IEEE-754
         // addition `nu_t[i] + nu` was.
-        let mut nu_lam = gpu.zeros::<Scalar>(one(n))?;
-        gpu.write(&mut nu_lam, &vec![ctrl.nu; one(n)])?;
+        let mut nu_lam = gpu.zeros::<Scalar>(one(n_local))?;
+        gpu.write(&mut nu_lam, &vec![ctrl.nu; one(n_local)])?;
         let mut b_nu_lam = gpu.zeros::<Scalar>(one(nbf))?;
         gpu.write(&mut b_nu_lam, &vec![ctrl.nu; one(nbf)])?;
 
@@ -750,27 +1017,31 @@ impl<'m> Momentum<'m> {
             a: GpuLduMatrix::new(gpu, m)?,
             ws: SolverWorkspace::for_mesh(gpu, m)?,
 
+            // SPEC-LIT 139.3 (PAR-10b): unrouted. Nothing existing sets a
+            // route, so nothing existing changes what it launches.
+            route: None,
+
             uc: GpuScalarField::zeros(gpu, m, "Ucmpt")?,
 
-            su: gpu.zeros(one(n))?,
-            force: gpu.zeros(one(n))?,
-            hbya: gpu.zeros(one(n))?,
-            stress: gpu.zeros(one(n))?,
+            su: gpu.zeros(one(n_local))?,
+            force: gpu.zeros(one(n_local))?,
+            hbya: gpu.zeros(one(n_local))?,
+            stress: gpu.zeros(one(n_local))?,
 
-            rau: gpu.zeros(one(n))?,
+            rau: gpu.zeros(one(n_local))?,
             ones,
-            row_sum: gpu.zeros(one(n))?,
-            au: gpu.zeros(one(n))?,
-            tmp_cell: gpu.zeros(one(n))?,
+            row_sum: gpu.zeros(one(n_local))?,
+            au: gpu.zeros(one(n_local))?,
+            tmp_cell: gpu.zeros(one(n_local))?,
 
-            grad_uc: gpu.zeros(one(n))?,
-            grad_u: gpu.zeros(one(n))?,
-            grad_nu: gpu.zeros(one(n))?,
-            grad_p: gpu.zeros(one(n))?,
+            grad_uc: gpu.zeros(one(n_local))?,
+            grad_u: gpu.zeros(one(n_local))?,
+            grad_nu: gpu.zeros(one(n_local))?,
+            grad_p: gpu.zeros(one(n_local))?,
 
             nu_lam,
             b_nu_lam,
-            gdot: gpu.zeros(one(n))?,
+            gdot: gpu.zeros(one(n_local))?,
             b_gdot: gpu.zeros(one(nbf))?,
             rheok,
 
@@ -779,7 +1050,7 @@ impl<'m> Momentum<'m> {
             nu_eff_mag_sf: GpuSurfaceScalarField::zeros(gpu, m, "nuEffMagSf")?,
 
             u_mag: GpuScalarField::zeros(gpu, m, "magU")?,
-            grad_u_mag: gpu.zeros(one(n))?,
+            grad_u_mag: gpu.zeros(one(n_local))?,
 
             w: gpu.zeros(one(nif))?,
             bw: gpu.zeros(one(nbf))?,
@@ -886,6 +1157,19 @@ impl<'m> Momentum<'m> {
         &self.a
     }
 
+    /// SPEC-LIT 139.3 (PAR-10b): set where the three component systems are
+    /// solved. `None` restores [`solver::solve`], launch for launch the call
+    /// this module always made.
+    pub fn set_route(&mut self, route: Option<Box<dyn ComponentRoute + 'm>>) {
+        self.route = route;
+    }
+
+    /// True when a route is set - the three component solves go through
+    /// [`ComponentRoute::solve_component`], not [`solver::solve`].
+    pub fn has_route(&self) -> bool {
+        self.route.is_some()
+    }
+
     /// `rAU = V/diag`, or SIMPLEC's `rAtU`.
     pub fn rau(&self) -> &DevBuf<Scalar> {
         &self.rau
@@ -936,7 +1220,8 @@ impl<'m> Momentum<'m> {
         &self.grad_p
     }
 
-    /// The face buoyancy flux `(T_ref/T_f - 1)(g·Sf)`.
+    /// The face buoyancy flux - §9's `(T_ref/T_f - 1)(g·Sf)`, or §121's
+    /// `-β(T_f - T_ref)(g·Sf)`, as [`BuoyancyCoeffs::form`] names.
     pub fn buoyancy_flux(&self) -> &GpuSurfaceScalarField {
         &self.phib
     }
@@ -1090,7 +1375,11 @@ impl<'m> Momentum<'m> {
 
         {
             let Self { mk, nu_eff, nu_lam, b_nu_lam, .. } = self;
-            launch_add(gpu, &mk.add, &mut nu_eff.f, nu_lam, &nut.f, n)?;
+            // Over the ghost cells too (SPEC-LIT 139.10): `nut.f` has been
+            // exchanged by then, `nu_lam` is written over all of `n_local`,
+            // and `interpolate_linear`'s processor faces read `nu_eff.f`'s
+            // ghost slots. A whole mesh has no ghosts and `n_local` is `n`.
+            launch_add(gpu, &mk.add, &mut nu_eff.f, nu_lam, &nut.f, m.n_local())?;
             launch_add(gpu, &mk.add, &mut nu_eff.bf, b_nu_lam, &nut.bf, nbf)?;
         }
 
@@ -1132,14 +1421,19 @@ impl<'m> Momentum<'m> {
 
     // ---- buoyancy ---------------------------------------------------------
 
-    /// The face body-force flux `(T_ref/T_f - 1)(g·Sf)`, from the interpolated
-    /// FACE temperature.
+    /// The face body-force flux - §9's `(T_ref/T_f - 1)(g·Sf)` or §121's
+    /// `-β(T_f - T_ref)(g·Sf)`, as [`BuoyancyCoeffs::form`] names - from the
+    /// interpolated FACE temperature.
     ///
     /// `u` is read only for its `(fr, bc_kind)`, which decide which boundary
     /// faces have a prescribed flux and therefore carry no body force at all -
     /// see `momFluxIsPrescribed` in `cuda/momentum.cu`. A wall takes whatever
     /// force the fluid puts on it; leaving the flux there is what makes a
     /// sealed box drift.
+    ///
+    /// SPEC-LIT §121.3: the two forms launch DIFFERENT kernels, so the §9
+    /// launches below are the very bytes this module shipped before §121
+    /// existed.
     pub fn update_buoyancy(
         &mut self,
         gpu: &Gpu,
@@ -1151,47 +1445,96 @@ impl<'m> Momentum<'m> {
 
         let g = self.buoyancy.g;
         let t_ref = self.buoyancy.t_ref;
-        let t_min = self.buoyancy.t_min;
 
         let nif = m.n_internal_faces;
-        if nif > 0 {
-            let nl = nif as Label;
-            let f = self.mk.buoyancy.clone();
-            unsafe {
-                gpu.stream()
-                    .launch_builder(&f)
-                    .arg(&mut self.phib.f)
-                    .arg(&self.t_face.f)
-                    .arg(&m.sf)
-                    .arg(&g.x)
-                    .arg(&g.y)
-                    .arg(&g.z)
-                    .arg(&t_ref)
-                    .arg(&t_min)
-                    .arg(&nl)
-                    .launch(cfg_for(nif))?;
-            }
-        }
-
         let nbf = m.n_boundary_faces;
-        if nbf > 0 {
-            let nl = nbf as Label;
-            let f = self.mk.buoyancy_boundary.clone();
-            unsafe {
-                gpu.stream()
-                    .launch_builder(&f)
-                    .arg(&mut self.phib.bf)
-                    .arg(&self.t_face.bf)
-                    .arg(&m.b_sf)
-                    .arg(&m.b_kind)
-                    .arg(&u.fr)
-                    .arg(&g.x)
-                    .arg(&g.y)
-                    .arg(&g.z)
-                    .arg(&t_ref)
-                    .arg(&t_min)
-                    .arg(&nl)
-                    .launch(cfg_for(nbf))?;
+
+        match self.buoyancy.form {
+            BuoyancyForm::DensityRatio => {
+                let t_min = self.buoyancy.t_min;
+
+                if nif > 0 {
+                    let nl = nif as Label;
+                    let f = self.mk.buoyancy.clone();
+                    unsafe {
+                        gpu.stream()
+                            .launch_builder(&f)
+                            .arg(&mut self.phib.f)
+                            .arg(&self.t_face.f)
+                            .arg(&m.sf)
+                            .arg(&g.x)
+                            .arg(&g.y)
+                            .arg(&g.z)
+                            .arg(&t_ref)
+                            .arg(&t_min)
+                            .arg(&nl)
+                            .launch(cfg_for(nif))?;
+                    }
+                }
+
+                if nbf > 0 {
+                    let nl = nbf as Label;
+                    let f = self.mk.buoyancy_boundary.clone();
+                    unsafe {
+                        gpu.stream()
+                            .launch_builder(&f)
+                            .arg(&mut self.phib.bf)
+                            .arg(&self.t_face.bf)
+                            .arg(&m.b_sf)
+                            .arg(&m.b_kind)
+                            .arg(&u.fr)
+                            .arg(&u.bc_kind)
+                            .arg(&g.x)
+                            .arg(&g.y)
+                            .arg(&g.z)
+                            .arg(&t_ref)
+                            .arg(&t_min)
+                            .arg(&nl)
+                            .launch(cfg_for(nbf))?;
+                    }
+                }
+            }
+            BuoyancyForm::Boussinesq { beta } => {
+                if nif > 0 {
+                    let nl = nif as Label;
+                    let f = self.mk.boussinesq.clone();
+                    unsafe {
+                        gpu.stream()
+                            .launch_builder(&f)
+                            .arg(&mut self.phib.f)
+                            .arg(&self.t_face.f)
+                            .arg(&m.sf)
+                            .arg(&g.x)
+                            .arg(&g.y)
+                            .arg(&g.z)
+                            .arg(&t_ref)
+                            .arg(&beta)
+                            .arg(&nl)
+                            .launch(cfg_for(nif))?;
+                    }
+                }
+
+                if nbf > 0 {
+                    let nl = nbf as Label;
+                    let f = self.mk.boussinesq_boundary.clone();
+                    unsafe {
+                        gpu.stream()
+                            .launch_builder(&f)
+                            .arg(&mut self.phib.bf)
+                            .arg(&self.t_face.bf)
+                            .arg(&m.b_sf)
+                            .arg(&m.b_kind)
+                            .arg(&u.fr)
+                            .arg(&u.bc_kind)
+                            .arg(&g.x)
+                            .arg(&g.y)
+                            .arg(&g.z)
+                            .arg(&t_ref)
+                            .arg(&beta)
+                            .arg(&nl)
+                            .launch(cfg_for(nbf))?;
+                    }
+                }
             }
         }
 
@@ -1271,6 +1614,7 @@ impl<'m> Momentum<'m> {
                     .arg(&self.sn_grad_p.bf)
                     .arg(&m.b_kind)
                     .arg(&u.fr)
+                    .arg(&u.bc_kind)
                     .arg(&nl)
                     .launch(cfg_for(nbf))?;
             }
@@ -1425,17 +1769,16 @@ impl<'m> Momentum<'m> {
                 }
             }
 
-            let Self { solk, uc, a, ws, ctrl, .. } = self;
-            // SPEC-LIT 13.4: `solvers/U/solver`, honoured.
-            perf[c] = solver::solve(
-                gpu,
-                solk,
-                &mut uc.f,
-                a,
-                m,
-                ws,
-                &ctrl.u_solver,
-            )?;
+            let Self { solk, uc, a, ws, ctrl, route, .. } = self;
+            // SPEC-LIT 13.4: `solvers/U/solver`, honoured. SPEC-LIT 139.3
+            // (PAR-10b): `route` is `None` on every path the crate shipped
+            // before it, which keeps the call below launch for launch the
+            // same; `Some` hands the component system to the route instead -
+            // a part's solve, whose residual norms must be the world's.
+            perf[c] = match route {
+                Some(r) => r.solve_component(gpu, &mut uc.f, a, m, &ctrl.u_solver)?,
+                None => solver::solve(gpu, solk, &mut uc.f, a, m, ws, &ctrl.u_solver)?,
+            };
 
             {
                 let Self { mk, uc, .. } = self;
@@ -1668,12 +2011,29 @@ impl<'m> Momentum<'m> {
     /// Must be called with the velocity the momentum solve produced, because
     /// `H` is evaluated at that velocity.
     pub fn rhie_chow(&mut self, gpu: &Gpu, u: &GpuVectorField) -> Result<()> {
+        self.rhie_chow_with(gpu, u, None)
+    }
+
+    /// SPEC-LIT 139.4: [`Momentum::rhie_chow`] on a part. With `x = Some`:
+    /// (1) the per-component copy `launch_component(.. uc.f, u.f ..)` in the
+    /// HbyA loop launches over `m.n_local()` instead of `n`, so `amul`'s
+    /// coupled faces read the ghost component (the caller has exchanged U's
+    /// halo); (2) after the HbyA loop and BEFORE "rAU on faces",
+    /// `x.cells(gpu, &mut self.rau)` then `x.cells_vector(gpu, &mut
+    /// self.hbya)`. With `None`: exactly today's body.
+    pub fn rhie_chow_with(
+        &mut self,
+        gpu: &Gpu,
+        u: &GpuVectorField,
+        mut x: Option<&mut dyn FlowExchange>,
+    ) -> Result<()> {
         let m = self.m;
         let n = m.n_cells;
         if n == 0 {
             return Ok(());
         }
         let nl = n as Label;
+        let comp_n = if x.is_some() { m.n_local() } else { n };
 
         // ---- rAU, or SIMPLEC's rAtU ---------------------------------------
         if self.ctrl.simplec {
@@ -1712,7 +2072,7 @@ impl<'m> Momentum<'m> {
             let cmpt = c as Label;
             {
                 let Self { mk, uc, .. } = self;
-                launch_component(gpu, &mk.vec_component, &mut uc.f, &u.f, cmpt, n)?;
+                launch_component(gpu, &mk.vec_component, &mut uc.f, &u.f, cmpt, comp_n)?;
             }
             {
                 let Self { lduk, au, uc, a, .. } = self;
@@ -1731,6 +2091,14 @@ impl<'m> Momentum<'m> {
                     .arg(&nl)
                     .launch(cfg_for(n))?;
             }
+        }
+
+        // SPEC-LIT 139.4: a part's coupled faces read `rau` and `hbya` at
+        // the halo index, so both cross before the face kernels - `amul`'s
+        // `au` above was already assembled from the ghost component.
+        if let Some(x) = x.as_deref_mut() {
+            x.cells(gpu, &mut self.rau)?;
+            x.cells_vector(gpu, &mut self.hbya)?;
         }
 
         // ---- rAU on faces -------------------------------------------------
@@ -1766,6 +2134,27 @@ impl<'m> Momentum<'m> {
                     .arg(&m.b_kind)
                     .arg(&nbl)
                     .launch(cfg_for(nbf))?;
+            }
+
+            // SPEC-LIT 139.10 (PAR-14): on a decomposed part the processor
+            // faces' rAU_f is the WHOLE mesh's interpolation - the part's own
+            // `b_weights` is not the whole weight on the non-owning side.
+            // BEFORE the `|Sf|` product below, which is the pressure
+            // laplacian's coefficient and inherits the fix.
+            if m.n_proc_faces > 0 {
+                let f = self.mk.face_interp_proc.clone();
+                unsafe {
+                    gpu.stream()
+                        .launch_builder(&f)
+                        .arg(&mut self.rauf.bf)
+                        .arg(&self.rau)
+                        .arg(&m.b_proc)
+                        .arg(&m.b_proc_w)
+                        .arg(&m.b_face_cells)
+                        .arg(&m.b_nbr_cell)
+                        .arg(&nbl)
+                        .launch(cfg_for(nbf))?;
+                }
             }
         }
 
@@ -1812,8 +2201,31 @@ impl<'m> Momentum<'m> {
                     .arg(&m.b_nbr_cell)
                     .arg(&m.b_kind)
                     .arg(&u.fr)
+                    .arg(&u.bc_kind)
                     .arg(&nbl)
                     .launch(cfg_for(nbf))?;
+            }
+
+            // SPEC-LIT 139.10 (PAR-14): the processor faces' whole flux,
+            // part-oriented - `owns ? v : -v` on momPhiHbyA's body over the
+            // whole mesh's cells, weight, area and buoyancy flux.
+            if m.n_proc_faces > 0 {
+                let f = self.mk.phi_hbya_proc.clone();
+                unsafe {
+                    gpu.stream()
+                        .launch_builder(&f)
+                        .arg(&mut self.phi_hbya.bf)
+                        .arg(&self.hbya)
+                        .arg(&self.rau)
+                        .arg(&self.phib.bf)
+                        .arg(&m.b_sf)
+                        .arg(&m.b_proc)
+                        .arg(&m.b_proc_w)
+                        .arg(&m.b_face_cells)
+                        .arg(&m.b_nbr_cell)
+                        .arg(&nbl)
+                        .launch(cfg_for(nbf))?;
+                }
             }
         }
 
@@ -1875,6 +2287,7 @@ impl<'m> Momentum<'m> {
                     .arg(&self.sn_grad_p.bf)
                     .arg(&m.b_kind)
                     .arg(&u.fr)
+                    .arg(&u.bc_kind)
                     .arg(&nl)
                     .launch(cfg_for(nbf))?;
             }
@@ -2052,6 +2465,7 @@ mod tests {
             g: Vec3::new(0.0, 0.0, -9.81),
             t_ref: 293.15,
             t_min: 1.0,
+            form: BuoyancyForm::DensityRatio,
         };
 
         let hot = b.at(1173.15);
@@ -2078,6 +2492,7 @@ mod tests {
             g: Vec3::new(0.3, -1.1, -9.81),
             t_ref: 293.15,
             t_min: 1.0,
+            form: BuoyancyForm::DensityRatio,
         };
         assert_eq!(b.at(293.15), Vec3::ZERO);
     }
@@ -2090,9 +2505,222 @@ mod tests {
             g: Vec3::new(0.0, 0.0, -9.81),
             t_ref: 293.15,
             t_min: 1.0,
+            form: BuoyancyForm::DensityRatio,
         };
         let cold = b.at(200.0);
         assert!(cold.z < 0.0, "cold gas must sink, got {cold}");
+    }
+
+    // ----------------------------------------------------------------------
+    //  SPEC-LIT §121 - the Boussinesq form beside the density ratio
+    // ----------------------------------------------------------------------
+
+    /// (121.4): with `beta = 1/T_ref` the two forms differ by exactly the
+    /// factor `T/T_ref`, which is the statement that (121.2) is the
+    /// first-order expansion of §9's `T_ref/T - 1` about `T_ref`. Checked at
+    /// temperatures where `T_ref/T` is a dyadic rational, so the §9 side is
+    /// exact and the comparison measures the forms, not the divide.
+    #[test]
+    fn boussinesq_over_density_ratio_is_t_over_tref_when_beta_is_one_over_tref() {
+        let t_ref: Scalar = 300.0;
+        let g = Vec3::new(0.3, -1.1, -9.81);
+        let ratio = BuoyancyCoeffs {
+            g,
+            t_ref,
+            t_min: 1.0,
+            form: BuoyancyForm::DensityRatio,
+        };
+        let bous = BuoyancyCoeffs {
+            g,
+            t_ref,
+            t_min: 1.0,
+            form: BuoyancyForm::Boussinesq { beta: 1.0 / t_ref },
+        };
+
+        for t in [75.0, 150.0, 240.0, 480.0, 600.0, 960.0, 1200.0, 2400.0] {
+            let br = ratio.at(t);
+            let bb = bous.at(t);
+            let w = t / t_ref;
+            for (q, c) in
+                [(bb.x / br.x, "x"), (bb.y / br.y, "y"), (bb.z / br.z, "z")]
+            {
+                assert!(
+                    (q - w).abs() <= 4.0 * Scalar::EPSILON * w,
+                    "T = {t}: b_B/b_R in {c} is {q}, T/T_ref says {w}"
+                );
+            }
+        }
+    }
+
+    /// At `T = T_ref` the Boussinesq force is zero EXACTLY - (121.2) is then
+    /// `-beta·0·g` and nothing rounds it away - so a Boussinesq case at its
+    /// reference temperature is as undisturbed as a §9 one.
+    #[test]
+    fn boussinesq_is_exactly_zero_at_tref() {
+        for g in [Vec3::new(0.0, 0.0, -9.81), Vec3::new(0.3, -1.1, -9.81)] {
+            for t_ref in [293.15, 300.0] {
+                let b = BuoyancyCoeffs {
+                    g,
+                    t_ref,
+                    t_min: 1.0,
+                    form: BuoyancyForm::Boussinesq { beta: 3e-3 },
+                };
+                assert_eq!(b.at(t_ref), Vec3::ZERO);
+            }
+        }
+    }
+
+    /// The sign and the size of (121.2) under earth gravity: hot rises, cold
+    /// sinks, and the magnitude is `|g_z|·β·ΔT` - here air's `3.4e-3 /K`
+    /// (`1/T_ref` at 293 K; water at 20 °C is about `2.1e-4 /K`) against a
+    /// 10 K rise.
+    #[test]
+    fn boussinesq_hot_cell_accelerates_up() {
+        let b = BuoyancyCoeffs {
+            g: Vec3::new(0.0, 0.0, -9.81),
+            t_ref: 293.15,
+            t_min: 1.0,
+            form: BuoyancyForm::Boussinesq { beta: 3.4e-3 },
+        };
+
+        let hot = b.at(303.15);
+        assert_eq!(hot.x, 0.0);
+        assert_eq!(hot.y, 0.0);
+        assert!(hot.z > 0.0, "hot fluid must accelerate upward, got {hot}");
+        let want = 9.81 * 3.4e-3 * (303.15 - 293.15);
+        assert!(
+            (hot.z - want).abs() <= 1e-12 * hot.z,
+            "b_z = {}, |g_z|·beta·dT says {want}",
+            hot.z
+        );
+
+        let cold = b.at(283.15);
+        assert!(cold.z < 0.0, "cold fluid must sink, got {cold}");
+    }
+
+    /// SPEC-LIT §121.7's validity guard: `delta_B` of 0.099 passes; the same
+    /// past the limit is refused from EITHER side of `T_ref`, a NaN
+    /// temperature is refused, the density ratio is never refused, and
+    /// `-permissive` turns the refusal into a warning.
+    #[test]
+    // f32 (VAL-81): the departure reads 0.0990000047 against an exact 0.099
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
+    fn boussinesq_validity_guard_fires_above_0_1() {
+        let guard = crate::io::contract::permissive_test_guard();
+        crate::io::contract::reset_warnings();
+        let setting = "constant/physicalProperties: beta";
+        let b = BuoyancyCoeffs {
+            g: Vec3::new(0.0, 0.0, -9.81),
+            t_ref: 300.0,
+            t_min: 1.0,
+            form: BuoyancyForm::Boussinesq { beta: 1e-3 },
+        };
+
+        // delta_B = 1e-3 * 99 = 0.099: inside.
+        let ok = b.check_boussinesq_validity(setting, [300.0, 399.0]).is_ok();
+        assert!(ok, "delta_B = 0.099 is inside the 0.1 limit");
+        let d = b.boussinesq_departure([300.0, 399.0]).expect("boussinesq has a departure");
+        assert!(
+            (d - 0.099).abs() < 1e-12 && d > 0.0989 && d < 0.0991,
+            "the departure is {d}, (121.8) says 0.099"
+        );
+
+        // Hot side: 1e-3 * 101 = 0.101, refused, naming the key and the limit.
+        let e = b
+            .check_boussinesq_validity(setting, [300.0, 401.0])
+            .expect_err("0.101 is past the limit");
+        let m = format!("{e}");
+        assert!(m.contains(setting), "{m}");
+        assert!(m.contains("0.1"), "{m}");
+        assert!(m.contains("beta"), "{m}");
+
+        // Cold side: |199 - 300| = 101 is the same refusal.
+        assert!(b.check_boussinesq_validity(setting, [199.0, 300.0]).is_err());
+
+        // A NaN temperature is refused, not skipped by max().
+        assert!(b.check_boussinesq_validity(setting, [300.0, Scalar::NAN]).is_err());
+        assert!(b.boussinesq_departure([300.0, Scalar::NAN]).unwrap().is_nan());
+
+        // The density ratio is never refused, and has no departure at all.
+        let r = BuoyancyCoeffs { form: BuoyancyForm::DensityRatio, ..b };
+        assert!(r.check_boussinesq_validity(setting, [1000.0]).is_ok());
+        assert!(r.boussinesq_departure([1000.0]).is_none());
+
+        // -permissive: the same case warns once and runs.
+        crate::io::contract::set_permissive(true);
+        assert!(b.check_boussinesq_validity(setting, [300.0, 401.0]).is_ok());
+        crate::io::contract::set_permissive(false);
+        assert!(
+            crate::io::contract::warned(setting),
+            "-permissive must have warned about {setting}"
+        );
+        drop(guard);
+    }
+
+    /// SPEC-LIT §121.7's lowering table through the OpenFOAM dictionary
+    /// route: `from_case` reads `buoyancy` and `beta` out of the SAME file
+    /// it reads `TRef` from, and refuses the three bad rows by name.
+    #[test]
+    fn the_dictionary_route_reads_buoyancy_and_beta() {
+        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let from_props = |body: &str| -> crate::error::Result<BuoyancyCoeffs> {
+            let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            let dir = std::env::temp_dir().join(format!(
+                "momentum_bous_dict_{}_{n}",
+                std::process::id()
+            ));
+            std::fs::create_dir_all(dir.join("constant")).expect("mkdir");
+            std::fs::write(dir.join("constant").join("physicalProperties"), body)
+                .expect("write physicalProperties");
+            let c = BuoyancyCoeffs::from_case(&dir);
+            let _ = std::fs::remove_dir_all(&dir);
+            c
+        };
+
+        // (a) the full boussinesq row: the dimensioned scalar is read by its
+        // LAST token, exactly as `FoamDict::scalar` reads every other one.
+        let c = from_props(
+            "nu              [0 2 -1 0 0 0 0] 1.5e-05;\n\
+             TRef            300;\n\
+             buoyancy        boussinesq;\n\
+             beta            [0 0 0 -1 0 0 0] 3.4e-3;\n",
+        )
+        .expect("the full boussinesq row reads");
+        assert_eq!(c.form, BuoyancyForm::Boussinesq { beta: 3.4e-3 as Scalar });
+
+        // (b) boussinesq without beta: refused, naming the beta key.
+        let e = from_props(
+            "TRef            300;\n\
+             buoyancy        boussinesq;\n",
+        )
+        .expect_err("boussinesq without beta is refused");
+        let m = format!("{e}");
+        assert!(m.contains("beta"), "{m}");
+
+        // (c) beta under the default density ratio: refused, nothing reads it.
+        let e = from_props(
+            "TRef            300;\n\
+             beta            [0 0 0 -1 0 0 0] 3.4e-3;\n",
+        )
+        .expect_err("beta under densityRatio is refused");
+        let m = format!("{e}");
+        assert!(m.contains("beta"), "{m}");
+        assert!(m.contains("densityRatio"), "{m}");
+
+        // (d) an unknown spelling names the key and BOTH spellings.
+        let e = from_props(
+            "TRef            300;\n\
+             buoyancy        banana;\n",
+        )
+        .expect_err("an unknown form is refused");
+        let m = format!("{e}");
+        assert!(m.contains("buoyancy"), "{m}");
+        assert!(m.contains("densityRatio"), "{m}");
+        assert!(m.contains("boussinesq"), "{m}");
+
+        // (e) neither key: the density ratio, unchanged.
+        let c = from_props("TRef            300;\n").expect("no keys reads");
+        assert_eq!(c.form, BuoyancyForm::DensityRatio);
     }
 
     /// A corrupted zero must not produce an infinite force.

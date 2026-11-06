@@ -61,6 +61,7 @@ use crate::error::{Error, IoContext, Result};
 use crate::io::output_types::{FieldValues, OutputField};
 use crate::io::polymesh::PolyMeshRaw;
 use crate::mesh::HostMesh;
+use crate::types::to_vec3;
 use crate::{Label, Scalar, Vec3};
 
 const VTK_POLYHEDRON: u8 = 42;
@@ -161,7 +162,15 @@ fn build_geometry(m: &HostMesh) -> Geometry {
             let f = m.cf_face[i] as usize;
             let owns = m.cf_own[i] != 0;
             let area = if owns { m.sf[f] } else { -m.sf[f] };
-            emit_face(m.cf[f], area, &mut points, &mut connectivity, &mut cell_faces);
+            // The emitted centroid is the WORLD position (SPEC-LIT 118.7);
+            // the area vector needs no shift - a translation moves no normal.
+            emit_face(
+                to_vec3(m.world(m.cf[f])),
+                area,
+                &mut points,
+                &mut connectivity,
+                &mut cell_faces,
+            );
             n_faces_cell += 1;
         }
 
@@ -169,7 +178,13 @@ fn build_geometry(m: &HostMesh) -> Geometry {
         let bcf_end = m.bcf_offset[c + 1] as usize;
         for i in bcf_start..bcf_end {
             let bf = m.bcf_face[i] as usize;
-            emit_face(m.b_cf[bf], m.b_sf[bf], &mut points, &mut connectivity, &mut cell_faces);
+            emit_face(
+                to_vec3(m.world(m.b_cf[bf])),
+                m.b_sf[bf],
+                &mut points,
+                &mut connectivity,
+                &mut cell_faces,
+            );
             n_faces_cell += 1;
         }
 
@@ -436,8 +451,10 @@ pub fn write_parcels_vtp(
     let mut app = AppendedWriter::default();
 
     let off_points = app.push(Block::f64(
-        live.iter()
-            .flat_map(|&i| [s.x[i].x as f64, s.x[i].y as f64, s.x[i].z as f64]),
+        // SPEC-LIT 118.9: the WORLD positions at f64, exactly as the snapshot
+        // carries them - the f64 build's `x64` is the `Scalar` position, so
+        // the bytes are the bytes this always wrote.
+        live.iter().flat_map(|&i| [s.x64[i].x, s.x64[i].y, s.x64[i].z]),
     ));
     let off_connectivity = app.push(Block::i64((0..n as i64).collect::<Vec<_>>()));
     let off_offsets = app.push(Block::i64((1..=n as i64).collect::<Vec<_>>()));
@@ -586,7 +603,7 @@ fn build_geometry_from_raw(raw: &PolyMeshRaw) -> Result<Geometry> {
     let cell_faces = raw_cell_faces(raw, n_cells)?;
 
     let mut geo = Geometry {
-        points: raw.points.clone(),
+        points: raw.points.iter().map(|&p| to_vec3(p)).collect(),
         connectivity: Vec::new(),
         offsets: Vec::with_capacity(n_cells),
         types: vec![VTK_POLYHEDRON; n_cells],
@@ -1037,7 +1054,6 @@ mod tests {
     /// The CellData path is byte-for-byte what it was before this unit: same
     /// 2x1x1 mesh, same scalar+vector fields, same time, same bytes.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_cell_data_path_writes_the_same_bytes_as_before_s2() {
         let m = mesh_2x1x1();
         let p_vals: Vec<Scalar> = (0..m.n_cells).map(|i| 1.5 * (i as Scalar) + 0.25).collect();

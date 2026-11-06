@@ -99,6 +99,7 @@
 use cudarc::driver::{CudaFunction, PushKernelArg};
 
 use crate::device::{cfg_for, DevBuf, Gpu, KernelSet};
+use crate::distflow::FlowExchange;
 use crate::error::{Error, Result};
 use crate::field::{BcKind, GpuScalarField, GpuSurfaceScalarField, GpuVectorField};
 use crate::field_ops::{self, FieldKernels};
@@ -108,7 +109,7 @@ use crate::ldu::GpuLduMatrix;
 use crate::ldu_ops::{self, LduKernels};
 use crate::mesh::ale::AleMesh;
 use crate::mesh::{GpuMesh, HostMesh};
-use crate::momentum::{BuoyancyCoeffs, Momentum, MomentumControls};
+use crate::momentum::{BuoyancyCoeffs, ComponentRoute, Momentum, MomentumControls};
 use crate::pressure::PressureBackend;
 use crate::solver::{self, SolverKernels, SolverPerformance};
 use crate::turbulence::FlowState;
@@ -334,6 +335,10 @@ struct SimpleKernels {
     relax_field: CudaFunction,
     pick_value: CudaFunction,
     sub_scalar: CudaFunction,
+    // SPEC-LIT 139.9 (PAR-13b): the part twin, launched ONLY on a mesh with
+    // processor faces (`GpuMesh::n_proc_faces > 0`), where it sums the face
+    // flux at each term's global place in the merged row.
+    face_flux_sum_part: CudaFunction,
 }
 
 impl SimpleKernels {
@@ -344,6 +349,7 @@ impl SimpleKernels {
             relax_field: k.func("smpRelaxField")?,
             pick_value: k.func("smpPickValue")?,
             sub_scalar: k.func("smpSubScalar")?,
+            face_flux_sum_part: k.func("smpFaceFluxSumPart")?,
         })
     }
 }
@@ -426,6 +432,12 @@ pub struct Simple<'m> {
     /// one `match` in [`Self::correct_outer_impl`].
     motion: Option<SimpleMotion>,
 
+    /// SPEC-LIT 139.4 (PAR-10c): the exchange a decomposed run needs, set
+    /// through [`Self::set_exchange`]. `None` - every serial run - and the
+    /// exchange seam picks the launch this module has always made on every
+    /// one of its arms.
+    exchange: Option<Box<dyn FlowExchange + 'm>>,
+
     fvk: FvKernels,
     lduk: LduKernels,
     fldk: FieldKernels,
@@ -451,8 +463,6 @@ impl<'m> Simple<'m> {
             )));
         }
 
-        let nc = m.n_cells.max(1);
-
         Ok(Self {
             m,
             ctrl,
@@ -464,8 +474,10 @@ impl<'m> Simple<'m> {
             phi: GpuSurfaceScalarField::zeros(gpu, m, "phi")?,
 
             a_p: GpuLduMatrix::new(gpu, m)?,
-            p_old: gpu.zeros(nc)?,
-            div_phi: gpu.zeros(nc)?,
+            // SPEC-LIT 139.1: cell buffers carry the halo; `red` is a device
+            // scalar, not a cell field.
+            p_old: gpu.zeros(m.n_local().max(1))?,
+            div_phi: gpu.zeros(m.n_local().max(1))?,
             red: gpu.zeros(1)?,
 
             residual_control: None,
@@ -474,6 +486,7 @@ impl<'m> Simple<'m> {
             outer_correctors: 0,
             flow_devices: None,
             motion: None,
+            exchange: None,
 
             fvk: FvKernels::new(gpu)?,
             lduk: LduKernels::new(gpu)?,
@@ -655,6 +668,106 @@ impl<'m> Simple<'m> {
         &mut self.momentum
     }
 
+    /// SPEC-LIT 139.3 (PAR-10b): set where the momentum predictor's three
+    /// component systems are solved - routing only, the loop itself does not
+    /// change. `None` (the default) keeps every component solve on
+    /// [`solver::solve`], launch for launch the call this module always made;
+    /// a distributed run sets a
+    /// [`SpmdMomentumRoute`](crate::distflow::SpmdMomentumRoute), whose
+    /// residual norms are the world's.
+    pub fn set_momentum_route(&mut self, route: Option<Box<dyn ComponentRoute + 'm>>) {
+        self.momentum.set_route(route)
+    }
+
+    /// SPEC-LIT 139.4: set the exchange a decomposed run needs. `None` (the
+    /// default) leaves every serial call launch for launch; a distributed
+    /// driver hands a
+    /// [`RankCtx`](crate::distflow::RankCtx) over, and the loop's halo
+    /// exchanges and global reductions then go through it.
+    ///
+    /// Refusals (`Error::Config`, starting `distflow: `), checked only for
+    /// `Some`, in this order: a motion is attached ("moving mesh"); flow
+    /// devices are attached ("flow devices"); `divScheme` is neither `upwind`
+    /// nor `central` (named with `{:?}` - the limited and linearUpwind
+    /// schemes read a cell GRADIENT at the far cell of a face, and gradients
+    /// have no halo on the flow path yet); `snGrad` is not `uncorrected`;
+    /// variable-viscosity stress is on. A refusing driver keeps its serial
+    /// loop - the exchange is simply not set.
+    pub fn set_exchange(&mut self, x: Option<Box<dyn FlowExchange + 'm>>) -> Result<()> {
+        if x.is_some() {
+            if self.motion.is_some() {
+                return Err(Error::Config(
+                    "distflow: a decomposed Simple cannot run on a moving \
+                     mesh - the mesh flux has no exchange yet"
+                        .to_string(),
+                ));
+            }
+            if self.flow_devices.is_some() {
+                return Err(Error::Config(
+                    "distflow: a decomposed Simple cannot run with flow \
+                     devices attached - the fan and porous-jump updates have \
+                     no exchange yet"
+                        .to_string(),
+                ));
+            }
+            match self.ctrl.momentum.div_scheme {
+                crate::fv::DivScheme::Upwind | crate::fv::DivScheme::Central => {}
+                other => {
+                    return Err(Error::Config(format!(
+                        "distflow: divScheme {other:?} needs a cell gradient \
+                         at the far cell of a face, and gradients have no \
+                         halo on the flow path yet (PAR-10c); a decomposed \
+                         Simple runs upwind or central convection only"
+                    )));
+                }
+            }
+            if self.ctrl.momentum.sn_grad != crate::fv::SnGradScheme::Uncorrected {
+                return Err(Error::Config(format!(
+                    "distflow: snGrad {:?} adds the non-orthogonal \
+                     correction at the far cell of a face; a decomposed \
+                     Simple runs snGrad uncorrected only",
+                    self.ctrl.momentum.sn_grad
+                )));
+            }
+            if self.ctrl.momentum.variable_viscosity_stress {
+                return Err(Error::Config(
+                    "distflow: a decomposed Simple cannot run the \
+                     variable-viscosity stress - the stress divergence has \
+                     no exchange yet"
+                        .to_string(),
+                ));
+            }
+        }
+        self.exchange = x;
+        Ok(())
+    }
+
+    /// True when a decomposed run's exchange is set.
+    pub fn has_exchange(&self) -> bool {
+        self.exchange.is_some()
+    }
+
+    /// `U`'s halo, then the boundary evaluation - or, serially, exactly the
+    /// `correct_boundary_conditions_vector` call this module always made.
+    fn bc_u(&mut self, gpu: &Gpu) -> Result<()> {
+        let m = self.m;
+        match self.exchange.as_deref_mut() {
+            Some(x) => x.field_vector(gpu, &self.fldk, &mut self.u, m),
+            None => {
+                field_ops::correct_boundary_conditions_vector(gpu, &self.fldk, &mut self.u, m)
+            }
+        }
+    }
+
+    /// The same for `p`.
+    fn bc_p(&mut self, gpu: &Gpu) -> Result<()> {
+        let m = self.m;
+        match self.exchange.as_deref_mut() {
+            Some(x) => x.field(gpu, &self.fldk, &mut self.p, m),
+            None => field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.p, m),
+        }
+    }
+
     /// What a turbulence model or a scalar transport equation needs from the
     /// flow: the velocity, the conservative flux, and the molecular viscosity.
     ///
@@ -696,10 +809,8 @@ impl<'m> Simple<'m> {
     /// [`Simple::u_mut`], [`Simple::p_mut`] and [`Simple::phi_mut`], and
     /// before the first [`Simple::correct`].
     pub fn initialise(&mut self, gpu: &Gpu) -> Result<()> {
-        let m = self.m;
-
-        field_ops::correct_boundary_conditions_vector(gpu, &self.fldk, &mut self.u, m)?;
-        field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.p, m)?;
+        self.bc_u(gpu)?;
+        self.bc_p(gpu)?;
 
         field_ops::store_old_time_vector(gpu, &self.fldk, &mut self.u)?;
         field_ops::store_old_time(gpu, &self.fldk, &mut self.p)?;
@@ -718,7 +829,11 @@ impl<'m> Simple<'m> {
     /// at all, and a cyclic couple relates two unknowns without pinning
     /// either. Everything else is judged by `fr`, because that is exactly the
     /// coefficient that puts a value into the diagonal (SPEC-LIT §4).
-    fn pressure_has_a_dirichlet(&self, gpu: &Gpu) -> Result<bool> {
+    ///
+    /// SPEC-LIT 139.4: with an exchange the LOCAL answer is only this rank's
+    /// patches, so it goes through `x.any` and the world's answer is what
+    /// [`Self::initialise`] pins on.
+    fn pressure_has_a_dirichlet(&mut self, gpu: &Gpu) -> Result<bool> {
         let nbf = self.m.n_boundary_faces;
         if nbf == 0 {
             return Ok(false);
@@ -727,16 +842,21 @@ impl<'m> Simple<'m> {
         let fr = gpu.download(&self.p.fr)?;
         let kinds = gpu.download(&self.p.bc_kind)?;
 
+        let mut local = false;
         for i in 0..nbf {
             let k = kinds[i];
             if k == BcKind::Empty as Label || k == BcKind::Cyclic as Label {
                 continue;
             }
             if fr[i] > 0.0 {
-                return Ok(true);
+                local = true;
+                break;
             }
         }
-        Ok(false)
+        match self.exchange.as_deref_mut() {
+            Some(x) => x.any(local),
+            None => Ok(local),
+        }
     }
 
     // ---- one iteration ----------------------------------------------------
@@ -754,6 +874,11 @@ impl<'m> Simple<'m> {
     pub fn begin_time_step(&mut self, gpu: &Gpu, dt: Scalar) -> Result<()> {
         field_ops::advance_time_levels_vector(gpu, &self.fldk, &mut self.u)?;
         field_ops::advance_time_levels(gpu, &self.fldk, &mut self.p)?;
+        // SPEC-LIT 120.10: a turbulentInlet on U draws its next fluctuation
+        // once per time step (BcInputs::turbulent_inlet); no rule, no launch.
+        field_ops::advance_turbulent_inlet_vector(gpu, &self.fldk, &mut self.u)?;
+        // SPEC-LIT 120.12: so does a synthetic LES inflow, with this dt.
+        field_ops::advance_synthetic_inlet_vector(gpu, &self.fldk, &mut self.u, dt)?;
         self.momentum.ddt.advance(dt);
         Ok(())
     }
@@ -868,6 +993,42 @@ impl<'m> Simple<'m> {
             return Ok(SimplePerformance::default());
         }
 
+        // SPEC-LIT 139.4: a decomposed run refuses, on every outer
+        // iteration, what `set_exchange` refused at setup - a driver can
+        // attach a motion or a device, or build a patch-mean or mapped rule,
+        // AFTER setting the exchange, and the loop must not run it
+        // exchangeless.
+        if self.exchange.is_some() {
+            if self.motion.is_some() {
+                return Err(Error::Config(
+                    "distflow: a decomposed Simple cannot run on a moving \
+                     mesh - the mesh flux has no exchange yet"
+                        .to_string(),
+                ));
+            }
+            if self.flow_devices.is_some() {
+                return Err(Error::Config(
+                    "distflow: a decomposed Simple cannot run with flow \
+                     devices attached - the fan and porous-jump updates have \
+                     no exchange yet"
+                        .to_string(),
+                ));
+            }
+            if !self.u.mean_rules.is_empty()
+                || !self.u.mapped.is_empty()
+                || !self.p.mean_rules.is_empty()
+                || !self.p.mapped.is_empty()
+            {
+                return Err(Error::Config(
+                    "distflow: a decomposed Simple cannot run a patch-mean \
+                     or mapped rule - the rules rewrite their refValue from \
+                     cells that may live on another rank, and the sampler \
+                     has no exchange yet"
+                        .to_string(),
+                ));
+            }
+        }
+
         // Numbered before it runs, so a divergence inside this very iteration
         // reports the iteration it happened in.
         self.outer_correctors += 1;
@@ -886,9 +1047,33 @@ impl<'m> Simple<'m> {
             None => &self.phi,
         };
         field_ops::update_inlet_outlet_vector(gpu, &self.fldk, &mut self.u, conv)?;
+        // SPEC-LIT 120.5: the five pressure-driven velocity inlets rewrite
+        // their ref_value from the flux the last corrector left, on the same
+        // flux the switch above read - before the boundary evaluation, and
+        // only meaningful where the setup opted in (BcInputs::pressure_inlet):
+        // faces of every other kind are untouched by the kernel.
+        field_ops::update_pressure_inlet_velocity(gpu, &self.fldk, &mut self.u, conv, m)?;
+        // SPEC-LIT 120.6: the Outlets II conditions rewrite their triple from
+        // the same flux - `U` from it directly, `p` through (120.6f) from the
+        // momentum predictor's grad p - on the same terms: one launch per
+        // rule the setup built, nothing at all where there is no rule.
+        field_ops::update_patch_means_vector(gpu, &self.fldk, &mut self.u, conv, m)?;
         field_ops::update_inlet_outlet_scalar(gpu, &self.fldk, &mut self.p, conv)?;
-        field_ops::correct_boundary_conditions_vector(gpu, &self.fldk, &mut self.u, m)?;
-        field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.p, m)?;
+        field_ops::update_patch_means_scalar(
+            gpu,
+            &self.fldk,
+            &mut self.p,
+            conv,
+            Some(self.momentum.grad_p()),
+            m,
+        )?;
+        // SPEC-LIT 120.10: the mapped inlets rewrite their refValue from the
+        // cells their offset plane samples, on the same terms - one launch
+        // per rule the setup built (BcInputs::mapped), nothing without one.
+        field_ops::update_mapped_vector(gpu, &self.fldk, &mut self.u, m)?;
+        field_ops::update_mapped_scalar(gpu, &self.fldk, &mut self.p, m)?;
+        self.bc_u(gpu)?;
+        self.bc_p(gpu)?;
 
         // The velocity's old-time level - in a STEADY run only.
         //
@@ -935,6 +1120,13 @@ impl<'m> Simple<'m> {
             [SolverPerformance::default(); 3]
         };
 
+        // SPEC-LIT 139.4: the predictor's coupled faces read the ghost U at
+        // the halo index, so the velocity a decomposed run is about to feed
+        // Rhie-Chow crosses first. Dist only - a new call, not a moved one.
+        if self.exchange.is_some() {
+            self.bc_u(gpu)?;
+        }
+
         if is_final {
             self.momentum.set_relaxation(alpha_u)?;
         }
@@ -951,7 +1143,13 @@ impl<'m> Simple<'m> {
             // rAU, HbyA, phi_HbyA - and this is the line that makes it PISO:
             // `H` is re-evaluated from the velocity the PREVIOUS corrector
             // produced, with the momentum matrix held frozen (Issa 1986).
-            self.momentum.rhie_chow(gpu, &self.u)?;
+            {
+                let Self { momentum, u, exchange, .. } = self;
+                match exchange.as_deref_mut() {
+                    Some(x) => momentum.rhie_chow_with(gpu, u, Some(x))?,
+                    None => momentum.rhie_chow(gpu, u)?,
+                }
+            }
 
             // SPEC-LIT §52/§53: the fan triples and the porous-jump
             // coefficient division, between `rhie_chow` writing the face
@@ -965,6 +1163,24 @@ impl<'m> Simple<'m> {
                 field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.p, m)?;
             }
 
+            // SPEC-LIT 120.2: a fan or porousBafflePressure pair's jump,
+            // (120.2g)/(120.2h), from the flux the last corrector left - a
+            // Picard step, re-taken every corrector. A fixedJump or
+            // uniformJump pair has no flux law and launches nothing here.
+            let refreshed = {
+                let Self { p, phi, .. } = self;
+                match &p.cyclic_jump {
+                    Some(cj) if cj.n_flux_rules() > 0 => {
+                        cj.refresh(gpu, &phi.bf, &m.b_mag_sf, &mut p.jump)?;
+                        true
+                    }
+                    _ => false,
+                }
+            };
+            if refreshed {
+                self.bc_p(gpu)?;
+            }
+
             // The non-orthogonal correctors: the same `phi_HbyA`, the
             // explicit correction re-evaluated against the latest `p`
             // (Jasak §3.4.3). A different loop doing a different job.
@@ -975,7 +1191,7 @@ impl<'m> Simple<'m> {
                 if self.pinned {
                     self.fix_pressure_level(gpu)?;
                 }
-                field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.p, m)?;
+                self.bc_p(gpu)?;
             }
 
             // ---- flux and velocity, from the pressure that satisfies
@@ -983,6 +1199,12 @@ impl<'m> Simple<'m> {
             self.momentum.update_force(gpu, &self.p, &self.u)?;
             self.momentum
                 .correct_flux_and_velocity(gpu, &mut self.u, &mut self.phi)?;
+
+            // SPEC-LIT 139.4: the corrected velocity crosses before the next
+            // corrector's Rhie-Chow reads it at a halo index. Dist only.
+            if self.exchange.is_some() {
+                self.bc_u(gpu)?;
+            }
         }
 
         // SPEC-LIT 105.7: and again from the corrected flux, so `flow_state()`
@@ -994,7 +1216,7 @@ impl<'m> Simple<'m> {
         // ---- relax the pressure FIELD, for the next predictor ---------------
         if !is_final {
             self.relax_pressure(gpu)?;
-            field_ops::correct_boundary_conditions(gpu, &self.fldk, &mut self.p, m)?;
+            self.bc_p(gpu)?;
         }
 
         let continuity_error = if self.ctrl.report_continuity {
@@ -1111,14 +1333,24 @@ impl<'m> Simple<'m> {
             }
         }
 
+        // SPEC-LIT 120.2, (120.2d): a cyclic jump's known half,
+        // `boundaryCoeffs * j` on both rows of the couple. Launched only for
+        // a pressure carrying a jump pair, so every other run's source is
+        // untouched.
+        if self.p.cyclic_jump.is_some() {
+            ldu_ops::add_jump_source(gpu, &self.lduk, &mut self.a_p, m, &self.p.jump)?;
+        }
+
         // `accumulate`, because the non-orthogonal correction is already in
         // the source by now.
         {
             let Self { sk, a_p, momentum, .. } = self;
             let phi_hbya = momentum.phi_hbya();
-            launch_face_flux_sum(
+            // SPEC-LIT 139.9: the part twin on a decomposed part, the old
+            // kernel exactly as today otherwise.
+            face_flux_sum_select(
                 gpu,
-                &sk.face_flux_sum,
+                sk,
                 &mut a_p.source,
                 &phi_hbya.f,
                 &phi_hbya.bf,
@@ -1144,11 +1376,32 @@ impl<'m> Simple<'m> {
         // face has `fr = 0` and `refGrad = 0`), but the order is fixed so the
         // mean removed is the mean of the whole source.
         if self.pinned && n > 0 {
+            // SPEC-LIT 139.4: the mean removed is the mean of the WHOLE
+            // source - the invariant this branch's own comment has always
+            // stated. On a part the local sum and the local cell count
+            // cross the exchange (`FlowExchange::world_mean`) and every
+            // rank subtracts the world's mean, bit for bit.
             let Self { solk, momentum, a_p, sk, .. } = self;
             let ws = momentum.workspace_mut();
             solver::device_sum(gpu, solk, &mut ws.num, &a_p.source, &mut ws.partials, n)?;
-            let scale = 1.0 / n as Scalar;
-            launch_sub_scalar(gpu, &sk.sub_scalar, &mut a_p.source, &ws.num, scale, n)?;
+            match self.exchange.as_deref_mut() {
+                Some(x) => {
+                    // SPEC-LIT 139.10 (PAR-14): the mean is PARTITION-
+                    // INVARIANT - the sum crosses the exact reduction of
+                    // SPEC-LIT 72 and the divide by the world's cell count
+                    // rounds once - so a part subtracts the bits the whole
+                    // mesh subtracts. (`world_mean`'s rank-order fold of
+                    // per-rank sums is not partition-invariant.) `n_global`
+                    // 0 = the exchange's own allgathered count.
+                    let mean = x.world_mean_exact(gpu, &a_p.source, n, 0)?;
+                    gpu.write(&mut self.red, &[mean])?;
+                    launch_sub_scalar(gpu, &sk.sub_scalar, &mut a_p.source, &self.red, 1.0, n)?;
+                }
+                None => {
+                    let scale = 1.0 / n as Scalar;
+                    launch_sub_scalar(gpu, &sk.sub_scalar, &mut a_p.source, &ws.num, scale, n)?;
+                }
+            }
         }
 
         ldu_ops::add_boundary_contributions(gpu, &self.lduk, &mut self.a_p, m)
@@ -1156,23 +1409,49 @@ impl<'m> Simple<'m> {
 
     /// Subtract the reference cell's value, so a pressure defined only up to a
     /// constant has a definite one.
+    ///
+    /// SPEC-LIT 139.4: with an exchange, `reference_cell` is a WHOLE-MESH
+    /// cell id. The rank that owns it picks the value out of its own part
+    /// (`local_of_global`); `owner_value` then hands that one scalar to every
+    /// rank, bit for bit, and every rank subtracts it from its OWNED cells -
+    /// so the world keeps one level.
     fn fix_pressure_level(&mut self, gpu: &Gpu) -> Result<()> {
         let n = self.m.n_cells;
         if n == 0 {
             return Ok(());
         }
-        let idx = self.reference_cell.min(n - 1) as Label;
 
-        // Read the reference out first. Every thread subtracting `p[ref]`
-        // while one of them writes it is a race.
-        let f = self.sk.pick_value.clone();
-        unsafe {
-            gpu.stream()
-                .launch_builder(&f)
-                .arg(&mut self.red)
-                .arg(&self.p.f)
-                .arg(&idx)
-                .launch(cfg_for(1))?;
+        if let Some(x) = self.exchange.as_deref_mut() {
+            let l = x.local_of_global(self.reference_cell);
+            let mut mine: Option<Scalar> = None;
+            if let Some(li) = l {
+                // Read the reference out first. Every thread subtracting
+                // `p[ref]` while one of them writes it is a race.
+                let idx = li as Label;
+                let f = self.sk.pick_value.clone();
+                unsafe {
+                    gpu.stream()
+                        .launch_builder(&f)
+                        .arg(&mut self.red)
+                        .arg(&self.p.f)
+                        .arg(&idx)
+                        .launch(cfg_for(1))?;
+                }
+                mine = gpu.download(&self.red)?.first().copied();
+            }
+            let v = x.owner_value(mine)?;
+            gpu.write(&mut self.red, &[v])?;
+        } else {
+            let idx = self.reference_cell.min(n - 1) as Label;
+            let f = self.sk.pick_value.clone();
+            unsafe {
+                gpu.stream()
+                    .launch_builder(&f)
+                    .arg(&mut self.red)
+                    .arg(&self.p.f)
+                    .arg(&idx)
+                    .launch(cfg_for(1))?;
+            }
         }
 
         let Self { sk, p, red, .. } = self;
@@ -1212,9 +1491,11 @@ impl<'m> Simple<'m> {
 
         {
             let Self { sk, div_phi, phi, .. } = self;
-            launch_face_flux_sum(
+            // SPEC-LIT 139.9: the part twin on a decomposed part, the old
+            // kernel exactly as today otherwise.
+            face_flux_sum_select(
                 gpu,
-                &sk.face_flux_sum,
+                sk,
                 div_phi,
                 &phi.f,
                 &phi.bf,
@@ -1230,7 +1511,14 @@ impl<'m> Simple<'m> {
         }
 
         let v = gpu.download(&self.momentum.workspace().den)?;
-        Ok(v.first().copied().unwrap_or(0.0))
+        let local = v.first().copied().unwrap_or(0.0);
+
+        // SPEC-LIT 139.4: the local max is this rank's cells; the world's
+        // worst cell is what a divergence report is about. NaN propagates.
+        match self.exchange.as_deref_mut() {
+            Some(x) => x.max(local),
+            None => Ok(local),
+        }
     }
 }
 
@@ -1297,6 +1585,100 @@ fn launch_sub_scalar(
     Ok(())
 }
 
+// SPEC-LIT 139.9 (PAR-13b): the part twin's launch, in the same shape as
+// [`launch_face_flux_sum`] and private like it. Called only under the
+// `n_proc_faces > 0` selection below.
+fn launch_face_flux_sum_part(
+    gpu: &Gpu,
+    k: &CudaFunction,
+    out: &mut DevBuf<Scalar>,
+    phi: &DevBuf<Scalar>,
+    bphi: &DevBuf<Scalar>,
+    m: &GpuMesh,
+    accumulate: bool,
+) -> Result<()> {
+    let n = m.n_cells;
+    if n == 0 {
+        return Ok(());
+    }
+    let nl = n as Label;
+    let acc: Label = if accumulate { 1 } else { 0 };
+    let f = k.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(out)
+            .arg(phi)
+            .arg(bphi)
+            .arg(&m.b_proc)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&acc)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+/// The selection rule of SPEC-LIT 139.9: the part twin when the mesh has
+/// processor faces, the old kernel exactly as today otherwise.
+fn face_flux_sum_select(
+    gpu: &Gpu,
+    sk: &SimpleKernels,
+    out: &mut DevBuf<Scalar>,
+    phi: &DevBuf<Scalar>,
+    bphi: &DevBuf<Scalar>,
+    m: &GpuMesh,
+    accumulate: bool,
+) -> Result<()> {
+    if m.n_proc_faces > 0 {
+        launch_face_flux_sum_part(
+            gpu,
+            &sk.face_flux_sum_part,
+            out,
+            phi,
+            bphi,
+            m,
+            accumulate,
+        )
+    } else {
+        launch_face_flux_sum(gpu, &sk.face_flux_sum, out, phi, bphi, m, accumulate)
+    }
+}
+
+/// sum_f (+-phi_f) per cell, smpFaceFluxSum (or its part twin, SPEC-LIT
+/// 139.9) - the public door tests use; loads the SIMPLE kernel set on every
+/// call.
+pub fn fvc_face_flux_sum(
+    gpu: &Gpu,
+    out: &mut DevBuf<Scalar>,
+    phi: &GpuSurfaceScalarField,
+    m: &GpuMesh,
+    accumulate: bool,
+) -> Result<()> {
+    if out.len() < m.n_cells {
+        return Err(Error::Config(format!(
+            "fvc_face_flux_sum: out has {} elements, expected at least {}",
+            out.len(),
+            m.n_cells
+        )));
+    }
+    // The kernel reads phi.f[face] and phi.bf[face] unchecked; a field of
+    // another mesh is refused here rather than read out of bounds.
+    if phi.f.len() != m.n_internal_faces || phi.bf.len() != m.n_boundary_faces {
+        return Err(Error::Config(format!(
+            "fvc_face_flux_sum: phi has {}/{} internal/boundary faces, the mesh {}/{}",
+            phi.f.len(),
+            phi.bf.len(),
+            m.n_internal_faces,
+            m.n_boundary_faces
+        )));
+    }
+    let sk = SimpleKernels::new(gpu)?;
+    face_flux_sum_select(gpu, &sk, out, &phi.f, &phi.bf, m, accumulate)
+}
+
 // ==========================================================================
 //  Tests
 //
@@ -1312,6 +1694,8 @@ fn launch_sub_scalar(
 mod tests {
     use super::*;
     use crate::mesh::PatchKind;
+    // §121's form names only the tests below construct.
+    use crate::momentum::BuoyancyForm;
     use crate::pressure::{PbicgstabBackend, SystemProbe};
     use crate::scalar_transport::weighted_stats;
     use crate::Vec3;
@@ -1524,6 +1908,7 @@ mod tests {
             g: Vec3::new(0.0, 0.0, -9.81),
             t_ref,
             t_min: 1.0,
+            form: BuoyancyForm::DensityRatio,
         };
 
         let ctrl = SimpleControls {
@@ -1582,6 +1967,7 @@ mod tests {
     /// whether the body force and the pressure gradient are discretised
     /// consistently. They are, only because both live on faces.
     #[test]
+    // f32 (F32-17): the SIMPLE loop's residuals go NaN from iteration 3
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_uniform_body_force_is_absorbed_by_the_pressure() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -1594,7 +1980,8 @@ mod tests {
         let t_ref: Scalar = 293.15;
         let t_box: Scalar = 500.0;
         let gz: Scalar = -9.81;
-        let buoy = BuoyancyCoeffs { g: Vec3::new(0.0, 0.0, gz), t_ref, t_min: 1.0 };
+        let buoy =
+            BuoyancyCoeffs { g: Vec3::new(0.0, 0.0, gz), t_ref, t_min: 1.0, form: BuoyancyForm::DensityRatio };
 
         let ctrl = at_rest_controls();
 
@@ -1681,6 +2068,7 @@ mod tests {
     /// which is what a face body force buys and what an interpolated one
     /// cannot deliver.
     #[test]
+    // f32 (F32-17): the SIMPLE loop's residuals go NaN from iteration 4
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_hydrostatic_column_has_no_checkerboard() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -1693,7 +2081,8 @@ mod tests {
 
         let t_ref: Scalar = 293.15;
         let gz: Scalar = -9.81;
-        let buoy = BuoyancyCoeffs { g: Vec3::new(0.0, 0.0, gz), t_ref, t_min: 1.0 };
+        let buoy =
+            BuoyancyCoeffs { g: Vec3::new(0.0, 0.0, gz), t_ref, t_min: 1.0, form: BuoyancyForm::DensityRatio };
 
         // Stably stratified - hot on top - so buoyancy cannot drive convection
         // and "at rest" is the true answer rather than a slow transient.
@@ -1832,6 +2221,110 @@ mod tests {
     }
 
     // ----------------------------------------------------------------------
+    //  SPEC-LIT §121 - the Boussinesq hydrostatic column
+    // ----------------------------------------------------------------------
+
+    /// The §121.4 hydrostatic column under the Boussinesq force: across every
+    /// z face the kinematic pressure must jump by exactly
+    ///
+    /// ```text
+    /// p_{k+1} - p_k = -h·g_z·β·(T_f - T_ref),   T_f = (T_k + T_{k+1})/2
+    /// ```
+    ///
+    /// and the fluid must stay at rest. The set-up is the §9 checkerboard
+    /// test's, with the force law switched: the same face-by-face balance,
+    /// carried by (121.3) instead of the density ratio. The checkerboard
+    /// itself needs no re-checking here - it is a property of the face flux
+    /// machinery, not of which kernel wrote the flux.
+    #[test]
+    // f32 (VAL-81): NaN at iteration 5 in f32; tests/f32_boussinesq.rs runs the f32 column
+    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
+    fn boussinesq_hydrostatic_column_jump_is_h_gz_beta_dt() -> Result<()> {
+        let Some(g) = gpu() else { return Ok(()) };
+
+        let (nx, ny, nz) = (3usize, 3usize, 32usize);
+        let h: Scalar = 0.05;
+        let d = Vec3::new(h, h, h);
+        let hm = boxed([nx, ny, nz], d, [PatchKind::Wall; 6]);
+        let m = GpuMesh::upload(&g, &hm)?;
+
+        let t_ref: Scalar = 293.15;
+        let gz: Scalar = -9.81;
+        let beta: Scalar = 3.0e-3;
+        let buoy = BuoyancyCoeffs {
+            g: Vec3::new(0.0, 0.0, gz),
+            t_ref,
+            t_min: 1.0,
+            form: BuoyancyForm::Boussinesq { beta },
+        };
+
+        // beta·max dT = 0.09 <= 0.1, §121.2's guard - this is a case the
+        // Boussinesq form is entitled to.
+        let t_of = |k: usize| -> Scalar {
+            let z = (k as Scalar + 0.5) * h;
+            t_ref + 30.0 * z / (nz as Scalar * h)
+        };
+
+        let ctrl = at_rest_controls();
+
+        let mut s = Simple::new(&g, &hm, &m, ctrl, buoy)?;
+        set_velocity_bcs(&g, s.u_mut(), &hm, &[Some(Vec3::ZERO); 6])?;
+        set_scalar_bcs(&g, s.p_mut(), &hm, &[None; 6])?;
+        s.initialise(&g)?;
+
+        let nut = laminar_nut(&g, &m, &hm)?;
+        let layer = nx * ny;
+        let tcells: Vec<Scalar> = (0..hm.n_cells).map(|c| t_of(c / layer)).collect();
+        // zeroGradient on every wall, so the boundary temperature is the
+        // adjacent cell's and the column is not driven from its ends.
+        let t = temperature(&g, &m, &hm, &tcells, &[None; 6])?;
+
+        let mut backend = PbicgstabBackend::new(ctrl.p_solver);
+        backend.setup(&g, &hm, &m, &SystemProbe::default())?;
+
+        for _ in 0..80 {
+            s.correct(&g, &mut backend, &nut, &t)?;
+        }
+
+        let u = g.download(&s.u().f)?;
+        let p = g.download(&s.p().f)?;
+
+        let speed = max_mag(&u);
+        assert!(
+            speed < 1e-9,
+            "a Boussinesq stratified column started moving at {speed} m/s"
+        );
+
+        // ---- one column of cells, bottom to top --------------------------
+        let col: Vec<Scalar> = (0..nz).map(|k| p[k * layer]).collect();
+
+        // (121.5), face by face.
+        let mut worst = 0.0 as Scalar;
+        let mut scale = 0.0 as Scalar;
+        for k in 0..nz - 1 {
+            let tf = 0.5 * (t_of(k) + t_of(k + 1));
+            let want = -h * gz * beta * (tf - t_ref);
+            let got = col[k + 1] - col[k];
+            worst = worst.max((got - want).abs());
+            scale = scale.max(want.abs());
+        }
+        assert!(scale > 0.0, "the column is not stratified: max |jump| = 0");
+        let err = worst / scale;
+        assert!(
+            err <= 1e-12,
+            "the Boussinesq hydrostatic balance is off by {err:.3e} of the \
+             largest jump, and (121.5) is exact at machine precision"
+        );
+
+        println!(
+            "boussinesq hydrostatic column: err = {err:.3e} of max |jump|, \
+             max |U| = {speed:.3e} m/s"
+        );
+
+        Ok(())
+    }
+
+    // ----------------------------------------------------------------------
     //  Lid-driven cavity - Ghia, Ghia & Shin (1982)
     // ----------------------------------------------------------------------
 
@@ -1915,6 +2408,7 @@ mod tests {
     /// central differencing is bounded, and upwind on 64 cells would be too
     /// diffusive to say anything about a 129-point reference.
     #[test]
+    // f32 (F32-17): the cavity run's residuals go NaN by iteration 16
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn lid_driven_cavity_matches_ghia_ghia_and_shin() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -2155,7 +2649,12 @@ mod tests {
             report_continuity: false, // THE line: one eight-byte copy per iteration, and the only host
             ..SimpleControls::default() // traffic the loop has left once the solvers are fixed-iteration
         };
-        let buoy = BuoyancyCoeffs { g: Vec3::ZERO, t_ref: 293.15, t_min: 1.0 };
+        let buoy = BuoyancyCoeffs {
+            g: Vec3::ZERO,
+            t_ref: 293.15,
+            t_min: 1.0,
+            form: BuoyancyForm::DensityRatio,
+        };
         let nut = laminar_nut(&g, &m, &hm).expect("nut");
         let t = temperature(&g, &m, &hm, &vec![293.15; n], &[None; 6]).expect("T");
 
@@ -2471,6 +2970,7 @@ mod tests {
     /// - and the two flows must be the same flow, which the peak velocity
     ///   check says.
     #[test]
+    // f32 (F32-17): both loops' residuals go NaN before a steady answer
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn piso_and_simple_reach_the_same_steady_answer() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -2532,6 +3032,7 @@ mod tests {
     /// outer correctors, each re-linearising momentum, each running two
     /// pressure correctors, with relaxation switched off on the fourth.
     #[test]
+    // f32 (F32-17): both loops' residuals go NaN before a steady answer
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn pimple_and_piso_reach_the_same_steady_answer() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -2579,6 +3080,7 @@ mod tests {
     /// step STARTED from, bit for bit. `begin_time_step` is the only thing
     /// entitled to move it.
     #[test]
+    // f32 (F32-17): the corrector loop's p residual goes NaN by iteration 3
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_time_step_stores_one_old_level_however_many_correctors_it_takes() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
@@ -2652,7 +3154,6 @@ mod tests {
     /// correctors it is given - SPEC-LIT §14's note that relaxation is what
     /// replaces the time derivative there.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_steady_run_keeps_its_relaxation_on_every_iteration() -> Result<()> {
         let Some(g) = gpu() else { return Ok(()) };
 

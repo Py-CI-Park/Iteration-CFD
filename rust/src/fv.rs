@@ -642,6 +642,7 @@ pub struct FvKernels {
     div_surface: CudaFunction,
     interpolate_linear: CudaFunction,
     interpolate_boundary: CudaFunction,
+    interpolate_linear_proc: CudaFunction,
     flux_internal: CudaFunction,
     flux_boundary: CudaFunction,
     sn_grad_internal: CudaFunction,
@@ -651,6 +652,32 @@ pub struct FvKernels {
     sn_grad_skew_internal: CudaFunction,
     reconstruct: CudaFunction,
     production: CudaFunction,
+
+    // SPEC-LIT 139.8 (PAR-13a): the part twins, launched ONLY on a mesh with
+    // processor faces (`GpuMesh::n_proc_faces > 0`), where they assemble the
+    // laplacian and both Gauss gradients bitwise as the whole mesh did.
+    lap_diag_part: CudaFunction,
+    lap_boundary_part: CudaFunction,
+    lap_non_orth_part: CudaFunction,
+    grad_scalar_part: CudaFunction,
+    grad_vector_part: CudaFunction,
+
+    // SPEC-LIT 139.9 (PAR-13b): the convection and flux twins, launched ONLY
+    // on a mesh with processor faces (`GpuMesh::n_proc_faces > 0`), where
+    // they sum the convection source, the flux divergences and the
+    // reconstruction in the whole mesh's order.
+    div_bounded_diag_part: CudaFunction,
+    div_correction_part: CudaFunction,
+    div_surface_part: CudaFunction,
+    reconstruct_part: CudaFunction,
+
+    // SPEC-LIT 139.10 (PAR-14): the convection weights' fix-ups and the
+    // convection assembly's twins - launched only on a mesh with processor
+    // faces, so no whole mesh and no P = 1 part moves.
+    weights_boundary_proc: CudaFunction,
+    weights_boundary_limited_proc: CudaFunction,
+    div_diag_part: CudaFunction,
+    div_boundary_part: CudaFunction,
 }
 
 impl FvKernels {
@@ -695,6 +722,7 @@ impl FvKernels {
             div_surface: k.func("fvDivSurface")?,
             interpolate_linear: k.func("fvInterpolateLinear")?,
             interpolate_boundary: k.func("fvInterpolateBoundary")?,
+            interpolate_linear_proc: k.func("fvInterpolateLinearProc")?,
             flux_internal: k.func("fvFluxInternal")?,
             flux_boundary: k.func("fvFluxBoundary")?,
             sn_grad_internal: k.func("fvSnGradFluxInternal")?,
@@ -704,6 +732,25 @@ impl FvKernels {
             sn_grad_skew_internal: k.func("fvSnGradSkewInternal")?,
             reconstruct: k.func("fvReconstruct")?,
             production: k.func("fvProduction")?,
+
+            lap_diag_part: k.func("fvLapDiagPart")?,
+            lap_boundary_part: k.func("fvLapBoundaryPart")?,
+            lap_non_orth_part: k.func("fvLapNonOrthPart")?,
+            grad_scalar_part: k.func("fvGradScalarPart")?,
+            grad_vector_part: k.func("fvGradVectorPart")?,
+
+            div_bounded_diag_part: k.func("fvDivBoundedDiagPart")?,
+            div_correction_part: k.func("fvDivCorrectionPart")?,
+            div_surface_part: k.func("fvDivSurfacePart")?,
+            reconstruct_part: k.func("fvReconstructPart")?,
+
+            // SPEC-LIT 139.10 (PAR-14): the convection weights' fix-ups and
+            // the convection assembly's twins, launched only when the mesh
+            // has processor faces.
+            weights_boundary_proc: k.func("fvWeightsBoundaryProc")?,
+            weights_boundary_limited_proc: k.func("fvWeightsBoundaryLimitedProc")?,
+            div_diag_part: k.func("fvDivDiagPart")?,
+            div_boundary_part: k.func("fvDivBoundaryPart")?,
         })
     }
 }
@@ -772,7 +819,7 @@ pub fn fvm_ddt_euler(
     sign: Scalar,
 ) -> Result<()> {
     check_matrix(a, m)?;
-    expect_len(psi0, m.n_cells, "psi0")?;
+    expect_len(psi0, m.n_local(), "psi0")?;
 
     let n = m.n_cells;
     if n == 0 || r_delta_t == 0.0 {
@@ -797,8 +844,8 @@ pub fn fvm_ddt_euler(
             }
         }
         (Some(r), Some(r0)) => {
-            expect_len(r, n, "rho")?;
-            expect_len(r0, n, "rho0")?;
+            expect_len(r, m.n_local(), "rho")?;
+            expect_len(r0, m.n_local(), "rho0")?;
             let f = k.ddt_euler_rho.clone();
             unsafe {
                 gpu.stream()
@@ -853,8 +900,8 @@ pub fn fvm_ddt_bdf2(
     sign: Scalar,
 ) -> Result<()> {
     check_matrix(a, m)?;
-    expect_len(psi0, m.n_cells, "psi0")?;
-    expect_len(psi00, m.n_cells, "psi00")?;
+    expect_len(psi0, m.n_local(), "psi0")?;
+    expect_len(psi00, m.n_local(), "psi00")?;
 
     let n = m.n_cells;
     if n == 0 || r_delta_t == 0.0 {
@@ -880,9 +927,9 @@ pub fn fvm_ddt_bdf2(
             }
         }
         (Some(r), Some(r0), Some(r00)) => {
-            expect_len(r, n, "rho")?;
-            expect_len(r0, n, "rho0")?;
-            expect_len(r00, n, "rho00")?;
+            expect_len(r, m.n_local(), "rho")?;
+            expect_len(r0, m.n_local(), "rho0")?;
+            expect_len(r00, m.n_local(), "rho00")?;
             let f = k.ddt_bdf2_rho.clone();
             unsafe {
                 gpu.stream()
@@ -941,6 +988,14 @@ pub fn fvm_ddt_bdf2(
 /// are being interpolated between. Everywhere else the face value comes from
 /// the field's `(fr, refValue, refGrad)` triple and `bw` is never read, so `1`
 /// is written there.
+///
+/// SPEC-LIT 139.10 (PAR-14): on a decomposed part, `bw` of a **processor
+/// face** is the whole face's owner-side weight - the weight the whole mesh's
+/// internal face had, which is what `b_proc_w` stores and what
+/// `fvm_div_gauss`'s part twins read. After the boundary launch a fix-up
+/// overwrites exactly the faces `b_proc` marks (`fvWeightsBoundaryProc` /
+/// `fvWeightsBoundaryLimitedProc`), so every other mesh launches nothing and
+/// moves no bit.
 #[allow(clippy::too_many_arguments)]
 pub fn div_scheme_weights(
     gpu: &Gpu,
@@ -957,7 +1012,7 @@ pub fn div_scheme_weights(
 
     expect_len(&phi.f, m.n_internal_faces, "phi.f")?;
     expect_len(&phi.bf, m.n_boundary_faces, "phi.bf")?;
-    expect_len(&psi.f, m.n_cells, "psi.f")?;
+    expect_len(&psi.f, m.n_local(), "psi.f")?;
 
     // Only a scheme whose WEIGHT is a function of r takes the limited kernel.
     // `linearUpwind` and `cubic` need a gradient too, but for their explicit
@@ -967,7 +1022,7 @@ pub fn div_scheme_weights(
     let grad = match (scheme.weight_needs_gradient(), grad_psi) {
         (false, _) => None,
         (true, Some(g)) => {
-            expect_len(g, m.n_cells, "grad_psi")?;
+            expect_len(g, m.n_local(), "grad_psi")?;
             Some(g)
         }
         (true, None) => {
@@ -1040,7 +1095,7 @@ pub fn div_scheme_weights(
                     unsafe {
                         gpu.stream()
                             .launch_builder(&f)
-                            .arg(bw)
+                            .arg(&mut *bw)
                             .arg(&phi.bf)
                             .arg(&m.b_weights)
                             .arg(&m.b_kind)
@@ -1049,13 +1104,31 @@ pub fn div_scheme_weights(
                             .arg(&nl)
                             .launch(cfg_for(n))?;
                     }
+
+                    // SPEC-LIT 139.10 (PAR-14): the processor faces' whole
+                    // weight, after the old launch has run.
+                    if m.n_proc_faces > 0 {
+                        let f = k.weights_boundary_proc.clone();
+                        unsafe {
+                            gpu.stream()
+                                .launch_builder(&f)
+                                .arg(&mut *bw)
+                                .arg(&phi.bf)
+                                .arg(&m.b_proc)
+                                .arg(&m.b_proc_w)
+                                .arg(&cd)
+                                .arg(&beta)
+                                .arg(&nl)
+                                .launch(cfg_for(n))?;
+                        }
+                    }
                 }
                 Some(g) => {
                     let f = k.weights_boundary_limited.clone();
                     unsafe {
                         gpu.stream()
                             .launch_builder(&f)
-                            .arg(bw)
+                            .arg(&mut *bw)
                             .arg(&phi.bf)
                             .arg(&m.b_weights)
                             .arg(&psi.f)
@@ -1070,6 +1143,30 @@ pub fn div_scheme_weights(
                             .arg(&beta)
                             .arg(&nl)
                             .launch(cfg_for(n))?;
+                    }
+                    // SPEC-LIT 139.10 (PAR-14): the same, for a scheme whose
+                    // weight is a function of r - the limited body on the
+                    // whole mesh's cells, centres and upwind gradient.
+                    if m.n_proc_faces > 0 {
+                        let f = k.weights_boundary_limited_proc.clone();
+                        unsafe {
+                            gpu.stream()
+                                .launch_builder(&f)
+                                .arg(&mut *bw)
+                                .arg(&phi.bf)
+                                .arg(&m.b_proc_w)
+                                .arg(&psi.f)
+                                .arg(g)
+                                .arg(&m.c)
+                                .arg(&m.b_proc_c)
+                                .arg(&m.b_proc)
+                                .arg(&m.b_face_cells)
+                                .arg(&m.b_nbr_cell)
+                                .arg(&cd)
+                                .arg(&beta)
+                                .arg(&nl)
+                                .launch(cfg_for(n))?;
+                        }
                     }
                 }
             }
@@ -1134,6 +1231,23 @@ pub fn fvm_div_gauss(
         }
     }
 
+    // SPEC-LIT 139.10 (PAR-14): on a part the diagonal share is summed over
+    // the MERGED row, so a processor face's share lands where the whole mesh
+    // put it - inside the internal-face run, at its global place - and a
+    // processor face's off-diagonal half goes to boundary_coeffs ONLY
+    // (`internal_coeffs = 0`, `boundary_coeffs = -upper[g]` on the owning
+    // side, `-lower[g]` on the other; 71.6's split). A whole mesh has no
+    // processor face and takes the path below, unchanged.
+    if m.n_proc_faces > 0 {
+        if m.n_cells > 0 {
+            part_div_diag(gpu, k, a, m, phi, w, bw, sign)?;
+        }
+        if m.n_boundary_faces > 0 {
+            part_div_boundary(gpu, k, a, m, phi, bw, psi, sign)?;
+        }
+        return Ok(());
+    }
+
     if m.n_cells > 0 {
         let n = m.n_cells;
         let nl = n as Label;
@@ -1175,6 +1289,80 @@ pub fn fvm_div_gauss(
         }
     }
 
+    Ok(())
+}
+
+/// [`fvm_div_gauss`]'s diagonal, on a decomposed part (SPEC-LIT 139.10):
+/// [`part_lap_diag`]'s rule - the merged row, the whole mesh's operands on a
+/// processor entry.
+#[allow(clippy::too_many_arguments)]
+fn part_div_diag(
+    gpu: &Gpu,
+    k: &FvKernels,
+    a: &mut GpuLduMatrix,
+    m: &GpuMesh,
+    phi: &GpuSurfaceScalarField,
+    w: &DevBuf<Scalar>,
+    bw: &DevBuf<Scalar>,
+    sign: Scalar,
+) -> Result<()> {
+    let n = m.n_cells;
+    let nl = n as Label;
+    let f = k.div_diag_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut a.diag)
+            .arg(&phi.f)
+            .arg(w)
+            .arg(&phi.bf)
+            .arg(bw)
+            .arg(&m.b_proc)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&sign)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+/// [`fvm_div_gauss`]'s boundary pass, on a decomposed part (SPEC-LIT 139.10):
+/// [`part_lap_boundary`]'s rule - a processor face's `internal_coeffs` stays
+/// at the zero the matrix was zeroed with, and its whole mesh's off-diagonal
+/// share, negated, goes to `boundary_coeffs`.
+#[allow(clippy::too_many_arguments)]
+fn part_div_boundary(
+    gpu: &Gpu,
+    k: &FvKernels,
+    a: &mut GpuLduMatrix,
+    m: &GpuMesh,
+    phi: &GpuSurfaceScalarField,
+    bw: &DevBuf<Scalar>,
+    psi: &GpuScalarField,
+    sign: Scalar,
+) -> Result<()> {
+    let n = m.n_boundary_faces;
+    let nl = n as Label;
+    let f = k.div_boundary_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut a.internal_coeffs)
+            .arg(&mut a.boundary_coeffs)
+            .arg(&phi.bf)
+            .arg(bw)
+            .arg(&psi.fr)
+            .arg(&psi.ref_value)
+            .arg(&psi.ref_grad)
+            .arg(&m.b_delta_coeffs)
+            .arg(&m.b_proc)
+            .arg(&m.b_kind)
+            .arg(&sign)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
     Ok(())
 }
 
@@ -1222,7 +1410,7 @@ pub fn fvm_div_correction(
     check_matrix(a, m)?;
     expect_len(&phi.f, m.n_internal_faces, "phi.f")?;
     expect_len(&phi.bf, m.n_boundary_faces, "phi.bf")?;
-    expect_len(grad_psi, m.n_cells, "grad_psi")?;
+    expect_len(grad_psi, m.n_local(), "grad_psi")?;
 
     let n = m.n_cells;
     if n == 0 {
@@ -1231,6 +1419,15 @@ pub fn fvm_div_correction(
     let nl = n as Label;
     let cd = corr.code();
     let coef = corr.coef();
+
+    // SPEC-LIT 139.9 (PAR-13b): on a part the source is summed over the
+    // MERGED row, so a processor face's correction lands where the whole
+    // mesh put it - inside the internal-face run, at its global place. A
+    // whole mesh has no processor face and takes the path below, unchanged.
+    if m.n_proc_faces > 0 {
+        part_div_correction(gpu, k, a, m, phi, grad_psi, cd, coef, sign)?;
+        return Ok(());
+    }
 
     let f = k.div_correction.clone();
     unsafe {
@@ -1300,8 +1497,8 @@ pub fn div_scheme_face_value(
     expect_len(out, m.n_internal_faces, "out")?;
     expect_len(w, m.n_internal_faces, "w")?;
     expect_len(&phi.f, m.n_internal_faces, "phi.f")?;
-    expect_len(&psi.f, m.n_cells, "psi.f")?;
-    expect_len(grad_psi, m.n_cells, "grad_psi")?;
+    expect_len(&psi.f, m.n_local(), "psi.f")?;
+    expect_len(grad_psi, m.n_local(), "grad_psi")?;
 
     let n = m.n_internal_faces;
     if n == 0 {
@@ -1366,6 +1563,15 @@ pub fn fvm_div_bounded_correction(
         return Ok(());
     }
     let nl = n as Label;
+
+    // SPEC-LIT 139.9 (PAR-13b): the part twin - a processor face's phi is
+    // taken from the whole mesh's INTERNAL face, at its place in the merged
+    // row. A whole mesh has no processor face and takes the path below,
+    // unchanged.
+    if m.n_proc_faces > 0 {
+        part_div_bounded_diag(gpu, k, a, m, phi, sign)?;
+        return Ok(());
+    }
 
     let f = k.div_bounded_diag.clone();
     unsafe {
@@ -1445,7 +1651,13 @@ pub fn fvm_laplacian(
         }
     }
 
-    if m.n_cells > 0 {
+    // SPEC-LIT 139.8 (PAR-13a): on a part the diagonal is summed over the
+    // MERGED row, so a processor face's share lands where the whole mesh put
+    // it - inside fvLapDiag's sum. A whole mesh has no processor face and
+    // takes the path below, unchanged.
+    if m.n_proc_faces > 0 && m.n_cells > 0 {
+        part_lap_diag(gpu, k, a, m, gamma_mag_sf, b_gamma_mag_sf, sign)?;
+    } else if m.n_cells > 0 {
         let n = m.n_cells;
         let nl = n as Label;
         let f = k.lap_diag.clone();
@@ -1464,7 +1676,12 @@ pub fn fvm_laplacian(
         }
     }
 
-    if m.n_boundary_faces > 0 {
+    // The same selection for the boundary pass: on a part the processor
+    // faces' `internal_coeffs` stay 0 (split_matrix's rule, SPEC-LIT 71.6)
+    // and only `boundary_coeffs` is written.
+    if m.n_proc_faces > 0 && m.n_boundary_faces > 0 {
+        part_lap_boundary(gpu, k, a, m, b_gamma_mag_sf, psi, sign)?;
+    } else if m.n_boundary_faces > 0 {
         let n = m.n_boundary_faces;
         let nl = n as Label;
         let f = k.lap_boundary.clone();
@@ -1559,9 +1776,9 @@ pub fn fvm_laplacian_non_orth_correction(
     check_matrix(a, m)?;
     expect_len(gamma_mag_sf, m.n_internal_faces, "gamma_mag_sf")?;
     expect_len(b_gamma_mag_sf, m.n_boundary_faces, "b_gamma_mag_sf")?;
-    expect_len(&psi.f, m.n_cells, "psi.f")?;
+    expect_len(&psi.f, m.n_local(), "psi.f")?;
     expect_len(&psi.fr, m.n_boundary_faces, "psi.fr")?;
-    expect_len(grad_psi, m.n_cells, "grad_psi")?;
+    expect_len(grad_psi, m.n_local(), "grad_psi")?;
 
     if !sn_grad.applies() {
         return Ok(());
@@ -1573,6 +1790,20 @@ pub fn fvm_laplacian_non_orth_correction(
     }
     let nl = n as Label;
     let alpha = sn_grad.alpha();
+
+    // SPEC-LIT 139.8 (PAR-13a): on a part the correction is summed over the
+    // MERGED row, so a processor face's term is the internal-face expression
+    // on the whole mesh's operands, in the whole mesh's place in the row -
+    // not the coupled branch a folded-in-half cyclic couple takes. The skew
+    // step (internal faces only) runs after it exactly as before, and
+    // nothing else in this function runs.
+    if m.n_proc_faces > 0 {
+        part_lap_non_orth(gpu, k, a, m, gamma_mag_sf, b_gamma_mag_sf, psi, grad_psi, alpha, sign)?;
+        if sn_grad.skew() {
+            fvm_laplacian_skew_correction(gpu, k, a, m, gamma_mag_sf, grad_psi, sign)?;
+        }
+        return Ok(());
+    }
 
     let f = k.lap_non_orth.clone();
     unsafe {
@@ -1592,6 +1823,7 @@ pub fn fvm_laplacian_non_orth_correction(
             .arg(&m.b_delta_coeffs)
             .arg(&m.b_non_orth_corr)
             .arg(&m.b_nbr_cell)
+            .arg(&psi.jump)
             .arg(&m.b_weights)
             .arg(&psi.fr)
             .arg(&psi.ref_value)
@@ -1656,7 +1888,7 @@ pub fn fvm_laplacian_skew_correction(
 ) -> Result<()> {
     check_matrix(a, m)?;
     expect_len(gamma_mag_sf, m.n_internal_faces, "gamma_mag_sf")?;
-    expect_len(grad_psi, m.n_cells, "grad_psi")?;
+    expect_len(grad_psi, m.n_local(), "grad_psi")?;
 
     let n = m.n_cells;
     if n == 0 || m.n_internal_faces == 0 {
@@ -1707,7 +1939,7 @@ pub fn fvm_sp(
     sign: Scalar,
 ) -> Result<()> {
     check_matrix(a, m)?;
-    expect_len(sp, m.n_cells, "sp")?;
+    expect_len(sp, m.n_local(), "sp")?;
 
     let n = m.n_cells;
     if n == 0 {
@@ -1756,8 +1988,8 @@ pub fn fvm_susp(
     sign: Scalar,
 ) -> Result<()> {
     check_matrix(a, m)?;
-    expect_len(susp, m.n_cells, "susp")?;
-    expect_len(psi, m.n_cells, "psi")?;
+    expect_len(susp, m.n_local(), "susp")?;
+    expect_len(psi, m.n_local(), "psi")?;
 
     let n = m.n_cells;
     if n == 0 {
@@ -1792,7 +2024,7 @@ pub fn fvm_su(
     sign: Scalar,
 ) -> Result<()> {
     check_matrix(a, m)?;
-    expect_len(su, m.n_cells, "su")?;
+    expect_len(su, m.n_local(), "su")?;
 
     let n = m.n_cells;
     if n == 0 {
@@ -1852,8 +2084,8 @@ pub fn fvc_grad_scalar_scheme(
     m: &GpuMesh,
     scheme: GradScheme,
 ) -> Result<()> {
-    expect_len(out, m.n_cells, "out")?;
-    expect_len(&psi.f, m.n_cells, "psi.f")?;
+    expect_len(out, m.n_local(), "out")?;
+    expect_len(&psi.f, m.n_local(), "psi.f")?;
     expect_len(&psi.bf, m.n_boundary_faces, "psi.bf")?;
 
     let n = m.n_cells;
@@ -1863,6 +2095,13 @@ pub fn fvc_grad_scalar_scheme(
     let nl = n as Label;
 
     match scheme.base {
+        // SPEC-LIT 139.8 (PAR-13a): on a part, Gauss over the MERGED row, so
+        // a processor face's face value is formed from the whole mesh's
+        // weight and the whole mesh's two cells - the internal-face
+        // arithmetic - and lands in the whole mesh's place in the sum.
+        GradBase::Gauss if m.n_proc_faces > 0 => {
+            part_grad_scalar(gpu, k, out, psi, m)?;
+        }
         GradBase::Gauss => {
             let f = k.grad_scalar.clone();
             unsafe {
@@ -1903,6 +2142,8 @@ pub fn fvc_grad_scalar_scheme(
                     .arg(&m.owner)
                     .arg(&m.neighbour)
                     .arg(&m.b_nbr_cell)
+                    // SPEC-LIT (120.2c): a coupled face's jump.
+                    .arg(&psi.jump)
                     .arg(&m.b_kind)
                     .arg(&m.cf_offset)
                     .arg(&m.cf_face)
@@ -1929,6 +2170,7 @@ pub fn fvc_grad_scalar_scheme(
                 .arg(&m.owner)
                 .arg(&m.neighbour)
                 .arg(&m.b_nbr_cell)
+                .arg(&psi.jump)
                 .arg(&m.b_kind)
                 .arg(&m.cf_offset)
                 .arg(&m.cf_face)
@@ -1956,8 +2198,8 @@ pub fn fvc_grad_vector_scheme(
     m: &GpuMesh,
     scheme: GradScheme,
 ) -> Result<()> {
-    expect_len(out, m.n_cells, "out")?;
-    expect_len(&u.f, m.n_cells, "u.f")?;
+    expect_len(out, m.n_local(), "out")?;
+    expect_len(&u.f, m.n_local(), "u.f")?;
     expect_len(&u.bf, m.n_boundary_faces, "u.bf")?;
 
     let n = m.n_cells;
@@ -1967,6 +2209,10 @@ pub fn fvc_grad_vector_scheme(
     let nl = n as Label;
 
     match scheme.base {
+        // SPEC-LIT 139.8 (PAR-13a): the vector twin - see the scalar arm.
+        GradBase::Gauss if m.n_proc_faces > 0 => {
+            part_grad_vector(gpu, k, out, u, m)?;
+        }
         GradBase::Gauss => {
             let f = k.grad_vector.clone();
             unsafe {
@@ -2095,8 +2341,8 @@ pub fn fvc_grad_scalar_skew_correction(
     grad_prev: &DevBuf<Vec3>,
     m: &GpuMesh,
 ) -> Result<()> {
-    expect_len(out, m.n_cells, "out")?;
-    expect_len(grad_prev, m.n_cells, "grad_prev")?;
+    expect_len(out, m.n_local(), "out")?;
+    expect_len(grad_prev, m.n_local(), "grad_prev")?;
     let n = m.n_cells;
     if n == 0 || m.n_internal_faces == 0 {
         return Ok(());
@@ -2139,8 +2385,8 @@ pub fn fvc_grad_vector_skew_correction(
     grad_prev: &DevBuf<Tensor>,
     m: &GpuMesh,
 ) -> Result<()> {
-    expect_len(out, m.n_cells, "out")?;
-    expect_len(grad_prev, m.n_cells, "grad_prev")?;
+    expect_len(out, m.n_local(), "out")?;
+    expect_len(grad_prev, m.n_local(), "grad_prev")?;
     let n = m.n_cells;
     if n == 0 || m.n_internal_faces == 0 {
         return Ok(());
@@ -2182,7 +2428,7 @@ pub fn fvc_div_surface(
     phi: &GpuSurfaceScalarField,
     m: &GpuMesh,
 ) -> Result<()> {
-    expect_len(out, m.n_cells, "out")?;
+    expect_len(out, m.n_local(), "out")?;
     expect_len(&phi.f, m.n_internal_faces, "phi.f")?;
     expect_len(&phi.bf, m.n_boundary_faces, "phi.bf")?;
 
@@ -2191,6 +2437,15 @@ pub fn fvc_div_surface(
         return Ok(());
     }
     let nl = n as Label;
+
+    // SPEC-LIT 139.9 (PAR-13b): on a part the divergence is summed over the
+    // MERGED row, so a processor face's flux is added where the whole mesh
+    // added it. A whole mesh has no processor face and takes the path
+    // below, unchanged.
+    if m.n_proc_faces > 0 {
+        part_div_surface(gpu, k, out, phi, m)?;
+        return Ok(());
+    }
 
     let f = k.div_surface.clone();
     unsafe {
@@ -2224,7 +2479,7 @@ pub fn interpolate_linear(
 ) -> Result<()> {
     expect_len(&out.f, m.n_internal_faces, "out.f")?;
     expect_len(&out.bf, m.n_boundary_faces, "out.bf")?;
-    expect_len(&psi.f, m.n_cells, "psi.f")?;
+    expect_len(&psi.f, m.n_local(), "psi.f")?;
     expect_len(&psi.bf, m.n_boundary_faces, "psi.bf")?;
 
     if m.n_internal_faces > 0 {
@@ -2258,6 +2513,44 @@ pub fn interpolate_linear(
         }
     }
 
+    // SPEC-LIT 139.10 (PAR-14 run 2): on a part the processor faces' values
+    // are the WHOLE mesh's internal interpolations, which the copy above
+    // cannot form - it hands a composed cell value where fvInterpolateLinear
+    // handed the weighted sum of the two cells. `psi.f` covers the exchanged
+    // ghosts, so the twin reads the same cells the whole mesh read. A whole
+    // mesh launches nothing and moves no bit.
+    if m.n_proc_faces > 0 {
+        interpolate_linear_proc(gpu, k, out, psi, m)?;
+    }
+
+    Ok(())
+}
+
+/// The processor faces of [`interpolate_linear`], over the whole mesh's
+/// operands (SPEC-LIT 139.10). Private: every launch site goes through
+/// [`interpolate_linear`].
+fn interpolate_linear_proc(
+    gpu: &Gpu,
+    k: &FvKernels,
+    out: &mut GpuSurfaceScalarField,
+    psi: &GpuScalarField,
+    m: &GpuMesh,
+) -> Result<()> {
+    let n = m.n_boundary_faces;
+    let nl = n as Label;
+    let f = k.interpolate_linear_proc.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut out.bf)
+            .arg(&psi.f)
+            .arg(&m.b_proc)
+            .arg(&m.b_proc_w)
+            .arg(&m.b_face_cells)
+            .arg(&m.b_nbr_cell)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
     Ok(())
 }
 
@@ -2277,7 +2570,7 @@ pub fn interpolate_vector_flux(
 ) -> Result<()> {
     expect_len(&out.f, m.n_internal_faces, "out.f")?;
     expect_len(&out.bf, m.n_boundary_faces, "out.bf")?;
-    expect_len(&u.f, m.n_cells, "u.f")?;
+    expect_len(&u.f, m.n_local(), "u.f")?;
     expect_len(&u.bf, m.n_boundary_faces, "u.bf")?;
 
     if m.n_internal_faces > 0 {
@@ -2339,7 +2632,7 @@ pub fn sn_grad_flux(
     expect_len(&phi.bf, m.n_boundary_faces, "phi.bf")?;
     expect_len(gamma_mag_sf, m.n_internal_faces, "gamma_mag_sf")?;
     expect_len(b_gamma_mag_sf, m.n_boundary_faces, "b_gamma_mag_sf")?;
-    expect_len(&psi.f, m.n_cells, "psi.f")?;
+    expect_len(&psi.f, m.n_local(), "psi.f")?;
 
     if m.n_internal_faces > 0 {
         let n = m.n_internal_faces;
@@ -2375,6 +2668,7 @@ pub fn sn_grad_flux(
                 .arg(&psi.ref_grad)
                 .arg(&m.b_face_cells)
                 .arg(&m.b_nbr_cell)
+                .arg(&psi.jump)
                 .arg(&m.b_kind)
                 .arg(&nl)
                 .launch(cfg_for(n))?;
@@ -2415,9 +2709,9 @@ pub fn sn_grad_flux_correction(
     expect_len(&phi.bf, m.n_boundary_faces, "phi.bf")?;
     expect_len(gamma_mag_sf, m.n_internal_faces, "gamma_mag_sf")?;
     expect_len(b_gamma_mag_sf, m.n_boundary_faces, "b_gamma_mag_sf")?;
-    expect_len(&psi.f, m.n_cells, "psi.f")?;
+    expect_len(&psi.f, m.n_local(), "psi.f")?;
     expect_len(&psi.fr, m.n_boundary_faces, "psi.fr")?;
-    expect_len(grad_psi, m.n_cells, "grad_psi")?;
+    expect_len(grad_psi, m.n_local(), "grad_psi")?;
 
     // The same short-circuit as fvm_laplacian_non_orth_correction, and for the
     // same reason: the flux and the matrix must agree face for face, so the
@@ -2464,6 +2758,7 @@ pub fn sn_grad_flux_correction(
                 .arg(&m.b_delta_coeffs)
                 .arg(&m.b_non_orth_corr)
                 .arg(&m.b_nbr_cell)
+                .arg(&psi.jump)
                 .arg(&m.b_weights)
                 .arg(&psi.fr)
                 .arg(&psi.ref_value)
@@ -2521,6 +2816,13 @@ pub fn sn_grad_flux_correction(
 /// they are the only faces with an area component in the unresolved direction
 /// and without them the 3×3 system is singular; their flux is zero, so what
 /// they contribute is exactly the constraint `U·n = 0` there.
+///
+/// On a mesh with a wedge the boundary faces enter through
+/// [`GpuMesh::b_sf_recon`], the rotated areas `S'_f` of SPEC-LIT 119.2's
+/// equation (119.2j), so the chord-average flux a wedge face carries pins
+/// the swirl component and nothing else; the weight stays `1/|S_f|`
+/// (`b_mag_sf` is unchanged) - only the direction is rotated. A mesh
+/// without a wedge passes its own `b_sf`, bit for bit as before.
 pub fn fvc_reconstruct(
     gpu: &Gpu,
     k: &FvKernels,
@@ -2528,7 +2830,7 @@ pub fn fvc_reconstruct(
     phi: &GpuSurfaceScalarField,
     m: &GpuMesh,
 ) -> Result<()> {
-    expect_len(out, m.n_cells, "out")?;
+    expect_len(out, m.n_local(), "out")?;
     expect_len(&phi.f, m.n_internal_faces, "phi.f")?;
     expect_len(&phi.bf, m.n_boundary_faces, "phi.bf")?;
 
@@ -2537,6 +2839,22 @@ pub fn fvc_reconstruct(
         return Ok(());
     }
     let nl = n as Label;
+
+    // SPEC-LIT 119.2, (119.2j): `S'_f` on the two wedge patches when the mesh
+    // has one, `b_sf` bit for bit otherwise.
+    let b_sf: &DevBuf<Vec3> = match &m.b_sf_recon {
+        Some(r) => r,
+        None => &m.b_sf,
+    };
+
+    // SPEC-LIT 139.9 (PAR-13b): on a part the row sums run over the MERGED
+    // row with the whole mesh's face normal and flux (side-signed) rebuilt
+    // per processor face. A whole mesh has no processor face and takes the
+    // path below, unchanged.
+    if m.n_proc_faces > 0 {
+        part_reconstruct(gpu, k, out, phi, m)?;
+        return Ok(());
+    }
 
     let f = k.reconstruct.clone();
     unsafe {
@@ -2547,7 +2865,7 @@ pub fn fvc_reconstruct(
             .arg(&phi.bf)
             .arg(&m.sf)
             .arg(&m.mag_sf)
-            .arg(&m.b_sf)
+            .arg(b_sf)
             .arg(&m.b_mag_sf)
             .arg(&m.cf_offset)
             .arg(&m.cf_face)
@@ -2583,9 +2901,19 @@ pub fn turbulence_production(
     grad_u: &DevBuf<Tensor>,
     n_cells: usize,
 ) -> Result<()> {
-    expect_len(out, n_cells, "out")?;
-    expect_len(nut, n_cells, "nut")?;
-    expect_len(grad_u, n_cells, "grad_u")?;
+    // The PAR-09 room (SPEC-LIT 139.6, PAR-12): a per-cell buffer on a part
+    // is `n_cells + n_halo` long, and the kernel threads the owned cells
+    // only, so the room is admitted and never read. A whole mesh has
+    // `n_local == n_cells`, so a serial run passes what it always passed.
+    if out.len() < n_cells {
+        expect_len(out, n_cells, "out")?;
+    }
+    if nut.len() < n_cells {
+        expect_len(nut, n_cells, "nut")?;
+    }
+    if grad_u.len() < n_cells {
+        expect_len(grad_u, n_cells, "grad_u")?;
+    }
 
     if n_cells == 0 {
         return Ok(());
@@ -2603,6 +2931,359 @@ pub fn turbulence_production(
             .launch(cfg_for(n_cells))?;
     }
 
+    Ok(())
+}
+
+// ==========================================================================
+//  SPEC-LIT 139.8 (PAR-13a): the part launches
+//
+//  Private, and called only under the `n_proc_faces > 0` selection above: a
+//  whole mesh and every P = 1 part has no processor face, so no existing
+//  caller ever reaches these. Each passes the mesh's merged row map and the
+//  processor-face marks; the operands land on the twins in the order the
+//  kernels declare them.
+// ==========================================================================
+
+#[allow(clippy::too_many_arguments)]
+fn part_lap_diag(
+    gpu: &Gpu,
+    k: &FvKernels,
+    a: &mut GpuLduMatrix,
+    m: &GpuMesh,
+    gamma_mag_sf: &DevBuf<Scalar>,
+    b_gamma_mag_sf: &DevBuf<Scalar>,
+    sign: Scalar,
+) -> Result<()> {
+    let n = m.n_cells;
+    let nl = n as Label;
+    let f = k.lap_diag_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut a.diag)
+            .arg(gamma_mag_sf)
+            .arg(&m.delta_coeffs)
+            .arg(b_gamma_mag_sf)
+            .arg(&m.b_delta_coeffs)
+            .arg(&m.b_proc)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&sign)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn part_lap_boundary(
+    gpu: &Gpu,
+    k: &FvKernels,
+    a: &mut GpuLduMatrix,
+    m: &GpuMesh,
+    b_gamma_mag_sf: &DevBuf<Scalar>,
+    psi: &GpuScalarField,
+    sign: Scalar,
+) -> Result<()> {
+    let n = m.n_boundary_faces;
+    let nl = n as Label;
+    let f = k.lap_boundary_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut a.internal_coeffs)
+            .arg(&mut a.boundary_coeffs)
+            .arg(b_gamma_mag_sf)
+            .arg(&m.b_delta_coeffs)
+            .arg(&psi.fr)
+            .arg(&psi.ref_value)
+            .arg(&psi.ref_grad)
+            .arg(&m.b_kind)
+            .arg(&m.b_proc)
+            .arg(&sign)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn part_lap_non_orth(
+    gpu: &Gpu,
+    k: &FvKernels,
+    a: &mut GpuLduMatrix,
+    m: &GpuMesh,
+    gamma_mag_sf: &DevBuf<Scalar>,
+    b_gamma_mag_sf: &DevBuf<Scalar>,
+    psi: &GpuScalarField,
+    grad_psi: &DevBuf<Vec3>,
+    alpha: Scalar,
+    sign: Scalar,
+) -> Result<()> {
+    let n = m.n_cells;
+    let nl = n as Label;
+    let f = k.lap_non_orth_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut a.source)
+            .arg(gamma_mag_sf)
+            .arg(&m.non_orth_corr)
+            .arg(&m.weights)
+            .arg(&m.delta_coeffs)
+            .arg(&psi.f)
+            .arg(grad_psi)
+            .arg(b_gamma_mag_sf)
+            .arg(&m.b_sf)
+            .arg(&m.b_mag_sf)
+            .arg(&m.b_cf)
+            .arg(&m.b_delta_coeffs)
+            .arg(&m.b_non_orth_corr)
+            .arg(&m.b_nbr_cell)
+            .arg(&psi.jump)
+            .arg(&m.b_weights)
+            .arg(&psi.fr)
+            .arg(&psi.ref_value)
+            .arg(&psi.ref_grad)
+            .arg(&m.c)
+            .arg(&m.owner)
+            .arg(&m.neighbour)
+            .arg(&m.b_kind)
+            .arg(&m.b_proc)
+            .arg(&m.b_proc_w)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&alpha)
+            .arg(&sign)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn part_grad_scalar(
+    gpu: &Gpu,
+    k: &FvKernels,
+    out: &mut DevBuf<Vec3>,
+    psi: &GpuScalarField,
+    m: &GpuMesh,
+) -> Result<()> {
+    let n = m.n_cells;
+    let nl = n as Label;
+    let f = k.grad_scalar_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut *out)
+            .arg(&psi.f)
+            .arg(&psi.bf)
+            .arg(&m.weights)
+            .arg(&m.sf)
+            .arg(&m.b_sf)
+            .arg(&m.v)
+            .arg(&m.owner)
+            .arg(&m.neighbour)
+            .arg(&m.b_nbr_cell)
+            .arg(&m.b_kind)
+            .arg(&m.b_proc)
+            .arg(&m.b_proc_w)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn part_grad_vector(
+    gpu: &Gpu,
+    k: &FvKernels,
+    out: &mut DevBuf<Tensor>,
+    u: &GpuVectorField,
+    m: &GpuMesh,
+) -> Result<()> {
+    let n = m.n_cells;
+    let nl = n as Label;
+    let f = k.grad_vector_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut *out)
+            .arg(&u.f)
+            .arg(&u.bf)
+            .arg(&m.weights)
+            .arg(&m.sf)
+            .arg(&m.b_sf)
+            .arg(&m.v)
+            .arg(&m.owner)
+            .arg(&m.neighbour)
+            .arg(&m.b_nbr_cell)
+            .arg(&m.b_kind)
+            .arg(&m.b_proc)
+            .arg(&m.b_proc_w)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+// ==========================================================================
+//  SPEC-LIT 139.9 (PAR-13b): the convection and flux part launches
+//
+//  Private, and called only under the `n_proc_faces > 0` selection above,
+//  in PAR-13a's style: a whole mesh and every P = 1 part has no processor
+//  face, so no existing caller ever reaches these.
+// ==========================================================================
+
+#[allow(clippy::too_many_arguments)]
+fn part_div_bounded_diag(
+    gpu: &Gpu,
+    k: &FvKernels,
+    a: &mut GpuLduMatrix,
+    m: &GpuMesh,
+    phi: &GpuSurfaceScalarField,
+    sign: Scalar,
+) -> Result<()> {
+    let n = m.n_cells;
+    let nl = n as Label;
+    let f = k.div_bounded_diag_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut a.diag)
+            .arg(&phi.f)
+            .arg(&phi.bf)
+            .arg(&m.b_kind)
+            .arg(&m.b_proc)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&sign)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn part_div_correction(
+    gpu: &Gpu,
+    k: &FvKernels,
+    a: &mut GpuLduMatrix,
+    m: &GpuMesh,
+    phi: &GpuSurfaceScalarField,
+    grad_psi: &DevBuf<Vec3>,
+    cd: Label,
+    coef: Scalar,
+    sign: Scalar,
+) -> Result<()> {
+    let n = m.n_cells;
+    let nl = n as Label;
+    let f = k.div_correction_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut a.source)
+            .arg(&phi.f)
+            .arg(&phi.bf)
+            .arg(grad_psi)
+            .arg(&m.c)
+            .arg(&m.cf)
+            .arg(&m.b_sf)
+            .arg(&m.b_mag_sf)
+            .arg(&m.b_delta_coeffs)
+            .arg(&m.b_weights)
+            .arg(&m.b_cf)
+            .arg(&m.b_proc_c)
+            .arg(&m.owner)
+            .arg(&m.neighbour)
+            .arg(&m.b_face_cells)
+            .arg(&m.b_nbr_cell)
+            .arg(&m.b_kind)
+            .arg(&m.b_proc)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&cd)
+            .arg(&coef)
+            .arg(&sign)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn part_div_surface(
+    gpu: &Gpu,
+    k: &FvKernels,
+    out: &mut DevBuf<Scalar>,
+    phi: &GpuSurfaceScalarField,
+    m: &GpuMesh,
+) -> Result<()> {
+    let n = m.n_cells;
+    let nl = n as Label;
+    let f = k.div_surface_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut *out)
+            .arg(&phi.f)
+            .arg(&phi.bf)
+            .arg(&m.v)
+            .arg(&m.b_kind)
+            .arg(&m.b_proc)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn part_reconstruct(
+    gpu: &Gpu,
+    k: &FvKernels,
+    out: &mut DevBuf<Vec3>,
+    phi: &GpuSurfaceScalarField,
+    m: &GpuMesh,
+) -> Result<()> {
+    let n = m.n_cells;
+    let nl = n as Label;
+    // The SAME boundary areas the old launch passes (SPEC-LIT 119.2, 139.9):
+    // the wedge's rotated `S'_f` when the mesh has one, `b_sf` otherwise.
+    let b_sf: &DevBuf<Vec3> = match &m.b_sf_recon {
+        Some(r) => r,
+        None => &m.b_sf,
+    };
+    let f = k.reconstruct_part.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&f)
+            .arg(&mut *out)
+            .arg(&phi.f)
+            .arg(&phi.bf)
+            .arg(&m.sf)
+            .arg(&m.mag_sf)
+            .arg(b_sf)
+            .arg(&m.b_mag_sf)
+            .arg(&m.b_proc)
+            .arg(&m.rf_offset)
+            .arg(&m.rf_face)
+            .arg(&m.rf_flags)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
     Ok(())
 }
 
@@ -2816,7 +3497,7 @@ mod tests {
             }
             let scale = m.v[c].powf(2.0 / 3.0);
             assert!(
-                s.mag() / scale < 1e-12,
+                ((s.mag() / scale) as f64) < crate::precision::roundoff_tol(1e-12),
                 "cell {c} does not close: |sum Sf| = {}",
                 s.mag()
             );
@@ -3137,7 +3818,6 @@ mod tests {
 
     /// SPEC-LIT §10: "Gauss gradient of a linear field -> exact."
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn gradient_of_a_linear_field_is_exact() -> Result<()> {
         let Some(fx) = fixture([5, 4, 3], Vec3::new(0.3, 0.7, 0.2), true) else {
             return Ok(());
@@ -3162,7 +3842,7 @@ mod tests {
         let worst = got.iter().fold(0.0 as Scalar, |w, v| w.max((*v - a).mag()));
 
         assert!(
-            worst / a.mag() < 1e-13,
+            ((worst / a.mag()) as f64) < crate::precision::roundoff_tol(1e-13),
             "grad(linear) is off by {worst} (relative {})",
             worst / a.mag()
         );
@@ -3172,7 +3852,6 @@ mod tests {
     /// The same for the tensor gradient, whose index convention is the thing
     /// most easily got backwards: `(i,j)` must be `dU_j/dx_i`.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn vector_gradient_of_a_linear_field_is_exact_and_correctly_indexed() -> Result<()> {
         let Some(fx) = fixture([4, 4, 3], Vec3::new(0.25, 0.4, 0.6), true) else {
             return Ok(());
@@ -3212,7 +3891,7 @@ mod tests {
                 worst = worst.max(c.abs());
             }
         }
-        assert!(worst < 1e-12, "grad(U) is off by {worst}");
+        assert!((worst as f64) < crate::precision::roundoff_tol(1e-12), "grad(U) is off by {worst}");
 
         // And the production term built on it, against the host expression.
         let nut_h = vec![0.013 as Scalar; hm.n_cells];
@@ -3225,7 +3904,7 @@ mod tests {
         for (c, p) in got_prod.iter().enumerate() {
             let want = nut_h[c] * got[c].g_by_nut();
             assert!(
-                (p - want).abs() <= 1e-12 * want.abs().max(1.0),
+                ((p - want).abs() as f64) <= crate::precision::roundoff_tol(1e-12) * want.abs().max(1.0) as f64,
                 "G at cell {c}: {p} vs {want}"
             );
         }
@@ -3235,7 +3914,6 @@ mod tests {
     /// SPEC-LIT §10: "`div(u)` of a uniform field -> zero." A uniform velocity
     /// gives `phi_f = u·Sf`, and a closed cell sums those to zero identically.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn divergence_of_a_uniform_flux_is_zero() -> Result<()> {
         let Some(fx) = fixture([4, 5, 3], Vec3::new(0.3, 0.2, 0.5), true) else {
             return Ok(());
@@ -3259,7 +3937,7 @@ mod tests {
 
         let got = gpu.download(&d)?;
         assert!(
-            max_abs(&got) / uc.mag() < 1e-12,
+            ((max_abs(&got) / uc.mag()) as f64) < crate::precision::roundoff_tol(1e-12),
             "div(uniform) = {}",
             max_abs(&got)
         );
@@ -3273,7 +3951,7 @@ mod tests {
 
         let got_u = gpu.download(&ur)?;
         let worst = got_u.iter().fold(0.0 as Scalar, |w, v| w.max((*v - uc).mag()));
-        assert!(worst / uc.mag() < 1e-12, "reconstruct is off by {worst}");
+        assert!(((worst / uc.mag()) as f64) < crate::precision::roundoff_tol(1e-12), "reconstruct is off by {worst}");
         Ok(())
     }
 
@@ -3290,7 +3968,6 @@ mod tests {
     /// subtract the first operator's contribution a second time and the three
     /// answers would differ.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn operators_do_not_couple_through_the_diagonal() -> Result<()> {
         let Some(fx) = fixture([4, 3, 3], Vec3::new(0.3, 0.4, 0.25), true) else {
             return Ok(());
@@ -3397,14 +4074,17 @@ mod tests {
             for j in 0..s1[i].len() {
                 let (a, b) = (s1[i][j], s2[i][j]);
                 assert!(
-                    (a - b).abs() <= TOL * a.abs().max(b.abs()).max(1.0),
+                    (a - b).abs() as f64
+                        <= crate::precision::roundoff_tol(TOL as f64)
+                            * a.abs().max(b.abs()).max(1.0) as f64,
                     "{name}[{j}] depends on the order the operators were \
                      applied: {a} vs {b}"
                 );
 
                 let sum = sd[i][j] + sl[i][j];
                 assert!(
-                    (a - sum).abs() <= TOL * sum.abs().max(1.0),
+                    (a - sum).abs() as f64
+                        <= crate::precision::roundoff_tol(TOL as f64) * sum.abs().max(1.0) as f64,
                     "{name}[{j}]: combined {a} != separate sum {sum}"
                 );
             }
@@ -3418,7 +4098,6 @@ mod tests {
     /// a uniform field is convected without change even when the flux is not
     /// solenoidal.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_bounded_correction_makes_a_uniform_field_stationary() -> Result<()> {
         let Some(fx) = fixture([4, 3, 3], Vec3::new(0.3, 0.4, 0.25), true) else {
             return Ok(());
@@ -3470,7 +4149,7 @@ mod tests {
 
         let scale = max_abs(&phi_h).max(max_abs(&bphi_h));
         assert!(
-            max_abs(&res) <= 1e-12 * scale,
+            max_abs(&res) as f64 <= crate::precision::roundoff_tol(1e-12) * scale as f64,
             "bounded convection leaves a residual of {} on a uniform field",
             max_abs(&res)
         );
@@ -3922,7 +4601,6 @@ mod tests {
     /// Least squares is exact for a linear field on any mesh - that is the
     /// whole reason SPEC-LIT §3.5 offers it beside Green-Gauss.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn least_squares_gradient_of_a_linear_field_is_exact() -> Result<()> {
         let hm = boxed([5, 4, 3], Vec3::new(0.3, 0.7, 0.2), true, (0.5, 0.3));
         let Some(gpu) = gpu() else { return Ok(()) };
@@ -3954,7 +4632,7 @@ mod tests {
         let got = gpu.download(&g)?;
         for c in 0..hm.n_cells {
             assert!(
-                (got[c] - a0).mag() < 1e-11,
+                ((got[c] - a0).mag() as f64) < crate::precision::roundoff_tol(1e-11),
                 "cell {c}: leastSquares gave {:?}, exact {:?}",
                 got[c],
                 a0
@@ -4082,7 +4760,6 @@ mod tests {
     /// A limited gradient must leave a linear field alone: there is no new
     /// extremum to prevent, so the limiter must be exactly 1 everywhere.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_cell_limited_gradient_leaves_a_linear_field_alone() -> Result<()> {
         let Some(fx) = fixture([6, 5, 4], Vec3::new(0.2, 0.25, 0.3), true) else {
             return Ok(());
@@ -4113,7 +4790,7 @@ mod tests {
         let got = gpu.download(&g)?;
         for c in 0..hm.n_cells {
             assert!(
-                (got[c] - a0).mag() < 1e-11,
+                ((got[c] - a0).mag() as f64) < crate::precision::roundoff_tol(1e-11),
                 "cell {c}: the limiter scaled a linear field's gradient to {:?}",
                 got[c]
             );
@@ -4246,7 +4923,6 @@ mod tests {
     /// Run twice: once with the correction switched off, to show that it is
     /// doing something, and once with it iterated.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_non_orthogonal_correction_restores_second_order() -> Result<()> {
         let dims = |n: usize| Vec3::new(1.0 / n as Scalar, 0.7 / n as Scalar, 0.4 / n as Scalar);
         let shear = (0.35, 0.2); // 19.3 and 11.3 degrees of non-orthogonality
@@ -4373,7 +5049,6 @@ mod tests {
     /// the gradient is exact - which is the property every deferred correction
     /// in SPEC-LIT 3.2 assumes of the gradient it is handed.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_skew_correction_makes_green_gauss_exact_at_a_2to1_interface() -> Result<()> {
         let r = crate::mesh::refined::refined_core([6, 6, 6], Vec3::new(0.2, 0.2, 0.2), 0.25, 1)?;
         let Some(fx) = refined_fixture(r.mesh.clone()) else {
@@ -4428,7 +5103,7 @@ mod tests {
             "the skew iteration is not contracting: {e_once:e} -> {e_twice:e}"
         );
         assert!(
-            e_fixed < 1e-11,
+            (e_fixed as f64) < crate::precision::roundoff_tol(1e-11),
             "the ITERATED skew-corrected gradient is still off by {e_fixed:e} on a \
              LINEAR field, whose face value it reconstructs exactly"
         );
@@ -4706,7 +5381,6 @@ mod tests {
     /// (SPEC-LIT 1), and Green-Gauss must reproduce it - which at a 2:1
     /// interface it does not until the skewness iteration has converged.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_vector_skew_correction_makes_green_gauss_exact_too() -> Result<()> {
         let r = crate::mesh::refined::refined_core([6, 6, 6], Vec3::new(0.2, 0.2, 0.2), 0.25, 1)?;
         let Some(fx) = refined_fixture(r.mesh.clone()) else {
@@ -4775,7 +5449,7 @@ mod tests {
             "the uncorrected vector gradient was only off by {e_plain:e}"
         );
         assert!(
-            e_fixed < 1e-11,
+            (e_fixed as f64) < crate::precision::roundoff_tol(1e-11),
             "the converged vector skew correction is still off by {e_fixed:e} on a \
              LINEAR field"
         );
@@ -4995,7 +5669,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_cyclic_non_orthogonal_correction_improves_a_sheared_periodic_channel() -> Result<()> {
         let Some(gpu0) = gpu() else { return Ok(()) };
         drop(gpu0);
@@ -5045,6 +5718,7 @@ mod tests {
     /// factor, which is the part that is easy to get wrong and impossible to
     /// see in a converged answer.
     #[test]
+    // f32 (F32-17): kernel-vs-host values of 0.0062 sit below R's 0.01 band
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_non_orthogonal_correction_matches_the_written_sum() -> Result<()> {
         let hm = boxed([4, 3, 3], Vec3::new(0.3, 0.4, 0.25), true, (0.35, 0.2));
@@ -5154,7 +5828,6 @@ mod tests {
     /// whatever the discrepancy is, forever. It is checked on a SHEARED mesh
     /// so that both halves of the non-orthogonal correction are in play.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_flux_and_the_matrix_are_the_same_operator() -> Result<()> {
         let hm = boxed([4, 4, 3], Vec3::new(0.3, 0.4, 0.25), true, (0.35, 0.2));
         assert_closes(&hm);
@@ -5167,7 +5840,6 @@ mod tests {
     /// says the two are the same operator, and SIMPLE's flux correction leans
     /// on that being true for whatever scheme the case named.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn the_flux_and_the_matrix_agree_with_the_skewness_term_too() -> Result<()> {
         let r = crate::mesh::refined::refined_core([6, 6, 6], Vec3::new(0.2, 0.2, 0.2), 0.25, 1)?;
         assert!(r.mesh.skew_corr.iter().any(|v| v.mag() > 1e-3));
@@ -5280,7 +5952,7 @@ mod tests {
         }
 
         assert!(
-            worst <= 1e-11 * scale,
+            worst as f64 <= crate::precision::roundoff_tol(1e-11) * scale as f64,
             "the flux and the matrix disagree by {worst} (scale {scale})"
         );
         Ok(())
@@ -5298,7 +5970,6 @@ mod tests {
     /// drifting apart: the host mirror is used by the pure-host TVD tests
     /// above, and this ties the device to it.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn device_limiter_agrees_with_the_host() -> Result<()> {
         let Some(fx) = fixture([5, 4, 4], Vec3::new(0.3, 0.4, 0.25), true) else {
             return Ok(());
@@ -5373,7 +6044,7 @@ mod tests {
                 };
 
                 assert!(
-                    (got[i] - want).abs() < 1e-13,
+                    ((got[i] - want).abs() as f64) < crate::precision::roundoff_tol(1e-13),
                     "{l:?} face {i}: device {} vs host {want}",
                     got[i]
                 );
@@ -5569,7 +6240,6 @@ mod tests {
     /// discretely conservative: every cell's faces sum to zero. That is the
     /// property `potential_flow` relies on, stated as a test.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn sn_grad_flux_of_a_linear_field_is_conservative() -> Result<()> {
         let Some(fx) = fixture([4, 3, 3], Vec3::new(0.3, 0.4, 0.25), true) else {
             return Ok(());
@@ -5606,7 +6276,7 @@ mod tests {
 
         let scale = max_abs(&iphi).max(max_abs(&bphi));
         assert!(
-            worst <= 1e-12 * scale,
+            worst as f64 <= crate::precision::roundoff_tol(1e-12) * scale as f64,
             "snGrad flux of a linear field leaves {worst} of imbalance"
         );
         Ok(())

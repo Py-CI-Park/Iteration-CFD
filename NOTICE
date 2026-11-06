@@ -32,7 +32,7 @@ Provenance
 The numerical core of meteor-cfd is implemented from published literature.
 Every formulation is specified and cited in `rust/SPEC-LIT.md`, and every
 source file carries a header naming the papers it was written from and the
-line "No GPL-licensed source was consulted." All 227 source files under
+line "No GPL-licensed source was consulted." All 572 source files under
 `rust/` (`src/`, `cuda/`, `tests/`, `build.rs`) carry both that line and the
 copyright header, and every one of them is classified in `rust/PROVENANCE.md`
 — checked in both directions.
@@ -103,7 +103,7 @@ itoa                     1.0.18     MIT OR Apache-2.0
 jsonc-parser             0.33.1     MIT
 libloading               0.9.0      ISC
 memchr                   2.8.3      Unlicense OR MIT
-ofgpu                    0.1.0      see ../LICENSE
+ofgpu                    2.0.0      see ../LICENSE
 proc-macro2              1.0.107    MIT OR Apache-2.0
 quote                    1.0.47     MIT OR Apache-2.0
 ref-cast                 1.0.27     MIT OR Apache-2.0
@@ -132,14 +132,47 @@ Not on crates.io
 AMGX
   Copyright (c) 2011-2024, NVIDIA CORPORATION
   BSD 3-Clause License.
-  Optional; built only with the `amgx` Cargo feature, which is OFF by default,
+  Optional; used only with the `amgx` Cargo feature, which is OFF by default,
   so it is absent from the generated table above (which reports the default
-  feature set). Bundled under `third_party/AMGX` when present; see its LICENSE.
+  feature set). Loaded at RUN time from `AMGX_DLL` / `AMGX_DIR` / `PATH`
+  (SPEC-LIT §141.20), not linked: nothing is vendored and no source is
+  reproduced here. The DLL itself is built from the 2.5.0 sources by
+  `tools/amgx/build.cmd`; see AMGX's own LICENSE.
+
+Manifold (npm `manifold-3d` 3.2.1)
+  Copyright (c) The Manifold Authors (https://github.com/elalish/manifold).
+  Apache License 2.0.
+  A dependency of the studio server (`gui/server/package.json`), used as a
+  library for the STL booleans fuse, cut and common
+  (`gui/server/src/tools/geometryBoolean.ts`). It is installed by npm and not
+  vendored: no Manifold source is copied into this repository. See Manifold's
+  own LICENSE.
+
+Clipper2
+  Copyright (c) Angus Johnson.
+  Boost Software License 1.0.
+  Compiled into Manifold's `manifold.wasm` for its 2-D cross-sections, and
+  installed with it by npm. Not vendored here.
 
 NVIDIA CUDA Toolkit, cuFFT, cuBLAS
   Used under the NVIDIA CUDA Toolkit End User License Agreement, which permits
   linking and redistribution of applications built against it. Not redistributed
   here; the toolkit must be installed separately.
+
+Gmsh (PyPI `gmsh`, https://gmsh.info) - OPTIONAL, the STEP route only
+  GNU General Public License, version 2 or later, with the exception in Gmsh's
+  own LICENSE.txt for Netgen, METIS, OpenCASCADE and ParaView.
+  Not a dependency of the solver, the automesher or the studio: no Cargo or npm
+  package is gmsh, and nothing under `rust/` or `gui/` links or imports it.
+  Tetrahedral meshes come from the native mesher of `rust/SPEC-LIT.md` §116
+  (`rust/src/tetmesh/`, run by `ofgpu-automesher` with `"kind": "tet"`), which
+  contains, calls and links no gmsh, TetGen, Netgen or other GPL, LGPL or AGPL
+  code. Only the optional STEP route uses gmsh: `tools/mesh/step_mesh.py`,
+  `tools/geom/geom_tool.py`, `tools/geom/geom_edit.py` and several CAD-loop
+  scripts under `tools/cad/` import its Python API into their own
+  Python process, and the studio runs those scripts as separate programs.
+  gmsh is installed by pip, not vendored; no gmsh source is copied into this
+  repository or was read. See `rust/PROVENANCE.md` and `LICENSING.md` §2.
 
 --------------------------------------------------------------------------------
 Apache-2.0 text reproduced in this repository
@@ -218,9 +251,14 @@ Reference material
 Neither of these is redistributed in this repository. What `reference/` DOES
 carry is the answer keys `ofgpu-validate` is held against - small tables of
 published numbers, each named in `reference/PROVENANCE.md` with its source,
-DOI or URL, licence and SHA-256; those files are tracked. Everything else
-under `reference/` is git-ignored and must be cloned separately; nothing in
-the build depends on it.
+DOI or URL, licence and SHA-256; those files are tracked, except the three
+Moser-Kim-Mansour channel DNS profiles, whose host states no redistribution
+terms, and the ERCOFTAC Classic Collection's T3A summary table (case 020,
+t3ay.dat), which is published under CC BY-NC-SA 4.0 (manifest kind
+`fetched`, both): a user downloads them with
+`tools/keys/fetch_answer_keys.py fetch`, which checks each against its pinned
+digest. Everything else under `reference/` is git-ignored and must be cloned
+separately; nothing in the build depends on it.
 
 Fire Dynamics Simulator (FDS)
   Developed by the National Institute of Standards and Technology (NIST).

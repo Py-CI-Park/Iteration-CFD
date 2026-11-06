@@ -25,6 +25,10 @@ const fake = {
   tools: [] as string[],
   pixels: [] as [number, number][],
   noImage: false,
+  // Opt-in doubles for the camera-move budget tests: a setCamera that models
+  // the real controller's requireMount wait, and one that never resolves.
+  busyUntilMounted: false,
+  neverResolve: false,
   state: null as unknown as FakeViewerState,
   listeners: new Set<(s: FakeViewerState) => void>(),
   pixelOutcome: null as unknown as ProbeOutcome,
@@ -35,6 +39,20 @@ const fakeApi = {
   execute: async (cmd: unknown) => {
     fake.calls.push(cmd)
     const c = cmd as { type: string; projection?: 'perspective' | 'orthographic' }
+    if (c.type === 'setCamera') {
+      // The real controller is built with requireMount: a camera move issued
+      // before the canvas mounts does not resolve until the canvas does.
+      if (fake.busyUntilMounted && !fake.mounted) {
+        await new Promise<void>((resolve) => {
+          const timer = setInterval(() => {
+            if (!fake.mounted) return
+            clearInterval(timer)
+            resolve()
+          }, 10)
+        })
+      }
+      if (fake.neverResolve) return new Promise<never>(() => {})
+    }
     if (c.type === 'setCamera' && c.projection) fake.state.camera.projection = c.projection
     return {
       ok: true,
@@ -113,7 +131,7 @@ const fakeApiB = {
 
 vi.mock('../viewer', () => ({ getViewerApi: (view: 'A' | 'B' = 'A') => (view === 'B' ? fakeApiB : fakeApi), setViewerApi: () => {} }))
 vi.mock('./actions', () => ({ actions: { setSettings: () => true, openSession: () => true }, activeCasePath: () => null }))
-vi.mock('../api/rest', () => ({ api: { geometrySave: vi.fn(), geometryEdit: vi.fn() }, ApiError: class extends Error {} }))
+vi.mock('../api/rest', () => ({ api: { geometrySave: vi.fn(), geometryEdit: vi.fn(), geometryStlBoolean: vi.fn() }, ApiError: class extends Error {} }))
 
 import { api } from '../api/rest'
 import { uiGeometryState, useGeometryStore } from '../state/geometryStore'
@@ -149,7 +167,7 @@ const STEP_INFO: GeometryInfo = {
 }
 
 type GeoTab = { id: string; kind: 'geometry'; path: string }
-type ResTab = { id: 'residuals'; kind: 'residuals'; runId: string | null; compareRunId?: string | null }
+type ResTab = { id: 'residuals'; kind: 'residuals'; runId: string | null; compareRunId?: string | null; chart?: 'residuals' | 'metrics' | 'surface' }
 type ResultFrame = Extract<ClientMsg, { t: 'ui.result' }>
 type RunResult = ResultFrame & { state: UiState }
 
@@ -169,6 +187,8 @@ function resetFake(): void {
   fake.tools = []
   fake.pixels = []
   fake.noImage = false
+  fake.busyUntilMounted = false
+  fake.neverResolve = false
   fake.state = {
     camera: { position: [10, 10, 10], target: [0, 0, 0], projection: 'perspective' },
     datasetId: 'ds1', datasetName: 'channel (demo)', field: 'U', time: null,
@@ -190,7 +210,7 @@ function resetFake(): void {
   fakeB.listeners = new Set()
 }
 
-function harness(tabs: (GeoTab | ResTab)[] = []) {
+function harness(tabs: (GeoTab | ResTab)[] = [], cameraBudgetMs?: number) {
   const sent: ClientMsg[] = []
   const saveImage = vi.fn()
   const subscribeRun = vi.fn()
@@ -208,20 +228,21 @@ function harness(tabs: (GeoTab | ResTab)[] = []) {
     viewSplit: false,
     focusedView: 'A' as 'A' | 'B',
     camerasLinked: false,
+    setSelection: vi.fn(),
     openGeometryTab: vi.fn(),
     openViewerTab: vi.fn(),
     setActiveRun(runId: string | null) {
       ui.activeRunId = runId
     },
-    openResidualsTab(runId: string | null) {
+    openResidualsTab(runId: string | null, chart?: 'residuals' | 'metrics' | 'surface') {
       const prev = ui.tabs.find((t): t is ResTab => t.kind === 'residuals')
-      putResTab({ id: 'residuals', kind: 'residuals', runId: runId ?? (prev ? prev.runId : null) })
+      putResTab({ id: 'residuals', kind: 'residuals', runId: runId ?? (prev ? prev.runId : null), chart: chart ?? prev?.chart ?? 'residuals' })
       ui.activeTabId = 'residuals'
       ui.activeRunId = runId ?? ui.activeRunId
     },
     setCompareRun(runId: string | null) {
       const prev = ui.tabs.find((t): t is ResTab => t.kind === 'residuals')
-      putResTab({ id: 'residuals', kind: 'residuals', runId: prev ? prev.runId : ui.activeRunId, compareRunId: runId })
+      putResTab({ id: 'residuals', kind: 'residuals', runId: prev ? prev.runId : ui.activeRunId, compareRunId: runId, chart: prev?.chart ?? 'residuals' })
       ui.activeTabId = 'residuals'
     },
     setViewSplit(on: boolean) {
@@ -249,6 +270,7 @@ function harness(tabs: (GeoTab | ResTab)[] = []) {
     session: { getState: () => session as never },
     subscribeRun,
     saveImage,
+    cameraBudgetMs,
   })
   return {
     sent,
@@ -270,6 +292,7 @@ beforeEach(() => {
   useGeometryStore.setState({ byPath: {} })
   vi.mocked(api.geometrySave).mockReset()
   vi.mocked(api.geometryEdit).mockReset()
+  vi.mocked(api.geometryStlBoolean).mockReset()
   vi.mocked(api.geometrySave).mockResolvedValue({ id: 'g2', info: { ...INFO, id: 'g2', path: 'cases/y.stl' } })
   vi.mocked(api.geometryEdit).mockResolvedValue({ path: 'cases/car-common.step', solids: [], applied: [], stdout: [], toolMs: 1 })
 })
@@ -277,9 +300,11 @@ beforeEach(() => {
 describe('the four geometry edit commands', () => {
   it('an unlisted command is still refused by name', async () => {
     const h = harness([])
-    const r = await h.run({ type: 'show_overlay', what: 'axes', on: true })
+    // Every schema type has a case now (select_step was the last, STU-08b), so
+    // the sample is a type a newer server could send.
+    const r = await h.run({ type: 'no_such_command' } as unknown as UiCommand)
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('UNSUPPORTED (show_overlay): this screen does not implement it')
+    expect(r.error).toBe('UNSUPPORTED (no_such_command): this screen does not implement it')
   })
 
   it('without a geometry tab the four commands refuse and the snapshot has no geometry', async () => {
@@ -293,7 +318,7 @@ describe('the four geometry edit commands', () => {
     for (const cmd of cmds) {
       const r = await h.run(cmd)
       expect(r.ok).toBe(false)
-      expect(r.error).toBe('no geometry tab is open; geometry_open or geometry_import_step first')
+      expect(r.error).toBe(`NO_GEOMETRY (${cmd.type}): no geometry tab is open; geometry_open or geometry_import_step first`)
       expect(r.state.geometry).toBeNull()
     }
   })
@@ -319,7 +344,7 @@ describe('the four geometry edit commands', () => {
     expect(r.state.geometry!.dirty).toBe(true)
     r = await h.run({ type: 'geometry_part', name: 'zz', action: 'hide' })
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('no part "zz"; parts: a, body')
+    expect(r.error).toBe('INVALID (geometry_part): no part "zz"; parts: a, body')
   })
 
   it('geometry_transform pushes, undoes, redoes, resets and refuses a mis-shaped value by name', async () => {
@@ -334,20 +359,20 @@ describe('the four geometry edit commands', () => {
     expect(r.state.geometry!.dirty).toBe(false)
     r = await h.run({ type: 'geometry_transform', op: 'undo' })
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('nothing to undo')
+    expect(r.error).toBe('INVALID (geometry_transform): nothing to undo')
     r = await h.run({ type: 'geometry_transform', op: 'redo' })
     expect(r.state.geometry!.edits).toBe(1)
     r = await h.run({ type: 'geometry_transform', op: 'reset' })
     expect(r.state.geometry!.edits).toBe(0)
     r = await h.run({ type: 'geometry_transform', op: 'translate', value: 3 })
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('translate needs value [x,y,z] in metres')
+    expect(r.error).toBe('INVALID (geometry_transform): translate needs value [x,y,z] in metres')
     r = await h.run({ type: 'geometry_transform', op: 'scale', value: 0 })
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('scale needs one non-zero factor or [sx,sy,sz]')
+    expect(r.error).toBe('INVALID (geometry_transform): scale needs one non-zero factor or [sx,sy,sz]')
     r = await h.run({ type: 'geometry_transform', op: 'mirror', value: [0, 0, 0] })
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('mirror needs a non-zero plane normal [nx,ny,nz]')
+    expect(r.error).toBe('INVALID (geometry_transform): mirror needs a non-zero plane normal [nx,ny,nz]')
     r = await h.run({ type: 'geometry_transform', op: 'rotate', value: [0, 0, 90], pivot: 'origin' })
     expect(r.ok).toBe(true)
     expect(r.state.geometry!.edits).toBe(1)
@@ -381,13 +406,24 @@ describe('the four geometry edit commands', () => {
     expect(r2.error).toBe('cases/y.stl already exists; pass overwrite: true to replace it')
   })
 
-  it('geometry_boolean runs only on a STEP and re-imports the result', async () => {
+  it('geometry_boolean runs on an STL or a STEP and opens the result as a new tab', async () => {
+    // STU-17: an STL tab goes to the server's Manifold route.
+    vi.mocked(api.geometryStlBoolean).mockResolvedValue({ path: 'cases/x-common.stl', op: 'common', a: 'a', b: 'b', volume: 0.5, volumeA: 1, volumeB: 1, triangles: 12, vertices: 8, openEdges: 0, nonManifoldEdges: 0 })
     const h = harness([geoTab('cases/x.stl')])
     load('cases/x.stl', INFO)
     const r = await h.run({ type: 'geometry_boolean', op: 'common', a: 'a', b: 'b' })
-    expect(r.ok).toBe(false)
-    expect(r.error?.startsWith('UNSUPPORTED (geometry_boolean): ')).toBe(true)
+    expect(r.error ?? null).toBeNull()
+    expect(r.ok).toBe(true)
+    expect(api.geometryStlBoolean).toHaveBeenCalledWith({ path: 'cases/x.stl', op: 'common', a: 'a', b: 'b', out: null, overwrite: true })
+    expect(h.ui.openGeometryTab).toHaveBeenCalledWith('cases/x-common.stl')
     expect(api.geometryEdit).not.toHaveBeenCalled()
+    // An OBJ has neither route.
+    const ho = harness([geoTab('cases/x.obj')])
+    load('cases/x.obj', { ...INFO, path: 'cases/x.obj', format: 'obj' })
+    const ro = await ho.run({ type: 'geometry_boolean', op: 'common', a: 'a', b: 'b' })
+    expect(ro.ok).toBe(false)
+    expect(ro.error?.startsWith('UNSUPPORTED (geometry_boolean): booleans run on an STL or STEP geometry')).toBe(true)
+    expect(api.geometryStlBoolean).toHaveBeenCalledTimes(1)
     const h2 = harness([geoTab('cases/car.step')])
     load('cases/car.step', STEP_INFO)
     const r2 = await h2.run({ type: 'geometry_boolean', op: 'common', a: 'body', b: 'wing' })
@@ -416,7 +452,7 @@ describe('the four geometry edit commands', () => {
     st().begin('cases/x.stl')
     const r2 = await h.run({ type: 'geometry_part', name: 'a', action: 'hide' })
     expect(r2.ok).toBe(false)
-    expect(r2.error).toBe('geometry "cases/x.stl" is still loading; try again')
+    expect(r2.error).toBe('BUSY (geometry_part): geometry "cases/x.stl" is still loading; try again')
   })
 })
 
@@ -535,7 +571,7 @@ describe('the viewer commands the bridge drives', () => {
 })
 
 describe('compare_run', () => {
-  const resTab = (runId: string | null, compareRunId?: string | null): ResTab => ({ id: 'residuals', kind: 'residuals', runId, compareRunId })
+  const resTab = (runId: string | null, compareRunId?: string | null): ResTab => ({ id: 'residuals', kind: 'residuals', runId, compareRunId, chart: 'residuals' })
 
   it('compare_run r_2 overlays and subscribes', async () => {
     const h = harness()
@@ -578,6 +614,41 @@ describe('compare_run', () => {
     const r = await h.run({ type: 'compare_run', runId: 'r_1' })
     expect(r.ok).toBe(false)
     expect(r.error).toBe('UNSUPPORTED (compare_run): run "r_1" is the run the chart already follows; pick another or follow_run first')
+  })
+})
+
+describe('show_chart', () => {
+  it('show_chart opens the metrics chart and refuses surface without surface series', async () => {
+    const h = harness([])
+    const r = await h.run({ type: 'show_chart', chart: 'metrics', runId: 'r_1' })
+    expect(r.ok).toBe(true)
+    expect(h.subscribeRun).toHaveBeenCalledWith('r_1')
+    const tab = h.ui.tabs.find((t): t is ResTab => t.kind === 'residuals')
+    expect(tab?.chart).toBe('metrics')
+    expect(tab?.runId).toBe('r_1')
+    expect(r.state.tabs).toEqual([{ id: 'residuals', kind: 'residuals', label: 'metrics' }])
+    // The residuals chart still opens, keeping the tab's run.
+    expect((await h.run({ type: 'show_chart', chart: 'residuals' })).ok).toBe(true)
+    expect(h.ui.tabs.find((t): t is ResTab => t.kind === 'residuals')?.runId).toBe('r_1')
+    const bad = await h.run({ type: 'show_chart', chart: 'surface' })
+    expect(bad.ok).toBe(false)
+    expect(bad.error).toBe('NO_SURFACE_METRICS (show_chart): run "r_1" reports no per-patch surface-integral series (<patch>.<quantity>, e.g. fan.Q); its metrics: none')
+  })
+
+  it('run commands forwarded to the window say the server applies them', async () => {
+    const h = harness([])
+    const cmds: UiCommand[] = [
+      { type: 'start_run' },
+      { type: 'stop_run', runId: null },
+      { type: 'set_run_setting', binary: null, flag: null, value: null },
+      { type: 'run', action: 'stop' },
+    ]
+    for (const cmd of cmds) {
+      const r = await h.run(cmd)
+      expect(r.ok).toBe(false)
+      expect(r.error).toBe(`UNSUPPORTED (${cmd.type}): gui_control applies this on the server through run_start / run_stop; this window should not receive it`)
+    }
+    expect(h.ui.tabs).toEqual([])
   })
 })
 
@@ -652,5 +723,74 @@ describe('the split viewport', () => {
     const before = fakeB.calls.length
     fakeApi.emit({ ...fake.state, camera: { position: [9, 9, 9], target: [0, 0, 0], projection: 'perspective' } })
     expect(fakeB.calls).toHaveLength(before)
+  })
+})
+
+describe('gui_control camera moves answer before the hub times out', () => {
+  it('set_camera with the viewer unmounted opens the viewer tab first and answers ok once it mounts', async () => {
+    fake.mounted = false
+    fake.busyUntilMounted = true
+    const h = harness([], 300)
+    h.ui.openViewerTab.mockImplementation(() => {
+      setTimeout(() => {
+        fake.mounted = true
+      }, 50)
+    })
+    const exec = vi.spyOn(fakeApi, 'execute')
+    const t0 = Date.now()
+    const r = await h.run({ type: 'set_camera', preset: 'iso' })
+    expect(r.ok).toBe(true)
+    expect(fake.calls).toEqual([{ type: 'setCamera', preset: 'iso' }])
+    expect(h.ui.openViewerTab).toHaveBeenCalledTimes(1)
+    expect(h.ui.openViewerTab.mock.invocationCallOrder[0]).toBeLessThan(exec.mock.invocationCallOrder[0])
+    expect(Date.now() - t0).toBeLessThan(1500)
+  })
+
+  it('fit_view with the viewer unmounted opens the viewer tab first and answers ok once it mounts', async () => {
+    fake.mounted = false
+    fake.busyUntilMounted = true
+    const h = harness([], 300)
+    h.ui.openViewerTab.mockImplementation(() => {
+      setTimeout(() => {
+        fake.mounted = true
+      }, 50)
+    })
+    const exec = vi.spyOn(fakeApi, 'execute')
+    const t0 = Date.now()
+    const r = await h.run({ type: 'fit_view' })
+    expect(r.ok).toBe(true)
+    expect(fake.calls).toEqual([{ type: 'setCamera', preset: 'fit' }])
+    expect(h.ui.openViewerTab.mock.invocationCallOrder[0]).toBeLessThan(exec.mock.invocationCallOrder[0])
+    expect(Date.now() - t0).toBeLessThan(1500)
+  })
+
+  it('set_camera answers NO_VIEWER within the budget when no canvas ever mounts', async () => {
+    fake.mounted = false
+    const h = harness([], 300)
+    const t0 = Date.now()
+    const r = await h.run({ type: 'set_camera', preset: 'iso' })
+    expect(r.ok).toBe(false)
+    expect(r.error).toBe('NO_VIEWER (set_camera): no viewer canvas is mounted; the viewer tab has been opened - retry once it shows')
+    expect(fake.calls).toEqual([])
+    expect(Date.now() - t0).toBeLessThan(1500)
+  })
+
+  it('set_camera answers BUSY within the budget when the viewer is still busy', async () => {
+    fake.neverResolve = true
+    const h = harness([], 300)
+    const t0 = Date.now()
+    const r = await h.run({ type: 'set_camera', preset: 'iso' })
+    expect(r.ok).toBe(false)
+    expect(r.error).toBe('BUSY (set_camera): the viewer is still working on an earlier command; the camera move is queued and applies when it finishes')
+    expect(fake.calls).toHaveLength(1)
+    expect(Date.now() - t0).toBeLessThan(1500)
+  })
+
+  it('set_camera on a mounted viewer moves the camera and answers ok', async () => {
+    const h = harness()
+    const r = await h.run({ type: 'set_camera', preset: 'iso' })
+    expect(r.ok).toBe(true)
+    expect(fake.calls).toEqual([{ type: 'setCamera', preset: 'iso' }])
+    expect(h.ui.openViewerTab).toHaveBeenCalled()
   })
 })

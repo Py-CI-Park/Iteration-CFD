@@ -862,7 +862,10 @@ pub fn emit(
         .collect();
 
     Ok(crate::io::polymesh::PolyMeshRaw {
-        points,
+        points: points
+            .iter()
+            .map(|&p| crate::types::to_dvec3(p))
+            .collect(),
         faces,
         owner,
         neighbour,
@@ -954,7 +957,7 @@ mod tests {
             let p = mesh.points[i];
             let xyz = [p.x, p.y, p.z];
             for a in 0..3 {
-                assert_eq!(bg.coord(a, q[a], l), xyz[a], "axis {a} of point {i}");
+                assert_eq!(bg.coord(a, q[a], l) as f64, xyz[a], "axis {a} of point {i}");
             }
         }
     }
@@ -1193,7 +1196,7 @@ mod tests {
         assert_eq!(rep.n_regions, 1, "{} regions", rep.n_regions);
 
         let box_volume = 6.0 as Scalar * 6.0 * 6.0;
-        let rel = ((rep.total_volume - box_volume) / box_volume).abs();
+        let rel = ((rep.total_volume - box_volume as f64) / box_volume as f64).abs();
         assert!(
             rel < 1e-12,
             "total volume {:?} vs the box's {:?}",
@@ -1390,7 +1393,7 @@ mod tests {
         assert_eq!(rep.n_regions, 1, "{} regions", rep.n_regions);
         assert!(rep.max_closure_error < 1e-12, "closure error {:?}", rep.max_closure_error);
         assert!(rep.ldu_ordered, "faces not in upper-triangular order");
-        let rel = ((rep.total_volume - volume) / volume).abs();
+        let rel = ((rep.total_volume - volume as f64) / volume as f64).abs();
         assert!(rel < 1e-12, "total volume {:?} vs the block's {:?}", rep.total_volume, volume);
         let gate = crate::automesher::quality::check(
             &raw,
@@ -2036,7 +2039,7 @@ mod tests {
             boxes: Vec::new(),
         };
         let parts = band_surfaces(&surf, &spec).expect("band surfaces");
-        let fs = extract(&surf, spec.feature_angle_deg).expect("features");
+        let fs = extract(&surf, spec.feature_angle_deg as Scalar).expect("features");
         let idx = BandIndex::new(&parts, &surf, &fs, &spec, 1.0).expect("band index");
 
         let mut s: u64 = 0x853C49E6748FEA9B;
@@ -2243,14 +2246,14 @@ impl<'s> BandIndex<'s> {
         for part in &self.parts {
             let mut r = half_diag;
             for band in &part.bands {
-                r = r.max(band.distance);
+                r = r.max(band.distance as Scalar);
             }
             let mut l = 0u32;
             if let Some(d) = part.tri.nearest_distance_within(centre, r) {
                 // (92.1): the deepest band whose distance the cell centre
                 // falls inside.
                 for band in &part.bands {
-                    if d <= band.distance {
+                    if d <= band.distance as Scalar {
                         l = l.max(band.level);
                     }
                 }

@@ -62,7 +62,10 @@
 //! velocity equation on its own, upstream of anything a turbulence model
 //! touches. Carrying an unused `t_ref` here so the struct "looked complete"
 //! would be the kind of dead field this codebase's own house rules warn
-//! against; the reason it is absent is this paragraph.
+//! against; the reason it is absent is this paragraph. SPEC-LIT §121.6's
+//! Boussinesq form `G_b = beta (nu_t/Pr_t) g.grad(T)` needs no `T_ref`
+//! either - what it needs is the case's `beta`, and that travels on the
+//! `form` field beside `g` and `Pr_t`.
 //!
 //! # Which buoyancy settings live where
 //!
@@ -82,6 +85,7 @@ use crate::models::les::Les;
 use crate::models::{
     KEpsilon, KOmega, KOmegaSst, LaunderSharmaKE, RealizableKe, RngKe, SpalartAllmaras,
 };
+use crate::momentum::BuoyancyForm;
 use crate::solver::SolverPerformance;
 use crate::turbulence::{BuoyancyProduction, C3Mode, FlowState};
 use crate::{Scalar, Vec3};
@@ -111,6 +115,11 @@ pub struct ThermalCtx<'a> {
     /// equation itself diffuses `T` with (SPEC-LIT §15.6: one constant, one
     /// value, reaching every equation that uses it).
     pub prt: Scalar,
+    /// Which force law the buoyancy production follows, SPEC-LIT §17 or
+    /// §121.6 - the case's `BuoyancyCoeffs::form`, carried through so the
+    /// production term and the momentum body force can never disagree
+    /// about which density law a run is on.
+    pub form: BuoyancyForm,
 }
 
 /// The buoyancy knobs SPEC-LIT §17 leaves to the case, read once at
@@ -142,6 +151,7 @@ impl BuoyancySettings {
             c3: self.c3,
             epsilon_stable_branch: self.epsilon_stable_branch,
             t_min: self.t_min,
+            form: ctx.form,
         }
     }
 }
@@ -237,6 +247,35 @@ pub trait CoupledTurbulence {
     /// own closure provides it - see [`MixingRate`]'s doc for why this
     /// exists and what each arm carries.
     fn mixing_rate(&self) -> MixingRate<'_>;
+
+    /// The rho-weighted form's settings (SPEC-LIT §156.3, §156.4). The
+    /// default REFUSES by name: §156's form is the SST's alone, and a model
+    /// that has no `correct_rho` has no settings for it to read.
+    fn set_rho_options(&mut self, _opts: crate::models::k_omega_sst::RhoSstOptions) -> Result<()> {
+        Err(crate::error::Error::Refused(format!(
+            "{}: the rho-weighted form (SPEC-LIT §156) is kOmegaSST's alone; \
+             this model runs no rho-weighted correction to configure",
+            self.name()
+        )))
+    }
+
+    /// One outer iteration of the rho-weighted form (SPEC-LIT §156,
+    /// (156.1)-(156.9)) - [`crate::models::k_omega_sst::KOmegaSst::correct_rho`]
+    /// behind the trait, so a driver that holds a `dyn CoupledTurbulence`
+    /// can run it without downcasting. The default REFUSES by name: the
+    /// kinematic `correct` is every other model's whole story.
+    fn correct_rho(
+        &mut self,
+        _gpu: &Gpu,
+        _flow: &FlowState,
+        _dens: &crate::models::k_omega_sst::SstDensity<'_>,
+    ) -> Result<(SolverPerformance, SolverPerformance)> {
+        Err(crate::error::Error::Refused(format!(
+            "{}: the rho-weighted form (SPEC-LIT §156) is kOmegaSST's alone; \
+             run `correct` on this model",
+            self.name()
+        )))
+    }
 }
 
 // ==========================================================================
@@ -730,6 +769,24 @@ impl<'m> CoupledTurbulence for CoupledKOmegaSst<'m> {
             beta_star: self.model.coeffs().beta_star,
         }
     }
+
+    // SPEC-LIT §156 (DST-05/DST-06): the rho-weighted form is THIS model's,
+    // so the SST wrapper is the one override of the two defaults above.
+    fn set_rho_options(
+        &mut self,
+        opts: crate::models::k_omega_sst::RhoSstOptions,
+    ) -> Result<()> {
+        self.model.set_rho_options(opts)
+    }
+
+    fn correct_rho(
+        &mut self,
+        gpu: &Gpu,
+        flow: &FlowState,
+        dens: &crate::models::k_omega_sst::SstDensity<'_>,
+    ) -> Result<(SolverPerformance, SolverPerformance)> {
+        self.model.correct_rho(gpu, flow, dens)
+    }
 }
 
 // ==========================================================================
@@ -879,5 +936,46 @@ impl CoupledTurbulence for CoupledLaminar {
     }
     fn mixing_rate(&self) -> MixingRate<'_> {
         MixingRate::None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::mesh::GpuMesh;
+
+    fn gpu() -> Option<Gpu> {
+        Gpu::new(0).ok()
+    }
+
+    /// SPEC-LIT §121.6: the form the case chose travels from
+    /// [`ThermalCtx`] through [`BuoyancySettings::production`] onto the
+    /// [`BuoyancyProduction`] the models launch, with `g` and `Pr_t` beside
+    /// it unchanged - and still no `T_ref` anywhere on the way.
+    #[test]
+    fn thermal_ctx_form_reaches_the_production() -> Result<()> {
+        let Some(gpu) = gpu() else {
+            return Ok(());
+        };
+        let (mut hm, points, faces) =
+            crate::mesh::topology::tests::box_mesh([4, 4, 1], Vec3::new(0.25, 0.3, 0.2));
+        hm.compute_geometry(&points, &faces).expect("geometry");
+        hm.build_cell_face_maps();
+        let m = GpuMesh::upload(&gpu, &hm)?;
+        let t = GpuScalarField::zeros(&gpu, &m, "T")?;
+
+        let g = Vec3::new(0.0, 0.0, -9.81);
+        let prt: Scalar = 0.85;
+        for form in [
+            BuoyancyForm::Boussinesq { beta: 2.5e-3 },
+            BuoyancyForm::DensityRatio,
+        ] {
+            let ctx = ThermalCtx { t: &t, g, prt, form };
+            let b = BuoyancySettings::default().production(&ctx);
+            assert_eq!(b.form, form, "the form must reach the production");
+            assert_eq!(b.g, g, "g must reach the production unchanged");
+            assert_eq!(b.prt, prt, "Pr_t must reach the production unchanged");
+        }
+        Ok(())
     }
 }

@@ -46,7 +46,7 @@ use cudarc::driver::{CudaFunction, PushKernelArg};
 
 use crate::device::{cfg_for, DevBuf, Gpu, KernelSet};
 use crate::error::{Error, Result};
-use crate::field::{GpuScalarField, GpuSurfaceScalarField, GpuVectorField};
+use crate::field::{BcKind, GpuScalarField, GpuSurfaceScalarField, GpuVectorField};
 use crate::mesh::GpuMesh;
 use crate::{Label, Scalar, Vec3};
 
@@ -55,6 +55,30 @@ pub struct FieldKernels {
     correct_bc_scalar: CudaFunction,
     correct_bc_vector: CudaFunction,
     inlet_outlet: CudaFunction,
+    advective_speed: CudaFunction,
+    advective_robin_scalar: CudaFunction,
+    advective_robin_vector: CudaFunction,
+    wedge_ref_grad: CudaFunction,
+    pressure_inlet: CudaFunction,
+    patch_mean_scalar: CudaFunction,
+    patch_mean_vector: CudaFunction,
+    extrapolated_sn_grad: CudaFunction,
+    // SPEC-LIT 120.10: the recycled inflow's two refresh kernels.
+    mapped: CudaFunction,
+    turbulent_inlet: CudaFunction,
+    // SPEC-LIT 120.12: the synthetic LES inflow's two per-face kernels and
+    // the one-thread state step after them.
+    digital_filter_inlet: CudaFunction,
+    dfsem_inlet: CudaFunction,
+    synthetic_step: CudaFunction,
+
+    // SPEC-LIT 139.10 (PAR-14): the decomposed part's processor-face
+    // fix-ups, launched right after the evaluation on a mesh that has
+    // processor faces and never on any other (`n_proc_faces == 0`). The
+    // scalar one is also the fix-up every later interpolated-to-face field
+    // launches on a part (`Energy::update_k_eff`'s `rho_face`/`nut_face`).
+    pub(crate) proc_face_scalar: CudaFunction,
+    proc_face_vector: CudaFunction,
 
     copy: CudaFunction,
     copy_vector: CudaFunction,
@@ -76,6 +100,32 @@ impl FieldKernels {
             correct_bc_scalar: k.func("fldCorrectBcScalar")?,
             correct_bc_vector: k.func("fldCorrectBcVector")?,
             inlet_outlet: k.func("fldInletOutletFraction")?,
+            // SPEC-LIT 120.4: the advective outlet's speed and its Robin
+            // rewrite, shared with CMP-17's wave-transmissive condition.
+            advective_speed: k.func("fldAdvectiveSpeed")?,
+            advective_robin_scalar: k.func("fldAdvectiveRobinScalar")?,
+            advective_robin_vector: k.func("fldAdvectiveRobinVector")?,
+            // SPEC-LIT 119.2: the wedge condition's refGrad rewrite, run
+            // before the evaluation on a mesh that carries a wedge.
+            wedge_ref_grad: k.func("fldWedgeRefGrad")?,
+            // SPEC-LIT 120.5: the pressure-driven velocity inlets' refValue
+            // rewrite, run after the flux switch and before the evaluation
+            // wherever a caller opted in.
+            pressure_inlet: k.func("fldPressureInletValue")?,
+            // SPEC-LIT 120.6: the Outlets II conditions' triple rewrites -
+            // the four patch-mean kinds on one 1-thread launch per rule,
+            // the extrapolated gradient one thread per face of the patch.
+            patch_mean_scalar: k.func("fldPatchMeanScalar")?,
+            patch_mean_vector: k.func("fldPatchMeanVector")?,
+            extrapolated_sn_grad: k.func("fldExtrapolatedSnGrad")?,
+            mapped: k.func("fldMapped")?,
+            turbulent_inlet: k.func("fldTurbulentInlet")?,
+            digital_filter_inlet: k.func("fldDigitalFilterInlet")?,
+            dfsem_inlet: k.func("fldDfsemInlet")?,
+            synthetic_step: k.func("fldSyntheticStep")?,
+
+            proc_face_scalar: k.func("fldProcFaceScalar")?,
+            proc_face_vector: k.func("fldProcFaceVector")?,
 
             copy: k.func("fldCopy")?,
             copy_vector: k.func("fldCopyVector")?,
@@ -157,8 +207,31 @@ pub fn correct_boundary_conditions(
             .arg(&m.b_delta_coeffs)
             .arg(&m.b_nbr_cell)
             .arg(&m.b_weights)
+            // SPEC-LIT (120.2b): the cyclic jump a coupled face sees.
+            .arg(&f.jump)
             .arg(&nl)
             .launch(cfg_for(n))?;
+    }
+
+    // SPEC-LIT 139.10 (PAR-14): on a decomposed part the processor faces'
+    // values are the WHOLE mesh's internal interpolations, which the cyclic
+    // branch above cannot form (it reads this side's `b_weights`). The
+    // fix-up overwrites exactly the faces `b_proc` marks; every other mesh
+    // launches nothing and moves no bit.
+    if m.n_proc_faces > 0 {
+        let func = k.proc_face_scalar.clone();
+        unsafe {
+            gpu.stream()
+                .launch_builder(&func)
+                .arg(&mut f.bf)
+                .arg(&f.f)
+                .arg(&m.b_proc)
+                .arg(&m.b_proc_w)
+                .arg(&m.b_face_cells)
+                .arg(&m.b_nbr_cell)
+                .arg(&nl)
+                .launch(cfg_for(n))?;
+        }
     }
     Ok(())
 }
@@ -167,7 +240,15 @@ pub fn correct_boundary_conditions(
 ///
 /// Componentwise the same expression, except on a symmetry plane, where the
 /// value is the tangential part `U_P - n (n.U_P)` - the average of the cell
-/// value and its mirror image.
+/// value and its mirror image - and on a `DirectionMixed` face (SPEC-LIT
+/// 120.3), where the kernel evaluates (120.3a) from the face's `dm` block
+/// into `bf` ONLY: the matrix sees (120.3h) - `fr = f_t`, `ref_value = r`,
+/// `ref_grad = g` - so the tangential part enters it implicitly, and
+/// `ref_value` is read here, never rewritten. On a mesh that carries a
+/// wedge, `fldWedgeRefGrad` (SPEC-LIT 119.2) rewrites `ref_grad` on the
+/// wedge faces from the current cell value BEFORE the evaluation, so the
+/// section-4 expression returns (119.2c); a mesh without a wedge launches
+/// nothing extra.
 pub fn correct_boundary_conditions_vector(
     gpu: &Gpu,
     k: &FieldKernels,
@@ -188,6 +269,43 @@ pub fn correct_boundary_conditions_vector(
     }
     let nl = n as Label;
 
+    // SPEC-LIT 119.2: the wedge faces' ref_grad = Delta_b w, from the
+    // CURRENT cell value, before the evaluation reads it. The five
+    // condition scalars are formed in f64 from the f64 wedge of 119.1 and
+    // cast to Scalar once (SPEC-LIT 118.2). Nothing extra on a mesh
+    // without a wedge - it runs bit for bit as before.
+    if let Some(w) = &m.wedge {
+        let back = w.back as Label;
+        let front = w.front as Label;
+        let (ax, ay, az) = (
+            w.axis.x as Scalar,
+            w.axis.y as Scalar,
+            w.axis.z as Scalar,
+        );
+        let sin_theta = w.theta.sin() as Scalar;
+        let vers_theta = (2.0 * (0.5 * w.theta).sin() * (0.5 * w.theta).sin()) as Scalar;
+        let func = k.wedge_ref_grad.clone();
+        unsafe {
+            gpu.stream()
+                .launch_builder(&func)
+                .arg(&mut f.ref_grad)
+                .arg(&f.f)
+                .arg(&f.bc_kind)
+                .arg(&m.b_patch)
+                .arg(&m.b_face_cells)
+                .arg(&m.b_delta_coeffs)
+                .arg(&back)
+                .arg(&front)
+                .arg(&ax)
+                .arg(&ay)
+                .arg(&az)
+                .arg(&sin_theta)
+                .arg(&vers_theta)
+                .arg(&nl)
+                .launch(cfg_for(n))?;
+        }
+    }
+
     let func = k.correct_bc_vector.clone();
     unsafe {
         gpu.stream()
@@ -197,6 +315,7 @@ pub fn correct_boundary_conditions_vector(
             .arg(&f.fr)
             .arg(&f.ref_value)
             .arg(&f.ref_grad)
+            .arg(&f.dm)
             .arg(&f.bc_kind)
             .arg(&m.b_face_cells)
             .arg(&m.b_delta_coeffs)
@@ -205,6 +324,26 @@ pub fn correct_boundary_conditions_vector(
             .arg(&m.b_weights)
             .arg(&nl)
             .launch(cfg_for(n))?;
+    }
+
+    // SPEC-LIT 139.10 (PAR-14): the vector half of the processor-face
+    // fix-up - per component fvFluxInternal's expression on the whole
+    // mesh's two cells and weight. Nothing on a mesh without processor
+    // faces.
+    if m.n_proc_faces > 0 {
+        let func = k.proc_face_vector.clone();
+        unsafe {
+            gpu.stream()
+                .launch_builder(&func)
+                .arg(&mut f.bf)
+                .arg(&f.f)
+                .arg(&m.b_proc)
+                .arg(&m.b_proc_w)
+                .arg(&m.b_face_cells)
+                .arg(&m.b_nbr_cell)
+                .arg(&nl)
+                .launch(cfg_for(n))?;
+        }
     }
     Ok(())
 }
@@ -272,6 +411,818 @@ pub fn update_inlet_outlet_vector(
 ) -> Result<()> {
     let n = f.n_boundary_faces;
     update_inlet_outlet(gpu, k, &mut f.fr, &f.bc_kind, &phi.bf, n)
+}
+
+/// Rewrite `ref_value` on the five pressure-driven velocity inlets of
+/// SPEC-LIT 120.5 from the flux the last corrector left, (120.5e)-(120.5i) -
+/// one launch over the whole boundary, no host sync (it runs inside
+/// CUDA-graph capture, SPEC-LIT 81). Run it after
+/// [`update_inlet_outlet_vector`], which switches the fr of kinds 44 and 45
+/// on the same flux, and before [`correct_boundary_conditions_vector`],
+/// once per outer iteration, wherever the caller set
+/// `BcInputs::pressure_inlet`. The host twin of the kernel is
+/// [`crate::field::pressure_inlet_values`].
+pub fn update_pressure_inlet_velocity(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    u: &mut GpuVectorField,
+    phi: &GpuSurfaceScalarField,
+    m: &GpuMesh,
+) -> Result<()> {
+    check_sizes(
+        &u.name,
+        u.n_cells,
+        u.n_boundary_faces,
+        m,
+        "update_pressure_inlet_velocity",
+    )?;
+    let n = u.n_boundary_faces;
+    let checks = [
+        (u.ref_value.len(), "ref_value"),
+        (u.bc_kind.len(), "bc_kind"),
+        (phi.bf.len(), "phi"),
+        (m.b_patch.len(), "b_patch"),
+        (m.b_sf.len(), "b_sf"),
+        (m.b_mag_sf.len(), "b_mag_sf"),
+        (m.b_face_cells.len(), "b_face_cells"),
+    ];
+    for (len, name) in checks {
+        if len < n {
+            return Err(Error::Config(format!(
+                "update_pressure_inlet_velocity: {n} boundary faces, but \
+                 {name} has {len}"
+            )));
+        }
+    }
+    // The kernel reads the CELL value behind each face out of the internal
+    // field, so `f` covers the cells, not the boundary.
+    if u.f.len() < m.n_cells {
+        return Err(Error::Config(format!(
+            "update_pressure_inlet_velocity: {} cells, but f has {}",
+            m.n_cells,
+            u.f.len()
+        )));
+    }
+    if u.dm.len() < 12 * n {
+        return Err(Error::Config(format!(
+            "update_pressure_inlet_velocity: {n} boundary faces, but dm has {}",
+            u.dm.len()
+        )));
+    }
+    if n == 0 {
+        return Ok(());
+    }
+    let nl = n as Label;
+
+    let func = k.pressure_inlet.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&func)
+            .arg(&mut u.ref_value)
+            .arg(&u.bc_kind)
+            .arg(&m.b_patch)
+            .arg(&phi.bf)
+            .arg(&m.b_sf)
+            .arg(&m.b_mag_sf)
+            .arg(&u.dm)
+            .arg(&u.f)
+            .arg(&m.b_face_cells)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+/// Rewrite the triple on the Outlets II patches of SPEC-LIT 120.6 from the
+/// flux the last corrector left - (120.6a)-(120.6c) and (120.6f) on a
+/// scalar field - one launch per rule held by `f.mean_rules`, no host sync
+/// (it runs inside CUDA-graph capture, SPEC-LIT 81). Run it after the flux
+/// switch and before [`correct_boundary_conditions`], once per outer
+/// iteration, wherever the setup opted in with `BcInputs::patch_means`. A
+/// field with no rule launches nothing, which keeps every existing case's
+/// results bitwise. `grad` is the momentum predictor's `grad p`, which the
+/// kind-48 rules read; passing `None` where a rule needs it is an error.
+/// The host twins of the kernels are
+/// [`crate::field::patch_mean::patch_mean_values_scalar`] and
+/// [`crate::field::patch_mean::extrapolated_sn_grad`].
+pub fn update_patch_means_scalar(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    f: &mut GpuScalarField,
+    phi: &GpuSurfaceScalarField,
+    grad: Option<&DevBuf<Vec3>>,
+    m: &GpuMesh,
+) -> Result<()> {
+    check_sizes(
+        &f.name,
+        f.n_cells,
+        f.n_boundary_faces,
+        m,
+        "update_patch_means_scalar",
+    )?;
+    if f.mean_rules.is_empty() {
+        return Ok(());
+    }
+    let n = f.n_boundary_faces;
+    let checks = [
+        (f.fr.len(), "fr"),
+        (f.ref_value.len(), "ref_value"),
+        (f.ref_grad.len(), "ref_grad"),
+        (f.bf.len(), "bf"),
+        (f.bc_kind.len(), "bc_kind"),
+        (phi.bf.len(), "phi"),
+        (m.b_mag_sf.len(), "b_mag_sf"),
+        (m.b_face_cells.len(), "b_face_cells"),
+    ];
+    for (len, name) in checks {
+        if len < n {
+            return Err(Error::Config(format!(
+                "update_patch_means_scalar: {n} boundary faces, but {name} \
+                 has {len}"
+            )));
+        }
+    }
+    // The kernels read the CELL value behind each face out of the internal
+    // field, so `f` covers the cells, not the boundary.
+    if f.f.len() < m.n_cells {
+        return Err(Error::Config(format!(
+            "update_patch_means_scalar: {} cells, but f has {}",
+            m.n_cells,
+            f.f.len()
+        )));
+    }
+    for rule in &f.mean_rules {
+        if rule.start + rule.size > n || rule.src_start + rule.src_size > n {
+            return Err(Error::Config(format!(
+                "update_patch_means_scalar: field {} carries a {:?} rule on \
+                 faces {}..{} (source {}..{}) but the boundary has {n} faces",
+                f.name,
+                rule.kind,
+                rule.start,
+                rule.start + rule.size,
+                rule.src_start,
+                rule.src_start + rule.src_size
+            )));
+        }
+        match rule.kind {
+            BcKind::FixedFluxExtrapolatedPressure => {
+                let Some(g) = grad else {
+                    return Err(Error::Config(format!(
+                        "update_patch_means_scalar: field {} carries a \
+                         fixedFluxExtrapolatedPressure rule but no grad p \
+                         was passed - (120.6f) reads the momentum \
+                         predictor's gradient (SPEC-LIT 120.6)",
+                        f.name
+                    )));
+                };
+                let start = rule.start as Label;
+                let size = rule.size as Label;
+                let func = k.extrapolated_sn_grad.clone();
+                unsafe {
+                    gpu.stream()
+                        .launch_builder(&func)
+                        .arg(&mut f.fr)
+                        .arg(&mut f.ref_value)
+                        .arg(&mut f.ref_grad)
+                        .arg(g)
+                        .arg(&m.b_sf)
+                        .arg(&m.b_mag_sf)
+                        .arg(&m.b_face_cells)
+                        .arg(&start)
+                        .arg(&size)
+                        .launch(cfg_for(rule.size))?;
+                }
+            }
+            BcKind::FixedMean | BcKind::FixedMeanOutletInlet
+            | BcKind::OutletMappedUniformInlet => {
+                let kind = rule.kind as Label;
+                let start = rule.start as Label;
+                let size = rule.size as Label;
+                let src_start = rule.src_start as Label;
+                let src_size = rule.src_size as Label;
+                let target = rule.target.x;
+                let fraction = rule.fraction;
+                let func = k.patch_mean_scalar.clone();
+                unsafe {
+                    gpu.stream()
+                        .launch_builder(&func)
+                        .arg(&mut f.fr)
+                        .arg(&mut f.ref_value)
+                        .arg(&mut f.ref_grad)
+                        .arg(&f.f)
+                        .arg(&f.bf)
+                        .arg(&phi.bf)
+                        .arg(&m.b_mag_sf)
+                        .arg(&m.b_face_cells)
+                        .arg(&kind)
+                        .arg(&start)
+                        .arg(&size)
+                        .arg(&src_start)
+                        .arg(&src_size)
+                        .arg(&target)
+                        .arg(&fraction)
+                        .launch(cfg_for(1))?;
+                }
+            }
+            // 50 is a vector condition; a scalar rule never carries it.
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+/// [`update_patch_means_scalar`] for a vector field - (120.6a)-(120.6c)
+/// componentwise and (120.6e), kinds 46, 47, 49 and 50, the host twin
+/// [`crate::field::patch_mean::patch_mean_values_vector`]. Kind 48 is
+/// scalar-only and never reaches this side.
+pub fn update_patch_means_vector(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    f: &mut GpuVectorField,
+    phi: &GpuSurfaceScalarField,
+    m: &GpuMesh,
+) -> Result<()> {
+    check_sizes(
+        &f.name,
+        f.n_cells,
+        f.n_boundary_faces,
+        m,
+        "update_patch_means_vector",
+    )?;
+    if f.mean_rules.is_empty() {
+        return Ok(());
+    }
+    let n = f.n_boundary_faces;
+    let checks = [
+        (f.fr.len(), "fr"),
+        (f.ref_value.len(), "ref_value"),
+        (f.ref_grad.len(), "ref_grad"),
+        (f.bf.len(), "bf"),
+        (f.bc_kind.len(), "bc_kind"),
+        (phi.bf.len(), "phi"),
+        (m.b_sf.len(), "b_sf"),
+        (m.b_mag_sf.len(), "b_mag_sf"),
+        (m.b_face_cells.len(), "b_face_cells"),
+    ];
+    for (len, name) in checks {
+        if len < n {
+            return Err(Error::Config(format!(
+                "update_patch_means_vector: {n} boundary faces, but {name} \
+                 has {len}"
+            )));
+        }
+    }
+    // The kernels read the CELL value behind each face out of the internal
+    // field, so `f` covers the cells, not the boundary.
+    if f.f.len() < m.n_cells {
+        return Err(Error::Config(format!(
+            "update_patch_means_vector: {} cells, but f has {}",
+            m.n_cells,
+            f.f.len()
+        )));
+    }
+    for rule in &f.mean_rules {
+        if rule.start + rule.size > n || rule.src_start + rule.src_size > n {
+            return Err(Error::Config(format!(
+                "update_patch_means_vector: field {} carries a {:?} rule on \
+                 faces {}..{} (source {}..{}) but the boundary has {n} faces",
+                f.name,
+                rule.kind,
+                rule.start,
+                rule.start + rule.size,
+                rule.src_start,
+                rule.src_start + rule.src_size
+            )));
+        }
+        match rule.kind {
+            BcKind::FixedMean | BcKind::FixedMeanOutletInlet
+            | BcKind::OutletMappedUniformInlet
+            | BcKind::MatchedFlowRateOutletVelocity => {
+                let kind = rule.kind as Label;
+                let start = rule.start as Label;
+                let size = rule.size as Label;
+                let src_start = rule.src_start as Label;
+                let src_size = rule.src_size as Label;
+                let tx = rule.target.x;
+                let ty = rule.target.y;
+                let tz = rule.target.z;
+                let fraction = rule.fraction;
+                let func = k.patch_mean_vector.clone();
+                unsafe {
+                    gpu.stream()
+                        .launch_builder(&func)
+                        .arg(&mut f.fr)
+                        .arg(&mut f.ref_value)
+                        .arg(&mut f.ref_grad)
+                        .arg(&f.f)
+                        .arg(&f.bf)
+                        .arg(&phi.bf)
+                        .arg(&m.b_sf)
+                        .arg(&m.b_mag_sf)
+                        .arg(&m.b_face_cells)
+                        .arg(&kind)
+                        .arg(&start)
+                        .arg(&size)
+                        .arg(&src_start)
+                        .arg(&src_size)
+                        .arg(&tx)
+                        .arg(&ty)
+                        .arg(&tz)
+                        .arg(&fraction)
+                        .launch(cfg_for(1))?;
+                }
+            }
+            // 48 is a scalar condition; a vector rule never carries it.
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+/// One `fldMapped` launch (SPEC-LIT 120.10): `ncomp` 1 for a scalar field,
+/// 3 for a vector field, whose `ofvec3` buffers the kernel reads as three
+/// `ofscalar` a face.
+#[allow(clippy::too_many_arguments)]
+fn launch_mapped<T: cudarc::driver::DeviceRepr>(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    name: &str,
+    fr: &mut DevBuf<Scalar>,
+    ref_value: &mut DevBuf<T>,
+    ref_grad: &mut DevBuf<T>,
+    psi: &DevBuf<T>,
+    mp: &crate::field::mapped::GpuMapped,
+    m: &GpuMesh,
+    ncomp: Label,
+) -> Result<()> {
+    let r = &mp.rule;
+    let n = m.n_boundary_faces;
+    if r.start + r.size > n || mp.cells.len() < r.size || r.cells.len() != r.size {
+        return Err(Error::Config(format!(
+            "update_mapped: field {name} carries a mapped rule on faces {}..{} \
+             with {} sampled cells, but the boundary has {n} faces (SPEC-LIT \
+             120.10)",
+            r.start,
+            r.start + r.size,
+            r.cells.len()
+        )));
+    }
+    if r.size == 0 {
+        return Ok(());
+    }
+    let start = r.start as Label;
+    let size = r.size as Label;
+    let set_average: Label = r.set_average.into();
+    let (ax, ay, az) = (r.average.x, r.average.y, r.average.z);
+    let func = k.mapped.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&func)
+            .arg(fr)
+            .arg(ref_value)
+            .arg(ref_grad)
+            .arg(psi)
+            .arg(&mp.cells)
+            .arg(&m.b_mag_sf)
+            .arg(&start)
+            .arg(&size)
+            .arg(&ncomp)
+            .arg(&set_average)
+            .arg(&ax)
+            .arg(&ay)
+            .arg(&az)
+            .launch(cfg_for(1))?;
+    }
+    Ok(())
+}
+
+/// Rewrite the `refValue` of every `mapped`/`mappedFixedValue` patch of a
+/// scalar field from the cells its offset plane samples - (120.10a)-
+/// (120.10c) of SPEC-LIT 120.10 - one launch per rule in `f.mapped`, no
+/// host sync (it runs inside CUDA-graph capture, SPEC-LIT 81). Run it once
+/// per outer iteration, before [`correct_boundary_conditions`], wherever
+/// the setup opted in with `BcInputs::mapped`. A field with no rule
+/// launches nothing, which keeps every existing case's results bitwise.
+/// The host twin is [`crate::field::mapped::mapped_values`].
+pub fn update_mapped_scalar(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    f: &mut GpuScalarField,
+    m: &GpuMesh,
+) -> Result<()> {
+    if f.mapped.is_empty() {
+        return Ok(());
+    }
+    check_sizes(&f.name, f.n_cells, f.n_boundary_faces, m, "update_mapped_scalar")?;
+    for mp in &f.mapped {
+        launch_mapped(
+            gpu, k, &f.name, &mut f.fr, &mut f.ref_value, &mut f.ref_grad, &f.f, mp, m, 1,
+        )?;
+    }
+    Ok(())
+}
+
+/// [`update_mapped_scalar`] for a vector field, componentwise (120.10c)
+/// with the vector magnitudes of `a` and `m`.
+pub fn update_mapped_vector(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    f: &mut GpuVectorField,
+    m: &GpuMesh,
+) -> Result<()> {
+    if f.mapped.is_empty() {
+        return Ok(());
+    }
+    check_sizes(&f.name, f.n_cells, f.n_boundary_faces, m, "update_mapped_vector")?;
+    for mp in &f.mapped {
+        launch_mapped(
+            gpu, k, &f.name, &mut f.fr, &mut f.ref_value, &mut f.ref_grad, &f.f, mp, m, 3,
+        )?;
+    }
+    Ok(())
+}
+
+/// One `fldTurbulentInlet` launch (SPEC-LIT 120.10).
+fn launch_turbulent<T: cudarc::driver::DeviceRepr>(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    name: &str,
+    n_bf: usize,
+    ref_value: &mut DevBuf<T>,
+    ti: &mut crate::field::mapped::GpuTurbulentInlet,
+) -> Result<()> {
+    let r = &ti.rule;
+    if r.start + r.size > n_bf || r.reference.len() != r.size * r.ncomp {
+        return Err(Error::Config(format!(
+            "advance_turbulent_inlet: field {name} carries a turbulentInlet \
+             rule on faces {}..{} with {} reference values, but the boundary \
+             has {n_bf} faces (SPEC-LIT 120.10)",
+            r.start,
+            r.start + r.size,
+            r.reference.len()
+        )));
+    }
+    if r.size == 0 {
+        return Ok(());
+    }
+    let start = r.start as Label;
+    let size = r.size as Label;
+    let ncomp = r.ncomp as Label;
+    let (sx, sy, sz) = (r.scale.x, r.scale.y, r.scale.z);
+    let alpha = r.alpha;
+    let seed = r.seed;
+    let func = k.turbulent_inlet.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&func)
+            .arg(ref_value)
+            .arg(&ti.reference)
+            .arg(&mut ti.step)
+            .arg(&start)
+            .arg(&size)
+            .arg(&ncomp)
+            .arg(&sx)
+            .arg(&sy)
+            .arg(&sz)
+            .arg(&alpha)
+            .arg(&seed)
+            .launch(cfg_for(1))?;
+    }
+    Ok(())
+}
+
+/// Draw the next step of every `turbulentInlet` patch of a scalar field -
+/// (120.10g)-(120.10h) of SPEC-LIT 120.10 - one launch per rule in
+/// `f.turbulent`, no host sync; the step counter lives on the device. Run
+/// it once per TIME STEP, before the step's first outer iteration,
+/// wherever the setup opted in with `BcInputs::turbulent_inlet`. A field
+/// with no rule launches nothing. The host twin is
+/// [`crate::field::mapped::turbulent_advance`].
+pub fn advance_turbulent_inlet_scalar(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    f: &mut GpuScalarField,
+) -> Result<()> {
+    let n_bf = f.n_boundary_faces;
+    for ti in &mut f.turbulent {
+        launch_turbulent(gpu, k, &f.name, n_bf, &mut f.ref_value, ti)?;
+    }
+    Ok(())
+}
+
+/// [`advance_turbulent_inlet_scalar`] for a vector field, componentwise.
+pub fn advance_turbulent_inlet_vector(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    f: &mut GpuVectorField,
+) -> Result<()> {
+    let n_bf = f.n_boundary_faces;
+    for ti in &mut f.turbulent {
+        launch_turbulent(gpu, k, &f.name, n_bf, &mut f.ref_value, ti)?;
+    }
+    Ok(())
+}
+
+/// Draw the next time step of every synthetic-inflow patch of a vector field,
+/// SPEC-LIT 120.12's digital filter (120.12c)-(120.12e) or eddies
+/// (120.12g)-(120.12k): one per-face launch and one state step per rule in
+/// `f.synthetic`, no host sync; the state `[n, X]` lives on the device. Run
+/// it once per TIME STEP with that step's `dt`, before the step's first
+/// outer iteration, wherever the setup opted in with
+/// `BcInputs::turbulent_inlet`. A field with no rule launches nothing. The
+/// host twins are [`crate::field::synthetic::df_values`] and
+/// [`crate::field::synthetic::dfsem_values`]. A digital filter whose time
+/// filter at this `dt` would exceed its limits is refused by name.
+pub fn advance_synthetic_inlet_vector(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    f: &mut GpuVectorField,
+    dt: Scalar,
+) -> Result<()> {
+    use crate::field::synthetic::{self, SyntheticRule};
+    let n_bf = f.n_boundary_faces;
+    let dt64 = dt as f64;
+    for sy in &mut f.synthetic {
+        let (start, size) = (sy.rule.start(), sy.rule.size());
+        if start + size > n_bf {
+            return Err(Error::Config(format!(
+                "advance_synthetic_inlet_vector: field {} carries a synthetic-inflow rule on \
+                 faces {start}..{} but the boundary has {n_bf} faces (SPEC-LIT 120.12)",
+                f.name,
+                start + size
+            )));
+        }
+        if size == 0 {
+            continue;
+        }
+        let start_l = start as Label;
+        let size_l = size as Label;
+        match &sy.rule {
+            SyntheticRule::DigitalFilter(r) => {
+                let bt = synthetic::df_time_filters(r, dt64)?;
+                let nt: [Label; 3] = [
+                    (bt[0].len() / 2) as Label,
+                    (bt[1].len() / 2) as Label,
+                    (bt[2].len() / 2) as Label,
+                ];
+                let seed = r.seed;
+                let func = k.digital_filter_inlet.clone();
+                unsafe {
+                    gpu.stream()
+                        .launch_builder(&func)
+                        .arg(&mut f.ref_value)
+                        .arg(&sy.params)
+                        .arg(&sy.nodes)
+                        .arg(&sy.state)
+                        .arg(&start_l)
+                        .arg(&size_l)
+                        .arg(&dt64)
+                        .arg(&seed)
+                        .arg(&nt[0])
+                        .arg(&nt[1])
+                        .arg(&nt[2])
+                        .launch(cfg_for(size))?;
+                }
+            }
+            SyntheticRule::Dfsem(r) => {
+                let seed = r.seed;
+                let func = k.dfsem_inlet.clone();
+                unsafe {
+                    gpu.stream()
+                        .launch_builder(&func)
+                        .arg(&mut f.ref_value)
+                        .arg(&sy.params)
+                        .arg(&sy.rel)
+                        .arg(&sy.state)
+                        .arg(&start_l)
+                        .arg(&size_l)
+                        .arg(&dt64)
+                        .arg(&seed)
+                        .launch(cfg_for(size))?;
+                }
+            }
+        }
+        let func = k.synthetic_step.clone();
+        unsafe {
+            gpu.stream()
+                .launch_builder(&func)
+                .arg(&mut sy.state)
+                .arg(&sy.params)
+                .arg(&dt64)
+                .launch(cfg_for(1))?;
+        }
+    }
+    Ok(())
+}
+
+// ==========================================================================
+//  The advective outlet (SPEC-LIT 120.4)
+// ==========================================================================
+
+/// Fill the wave speed and the relaxation rate of every face of `match_kind`
+/// from the flux - (120.4b), `w = max(phi_b/|S_f|, 0)` (0 where `|S_f|` is
+/// 0) and `K = w/lInf`.
+///
+/// `match_kind` is an input, not a constant: the generic condition passes
+/// `BcKind::Advective`, and CMP-17 passes its own kind with its own `w` and
+/// `K` of (126.6) to the same kernels. Every length must cover the whole
+/// boundary, the same contract [`update_inlet_outlet`] checks.
+#[allow(clippy::too_many_arguments)]
+pub fn advective_speed(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    w: &mut DevBuf<Scalar>,
+    k_relax: &mut DevBuf<Scalar>,
+    bc_kind: &DevBuf<Label>,
+    match_kind: BcKind,
+    phi_b: &DevBuf<Scalar>,
+    mag_sf: &DevBuf<Scalar>,
+    inv_l_inf: &DevBuf<Scalar>,
+    n_boundary_faces: usize,
+) -> Result<()> {
+    let n = n_boundary_faces;
+    for (buf, name) in [
+        (w.len(), "w"),
+        (k_relax.len(), "k_relax"),
+        (bc_kind.len(), "bc_kind"),
+        (phi_b.len(), "phi_b"),
+        (mag_sf.len(), "mag_sf"),
+        (inv_l_inf.len(), "inv_l_inf"),
+    ] {
+        if buf < n {
+            return Err(Error::Config(format!(
+                "advective_speed: {n} boundary faces, but {name} has {buf}"
+            )));
+        }
+    }
+    if n == 0 {
+        return Ok(());
+    }
+    let nl = n as Label;
+    let kind = match_kind as Label;
+
+    let func = k.advective_speed.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&func)
+            .arg(&mut *w)
+            .arg(&mut *k_relax)
+            .arg(bc_kind)
+            .arg(&kind)
+            .arg(phi_b)
+            .arg(mag_sf)
+            .arg(inv_l_inf)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+/// Rewrite the triple of every face of `match_kind` from (120.4d), in the
+/// 120.4 operation order (`d = a_n + K`, `fr = d/(d + w·Delta_b)`,
+/// `refValue = (K·phi_inf - a_0·b_o - a_00·b_oo)/d`, `ref_grad = 0`), with
+/// `(a_n, a_0, a_00)` the run's own `DdtCoeffs` - the host twin is
+/// [`crate::field::advective::advective_triple`]. The face value is then the
+/// ordinary §4 evaluation: run
+/// [`correct_boundary_conditions`] after this, never instead of it.
+///
+/// `b_old`/`b_old_old` are the face's two previous STEP values, rotated once
+/// per time step by `field::advective`'s `store_old_time`.
+#[allow(clippy::too_many_arguments)]
+pub fn advective_robin_scalar(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    fr: &mut DevBuf<Scalar>,
+    ref_value: &mut DevBuf<Scalar>,
+    ref_grad: &mut DevBuf<Scalar>,
+    bc_kind: &DevBuf<Label>,
+    match_kind: BcKind,
+    w: &DevBuf<Scalar>,
+    k_relax: &DevBuf<Scalar>,
+    phi_inf: &DevBuf<Scalar>,
+    b_old: &DevBuf<Scalar>,
+    b_old_old: &DevBuf<Scalar>,
+    delta_coeffs: &DevBuf<Scalar>,
+    c: crate::timescheme::DdtCoeffs,
+    n_boundary_faces: usize,
+) -> Result<()> {
+    let n = n_boundary_faces;
+    for (buf, name) in [
+        (fr.len(), "fr"),
+        (ref_value.len(), "ref_value"),
+        (ref_grad.len(), "ref_grad"),
+        (bc_kind.len(), "bc_kind"),
+        (w.len(), "w"),
+        (k_relax.len(), "k_relax"),
+        (phi_inf.len(), "phi_inf"),
+        (b_old.len(), "b_old"),
+        (b_old_old.len(), "b_old_old"),
+        (delta_coeffs.len(), "delta_coeffs"),
+    ] {
+        if buf < n {
+            return Err(Error::Config(format!(
+                "advective_robin_scalar: {n} boundary faces, but {name} has {buf}"
+            )));
+        }
+    }
+    if n == 0 {
+        return Ok(());
+    }
+    let nl = n as Label;
+    let kind = match_kind as Label;
+
+    let func = k.advective_robin_scalar.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&func)
+            .arg(&mut *fr)
+            .arg(&mut *ref_value)
+            .arg(&mut *ref_grad)
+            .arg(bc_kind)
+            .arg(&kind)
+            .arg(w)
+            .arg(k_relax)
+            .arg(phi_inf)
+            .arg(b_old)
+            .arg(b_old_old)
+            .arg(delta_coeffs)
+            .arg(&c.a_n)
+            .arg(&c.a_0)
+            .arg(&c.a_00)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
+}
+
+/// [`advective_robin_scalar`] for a vector field: one `fr` per face - a
+/// vector field shares the fraction across its components (SPEC-LIT 120.4)
+/// - and `ref_value`/`phi_inf`/`b_old`/`b_old_old` per component.
+#[allow(clippy::too_many_arguments)]
+pub fn advective_robin_vector(
+    gpu: &Gpu,
+    k: &FieldKernels,
+    fr: &mut DevBuf<Scalar>,
+    ref_value: &mut DevBuf<Vec3>,
+    ref_grad: &mut DevBuf<Vec3>,
+    bc_kind: &DevBuf<Label>,
+    match_kind: BcKind,
+    w: &DevBuf<Scalar>,
+    k_relax: &DevBuf<Scalar>,
+    phi_inf: &DevBuf<Vec3>,
+    b_old: &DevBuf<Vec3>,
+    b_old_old: &DevBuf<Vec3>,
+    delta_coeffs: &DevBuf<Scalar>,
+    c: crate::timescheme::DdtCoeffs,
+    n_boundary_faces: usize,
+) -> Result<()> {
+    let n = n_boundary_faces;
+    for (buf, name) in [
+        (fr.len(), "fr"),
+        (ref_value.len(), "ref_value"),
+        (ref_grad.len(), "ref_grad"),
+        (bc_kind.len(), "bc_kind"),
+        (w.len(), "w"),
+        (k_relax.len(), "k_relax"),
+        (phi_inf.len(), "phi_inf"),
+        (b_old.len(), "b_old"),
+        (b_old_old.len(), "b_old_old"),
+        (delta_coeffs.len(), "delta_coeffs"),
+    ] {
+        if buf < n {
+            return Err(Error::Config(format!(
+                "advective_robin_vector: {n} boundary faces, but {name} has {buf}"
+            )));
+        }
+    }
+    if n == 0 {
+        return Ok(());
+    }
+    let nl = n as Label;
+    let kind = match_kind as Label;
+
+    let func = k.advective_robin_vector.clone();
+    unsafe {
+        gpu.stream()
+            .launch_builder(&func)
+            .arg(&mut *fr)
+            .arg(&mut *ref_value)
+            .arg(&mut *ref_grad)
+            .arg(bc_kind)
+            .arg(&kind)
+            .arg(w)
+            .arg(k_relax)
+            .arg(phi_inf)
+            .arg(b_old)
+            .arg(b_old_old)
+            .arg(delta_coeffs)
+            .arg(&c.a_n)
+            .arg(&c.a_0)
+            .arg(&c.a_00)
+            .arg(&nl)
+            .launch(cfg_for(n))?;
+    }
+    Ok(())
 }
 
 // ==========================================================================
@@ -825,6 +1776,50 @@ mod tests {
         // `OFGPU_BC_NUT_LOW_RE` in cuda/turbulence.cu, where nu_t is pinned
         // to zero at the wall (SPEC-LIT 15.2).
         assert_eq!(BcKind::NutLowReWallFunction as i32, 22);
+
+        // `OFGPU_BC_DIRECTION_MIXED` in cuda/field.cu: the tensorial mixed
+        // condition of SPEC-LIT 120.3, the branch in fldCorrectBcVector that
+        // evaluates (120.3a) into the face value while the matrix sees
+        // (120.3h) - the tangential part implicitly.
+        assert_eq!(BcKind::DirectionMixed as i32, 37);
+
+        // `OFGPU_BC_OUTLET_INLET` and `OFGPU_BC_ADVECTIVE` in cuda/field.cu
+        // (SPEC-LIT 120.4): the reverse flux switch, OUTSIDE the range above
+        // because its Dirichlet half is the OUTflow half, and the Robin
+        // outlet whose triple `fldAdvectiveRobin*` rewrites from (120.4d).
+        assert_eq!(BcKind::OutletInlet as i32, 38);
+        assert_eq!(BcKind::Advective as i32, 39);
+
+        // `OFGPU_BC_WEDGE` in cuda/field.cu (SPEC-LIT 119.2): the wedge
+        // condition's kind, whose ref_grad the fldWedgeRefGrad kernel
+        // rewrites before the evaluation and which adds no branch to
+        // fldCorrectBcScalar/fldCorrectBcVector.
+        assert_eq!(BcKind::Wedge as i32, 40);
+
+        // `OFGPU_BC_PRESSURE_INLET_FIRST`/`_LAST` in cuda/field.cu AND in
+        // cuda/momentum.cu (SPEC-LIT 120.5): the five pressure-driven
+        // velocity inlets, whose ref_value the fldPressureInletValue kernel
+        // rewrites from the flux and whose flux the momFluxIsPrescribed in
+        // momentum.cu leaves to the pressure equation whatever their fr -
+        // both macros must keep naming the same five kinds.
+        assert_eq!(crate::field::PRESSURE_INLET_FIRST, 41);
+        assert_eq!(crate::field::PRESSURE_INLET_LAST, 45);
+        assert_eq!(BcKind::PressureInletVelocity as i32, 41);
+        assert_eq!(BcKind::PressureInletUniformVelocity as i32, 42);
+        assert_eq!(BcKind::PressureDirectedInletVelocity as i32, 43);
+        assert_eq!(BcKind::PressureDirectedInletOutletVelocity as i32, 44);
+        assert_eq!(BcKind::PressureInletOutletParSlipVelocity as i32, 45);
+
+        // `OFGPU_BC_FIXED_MEAN` .. `OFGPU_BC_MATCHED_FLOW_RATE_OUTLET` in
+        // cuda/field.cu (SPEC-LIT 120.6): the five Outlets II kinds, whose
+        // triples the fldPatchMeanScalar, fldPatchMeanVector and
+        // fldExtrapolatedSnGrad kernels rewrite once per outer iteration
+        // wherever the caller opted in (BcInputs::patch_means).
+        assert_eq!(BcKind::FixedMean as i32, 46);
+        assert_eq!(BcKind::FixedMeanOutletInlet as i32, 47);
+        assert_eq!(BcKind::FixedFluxExtrapolatedPressure as i32, 48);
+        assert_eq!(BcKind::OutletMappedUniformInlet as i32, 49);
+        assert_eq!(BcKind::MatchedFlowRateOutletVelocity as i32, 50);
     }
 
     /// Every branch of SPEC-LIT section 4 against the closed form it
@@ -888,7 +1883,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_cyclic_face_interpolates_across_the_couple() {
         let hm = chain_mesh();
         let Some((gpu, m, k)) = ctx(&hm) else { return };
@@ -919,7 +1913,11 @@ mod tests {
         let want2 = 0.35 * PSI[0] + 0.65 * PSI[3];
         let want3 = 0.65 * PSI[3] + 0.35 * PSI[0];
         assert!((got[2] - want2).abs() < 1e-14, "{} vs {want2}", got[2]);
-        assert!((got[3] - want3).abs() < 1e-14, "{} vs {want3}", got[3]);
+        assert!(
+            ((got[3] - want3).abs() as f64) < crate::precision::roundoff_tol(1e-14),
+            "{} vs {want3}",
+            got[3]
+        );
     }
 
     /// SPEC-LIT §31.1's advection test, at the mechanism `correctBcs` actually
@@ -966,7 +1964,6 @@ mod tests {
     /// field must return to itself through both couples at once, not just
     /// whichever one an implementation happened to wire up first.
     #[test]
-    #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn a_uniform_field_survives_two_generated_cyclic_pairs() {
         let mut b = crate::blockgen::BlockSpec::default();
         b.x.hi = 2.0;
@@ -1054,6 +2051,7 @@ mod tests {
     // ----------------------------------------------------------------------
 
     #[test]
+    // f32 (F32-17): the exact-zero normal residual is ~1e-8, not R-eligible
     #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
     fn vector_symmetry_removes_the_normal_component_and_keeps_the_rest() {
         let mut hm = chain_mesh();

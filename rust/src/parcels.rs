@@ -86,8 +86,11 @@ use crate::device::{DevBuf, Gpu, KernelSet, BLOCK};
 use crate::error::{Error, Result};
 use crate::field::GpuVectorField;
 use crate::io::contract;
+use crate::parcels::inject::event_mass_coefficient;
+use crate::mesh::gpugeom::GeoVec3;
 use crate::mesh::{GpuMesh, HostMesh, PatchKind};
-use crate::{Label, Scalar, Vec3};
+use crate::types::{to_dvec3, to_vec3, DVec3};
+use crate::{Acc, Label, Scalar, Vec3};
 
 #[cfg(test)]
 mod tests;
@@ -96,6 +99,9 @@ pub mod couple;
 pub mod deposit;
 pub mod evaporation;
 pub mod impact;
+pub mod inject;
+
+pub use inject::{RosinRammler, SizeDistribution};
 
 pub use couple::{
     CouplingControls, CouplingMode, CouplingSnapshot, MassCoupling, ParcelCoupling,
@@ -151,6 +157,47 @@ pub fn parcel_uid(injector: u64, event: u64, index: u64) -> u64 {
     z = z.wrapping_mul(0x94d0_49bb_1331_11eb);
     z ^= z >> 31;
     z
+}
+
+// ==========================================================================
+//  The position type, and the accumulator (SPEC-LIT 118.9, F32-12)
+// ==========================================================================
+
+/// A `DVec3` as the device position type - the identity in the f64 build,
+/// the plain f64 triple under `single` (SPEC-LIT 118.9: a parcel's position
+/// is an f64 on the device).
+#[inline]
+fn pos_of(d: DVec3) -> GeoVec3 {
+    #[cfg(feature = "single")]
+    {
+        GeoVec3 { x: d.x, y: d.y, z: d.z }
+    }
+    #[cfg(not(feature = "single"))]
+    {
+        d
+    }
+}
+
+/// The device position type as a `DVec3` - the identity in the f64 build.
+#[inline]
+fn pos_into(g: GeoVec3) -> DVec3 {
+    #[cfg(feature = "single")]
+    {
+        DVec3::new(g.x, g.y, g.z)
+    }
+    #[cfg(not(feature = "single"))]
+    {
+        g
+    }
+}
+
+/// The build's `Scalar` widened to the f64 accumulator [`Acc`] - the exact
+/// widening under `single`, the identity in the f64 build. Every host total
+/// accumulates in [`Acc`] and narrows ONCE on return.
+#[allow(clippy::useless_conversion)]
+#[inline]
+fn acc64(x: Scalar) -> Acc {
+    f64::from(x)
 }
 
 // ==========================================================================
@@ -712,6 +759,8 @@ pub struct Injector {
     /// arithmetic on the device - a floating-point `floor(t/interval)` would
     /// make the whole spray depend on how the accumulated time was summed.
     pub interval: Scalar,
+    /// SPEC-LIT 147.1. Default Monodisperse.
+    pub size: SizeDistribution,
 }
 
 impl Default for Injector {
@@ -727,6 +776,7 @@ impl Default for Injector {
             mass_flow: 0.0,
             parcels_per_event: 1,
             interval: 0.0,
+            size: SizeDistribution::Monodisperse,
         }
     }
 }
@@ -852,6 +902,13 @@ impl ParcelStats {
 /// A host-side copy of the whole pool - what output and every test reads.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ParcelSnapshot {
+    /// The WORLD positions at f64 (SPEC-LIT 118.9): the device stores
+    /// positions LOCAL to the pool mesh's origin, and this is
+    /// `local + origin` - the add in f64, and no arithmetic at all when the
+    /// origin is ZERO. `x` is [`to_vec3`] of this, bit for bit, and in the
+    /// f64 build `x64 == x`.
+    pub x64: Vec<DVec3>,
+    /// The WORLD positions as `Scalar` - `to_vec3(x64[i])` bit for bit.
     pub x: Vec<Vec3>,
     pub u: Vec<Vec3>,
     pub d: Vec<Scalar>,
@@ -898,12 +955,13 @@ impl ParcelSnapshot {
     /// plus what it says it gave up has to be what it started with.
     #[must_use]
     pub fn liquid_mass(&self, rho_liquid: Scalar) -> Scalar {
-        let mut m = 0.0;
+        let pi6 = acc64(std::f64::consts::FRAC_PI_6 as Scalar);
+        let mut m = 0.0 as Acc;
         for i in self.live() {
             let d = self.d[i];
-            m += self.n_p[i] * rho_liquid * std::f64::consts::FRAC_PI_6 as Scalar * d * d * d;
+            m += acc64(self.n_p[i]) * acc64(rho_liquid) * pi6 * acc64(d) * acc64(d) * acc64(d);
         }
-        m
+        m as Scalar
     }
 
     /// (76.10): `sum n_p dm_p` over the LIVE parcels, kg - what this step's
@@ -923,7 +981,10 @@ impl ParcelSnapshot {
             // `live_parcel_heat` uses for a pool that cannot heat.
             return 0.0;
         }
-        self.live().iter().map(|&i| self.n_p[i] * self.mass_lost[i]).sum()
+        self.live()
+            .iter()
+            .map(|&i| acc64(self.n_p[i]) * acc64(self.mass_lost[i]))
+            .sum::<Acc>() as Scalar
     }
 
     /// (76.10): `sum n_p dm_p` over the slots that are NOT live - the mass
@@ -940,8 +1001,8 @@ impl ParcelSnapshot {
         }
         (0..self.n_slots)
             .filter(|&i| self.cell[i] < 0)
-            .map(|i| self.n_p[i] * self.mass_lost[i])
-            .sum()
+            .map(|i| acc64(self.n_p[i]) * acc64(self.mass_lost[i]))
+            .sum::<Acc>() as Scalar
     }
 
     // ------------------------------------------------------------------
@@ -1005,12 +1066,13 @@ impl ParcelSnapshot {
     }
 
     fn slot_mass_sum(&self, slots: &[usize], rho_liquid: Scalar) -> Scalar {
-        let mut m = 0.0;
+        let pi6 = acc64(std::f64::consts::FRAC_PI_6 as Scalar);
+        let mut m = 0.0 as Acc;
         for &i in slots {
             let d = self.d[i];
-            m += self.n_p[i] * rho_liquid * std::f64::consts::FRAC_PI_6 as Scalar * d * d * d;
+            m += acc64(self.n_p[i]) * acc64(rho_liquid) * pi6 * acc64(d) * acc64(d) * acc64(d);
         }
-        m
+        m as Scalar
     }
 }
 
@@ -1080,11 +1142,18 @@ const MAX_PERSISTENT_BLOCKS: u32 = 1024;
 /// The structure-of-arrays parcel pool and the four kernels that move it -
 /// SPEC-LIT S66.
 ///
-/// `Vec3` is stored interleaved, as `DevBuf<Vec3>`, matching `GpuMesh`'s own
-/// `c`, `sf` and `cf`. (The design note that preceded this section asserted
-/// the mesh stores vectors as three separate arrays and recommended matching
-/// it; it does not, and matching what the crate actually does keeps the
-/// `#[repr(C)]` mirror in `types.rs` doing the marshalling.)
+/// Positions are stored interleaved as `DevBuf<GeoVec3>` - `Vec3` in the f64
+/// build, an f64 triple under `single` (SPEC-LIT 118.9) - matching
+/// `GpuMesh`'s own `c`, `sf` and `cf`. (The design note that preceded this
+/// section asserted the mesh stores vectors as three separate arrays and
+/// recommended matching it; it does not, and matching what the crate
+/// actually does keeps the `#[repr(C)]` mirror in `types.rs` doing the
+/// marshalling.)
+///
+/// **Stored LOCAL (SPEC-LIT 118.7):** every position on the device is
+/// measured from the pool mesh's [`HostMesh::origin`]; seeds and injector
+/// positions are given in WORLD coordinates and converted world -> local in
+/// f64 at setup, and [`Parcels::snapshot`] converts back.
 pub struct Parcels<'m> {
     m: &'m GpuMesh,
     ctrl: ParcelControls,
@@ -1095,7 +1164,7 @@ pub struct Parcels<'m> {
     grid: LaunchConfig,
 
     // ---- the pool, one entry per slot ---------------------------------
-    x: DevBuf<Vec3>,
+    x: DevBuf<GeoVec3>,
     u: DevBuf<Vec3>,
     d: DevBuf<Scalar>,
     t: DevBuf<Scalar>,
@@ -1142,7 +1211,7 @@ pub struct Parcels<'m> {
     inj_event: DevBuf<i64>,
     inj_stride: DevBuf<i32>,
     inj_per_event: DevBuf<i32>,
-    inj_pos: DevBuf<Vec3>,
+    inj_pos: DevBuf<GeoVec3>,
     inj_axis: DevBuf<Vec3>,
     inj_t1: DevBuf<Vec3>,
     inj_t2: DevBuf<Vec3>,
@@ -1153,6 +1222,13 @@ pub struct Parcels<'m> {
     inj_weight: DevBuf<Scalar>,
     inj_half_angle: DevBuf<Scalar>,
     inj_standoff: DevBuf<Scalar>,
+    /// SPEC-LIT 147.1: the Rosin-Rammler descriptors, one entry per
+    /// injector. `inj_rr_q[j] > 0` marks an injector with a distribution on
+    /// the device; `inj_mass_coef` is (147.5)'s `c` in f64.
+    inj_rr_x: DevBuf<Scalar>,
+    inj_rr_q: DevBuf<Scalar>,
+    inj_seed: DevBuf<u64>,
+    inj_mass_coef: DevBuf<f64>,
     n_inj: i32,
 
     /// The `dt` the injection strides were computed against. A captured graph
@@ -1163,6 +1239,11 @@ pub struct Parcels<'m> {
     /// Root-found ONCE on the host, at setup, where a liquid that does not
     /// boil at this pressure can be named; the kernel is handed the number.
     t_boil_p: Scalar,
+
+    /// SPEC-LIT 118.7: the WORLD position of the local origin the stored
+    /// positions are measured from, copied from the pool mesh at `new`.
+    /// `ZERO` for an origin-free mesh and always in the f64 build.
+    origin: DVec3,
 }
 
 impl<'m> Parcels<'m> {
@@ -1177,6 +1258,13 @@ impl<'m> Parcels<'m> {
         injectors: &[Injector],
         dt: Scalar,
     ) -> Result<Self> {
+        // SPEC-LIT 118.7/118.9: positions are stored LOCAL to this mesh's
+        // origin, seeds and injectors are given in WORLD coordinates and
+        // converted world -> local in f64 here, and the snapshot converts
+        // back. The refusal of a local-origin mesh is gone (F32-12): a pool
+        // pins the origin it was built against and [`Parcels::seed`] refuses
+        // a mesh that disagrees with it.
+        let origin = hm.origin;
         ctrl.validate()?;
         if !(dt > 0.0) || !dt.is_finite() {
             return Err(Error::Config(format!(
@@ -1248,7 +1336,7 @@ impl<'m> Parcels<'m> {
         // ---- injector descriptors, all resolved on the host ----------
         let n = injectors.len();
         let one = n.max(1);
-        let mut pos = vec![Vec3::ZERO; one];
+        let mut pos = vec![pos_of(DVec3::ZERO); one];
         let mut axis = vec![Vec3::ZERO; one];
         let mut t1 = vec![Vec3::ZERO; one];
         let mut t2 = vec![Vec3::ZERO; one];
@@ -1261,6 +1349,10 @@ impl<'m> Parcels<'m> {
         let mut standoff = vec![0.0 as Scalar; one];
         let mut per_event = vec![0i32; one];
         let mut stride = vec![0i32; one];
+        let mut rr_x = vec![0.0 as Scalar; one];
+        let mut rr_q = vec![0.0 as Scalar; one];
+        let mut seed = vec![0u64; one];
+        let mut mass_coef = vec![0.0f64; one];
 
         for (j, inj) in injectors.iter().enumerate() {
             if inj.parcels_per_event == 0 {
@@ -1298,7 +1390,11 @@ impl<'m> Parcels<'m> {
             }
             let (a, b) = tangent_frame(ax);
 
-            let c = locate_cell(hm, inj.position).ok_or_else(|| {
+            // WORLD -> LOCAL in f64 (SPEC-LIT 118.7): the device stores the
+            // position measured from the mesh's origin, and locates the cell
+            // on the f64 local geometry.
+            let local = hm.local64(to_dvec3(inj.position));
+            let c = locate_cell64(hm, local).ok_or_else(|| {
                 Error::Config(format!(
                     "parcels: injector {j} at ({}, {}, {}) is not inside any cell of this \
                      mesh. An injector's cell is located once, here, on the host; the \
@@ -1328,7 +1424,7 @@ impl<'m> Parcels<'m> {
                 * inj.diameter
                 * inj.diameter;
 
-            pos[j] = inj.position;
+            pos[j] = pos_of(local);
             axis[j] = ax;
             t1[j] = a;
             t2[j] = b;
@@ -1342,6 +1438,27 @@ impl<'m> Parcels<'m> {
             standoff[j] = inj.standoff;
             per_event[j] = inj.parcels_per_event as i32;
             stride[j] = st;
+            // SPEC-LIT 147.1: the Rosin-Rammler draw's descriptors, refused
+            // here if either extreme of the draw cannot survive in Scalar.
+            // A Monodisperse injector leaves all four at zero, and its
+            // diameter/weight above are the (66.13) values they always were.
+            match inj.size {
+                SizeDistribution::Monodisperse => {}
+                SizeDistribution::RosinRammler(rr) => {
+                    let c = event_mass_coefficient(
+                        inj.mass_flow,
+                        dt,
+                        st,
+                        inj.parcels_per_event,
+                        ctrl.rho_liquid,
+                    );
+                    rr.validate(j, inj.parcels_per_event, c)?;
+                    rr_x[j] = rr.x;
+                    rr_q[j] = rr.q;
+                    seed[j] = rr.seed;
+                    mass_coef[j] = c;
+                }
+            }
         }
 
         Ok(Self {
@@ -1392,10 +1509,15 @@ impl<'m> Parcels<'m> {
             inj_weight: gpu.upload(&weight)?,
             inj_half_angle: gpu.upload(&half_angle)?,
             inj_standoff: gpu.upload(&standoff)?,
+            inj_rr_x: gpu.upload(&rr_x)?,
+            inj_rr_q: gpu.upload(&rr_q)?,
+            inj_seed: gpu.upload(&seed)?,
+            inj_mass_coef: gpu.upload(&mass_coef)?,
             n_inj: n as i32,
 
             dt,
             t_boil_p,
+            origin,
         })
     }
 
@@ -1405,6 +1527,33 @@ impl<'m> Parcels<'m> {
 
     pub fn injectors(&self) -> &[Injector] {
         &self.injectors
+    }
+
+    /// SPEC-LIT 118.7: the WORLD position of the local origin the pool's
+    /// stored positions are measured from - `ZERO` for an origin-free mesh
+    /// and always in the f64 build. [`ParcelSnapshot::x64`] adds it back.
+    #[must_use]
+    pub fn origin(&self) -> DVec3 {
+        self.origin
+    }
+
+    /// A stored LOCAL position in WORLD coordinates (SPEC-LIT 118.7): the
+    /// add in f64, and no arithmetic at all when the origin is ZERO - so an
+    /// origin-free pool's snapshot is the device value unchanged.
+    fn world_pos(&self, local: DVec3) -> DVec3 {
+        #[cfg(feature = "single")]
+        {
+            if self.origin == DVec3::ZERO {
+                local
+            } else {
+                local + self.origin
+            }
+        }
+        #[cfg(not(feature = "single"))]
+        {
+            let _ = self;
+            local
+        }
     }
 
     /// Blocks in the fixed persistent grid, as resolved at setup.
@@ -1427,6 +1576,19 @@ impl<'m> Parcels<'m> {
     /// Setup only: it writes device memory from the host, which is illegal
     /// inside the time loop and impossible inside a captured graph.
     pub fn seed(&mut self, gpu: &Gpu, hm: &HostMesh, seeds: &[SeedParcel]) -> Result<()> {
+        // SPEC-LIT 118.7: positions are stored LOCAL to the pool mesh's
+        // origin. A mesh whose origin is not the one the pool was built
+        // against would silently place every seed somewhere else.
+        if hm.origin != self.origin {
+            return Err(Error::Config(format!(
+                "parcels: seed was handed a mesh whose local origin is ({}, {}, {}) but \
+                 this pool was built against one with ({}, {}, {}). Positions are stored \
+                 LOCAL to the pool mesh's origin (SPEC-LIT 118.7), so seeding through a \
+                 different mesh would place the parcels somewhere else entirely",
+                self.origin.x, self.origin.y, self.origin.z,
+                hm.origin.x, hm.origin.y, hm.origin.z,
+            )));
+        }
         if seeds.len() > self.ctrl.capacity {
             return Err(Error::Config(format!(
                 "parcels: {} seed parcels but capacity is {}",
@@ -1443,7 +1605,7 @@ impl<'m> Parcels<'m> {
         }
 
         let cap = self.ctrl.capacity;
-        let mut x = vec![Vec3::ZERO; cap];
+        let mut x = vec![pos_of(DVec3::ZERO); cap];
         let mut u = vec![Vec3::ZERO; cap];
         let mut d = vec![0.0 as Scalar; cap];
         let mut t = vec![0.0 as Scalar; cap];
@@ -1459,13 +1621,16 @@ impl<'m> Parcels<'m> {
                     s.diameter
                 )));
             }
-            let c = locate_cell(hm, s.position).ok_or_else(|| {
+            // WORLD -> LOCAL in f64 (SPEC-LIT 118.7); the cell is located on
+            // the f64 local geometry.
+            let local = hm.local64(to_dvec3(s.position));
+            let c = locate_cell64(hm, local).ok_or_else(|| {
                 Error::Config(format!(
                     "parcels: seed {i} at ({}, {}, {}) is not inside any cell of this mesh",
                     s.position.x, s.position.y, s.position.z
                 ))
             })?;
-            x[i] = s.position;
+            x[i] = pos_of(local);
             u[i] = s.velocity;
             d[i] = s.diameter;
             t[i] = s.temperature;
@@ -1691,6 +1856,10 @@ impl<'m> Parcels<'m> {
                 inj_half_angle,
                 inj_standoff,
                 inj_per_event,
+                inj_rr_x,
+                inj_rr_q,
+                inj_seed,
+                inj_mass_coef,
                 ..
             } = self;
             unsafe {
@@ -1721,6 +1890,10 @@ impl<'m> Parcels<'m> {
                     .arg(&*inj_half_angle)
                     .arg(&*inj_standoff)
                     .arg(&*inj_per_event)
+                    .arg(&*inj_rr_x)
+                    .arg(&*inj_rr_q)
+                    .arg(&*inj_seed)
+                    .arg(&*inj_mass_coef)
                     .arg(&n_inj)
                     .arg(&m.owner)
                     .arg(&m.neighbour)
@@ -1934,10 +2107,17 @@ impl<'m> Parcels<'m> {
     }
 
     /// The whole pool, on the host. Output and every test read this.
+    ///
+    /// Positions come back in WORLD coordinates (SPEC-LIT 118.9): the device
+    /// stores them LOCAL to the pool mesh's origin, `x64` is `local + origin`
+    /// in f64, and `x` is `to_vec3(x64[i])` bit for bit.
     pub fn snapshot(&self, gpu: &Gpu) -> Result<ParcelSnapshot> {
         let n = gpu.download(&self.n_active)?[0].max(0) as usize;
+        let x64: Vec<DVec3> = gpu.download(&self.x)?.iter().map(|&p| self.world_pos(pos_into(p))).collect();
+        let x: Vec<Vec3> = x64.iter().map(|&p| to_vec3(p)).collect();
         Ok(ParcelSnapshot {
-            x: gpu.download(&self.x)?,
+            x64,
+            x,
             u: gpu.download(&self.u)?,
             d: gpu.download(&self.d)?,
             temperature: gpu.download(&self.t)?,
@@ -1969,6 +2149,33 @@ impl<'m> Parcels<'m> {
             },
             n_slots: n.min(self.ctrl.capacity),
         })
+    }
+
+    /// Copy `d[0..n]` over the pool's own diameters `d[0..n]`, device to
+    /// device. SPEC-LIT §159.10: the dust cloud's step shrinks the char
+    /// particle every step, and the pool's drag of the NEXT step reads the
+    /// pool's diameter - so the cloud's driver hands the shrunken one over
+    /// once per step, and this is that handoff. Setup-and-step: a
+    /// `memcpy_dtod` only, no host word is written and no capture is
+    /// disturbed. Refused (Error::Config): `n` above the pool's capacity,
+    /// or a source shorter than `n`.
+    pub fn set_diameters(&mut self, gpu: &Gpu, d: &DevBuf<Scalar>, n: usize) -> Result<()> {
+        if n > self.ctrl.capacity {
+            return Err(Error::Config(format!(
+                "parcels: set_diameters was handed {} diameters but the pool's \
+                 capacity is {}",
+                n, self.ctrl.capacity
+            )));
+        }
+        if d.len() < n {
+            return Err(Error::Config(format!(
+                "parcels: set_diameters needs {} diameters, its source holds {}",
+                n,
+                d.len()
+            )));
+        }
+        gpu.stream().memcpy_dtod(&d.slice(0..n), &mut self.d.slice_mut(0..n))?;
+        Ok(())
     }
 
     /// Write the live parcels as a VTK PolyData (`.vtp`) file - SPEC-LIT
@@ -2065,6 +2272,44 @@ pub fn locate_cell(hm: &HostMesh, p: Vec3) -> Option<usize> {
             for k in hm.bcf_offset[c] as usize..hm.bcf_offset[c + 1] as usize {
                 let bf = hm.bcf_face[k] as usize;
                 if (p - hm.b_cf[bf]).dot(hm.b_sf[bf]) > 0.0 {
+                    inside = false;
+                    break;
+                }
+            }
+        }
+        if inside {
+            return Some(c);
+        }
+    }
+    None
+}
+
+/// Which cell contains the LOCAL point `p` (SPEC-LIT 118.7: measured from
+/// [`HostMesh::origin`]), or `None` - [`locate_cell`]'s half-space test on
+/// the f64 `geom64` view.
+///
+/// Same loop order, same expressions `(p - cf).dot(n)` with `n = sf * sgn`,
+/// so in the f64 build it returns exactly what [`locate_cell`] returns; under
+/// `single` it is the f64 answer, and it is the locator [`Parcels::new`] and
+/// [`Parcels::seed`] place world-converted positions with (F32-12).
+#[must_use]
+pub fn locate_cell64(hm: &HostMesh, p: DVec3) -> Option<usize> {
+    let g = hm.geom64();
+    for c in 0..hm.n_cells {
+        let mut inside = true;
+        for k in hm.cf_offset[c] as usize..hm.cf_offset[c + 1] as usize {
+            let f = hm.cf_face[k] as usize;
+            let sgn: f64 = if hm.cf_own[k] != 0 { 1.0 } else { -1.0 };
+            let n = g.sf[f] * sgn;
+            if (p - g.cf[f]).dot(n) > 0.0 {
+                inside = false;
+                break;
+            }
+        }
+        if inside {
+            for k in hm.bcf_offset[c] as usize..hm.bcf_offset[c + 1] as usize {
+                let bf = hm.bcf_face[k] as usize;
+                if (p - g.b_cf[bf]).dot(g.b_sf[bf]) > 0.0 {
                     inside = false;
                     break;
                 }

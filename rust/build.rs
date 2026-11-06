@@ -29,7 +29,7 @@ use std::process::Command;
 
 /// Every translation unit in `cuda/` that holds device code.
 /// Each becomes one module loaded at run time.
-const KERNEL_UNITS: &[&str] = &["adapt.cu", "fv.cu", "solver.cu", "probe.cu", "ldu.cu", "field.cu", "wallfunctions.cu", "turbulence.cu", "pressure.cu", "momentum.cu", "simple.cu", "timescheme.cu", "precon.cu", "vof.cu", "sst.cu", "les.cu", "sources.cu", "species.cu", "energy.cu", "rheology.cu", "ke_variants.cu", "cht.cu", "s2s.cu", "fan.cu", "sa.cu", "des.cu", "parcels.cu", "parcelsort.cu", "parcelcouple.cu", "halo.cu", "exactsum.cu", "meshgeom.cu", "meshemit.cu", "marangoni.cu", "lmtrans.cu", "gmtrans.cu", "solid.cu", "solidstress.cu", "ale.cu", "solidblock.cu", "properties.cu"];
+const KERNEL_UNITS: &[&str] = &["adapt.cu", "fv.cu", "solver.cu", "probe.cu", "ldu.cu", "field.cu", "wallfunctions.cu", "turbulence.cu", "pressure.cu", "momentum.cu", "simple.cu", "timescheme.cu", "precon.cu", "vof.cu", "sst.cu", "les.cu", "sources.cu", "species.cu", "energy.cu", "rheology.cu", "ke_variants.cu", "cht.cu", "s2s.cu", "fan.cu", "sa.cu", "des.cu", "parcels.cu", "parcelsort.cu", "parcelcouple.cu", "halo.cu", "exactsum.cu", "meshgeom.cu", "meshemit.cu", "marangoni.cu", "lmtrans.cu", "gmtrans.cu", "solid.cu", "solidstress.cu", "ale.cu", "solidblock.cu", "properties.cu", "chem.cu", "radiation.cu", "amg.cu", "function1.cu", "compressible.cu", "dust.cu", "dustparticle.cu", "rigidbody.cu"];
 
 /// Translation units compiled with `-fmad=false`.
 ///
@@ -51,6 +51,21 @@ const KERNEL_UNITS: &[&str] = &["adapt.cu", "fv.cu", "solver.cu", "probe.cu", "l
 /// (SPEC-LIT §105.3), and the contraction would break that on every
 /// non-axis-aligned face.
 ///
+/// `function1.cu` is the third: it is held BITWISE against its host twin
+/// `src/function1.rs` (SPEC-LIT 120.1), which writes (120.1)-(120.11) as `a*b
+/// + c` in two roundings, so a contracted product would move the answer in
+/// its last bit on both the evaluation and the Robin-triple entry.
+///
+/// `amg.cu` is the fourth: with AMG-03a it carries the smoother
+/// kernels (`amgAmul`, `amgJacobi`, `amgChebyshev`), which multiply and are
+/// held BITWISE against their host twins in `src/amg/smooth.rs` (SPEC-LIT
+/// §141.3), and the contraction would break that gate.
+///
+/// `dustparticle.cu` is the fifth: its reacting-parcel step is held to four
+/// units in the last place (of each word's operand scale) of its host twin
+/// `src/dust/particle.rs` (SPEC-LIT §159.7), and the step's heat terms are
+/// differences of products that a contracted product would move by more.
+///
 /// This costs the listed units their FMA throughput. It buys the only claim
 /// SPEC-LIT §82 makes.
 ///
@@ -59,7 +74,16 @@ const KERNEL_UNITS: &[&str] = &["adapt.cu", "fv.cu", "solver.cu", "probe.cu", "l
 /// contraction would break the gate" can be measured on the real compiler
 /// rather than simulated on the host, which is how §67.11's first draft came
 /// to assert an FMA had not happened when it had.
-const FMAD_OFF_UNITS: &[&str] = &["meshgeom.cu", "ale.cu"];
+const FMAD_OFF_UNITS: &[&str] = &["meshgeom.cu", "ale.cu", "amg.cu", "function1.cu", "dustparticle.cu"];
+
+/// Translation units the f64 build ALSO compiles with `-DOFGPU_SINGLE`, into
+/// `<STEM>_F32`, with the unit's own flags.
+///
+/// `amg.cu` is the one: the f32 preconditioner of an f64 solve (SPEC-LIT
+/// §141.12, AMG-06b) runs the V-cycle on float levels, and its kernels are
+/// this unit's kernels at `ofscalar = float`. Under the `single` feature the
+/// unit is already that build, and `<STEM>_F32` names `<STEM>`.
+const F32_TWIN_UNITS: &[&str] = &["amg.cu"];
 
 fn cuda_root() -> PathBuf {
     // CUDA_PATH is set by the Windows installer; CUDA_HOME and /usr/local/cuda
@@ -192,58 +216,6 @@ fn msvc_env() -> Vec<(String, String)> {
     Vec::new()
 }
 
-/// Tell the linker where AMGX is, but only when the `amgx` feature asked for
-/// it.
-///
-/// AMGX is not part of the CUDA toolkit and is not installed by anything; it
-/// is built from source, and where it lands is the user's business. So the
-/// search path comes from the environment (`AMGX_LIB_DIR`, or `AMGX_DIR` with
-/// the usual `build`/`lib` subdirectories tried) and a missing library is a
-/// link error naming the variable to set - not a mysterious "unresolved
-/// external symbol AMGX_initialize".
-///
-/// Nothing here runs unless the feature is on, which is why the default build
-/// cannot be broken by an AMGX build that failed.
-fn emit_amgx_link() {
-    println!("cargo:rerun-if-env-changed=AMGX_DIR");
-    println!("cargo:rerun-if-env-changed=AMGX_LIB_DIR");
-
-    let mut dirs: Vec<PathBuf> = Vec::new();
-    if let Ok(d) = env::var("AMGX_LIB_DIR") {
-        dirs.push(PathBuf::from(d));
-    }
-    if let Ok(d) = env::var("AMGX_DIR") {
-        let d = PathBuf::from(d);
-        dirs.push(d.join("build"));
-        dirs.push(d.join("lib"));
-        dirs.push(d.join("build").join("Release"));
-        dirs.push(d);
-    }
-
-    let mut found = false;
-    for d in &dirs {
-        if d.is_dir() {
-            println!("cargo:rustc-link-search=native={}", d.display());
-            found = true;
-        }
-    }
-    if !found {
-        println!(
-            "cargo:warning=feature 'amgx' is on but neither AMGX_LIB_DIR nor "
-        );
-        println!(
-            "cargo:warning=AMGX_DIR names a directory; the link will fail unless "
-        );
-        println!(
-            "cargo:warning=amgxsh is already on the linker's search path."
-        );
-    }
-
-    // `amgxsh` is the shared build, which is the one AMGX's own CMake produces
-    // by default and the only one whose C API is exported.
-    println!("cargo:rustc-link-lib=dylib=amgxsh");
-}
-
 fn main() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
@@ -274,10 +246,6 @@ fn main() {
     println!("cargo:rerun-if-changed=cuda");
     println!("cargo:rerun-if-env-changed=OFGPU_CUDA_ARCH");
     println!("cargo:rerun-if-env-changed=CUDA_PATH");
-
-    if env::var("CARGO_FEATURE_AMGX").is_ok() {
-        emit_amgx_link();
-    }
 
     let mut generated = String::new();
     generated.push_str(&format!(
@@ -396,6 +364,51 @@ fn main() {
                 "pub const {const_name}_FMAD: &[u8] = include_bytes!(r\"{}\");\n",
                 twin.display()
             ));
+        }
+
+        // The float twin. See F32_TWIN_UNITS: the same unit, the same
+        // flags, with -DOFGPU_SINGLE, emitted as `<STEM>_F32`. Under the
+        // single feature the unit itself is already that build, so the
+        // constant names it instead of compiling it twice.
+        if F32_TWIN_UNITS.contains(unit) {
+            if single {
+                generated.push_str(&format!("pub const {const_name}_F32: &[u8] = {const_name};\n"));
+            } else {
+                let twin = out_dir.join(format!("{stem}_f32.cubin"));
+                let mut cmd = Command::new(&nvcc);
+                cmd.arg("--cubin")
+                    .arg(format!("--gpu-architecture=sm_{arch}"))
+                    .arg("-std=c++17")
+                    .arg("-lineinfo")
+                    .args(if FMAD_OFF_UNITS.contains(unit) {
+                        &["-fmad=false"][..]
+                    } else {
+                        &[][..]
+                    })
+                    .arg("-Xcompiler=/wd4819")
+                    .arg("-I")
+                    .arg(&cuda_dir)
+                    .arg("-o")
+                    .arg(&twin)
+                    .arg(&src)
+                    .arg("-DOFGPU_SINGLE");
+                for (k, v) in &host_env {
+                    cmd.env(k, v);
+                }
+                let out = cmd
+                    .output()
+                    .unwrap_or_else(|e| panic!("failed to run {}: {e}", nvcc.display()));
+                if !out.status.success() {
+                    panic!(
+                        "nvcc failed on the float twin of {unit}\n--- stderr ---\n{}",
+                        String::from_utf8_lossy(&out.stderr),
+                    );
+                }
+                generated.push_str(&format!(
+                    "pub const {const_name}_F32: &[u8] = include_bytes!(r\"{}\");\n",
+                    twin.display()
+                ));
+            }
         }
     }
 

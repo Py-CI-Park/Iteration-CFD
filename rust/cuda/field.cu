@@ -15,6 +15,9 @@
     Hirsch, "Numerical Computation of Internal and External Flows", 2nd ed.
       (2007), on Robin/mixed boundary treatment
     Jasak (1996) section 3.2 for the symmetry-plane condition
+    ofgpu SPEC-LIT.md section 120.2 - the cyclic jump: a coupled face sees
+      its neighbour at psi_N + j_f (120.2b), j_f the field's per-face jump
+      array; fldCoupledNbr below
     ofgpu SPEC-LIT.md section 13.4 - the flux-switched block below is a RANGE
       rather than one value because the turbulence inlets and
       pressureInletOutletVelocity all switch on the sign of the same flux and
@@ -35,7 +38,7 @@
   kernel that rewrites the triple on the faces it owns; nothing here needs to
   know which one wrote it.
 
-  Consequently bcKind is consulted for exactly three things, and the value of
+  Consequently bcKind is consulted for exactly four things, and the value of
   every other kind comes out of the expression above:
 
     * CALCULATED - the value is written by whichever model owns the field
@@ -44,7 +47,33 @@
       triple can express "the cell on the other side";
     * SYMMETRY on a VECTOR - the condition is tensorial, U_b = (I - n n).U_P,
       and a scalar fr cannot express it either. For a scalar, symmetry IS
-      zero-gradient and needs no branch.
+      zero-gradient and needs no branch;
+    * DIRECTION_MIXED on a VECTOR (SPEC-LIT 120.3) - the tensorial mixed
+      form U_b = F.r + (I - F).(U_P + g/Delta_b), eqn (120.3a) there, whose
+      per-face F, r and g live in the field's dm block. What the matrix
+      sees is (120.3h): fr = f_t = (tr F - n.F.n)/2, refValue = r,
+      refGrad = g - the TANGENTIAL part of (120.3a) enters the matrix
+      implicitly, through the one triple of section 4; this branch writes
+      bf only, the face value every operator reads.
+
+  SPEC-LIT 120.4 adds two conditions that stay inside the one expression
+  and add no fifth branch. OUTLET_INLET is the reverse flux switch of
+  inletOutlet - (120.4a), fr = 1 where phi_b > 0 - and fldInletOutlet_
+  Fraction below tests it by its own kind, OUTSIDE the flux-switched range
+  whose kinds all switch on inflow. ADVECTIVE is (120.4b)-(120.4d)'s
+  radiation outlet: the fldAdvectiveSpeed kernel fills the face's wave
+  speed and relaxation rate from the flux, and the fldAdvectiveRobin*
+  kernels REWRITE THE TRIPLE ONLY - fr, refValue, refGrad = 0 - from
+  (120.4d); the face value is then the ordinary section 4 evaluation, and
+  nothing here evaluates it differently.
+
+  SPEC-LIT 119.2 is the same shape once more: WEDGE, the rotational
+  self-couple of a wedge side, adds no branch. fldWedgeRefGrad below
+  REWRITES refGrad on the wedge faces from the current cell value -
+  refGrad = Delta_b w, (119.2c)-(119.2d), before the evaluation, and only
+  when the caller says the mesh carries a wedge - so the one expression
+  above returns (119.2c)'s chord average on a vector, and a scalar's
+  wedge face is plain zero-gradient out of the seeded triple.
 
   ------------------------------------------------------------------------
   Symmetry, and what the matrix sees
@@ -72,6 +101,48 @@
 #define OFGPU_BC_CALCULATED 4
 #define OFGPU_BC_SYMMETRY   6
 #define OFGPU_BC_CYCLIC     7
+//- SPEC-LIT 120.3: the tensorial mixed condition of the wall and slip
+//  family (directionMixed, partialSlip, fixedNormalSlip, fixedShearStress).
+#define OFGPU_BC_DIRECTION_MIXED 37
+
+//- SPEC-LIT 120.4: the two outlets. OUTLET_INLET is (120.4a)'s reverse
+//  flux switch - fixed on OUTflow - and sits OUTSIDE the flux-switched
+//  block below, whose kinds are all Dirichlet on INflow; ADVECTIVE is
+//  (120.4b)-(120.4d)'s Robin outlet, whose triple the fldAdvectiveRobin*
+//  kernels rewrite from the face's wave speed.
+#define OFGPU_BC_OUTLET_INLET 38
+#define OFGPU_BC_ADVECTIVE    39
+
+//- SPEC-LIT 119.2: the wedge condition, the rotational self-couple of
+//  BC-04. Like the two outlets above it adds no evaluation branch: the
+//  fldWedgeRefGrad kernel below rewrites refGrad on the wedge faces from
+//  the current cell value, and the face value comes out of the ordinary
+//  section 4 expression.
+#define OFGPU_BC_WEDGE        40
+
+//- SPEC-LIT 120.5: the five pressure-driven velocity inlets - kinds whose
+//  triple the fldPressureInletValue kernel below rewrites from the flux the
+//  last corrector left, before the boundary evaluation. momFluxIsPrescribed
+//  in cuda/momentum.cu (which carries its own copy of these two numbers)
+//  answers FALSE for the whole range whatever the face's fr, so the
+//  pressure correction reaches the face.
+#define OFGPU_BC_PRESSURE_INLET_FIRST        41
+#define OFGPU_BC_PRESSURE_INLET_LAST         45
+#define OFGPU_BC_PRESSURE_INLET_VELOCITY     41
+#define OFGPU_BC_PRESSURE_INLET_UNIFORM      42
+#define OFGPU_BC_PRESSURE_DIRECTED_INLET     43
+#define OFGPU_BC_PRESSURE_DIRECTED_IO        44
+#define OFGPU_BC_PRESSURE_PAR_SLIP           45
+
+//- SPEC-LIT 120.6: the Outlets II family - four patch-mean rewrites and an
+//  extrapolated pressure gradient, whose triples the fldPatchMean* /
+//  fldExtrapolatedSnGrad kernels below rewrite once per outer iteration,
+//  wherever the caller opted in (BcInputs::patch_means).
+#define OFGPU_BC_FIXED_MEAN                       46
+#define OFGPU_BC_FIXED_MEAN_OUTLET_INLET          47
+#define OFGPU_BC_FIXED_FLUX_EXTRAPOLATED_PRESSURE 48
+#define OFGPU_BC_OUTLET_MAPPED_UNIFORM_INLET      49
+#define OFGPU_BC_MATCHED_FLOW_RATE_OUTLET         50
 
 //- The FLUX-SWITCHED block: every kind in [FIRST, LAST] is Dirichlet where
 //  the face flux is inward and zero-gradient where it is outward, and they
@@ -82,6 +153,18 @@
 //  range and not a list.
 #define OFGPU_BC_INLET_OUTLET_FIRST 8
 #define OFGPU_BC_INLET_OUTLET_LAST  12
+
+
+//- SPEC-LIT 120.2, (120.2b): the neighbour value a coupled face sees. j is
+//  the field's per-face jump array (`GpuScalarField::jump`), nonzero only on
+//  the faces of a fixedJump / uniformJump / fan / porousBafflePressure pair,
+//  where the far cell is seen at psi_N + j_f. A face with no jump holds
+//  j = 0 and reads psi_N itself - a select, not psi_N + 0, so a -0.0 stays
+//  -0.0 and every plain cyclic face is bit for bit what it was.
+OFGPU_DEV ofscalar fldCoupledNbr(ofscalar psiN, ofscalar j)
+{
+    return (j != (ofscalar)0) ? psiN + j : psiN;
+}
 
 
 //- The mixed expression of SPEC-LIT section 4, for one component.
@@ -122,6 +205,7 @@ extern "C" __global__ void fldCorrectBcScalar
     const ofscalar* __restrict__ bDeltaCoeffs,
     const oflabel* __restrict__ bNbrCell,
     const ofscalar* __restrict__ bWeights,
+    const ofscalar* __restrict__ bJump,
     oflabel nBoundaryFaces
 )
 {
@@ -143,9 +227,10 @@ extern "C" __global__ void fldCorrectBcScalar
         {
             //- The face sits between two cells exactly as an internal face
             //  does, so it is interpolated exactly as one: SPEC-LIT 2.3, with
-            //  bWeights the weight of THIS side.
+            //  bWeights the weight of THIS side - against the far cell as
+            //  this side sees it, psi_N + j_f, (120.2b) of SPEC-LIT 120.2.
             const ofscalar w = bWeights[i];
-            bf[i] = w*psiP + ((ofscalar)1 - w)*psi[nbr];
+            bf[i] = w*psiP + ((ofscalar)1 - w)*fldCoupledNbr(psi[nbr], bJump[i]);
         }
         else
         {
@@ -163,8 +248,12 @@ extern "C" __global__ void fldCorrectBcScalar
 
 //- Evaluate every boundary face of a vector field.
 //
-//  Componentwise the same expression, with the one tensorial condition -
-//  symmetry - handled separately; see the file header.
+//  Componentwise the same expression, with the two tensorial conditions -
+//  symmetry, and DirectionMixed (SPEC-LIT 120.3) - handled separately; see
+//  the file header. DirectionMixed's face value is (120.3a) and this kernel
+//  writes it into bf ONLY: the matrix sees (120.3h) - fr = f_t, refValue =
+//  r, refGrad = g, the tangential part implicitly - and refValue is read
+//  here as an input, never rewritten.
 extern "C" __global__ void fldCorrectBcVector
 (
     ofvec3* __restrict__ bf,
@@ -172,6 +261,7 @@ extern "C" __global__ void fldCorrectBcVector
     const ofscalar* __restrict__ fr,
     const ofvec3* __restrict__ refValue,
     const ofvec3* __restrict__ refGrad,
+    const ofscalar* __restrict__ dm,
     const oflabel* __restrict__ bcKind,
     const oflabel* __restrict__ bFaceCells,
     const ofscalar* __restrict__ bDeltaCoeffs,
@@ -190,6 +280,44 @@ extern "C" __global__ void fldCorrectBcVector
 
     const oflabel c = bFaceCells[i];
     const ofvec3 uP = psi[c];
+
+    if (kind == OFGPU_BC_DIRECTION_MIXED)
+    {
+        //- SPEC-LIT 120.3, eqn (120.3a):
+        //
+        //    U_b = F.r + (I - F).(U_P + g/Delta_b)
+        //
+        //  in the operation order 120.3 fixes: q = U_P + g/Delta_b (the term
+        //  0 where Delta_b = 0, the guard of SPEC-LIT section 4), a = F.r,
+        //  b = F.q, U_b = a + (q - b), each matrix-vector product summed
+        //  F_x0 v_0 + F_x1 v_1 + F_x2 v_2 left to right. The host twin is
+        //  field::direction_mixed_value in src/field.rs, the same order; FMA
+        //  contraction is on, so the two agree to round-off, not bitwise.
+        const ofscalar dc = bDeltaCoeffs[i];
+        const ofscalar* d = dm + 12*i;   // Fxx Fxy Fxz Fyy Fyz Fzz rx ry rz gx gy gz
+
+        const ofscalar gdx = (dc != (ofscalar)0) ? d[ 9]/dc : (ofscalar)0;
+        const ofscalar gdy = (dc != (ofscalar)0) ? d[10]/dc : (ofscalar)0;
+        const ofscalar gdz = (dc != (ofscalar)0) ? d[11]/dc : (ofscalar)0;
+        const ofvec3 q = mkvec(uP.x + gdx, uP.y + gdy, uP.z + gdz);
+
+        const ofvec3 a = mkvec
+        (
+            d[0]*d[6] + d[1]*d[7] + d[2]*d[8],
+            d[1]*d[6] + d[3]*d[7] + d[4]*d[8],
+            d[2]*d[6] + d[4]*d[7] + d[5]*d[8]
+        );
+        const ofvec3 b = mkvec
+        (
+            d[0]*q.x + d[1]*q.y + d[2]*q.z,
+            d[1]*q.x + d[3]*q.y + d[4]*q.z,
+            d[2]*q.x + d[4]*q.y + d[5]*q.z
+        );
+
+        const ofvec3 ub = mkvec(a.x + (q.x - b.x), a.y + (q.y - b.y), a.z + (q.z - b.z));
+        bf[i] = ub;
+        return;
+    }
 
     if (kind == OFGPU_BC_SYMMETRY)
     {
@@ -263,6 +391,12 @@ extern "C" __global__ void fldCorrectBcVector
 //  Every kind in the flux-switched range shares this switch; only the
 //  refValue they switch TO differs, and that is set once at setup by
 //  src/field_setup.rs.
+//
+//  SPEC-LIT 120.4: outletInlet is the REVERSE switch - (120.4a) fixes the
+//  face at outletValue where the flux points OUT, `phi_b > 0` strictly, and
+//  leaves it zero-gradient otherwise. It is tested by its own kind because
+//  it sits outside the flux-switched range on purpose: its Dirichlet half
+//  is the outflow half, not the inflow one.
 extern "C" __global__ void fldInletOutletFraction
 (
     ofscalar* __restrict__ fr,
@@ -280,6 +414,667 @@ extern "C" __global__ void fldInletOutletFraction
     {
         fr[i] = (phiB[i] < (ofscalar)0) ? (ofscalar)1 : (ofscalar)0;
     }
+    else if (kind == OFGPU_BC_OUTLET_INLET)
+    {
+        fr[i] = (phiB[i] > (ofscalar)0) ? (ofscalar)1 : (ofscalar)0;
+    }
+    else if (kind >= OFGPU_BC_PRESSURE_DIRECTED_IO && kind <= OFGPU_BC_PRESSURE_PAR_SLIP)
+    {
+        //- SPEC-LIT 120.5, (120.5h)/(120.5i): the two SWITCHED pressure
+        //  inlets - Dirichlet where the flux comes IN, `phi < 0` strictly,
+        //  zero-gradient where it goes out, the same test as the block
+        //  above. Kinds 41/42/43 are always Dirichlet and are not touched.
+        fr[i] = (phiB[i] < (ofscalar)0) ? (ofscalar)1 : (ofscalar)0;
+    }
+}
+
+
+//- Rewrite refValue on the five pressure-driven velocity inlets of
+//  SPEC-LIT 120.5 from the flux the last corrector left, (120.5e)-(120.5i),
+//  before the boundary evaluation. These are the faces whose PRESSURE is
+//  given: the flux through the face is the pressure equation's, and the
+//  velocity follows from it - a pressure boundary in Ferziger & Peric
+//  (2002), where the boundary velocity is whatever the mass flux makes it.
+//
+//  Every kind here is a section-4 triple with refGrad = 0 whose refValue
+//  this kernel rewrites once per outer iteration; momFluxIsPrescribed in
+//  cuda/momentum.cu answers FALSE for the whole range [41, 45] whatever the
+//  face's fr, so the pressure correction keeps reaching the face. Faces of
+//  every other kind are untouched, which is what lets this run over the
+//  whole boundary in one launch. The host twin of this kernel is
+//  `field::pressure_inlet_values` in src/field.rs, in the same operation
+//  order (the FMA contraction apart).
+extern "C" __global__ void fldPressureInletValue
+(
+    ofvec3* __restrict__ refValue,
+    const oflabel* __restrict__ bcKind,
+    const oflabel* __restrict__ bPatch,
+    const ofscalar* __restrict__ phiB,
+    const ofvec3* __restrict__ bSf,
+    const ofscalar* __restrict__ bMagSf,
+    const ofscalar* __restrict__ dm,
+    const ofvec3* __restrict__ uCell,
+    const oflabel* __restrict__ bFaceCells,
+    oflabel nbf
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= nbf) return;
+
+    const oflabel kind = bcKind[i];
+    if (kind < OFGPU_BC_PRESSURE_INLET_FIRST || kind > OFGPU_BC_PRESSURE_INLET_LAST) return;
+
+    if (kind == OFGPU_BC_PRESSURE_INLET_UNIFORM)
+    {
+        // (120.5f): the patch-uniform form, U_b = (S_f/|S_f|) PHI_p/A_p.
+        // One thread per patch HEAD - a face whose predecessor is not the
+        // same patch carrying the same kind - runs the patch's two sums in
+        // face order, in ofacc (SPEC-LIT 118.1), so the device sum is the
+        // host sum; PHI_p/A_p is rounded once, and every other kind-42
+        // thread of the patch returns without writing.
+        const bool head = (i == 0)
+            || bPatch[i-1] != bPatch[i]
+            || bcKind[i-1] != OFGPU_BC_PRESSURE_INLET_UNIFORM;
+        if (!head) return;
+        ofacc accPhi = 0;
+        ofacc accA   = 0;
+        oflabel j = i;
+        while (j < nbf
+               && bPatch[j] == bPatch[i]
+               && bcKind[j] == OFGPU_BC_PRESSURE_INLET_UNIFORM)
+        {
+            accPhi += (ofacc)phiB[j];
+            accA   += (ofacc)bMagSf[j];
+            ++j;
+        }
+        const ofscalar ubar =
+            (accA != (ofacc)0) ? (ofscalar)(accPhi/accA) : (ofscalar)0;
+        for (oflabel f = i; f < j; ++f)
+        {
+            const ofvec3  s = bSf[f];
+            const ofscalar m = bMagSf[f];
+            const ofscalar k = (m != (ofscalar)0) ? ubar/m : (ofscalar)0;
+            refValue[f] = mkvec(s.x*k, s.y*k, s.z*k);
+        }
+        return;
+    }
+
+    const ofvec3 s = bSf[i];
+    const ofscalar phi = phiB[i];
+    ofvec3 rv = mkvec((ofscalar)0, (ofscalar)0, (ofscalar)0);
+
+    if (kind == OFGPU_BC_PRESSURE_INLET_VELOCITY)
+    {
+        // (120.5e): U_b = S_f phi_b/(S . S), the flux read back along the
+        // face normal. S . S == 0 writes zero.
+        const ofscalar ss = s.x*s.x + s.y*s.y + s.z*s.z;
+        if (ss != (ofscalar)0)
+        {
+            const ofscalar q = phi/ss;
+            rv = mkvec(s.x*q, s.y*q, s.z*q);
+        }
+    }
+    else if (kind == OFGPU_BC_PRESSURE_DIRECTED_INLET
+             || kind == OFGPU_BC_PRESSURE_DIRECTED_IO)
+    {
+        // (120.5g)/(120.5h): U_b = d_f phi_b/(d_f . S_f), the flux entering
+        // along inletDirection - the normalised per-face direction the setup
+        // packed into the dm block's first three slots. d . S == 0 writes
+        // zero.
+        const ofvec3 d = mkvec(dm[12*i], dm[12*i + 1], dm[12*i + 2]);
+        const ofscalar ds = d.x*s.x + d.y*s.y + d.z*s.z;
+        if (ds != (ofscalar)0)
+        {
+            const ofscalar q = phi/ds;
+            rv = mkvec(d.x*q, d.y*q, d.z*q);
+        }
+    }
+    else
+    {
+        // OFGPU_BC_PRESSURE_PAR_SLIP, (120.5i): the parallel-slip inflow -
+        // the normal part from the flux, the tangential part from the cell,
+        // lagged one outer iteration; at a fixed point it is the
+        // parallel-slip condition.
+        const ofscalar ss = s.x*s.x + s.y*s.y + s.z*s.z;
+        const ofvec3 up = uCell[bFaceCells[i]];
+        const ofscalar dup = s.x*up.x + s.y*up.y + s.z*up.z;
+        if (ss != (ofscalar)0)
+        {
+            const ofscalar q = phi/ss;
+            const ofscalar t = dup/ss;
+            rv = mkvec(s.x*q + up.x - s.x*t,
+                       s.y*q + up.y - s.y*t,
+                       s.z*q + up.z - s.z*t);
+        }
+    }
+
+    // (120.5h)/(120.5i): the two SWITCHED kinds hold their Dirichlet form
+    // only where the flux comes IN, `phi < 0` strictly - the same test
+    // fldInletOutletFraction switches their fr by. On the outflow half the
+    // face is zero-gradient, and the refValue its evaluation never reads is
+    // written zero.
+    if ((kind == OFGPU_BC_PRESSURE_DIRECTED_IO || kind == OFGPU_BC_PRESSURE_PAR_SLIP)
+        && !(phi < (ofscalar)0))
+    {
+        rv = mkvec((ofscalar)0, (ofscalar)0, (ofscalar)0);
+    }
+    refValue[i] = rv;
+}
+
+
+// ==========================================================================
+//  The Outlets II conditions (SPEC-LIT 120.6)
+//
+//  Four of the five hold a PATCH INTEGRAL - a mean (FIXED_MEAN, (120.6a)),
+//  the same mean held on outflow only (FIXED_MEAN_OUTLET_INLET, (120.6b)),
+//  a mean carried from another patch (OUTLET_MAPPED_UNIFORM_INLET,
+//  (120.6c)) or a flow rate (MATCHED_FLOW_RATE_OUTLET, (120.6e)) - and one
+//  extrapolates the cell's pressure gradient onto the face
+//  (FIXED_FLUX_EXTRAPOLATED_PRESSURE, (120.6f)). All five are section-4
+//  triples with no new evaluation branch: the two fldPatchMean* kernels
+//  below REWRITE THE TRIPLE ONLY, once per outer iteration, one 1-thread
+//  launch per rule, so the rule's sums run in face order on one thread in
+//  ofacc (SPEC-LIT 118.1) and the scalar they produce is rounded ONCE. The
+//  host twins are `field::patch_mean::patch_mean_values_scalar` and
+//  `patch_mean_values_vector` in src/field/patch_mean.rs, in the same
+//  operation order (the FMA contraction apart).
+// ==========================================================================
+
+extern "C" __global__ void fldPatchMeanScalar
+(
+    ofscalar* __restrict__ fr,
+    ofscalar* __restrict__ refValue,
+    ofscalar* __restrict__ refGrad,
+    const ofscalar* __restrict__ psi,
+    const ofscalar* __restrict__ bf,
+    const ofscalar* __restrict__ phiB,
+    const ofscalar* __restrict__ bMagSf,
+    const oflabel* __restrict__ bFaceCells,
+    oflabel kind,
+    oflabel start,
+    oflabel size,
+    oflabel srcStart,
+    oflabel srcSize,
+    ofscalar target,
+    ofscalar fraction
+)
+{
+    if (OFGPU_TID != 0) return;
+
+    if (kind == OFGPU_BC_FIXED_MEAN || kind == OFGPU_BC_FIXED_MEAN_OUTLET_INLET)
+    {
+        //- (120.6a)/(120.6b): A = SUM |S_f|, M = SUM |S_f| psi_P, and for
+        //  the switched mean A_D over the OUTFLOW faces only (phi > 0
+        //  strictly; 46 is 47 with every face Dirichlet, A_D = A).
+        ofacc accA = 0, accM = 0, accAD = 0;
+        for (oflabel f = start; f < start + size; ++f)
+        {
+            const ofacc s = (ofacc)bMagSf[f];
+            const ofacc p = (ofacc)psi[bFaceCells[f]];
+            accA += s;
+            accM += s*p;
+            if (kind == OFGPU_BC_FIXED_MEAN_OUTLET_INLET
+                && (ofacc)phiB[f] > (ofacc)0)
+            {
+                accAD += s;
+            }
+        }
+        const ofacc ad = (kind == OFGPU_BC_FIXED_MEAN) ? accA : accAD;
+        ofscalar s = (ofscalar)0;
+        if (ad > (ofacc)0)
+        {
+            s = (ofscalar)(((ofacc)target*accA - accM)/ad);
+        }
+        for (oflabel f = start; f < start + size; ++f)
+        {
+            refValue[f] = psi[bFaceCells[f]] + s;
+            refGrad[f]  = (ofscalar)0;
+            fr[f] = (kind == OFGPU_BC_FIXED_MEAN
+                     || (ofacc)phiB[f] > (ofacc)0)
+                        ? (ofscalar)1 : (ofscalar)0;
+        }
+        return;
+    }
+
+    if (kind == OFGPU_BC_OUTLET_MAPPED_UNIFORM_INLET)
+    {
+        //- (120.6c): the mixing-cup mean over the source patch's outflow
+        //  faces, w = max(phi, 0), falling back to its area mean where the
+        //  patch has no outflow; one uniform value
+        //  v = fraction*m + target, rounded once.
+        ofacc accW = 0, accN = 0, accAs = 0, accNs = 0;
+        for (oflabel g = srcStart; g < srcStart + srcSize; ++g)
+        {
+            const ofscalar w = (phiB[g] > (ofscalar)0) ? phiB[g] : (ofscalar)0;
+            const ofacc wv = (ofacc)w;
+            const ofacc b  = (ofacc)bf[g];
+            const ofacc s  = (ofacc)bMagSf[g];
+            accW  += wv;
+            accN  += wv*b;
+            accAs += s;
+            accNs += s*b;
+        }
+        ofscalar m;
+        if (accW > (ofacc)0)
+        {
+            m = (ofscalar)(accN/accW);
+        }
+        else if (accAs > (ofacc)0)
+        {
+            m = (ofscalar)(accNs/accAs);
+        }
+        else
+        {
+            m = (ofscalar)0;
+        }
+        const ofscalar v = (ofscalar)((ofacc)fraction*(ofacc)m + (ofacc)target);
+        for (oflabel f = start; f < start + size; ++f)
+        {
+            refValue[f] = v;
+            fr[f]       = (ofscalar)1;
+            refGrad[f]  = (ofscalar)0;
+        }
+    }
+}
+
+
+extern "C" __global__ void fldPatchMeanVector
+(
+    ofscalar* __restrict__ fr,
+    ofvec3* __restrict__ refValue,
+    ofvec3* __restrict__ refGrad,
+    const ofvec3* __restrict__ u,
+    const ofvec3* __restrict__ bf,
+    const ofscalar* __restrict__ phiB,
+    const ofvec3* __restrict__ bSf,
+    const ofscalar* __restrict__ bMagSf,
+    const oflabel* __restrict__ bFaceCells,
+    oflabel kind,
+    oflabel start,
+    oflabel size,
+    oflabel srcStart,
+    oflabel srcSize,
+    ofscalar tx, ofscalar ty, ofscalar tz,
+    ofscalar fraction
+)
+{
+    if (OFGPU_TID != 0) return;
+
+    if (kind == OFGPU_BC_FIXED_MEAN || kind == OFGPU_BC_FIXED_MEAN_OUTLET_INLET)
+    {
+        //- (120.6a)/(120.6b) componentwise, the same weights as the scalar
+        //  kernel above: one shift per component, each rounded once.
+        ofacc accA = 0, accAD = 0;
+        ofacc accMx = 0, accMy = 0, accMz = 0;
+        for (oflabel f = start; f < start + size; ++f)
+        {
+            const ofacc s = (ofacc)bMagSf[f];
+            const ofvec3 p = u[bFaceCells[f]];
+            accA  += s;
+            accMx += s*(ofacc)p.x;
+            accMy += s*(ofacc)p.y;
+            accMz += s*(ofacc)p.z;
+            if (kind == OFGPU_BC_FIXED_MEAN_OUTLET_INLET
+                && (ofacc)phiB[f] > (ofacc)0)
+            {
+                accAD += s;
+            }
+        }
+        const ofacc ad = (kind == OFGPU_BC_FIXED_MEAN) ? accA : accAD;
+        ofscalar sx = (ofscalar)0, sy = (ofscalar)0, sz = (ofscalar)0;
+        if (ad > (ofacc)0)
+        {
+            sx = (ofscalar)(((ofacc)tx*accA - accMx)/ad);
+            sy = (ofscalar)(((ofacc)ty*accA - accMy)/ad);
+            sz = (ofscalar)(((ofacc)tz*accA - accMz)/ad);
+        }
+        for (oflabel f = start; f < start + size; ++f)
+        {
+            const ofvec3 p = u[bFaceCells[f]];
+            refValue[f] = mkvec(p.x + sx, p.y + sy, p.z + sz);
+            refGrad[f]  = mkvec((ofscalar)0, (ofscalar)0, (ofscalar)0);
+            fr[f] = (kind == OFGPU_BC_FIXED_MEAN
+                     || (ofacc)phiB[f] > (ofacc)0)
+                        ? (ofscalar)1 : (ofscalar)0;
+        }
+        return;
+    }
+
+    if (kind == OFGPU_BC_OUTLET_MAPPED_UNIFORM_INLET)
+    {
+        //- (120.6c) componentwise, the same weights as the scalar kernel.
+        ofacc accW = 0, accAs = 0;
+        ofacc accNx = 0, accNy = 0, accNz = 0;
+        ofacc accNsx = 0, accNsy = 0, accNsz = 0;
+        for (oflabel g = srcStart; g < srcStart + srcSize; ++g)
+        {
+            const ofscalar w = (phiB[g] > (ofscalar)0) ? phiB[g] : (ofscalar)0;
+            const ofacc wv = (ofacc)w;
+            const ofvec3 b = bf[g];
+            const ofacc s  = (ofacc)bMagSf[g];
+            accW  += wv;
+            accNx += wv*(ofacc)b.x;
+            accNy += wv*(ofacc)b.y;
+            accNz += wv*(ofacc)b.z;
+            accAs += s;
+            accNsx += s*(ofacc)b.x;
+            accNsy += s*(ofacc)b.y;
+            accNsz += s*(ofacc)b.z;
+        }
+        ofscalar mx, my, mz;
+        if (accW > (ofacc)0)
+        {
+            mx = (ofscalar)(accNx/accW);
+            my = (ofscalar)(accNy/accW);
+            mz = (ofscalar)(accNz/accW);
+        }
+        else if (accAs > (ofacc)0)
+        {
+            mx = (ofscalar)(accNsx/accAs);
+            my = (ofscalar)(accNsy/accAs);
+            mz = (ofscalar)(accNsz/accAs);
+        }
+        else
+        {
+            mx = my = mz = (ofscalar)0;
+        }
+        const ofvec3 v = mkvec
+        (
+            (ofscalar)((ofacc)fraction*(ofacc)mx + (ofacc)tx),
+            (ofscalar)((ofacc)fraction*(ofacc)my + (ofacc)ty),
+            (ofscalar)((ofacc)fraction*(ofacc)mz + (ofacc)tz)
+        );
+        for (oflabel f = start; f < start + size; ++f)
+        {
+            refValue[f] = v;
+            fr[f]       = (ofscalar)1;
+            refGrad[f]  = mkvec((ofscalar)0, (ofscalar)0, (ofscalar)0);
+        }
+    }
+    else if (kind == OFGPU_BC_MATCHED_FLOW_RATE_OUTLET)
+    {
+        //- (120.6e): Q from the inletPatch's flux, F from the outlet's own
+        //  cell values dotted with S_f, and the one normal shift
+        //  c = (Q - F)/A - refValue = U_P + c S_f/|S_f|.
+        ofacc accQ = 0, accA = 0, accF = 0;
+        for (oflabel g = srcStart; g < srcStart + srcSize; ++g)
+        {
+            accQ -= (ofacc)phiB[g];
+        }
+        for (oflabel f = start; f < start + size; ++f)
+        {
+            const ofvec3 s = bSf[f];
+            const ofvec3 p = u[bFaceCells[f]];
+            accA += (ofacc)bMagSf[f];
+            accF += (ofacc)s.x*(ofacc)p.x
+                  + (ofacc)s.y*(ofacc)p.y
+                  + (ofacc)s.z*(ofacc)p.z;
+        }
+        const ofscalar c = (accA != (ofacc)0)
+            ? (ofscalar)((accQ - accF)/accA) : (ofscalar)0;
+        for (oflabel f = start; f < start + size; ++f)
+        {
+            const ofvec3  s = bSf[f];
+            const ofscalar m = bMagSf[f];
+            const ofvec3  p = u[bFaceCells[f]];
+            const ofscalar k = (m != (ofscalar)0) ? c/m : (ofscalar)0;
+            refValue[f] = mkvec(p.x + s.x*k, p.y + s.y*k, p.z + s.z*k);
+            fr[f]       = (ofscalar)1;
+            refGrad[f]  = mkvec((ofscalar)0, (ofscalar)0, (ofscalar)0);
+        }
+    }
+}
+
+
+//- (120.6f) on a scalar field: refGrad = S_f . (grad p)_P/|S_f|, one thread
+//  per face of the patch - no patch sums, so no ofacc and no 1-thread
+//  launch. The thread index is PATCH-LOCAL - thread i writes face
+//  start + i of the `size` faces, the launch being cfg_for(size) - so a
+//  patch that starts past the first launch block is reached; an absolute
+//  index would leave every such patch unwritten, its threads all below
+//  start. refValue is written zero and fr zero; the face value comes out
+//  of the ordinary section-4 evaluation as p_P + refGrad/Delta_b. The host
+//  twin is `field::patch_mean::extrapolated_sn_grad`.
+extern "C" __global__ void fldExtrapolatedSnGrad
+(
+    ofscalar* __restrict__ fr,
+    ofscalar* __restrict__ refValue,
+    ofscalar* __restrict__ refGrad,
+    const ofvec3* __restrict__ grad,
+    const ofvec3* __restrict__ bSf,
+    const ofscalar* __restrict__ bMagSf,
+    const oflabel* __restrict__ bFaceCells,
+    oflabel start,
+    oflabel size
+)
+{
+    const oflabel i = start + OFGPU_TID;
+    if (i >= start + size) return;
+
+    const ofvec3 g = grad[bFaceCells[i]];
+    const ofvec3 s = bSf[i];
+    const ofscalar d = s.x*g.x + s.y*g.y + s.z*g.z;
+    const ofscalar m = bMagSf[i];
+    refGrad[i]  = (m != (ofscalar)0) ? d/m : (ofscalar)0;
+    fr[i]       = (ofscalar)0;
+    refValue[i] = (ofscalar)0;
+}
+
+
+
+// ==========================================================================
+//  The advective outlet (SPEC-LIT 120.4)
+//
+//  (120.4b): d phi/dt + w d phi/dn = K (phi_inf - phi), the face carrying
+//  the field out along the outward normal at the wave speed w and relaxing
+//  toward phi_inf at the rate K = w/lInf. Both w and K are FACE-FIELD
+//  inputs: the generic condition fills them from the flux
+//  (fldAdvectiveSpeed, `w = max(phi_b/|S_f|, 0)`), and CMP-17 passes its
+//  own `w = u_n + c` and `K = sigma c (1 - M_n^2)/L` to the same kernels.
+//
+//  With d phi/dn = (phi_b - phi_P) Delta_b and the run's own ddt
+//  coefficients (a_n, a_0, a_00), the discrete condition is (120.4c) and
+//  its solution is the section 4 triple (120.4d):
+//
+//      fr       = (a_n + K)/(a_n + w Delta_b + K)
+//      refValue = (K phi_inf - a_0 phi_b^o - a_00 phi_b^oo)/(a_n + K)
+//      refGrad  = 0
+//
+//  evaluated in the operation order d = a_n + K, fr = d/(d + w Delta_b),
+//  refValue = (K phi_inf - a_0 b_o - a_00 b_oo)/d - the same order the
+//  host twin `field::advective::advective_triple` runs, so the two agree
+//  to round-off, the FMA contraction being the only difference.
+// ==========================================================================
+
+//- The wave speed from the flux, and the relaxation rate from the length.
+//
+//  `w = max(phi_b/|S_f|, 0)`: the outward flux per unit area, never
+//  negative - a back-flowing face has w = 0, holds its own time
+//  extrapolation (fr = 1) and takes nothing from the interior. Zero where
+//  |S_f| is 0, so a degenerate face cannot divide by it. Faces of any
+//  other kind are left alone, which is what lets this run over the whole
+//  boundary once per step.
+extern "C" __global__ void fldAdvectiveSpeed
+(
+    ofscalar* __restrict__ w,
+    ofscalar* __restrict__ kRelax,
+    const oflabel* __restrict__ bcKind,
+    oflabel matchKind,
+    const ofscalar* __restrict__ phiB,
+    const ofscalar* __restrict__ magSf,
+    const ofscalar* __restrict__ invLInf,
+    oflabel n
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= n) return;
+    if (bcKind[i] != matchKind) return;
+
+    const ofscalar s = magSf[i];
+    const ofscalar wi = (s != (ofscalar)0)
+        ? ofmax_(phiB[i]/s, (ofscalar)0)
+        : (ofscalar)0;
+    w[i] = wi;
+    kRelax[i] = wi*invLInf[i];
+}
+
+//- Rewrite the triple of every ADVECTIVE face from (120.4d), in the 120.4
+//  operation order; refGrad = 0. The face value is then the ordinary
+//  section 4 evaluation - nothing here writes bf.
+extern "C" __global__ void fldAdvectiveRobinScalar
+(
+    ofscalar* __restrict__ fr,
+    ofscalar* __restrict__ refValue,
+    ofscalar* __restrict__ refGrad,
+    const oflabel* __restrict__ bcKind,
+    oflabel matchKind,
+    const ofscalar* __restrict__ w,
+    const ofscalar* __restrict__ kRelax,
+    const ofscalar* __restrict__ phiInf,
+    const ofscalar* __restrict__ bOld,
+    const ofscalar* __restrict__ bOldOld,
+    const ofscalar* __restrict__ bDeltaCoeffs,
+    ofscalar aN,
+    ofscalar a0,
+    ofscalar a00,
+    oflabel n
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= n) return;
+    if (bcKind[i] != matchKind) return;
+
+    const ofscalar d = aN + kRelax[i];
+    fr[i] = d/(d + w[i]*bDeltaCoeffs[i]);
+    refValue[i] = (kRelax[i]*phiInf[i] - a0*bOld[i] - a00*bOldOld[i])/d;
+    refGrad[i] = (ofscalar)0;
+}
+
+//- The vector twin. One fr per face - a vector field shares the fraction
+//  across its components (SPEC-LIT 120.4) - and refValue/phiInf/bOld/
+//  bOldOld per component.
+extern "C" __global__ void fldAdvectiveRobinVector
+(
+    ofscalar* __restrict__ fr,
+    ofvec3* __restrict__ refValue,
+    ofvec3* __restrict__ refGrad,
+    const oflabel* __restrict__ bcKind,
+    oflabel matchKind,
+    const ofscalar* __restrict__ w,
+    const ofscalar* __restrict__ kRelax,
+    const ofvec3* __restrict__ phiInf,
+    const ofvec3* __restrict__ bOld,
+    const ofvec3* __restrict__ bOldOld,
+    const ofscalar* __restrict__ bDeltaCoeffs,
+    ofscalar aN,
+    ofscalar a0,
+    ofscalar a00,
+    oflabel n
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= n) return;
+    if (bcKind[i] != matchKind) return;
+
+    const ofscalar d = aN + kRelax[i];
+    fr[i] = d/(d + w[i]*bDeltaCoeffs[i]);
+    refValue[i] = mkvec
+    (
+        (kRelax[i]*phiInf[i].x - a0*bOld[i].x - a00*bOldOld[i].x)/d,
+        (kRelax[i]*phiInf[i].y - a0*bOld[i].y - a00*bOldOld[i].y)/d,
+        (kRelax[i]*phiInf[i].z - a0*bOld[i].z - a00*bOldOld[i].z)/d
+    );
+    refGrad[i] = mkvec((ofscalar)0, (ofscalar)0, (ofscalar)0);
+}
+
+
+// ==========================================================================
+//  The wedge condition (SPEC-LIT 119.2)
+//
+//  A wedge side is a coupled face whose other cell is the cell itself,
+//  turned about the axis: across the front face by +theta, across the back
+//  by -theta. Linear interpolation across the couple gives the chord
+//  average
+//
+//      U_b = (U_P + R(sigma theta) U_P)/2 = U_P + w                     (119.2c)
+//      w   = ( sigma sin(theta) (a x U_P) - vers(theta) (U_P - a (a.U_P)) )/2
+//      vers(theta) = 1 - cos(theta) = 2 sin^2(theta/2)
+//
+//  and the condition is the section 4 triple fr = 0, refValue = 0,
+//
+//      refGrad = Delta_b w                                              (119.2d)
+//
+//  on a vector, and zero-gradient on a scalar. This kernel rewrites
+//  refGrad ONLY, on the faces whose bcKind is WEDGE and whose patch is the
+//  back (sigma = -1) or front (sigma = +1) one; bf is NOT written here -
+//  the face value comes out of the ordinary fldCorrectBcVector evaluation,
+//  which the caller launches right after. The operation order is fixed
+//  (119.2): d = a . U_P summed x, y, z left to right; c = a x U_P;
+//  q = U_P - a d; w = (sigma sin(theta) c - vers(theta) q)/2;
+//  refGrad = Delta_b w. The host twin is field::wedge_ref_grad in
+//  src/field.rs, the same order; FMA contraction is on, so the two agree
+//  to round-off, not bitwise.
+// ==========================================================================
+extern "C" __global__ void fldWedgeRefGrad
+(
+    ofvec3* __restrict__ refGrad,
+    const ofvec3* __restrict__ psi,
+    const oflabel* __restrict__ bcKind,
+    const oflabel* __restrict__ bPatch,
+    const oflabel* __restrict__ bFaceCells,
+    const ofscalar* __restrict__ bDeltaCoeffs,
+    oflabel backPatch,
+    oflabel frontPatch,
+    ofscalar ax, ofscalar ay, ofscalar az,
+    ofscalar sinTheta,
+    ofscalar versTheta,
+    oflabel nBoundaryFaces
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= nBoundaryFaces) return;
+    if (bcKind[i] != OFGPU_BC_WEDGE) return;
+
+    //- sigma: +1 on the front patch, -1 on the back, untouched elsewhere -
+    //  a field may carry kind 40 on a patch outside the pair only if the
+    //  caller put it there, and this kernel leaves that face's refGrad as
+    //  the triple has it.
+    const oflabel p = bPatch[i];
+    const ofscalar sigma = (p == frontPatch)
+        ? (ofscalar)1
+        : ((p == backPatch) ? (ofscalar)-1 : (ofscalar)0);
+    if (sigma == (ofscalar)0) return;
+
+    const ofvec3 uP = psi[bFaceCells[i]];
+
+    const ofscalar d = ax*uP.x + ay*uP.y + az*uP.z;
+    const ofvec3 c = mkvec
+    (
+        ay*uP.z - az*uP.y,
+        az*uP.x - ax*uP.z,
+        ax*uP.y - ay*uP.x
+    );
+    const ofvec3 q = mkvec
+    (
+        uP.x - ax*d,
+        uP.y - ay*d,
+        uP.z - az*d
+    );
+
+    const ofscalar s = sigma*sinTheta;
+    const ofvec3 w = mkvec
+    (
+        (s*c.x - versTheta*q.x)/(ofscalar)2,
+        (s*c.y - versTheta*q.y)/(ofscalar)2,
+        (s*c.z - versTheta*q.z)/(ofscalar)2
+    );
+
+    refGrad[i] = mkvec
+    (
+        bDeltaCoeffs[i]*w.x,
+        bDeltaCoeffs[i]*w.y,
+        bDeltaCoeffs[i]*w.z
+    );
 }
 
 
@@ -459,4 +1254,441 @@ extern "C" __global__ void fldScale
     const oflabel i = OFGPU_TID;
     if (i >= n) return;
     dst[i] *= s;
+}
+
+
+// ==========================================================================
+//  SPEC-LIT 120.10 - the recycled inflow: mapped / mappedFixedValue and
+//  turbulentInlet. Both are a section-4 FIXED VALUE (fr = 1, refGrad = 0)
+//  whose refValue these two kernels rewrite - no new evaluation branch.
+//  Both run on ONE thread (thread 0 of a 1-thread launch) and index the
+//  boundary arrays component-fastest, `[f * ncomp + c]`, so one kernel
+//  serves a scalar field (ncomp 1) and a vector field (ncomp 3, an ofvec3
+//  being three ofscalar). Host twins: field::mapped::mapped_values and
+//  field::mapped::turbulent_advance, in the same operation order.
+// ==========================================================================
+
+extern "C" __global__ void fldMapped
+(
+    ofscalar* __restrict__ fr,
+    ofscalar* __restrict__ refValue,
+    ofscalar* __restrict__ refGrad,
+    const ofscalar* __restrict__ psi,
+    const oflabel* __restrict__ cells,
+    const ofscalar* __restrict__ bMagSf,
+    oflabel start,
+    oflabel size,
+    oflabel ncomp,
+    oflabel setAverage,
+    ofscalar ax,
+    ofscalar ay,
+    ofscalar az
+)
+{
+    if (OFGPU_TID != 0) return;
+
+    //- (120.10c): A = SUM |S_f| and M = SUM |S_f| psi*_f, in face order,
+    //  in ofacc (SPEC-LIT 118.1).
+    const ofacc avg[3] = {(ofacc)ax, (ofacc)ay, (ofacc)az};
+    ofacc area = 0;
+    ofacc sum[3] = {0, 0, 0};
+    if (setAverage)
+    {
+        for (oflabel i = 0; i < size; ++i)
+        {
+            const ofacc s = (ofacc)bMagSf[start + i];
+            const oflabel c = cells[i];
+            area += s;
+            for (oflabel k = 0; k < ncomp; ++k)
+                sum[k] += s * (ofacc)psi[c * ncomp + k];
+        }
+    }
+
+    if (!setAverage || area <= 0)
+    {
+        //- (120.10b): the sampled cell's value, copied.
+        for (oflabel i = 0; i < size; ++i)
+        {
+            const oflabel c = cells[i];
+            const oflabel f = start + i;
+            fr[f] = 1;
+            for (oflabel k = 0; k < ncomp; ++k)
+            {
+                refValue[f * ncomp + k] = psi[c * ncomp + k];
+                refGrad[f * ncomp + k] = 0;
+            }
+        }
+        return;
+    }
+
+    //- (120.10c): m = M/A, s = |a|/|m| where |a| > 0 and |m| >= |a|/2,
+    //  else 1, and every face s psi* + (a - s m), rounded once.
+    ofacc mbar[3] = {0, 0, 0};
+    ofacc m2 = 0, a2 = 0;
+    for (oflabel k = 0; k < ncomp; ++k)
+    {
+        mbar[k] = sum[k] / area;
+        m2 += mbar[k] * mbar[k];
+        a2 += avg[k] * avg[k];
+    }
+    const ofacc mm = sqrt(m2);
+    const ofacc am = sqrt(a2);
+    const ofacc fac = (am > 0 && mm >= 0.5 * am) ? am / mm : (ofacc)1;
+    ofacc shift[3] = {0, 0, 0};
+    for (oflabel k = 0; k < ncomp; ++k)
+        shift[k] = avg[k] - fac * mbar[k];
+
+    for (oflabel i = 0; i < size; ++i)
+    {
+        const oflabel c = cells[i];
+        const oflabel f = start + i;
+        fr[f] = 1;
+        for (oflabel k = 0; k < ncomp; ++k)
+        {
+            const ofacc v = (ofacc)psi[c * ncomp + k];
+            refValue[f * ncomp + k] = (ofscalar)(fac * v + shift[k]);
+            refGrad[f * ncomp + k] = 0;
+        }
+    }
+}
+
+//- (120.10e): the SplitMix64 finaliser of the key, its top 53 bits as u in
+//  [0, 1), and sqrt(3) (2u - 1) - integer arithmetic and one product, the
+//  same bits as field::mapped::turbulent_eps.
+__device__ __forceinline__ double fldTurbulentEps
+(
+    unsigned long long seed,
+    unsigned long long n,
+    unsigned long long g,
+    unsigned long long c
+)
+{
+    unsigned long long z = seed ^ (n << 32) ^ (3ull * g + c);
+    z += 0x9E3779B97F4A7C15ull;
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+    z ^= z >> 31;
+    const double u = (double)(z >> 11) * (1.0 / 9007199254740992.0);
+    return 1.7320508075688772 * (2.0 * u - 1.0);
+}
+
+extern "C" __global__ void fldTurbulentInlet
+(
+    ofscalar* __restrict__ refValue,
+    const ofscalar* __restrict__ reference,
+    oflabel* __restrict__ step,
+    oflabel start,
+    oflabel size,
+    oflabel ncomp,
+    ofscalar sx,
+    ofscalar sy,
+    ofscalar sz,
+    ofscalar alpha,
+    unsigned long long seed
+)
+{
+    if (OFGPU_TID != 0) return;
+
+    //- (120.10g): step n = step[0] + 1, mu = 1 - alpha, in double in both
+    //  builds; x^(n-1) = refValue - psi_ref, x^n = mu x^(n-1) +
+    //  sqrt(1 - mu^2) sigma eps^n, sigma = s_c |psi_ref,f| (120.10f), and
+    //  (120.10h) the face value psi_ref + x^n rounded once.
+    const oflabel n = step[0] + 1;
+    const double mu = 1.0 - (double)alpha;
+    const double q = sqrt(1.0 - mu * mu);
+    const double scale[3] = {(double)sx, (double)sy, (double)sz};
+    for (oflabel i = 0; i < size; ++i)
+    {
+        double r2 = 0;
+        for (oflabel k = 0; k < ncomp; ++k)
+        {
+            const double r = (double)reference[i * ncomp + k];
+            r2 += r * r;
+        }
+        const double mag = sqrt(r2);
+        const unsigned long long g = (unsigned long long)(start + i);
+        for (oflabel k = 0; k < ncomp; ++k)
+        {
+            const oflabel j = (start + i) * ncomp + k;
+            const double r = (double)reference[i * ncomp + k];
+            const double sigma = scale[k] * mag;
+            const double xOld = (double)refValue[j] - r;
+            const double x = mu * xOld
+                + q * sigma * fldTurbulentEps(seed, (unsigned long long)n, g, (unsigned long long)k);
+            refValue[j] = (ofscalar)(r + x);
+        }
+    }
+    step[0] = n;
+}
+
+
+// ==========================================================================
+//  SPEC-LIT 120.12 - the synthetic LES inflow: turbulentDigitalFilterInlet
+//  and turbulentDFSEMInlet. A section-4 FIXED VALUE on a vector field whose
+//  refValue (`[3 f + c]`) one of the two per-face kernels rewrites, after
+//  which the one-thread fldSyntheticStep moves the rule's state [n, X] on.
+//  Everything is double in both builds; each face value rounds once. Host
+//  twins: field::synthetic::df_values and field::synthetic::dfsem_values,
+//  in the same operation order.
+// ==========================================================================
+
+//- (120.12a): the SplitMix64 finaliser of z + 0x9E3779B97F4A7C15.
+__device__ __forceinline__ unsigned long long fldSynMix(unsigned long long z)
+{
+    z += 0x9E3779B97F4A7C15ull;
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+    return z ^ (z >> 31);
+}
+
+//- (120.12a): u in [0, 1) for the key (seed, tag, a, b, c, d), the
+//  finaliser chained over the six words - field::synthetic::unit.
+__device__ __forceinline__ double fldSynUnit
+(
+    unsigned long long seed,
+    unsigned long long tag,
+    unsigned long long a,
+    unsigned long long b,
+    unsigned long long c,
+    unsigned long long d
+)
+{
+    unsigned long long h = fldSynMix(seed ^ 0x243F6A8885A308D3ull);
+    h = fldSynMix(h ^ tag);
+    h = fldSynMix(h ^ a);
+    h = fldSynMix(h ^ b);
+    h = fldSynMix(h ^ c);
+    h = fldSynMix(h ^ d);
+    return (double)(h >> 11) * (1.0 / 9007199254740992.0);
+}
+
+__device__ __forceinline__ double fldSynEps
+(
+    unsigned long long seed,
+    unsigned long long tag,
+    unsigned long long a,
+    unsigned long long b,
+    unsigned long long c,
+    unsigned long long d
+)
+{
+    return 1.7320508075688772 * (2.0 * fldSynUnit(seed, tag, a, b, c, d) - 1.0);
+}
+
+//- (120.12c)-(120.12e): one thread per face. Step n = state[0] + 1; the
+//  time filter of component c has n_t = L_x,c / (Ubulk dt) and half-width
+//  ntc (the launcher's N_t = ceil(2 n_t)); the e_y / e_z tables are the
+//  parameter block's. u'_c = SUM_a bt_a SUM_b by_b SUM_d bz_d eps, then
+//  UMean + a u' rounded once.
+extern "C" __global__ void fldDigitalFilterInlet
+(
+    ofscalar* __restrict__ refValue,
+    const double* __restrict__ prm,
+    const oflabel* __restrict__ node,
+    const double* __restrict__ state,
+    oflabel start,
+    oflabel size,
+    double dt,
+    unsigned long long seed,
+    oflabel nt0,
+    oflabel nt1,
+    oflabel nt2
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= size) return;
+    const long long n = (long long)state[0] + 1;
+    const long long j = (long long)node[2 * i];
+    const long long k = (long long)node[2 * i + 1];
+    const oflabel ntc[3] = {nt0, nt1, nt2};
+    double up[3] = {0, 0, 0};
+    for (int c = 0; c < 3; ++c)
+    {
+        const double nt = prm[10 + c] / (prm[9] * dt);
+        const int ht = ntc[c];
+        double s2 = 0;
+        for (int a = -ht; a <= ht; ++a)
+        {
+            const double b = (ht > 0) ? exp(-(3.141592653589793 * (double)(a * a)) / (2.0 * nt * nt)) : 1.0;
+            s2 += b * b;
+        }
+        const double norm = sqrt(s2);
+        const int hy = (int)prm[13 + c];
+        const int hz = (int)prm[16 + c];
+        const double* by = prm + (long long)prm[19 + c];
+        const double* bz = prm + (long long)prm[22 + c];
+        double sum = 0;
+        for (int a = -ht; a <= ht; ++a)
+        {
+            const double ba = (ht > 0) ? exp(-(3.141592653589793 * (double)(a * a)) / (2.0 * nt * nt)) / norm : 1.0;
+            const unsigned long long m = (unsigned long long)(n + a);
+            double sa = 0;
+            for (int b = -hy; b <= hy; ++b)
+            {
+                const unsigned long long jj = (unsigned long long)(j + b);
+                double sb = 0;
+                for (int d = -hz; d <= hz; ++d)
+                {
+                    const unsigned long long kk = (unsigned long long)(k + d);
+                    sb += bz[d + hz] * fldSynEps(seed, 1ull, m, jj, kk, (unsigned long long)c);
+                }
+                sa += by[b + hy] * sb;
+            }
+            sum += ba * sa;
+        }
+        up[c] = sum;
+    }
+    const double u0 = prm[0] * up[0];
+    const double u1 = prm[1] * up[0] + prm[2] * up[1];
+    const double u2 = prm[3] * up[0] + prm[4] * up[1] + prm[5] * up[2];
+    const oflabel f = start + i;
+    refValue[3 * f]     = (ofscalar)(prm[6] + u0);
+    refValue[3 * f + 1] = (ofscalar)(prm[7] + u1);
+    refValue[3 * f + 2] = (ofscalar)(prm[8] + u2);
+}
+
+//- (120.12g)-(120.12k): one thread per face. X = fma(Ubulk, dt, state[1]);
+//  every eddy k is placed by (120.12k) and adds F(q) (d x alpha) where
+//  q = |d|^2 < 1, d = (x_f - x_k)/sigma; UMean + scale SUM rounded once.
+extern "C" __global__ void fldDfsemInlet
+(
+    ofscalar* __restrict__ refValue,
+    const double* __restrict__ prm,
+    const double* __restrict__ rel,
+    const double* __restrict__ state,
+    oflabel start,
+    oflabel size,
+    double dt,
+    unsigned long long seed
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= size) return;
+    const double X = fma(prm[9], dt, state[1]);
+    const double sg = prm[19];
+    const double two = 2.0 * sg;
+    const long long ne = (long long)prm[25];
+    const double p0 = rel[3 * i], p1 = rel[3 * i + 1], p2 = rel[3 * i + 2];
+    double u[3] = {0, 0, 0};
+    for (long long e = 0; e < ne; ++e)
+    {
+        const unsigned long long kk = (unsigned long long)e;
+        const double s0 = -sg + two * fldSynUnit(seed, 2ull, kk, 0ull, 0ull, 0ull);
+        const double w = s0 + sg + X;
+        const double g = floor(w / two);
+        const double s = -sg + (w - two * g);
+        const unsigned long long gg = (unsigned long long)(long long)g;
+        const double eta = prm[20] + prm[21] * fldSynUnit(seed, 2ull, kk, gg, 1ull, 0ull);
+        const double zeta = prm[22] + prm[23] * fldSynUnit(seed, 2ull, kk, gg, 2ull, 0ull);
+        const double e0 = fldSynEps(seed, 2ull, kk, gg, 3ull, 0ull);
+        const double e1 = fldSynEps(seed, 2ull, kk, gg, 4ull, 0ull);
+        const double e2 = fldSynEps(seed, 2ull, kk, gg, 5ull, 0ull);
+        const double a0 = prm[0] * e0;
+        const double a1 = prm[1] * e0 + prm[2] * e1;
+        const double a2 = prm[3] * e0 + prm[4] * e1 + prm[5] * e2;
+        const double x0 = s * prm[10] + eta * prm[13] + zeta * prm[16];
+        const double x1 = s * prm[11] + eta * prm[14] + zeta * prm[17];
+        const double x2 = s * prm[12] + eta * prm[15] + zeta * prm[18];
+        const double d0 = (p0 - x0) / sg;
+        const double d1 = (p1 - x1) / sg;
+        const double d2 = (p2 - x2) / sg;
+        const double q = d0 * d0 + d1 * d1 + d2 * d2;
+        if (q < 1.0)
+        {
+            const double F = (1.0 - q) * (1.0 - q);
+            u[0] += F * (d1 * a2 - d2 * a1);
+            u[1] += F * (d2 * a0 - d0 * a2);
+            u[2] += F * (d0 * a1 - d1 * a0);
+        }
+    }
+    const double sc = prm[24];
+    const oflabel f = start + i;
+    refValue[3 * f]     = (ofscalar)(prm[6] + sc * u[0]);
+    refValue[3 * f + 1] = (ofscalar)(prm[7] + sc * u[1]);
+    refValue[3 * f + 2] = (ofscalar)(prm[8] + sc * u[2]);
+}
+
+//- (120.12k): the rule's state moves on after its per-face kernel -
+//  state[0] += 1, state[1] = fma(Ubulk, dt, state[1]) (field::synthetic::
+//  convect). One thread.
+extern "C" __global__ void fldSyntheticStep
+(
+    double* __restrict__ state,
+    const double* __restrict__ prm,
+    double dt
+)
+{
+    if (OFGPU_TID != 0) return;
+    state[0] = state[0] + 1.0;
+    state[1] = fma(prm[9], dt, state[1]);
+}
+
+
+//- SPEC-LIT 139.10 (PAR-14): a decomposed part's processor faces, on a field.
+//
+//  fldCorrectBcScalar's cyclic branch interpolates with the part's OWN
+//  bWeights - not the whole mesh's weight, which is what `bProcW` stores
+//  (SPEC-LIT 139.8, fact 2: `1 - (1 - w)` is not `w`). The whole mesh had no
+//  boundary face here at all: it had an INTERNAL face, whose value is
+//  fvInterpolateLinear's `w*psi_o + (1 - w)*psi_n` on the whole mesh's two
+//  cells and weight. This rewrites exactly that, operand for operand and in
+//  the same written order, on every face `bProc` marks - the ghost cell the
+//  exchange filled (SPEC-LIT 139.1) plays the far cell. Every other face is
+//  left as the evaluation left it.
+extern "C" __global__ void fldProcFaceScalar
+(
+    ofscalar* __restrict__ bf,
+    const ofscalar* __restrict__ psi,
+    const oflabel* __restrict__ bProc,
+    const ofscalar* __restrict__ bProcW,
+    const oflabel* __restrict__ bFaceCells,
+    const oflabel* __restrict__ bNbrCell,
+    oflabel nbf
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= nbf) return;
+    if (bProc[i] < 0) return;
+
+    const oflabel owns = (bProc[i] == 1);
+    const oflabel c = bFaceCells[i];
+    const oflabel o_g = owns ? c : bNbrCell[i];
+    const oflabel n_g = owns ? bNbrCell[i] : c;
+    const ofscalar w = bProcW[i];
+
+    bf[i] = w*psi[o_g] + (1 - w)*psi[n_g];
+}
+
+
+//- The vector half, per component exactly as fvFluxInternal writes it.
+extern "C" __global__ void fldProcFaceVector
+(
+    ofvec3* __restrict__ bf,
+    const ofvec3* __restrict__ psi,
+    const oflabel* __restrict__ bProc,
+    const ofscalar* __restrict__ bProcW,
+    const oflabel* __restrict__ bFaceCells,
+    const oflabel* __restrict__ bNbrCell,
+    oflabel nbf
+)
+{
+    const oflabel i = OFGPU_TID;
+    if (i >= nbf) return;
+    if (bProc[i] < 0) return;
+
+    const oflabel owns = (bProc[i] == 1);
+    const oflabel c = bFaceCells[i];
+    const oflabel o_g = owns ? c : bNbrCell[i];
+    const oflabel n_g = owns ? bNbrCell[i] : c;
+    const ofscalar w = bProcW[i];
+
+    const ofvec3 uo = psi[o_g];
+    const ofvec3 un = psi[n_g];
+
+    bf[i] = mkvec
+    (
+        w*uo.x + (1 - w)*un.x,
+        w*uo.y + (1 - w)*un.y,
+        w*uo.z + (1 - w)*un.z
+    );
 }

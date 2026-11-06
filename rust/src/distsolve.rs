@@ -81,16 +81,23 @@
 
 use cudarc::driver::PushKernelArg;
 
+use crate::comm::Comm;
 use crate::decompose::Decomposition;
 use crate::device::{cfg_for, DevBuf, Gpu};
 use crate::error::{Error, Result};
 use crate::exactsum::ExactReduction;
-use crate::halo::HaloExchange;
+use crate::halo::{HaloExchange, SpmdHalo};
 use crate::ldu::{GpuLduMatrix, HostLduMatrix};
 use crate::mesh::{GpuMesh, HostMesh};
 use crate::precon::MultiColour;
 use crate::solver::{self, LinearSolverKind, Preconditioner, SolverControls, SolverKernels};
 use crate::{Label, Scalar};
+
+#[cfg(feature = "single")]
+mod refine;
+pub mod spmd;
+
+pub use spmd::{spmd_gamg, spmd_pcg, spmd_pbicgstab, spmd_solve, SpmdWorkspace};
 
 // ==========================================================================
 //  Which cross-part reduction
@@ -144,6 +151,10 @@ pub struct DistSystem {
     /// a part's own count, which is the `sum(b)/n` hazard SPEC-LIT §72.7 named
     /// and left open.
     n_global_cells: usize,
+    /// The one part this system is, when [`Self::split_one`] built it;
+    /// `None` from [`Self::split`], which holds every part (SPEC-LIT
+    /// §138.5).
+    part: Option<usize>,
 }
 
 impl DistSystem {
@@ -205,7 +216,228 @@ impl DistSystem {
             n,
             n_local,
             n_global_cells: dec.n_global_cells,
+            part: None,
         })
+    }
+
+    /// Build ONE rank's system: part `comm.rank()` of `dec`, and nothing
+    /// else (SPEC-LIT §138.5).
+    ///
+    /// The rank's mesh and its split matrix are uploaded as [`Self::split`]
+    /// uploads every part's, and the two constraint arrays reach the halo
+    /// through the **exchange** as there: `is_fixed` first and `fixed_value`
+    /// second, here through the [`SpmdHalo`] the rank was built with.
+    /// [`Self::rank_part`] answers `Some(part)` for such a system and `None`
+    /// for one from `split`, which is how [`spmd_pcg`] tells the two apart.
+    pub fn split_one(
+        gpu: &Gpu,
+        halo: &mut SpmdHalo,
+        comm: &dyn Comm,
+        m: &HostMesh,
+        dec: &Decomposition,
+        a: &HostLduMatrix,
+    ) -> Result<Self> {
+        // The refusals, in the table's order, BEFORE anything is uploaded or
+        // exchanged: a failure here is per-rank and leaves no rank waiting
+        // in a collective.
+        if comm.size() != dec.n_parts {
+            return Err(Error::Config(format!(
+                "distsolve: split_one needs one rank per part: the world has \
+                 {} ranks, the decomposition has {} parts",
+                comm.size(),
+                dec.n_parts
+            )));
+        }
+        if halo.n_ranks() != dec.n_parts {
+            return Err(Error::Config(format!(
+                "distsolve: split_one's halo plan was built for {} ranks, \
+                 the decomposition has {} parts",
+                halo.n_ranks(),
+                dec.n_parts
+            )));
+        }
+        if halo.part() != comm.rank() {
+            return Err(Error::Config(format!(
+                "distsolve: split_one's halo plan belongs to part {}, but \
+                 this Comm is rank {}",
+                halo.part(),
+                comm.rank()
+            )));
+        }
+        let p = comm.rank();
+        let part = &dec.parts[p];
+        let mesh = GpuMesh::upload(gpu, &part.mesh)?;
+        let split = dec.split_matrix(m, p, a)?;
+        let mut mat = split.upload(gpu)?;
+
+        // The two constraint arrays are the only matrix state a kernel reads
+        // at a halo index, so they are the only ones the exchange has to
+        // fill - `is_fixed` FIRST and `fixed_value` second, exactly as
+        // `split` fills them.
+        let mut is_fixed = gpu.upload(&split.is_fixed)?;
+        let mut fixed_value = gpu.upload(&split.fixed_value)?;
+        halo.label(gpu, comm, &mut is_fixed)?;
+        halo.scalar(gpu, comm, &mut fixed_value)?;
+        mat.is_fixed = is_fixed;
+        mat.fixed_value = fixed_value;
+
+        Ok(Self {
+            mesh: vec![mesh],
+            a: vec![mat],
+            n: vec![part.mesh.n_cells],
+            n_local: vec![part.n_local()],
+            n_global_cells: dec.n_global_cells,
+            part: Some(p),
+        })
+    }
+
+    /// Build ONE rank's system for a matrix ASSEMBLED ON THE PART (SPEC-LIT
+    /// §139.3, PAR-10b): part `comm.rank()` of `dec`, its mesh uploaded with
+    /// [`GpuMesh::upload_with_halo`](crate::mesh::GpuMesh::upload_with_halo),
+    /// and a zero [`GpuLduMatrix`] of that mesh for
+    /// [`Self::load_matrix`] to fill.
+    ///
+    /// [`Self::split_one`] splits a WHOLE-mesh assembly onto a rank. Here no
+    /// whole matrix exists: the flow path assembles on the part, so the shell
+    /// is built empty and the coefficients are copied in per solve. The mesh
+    /// carries its halo room because a part-assembled matrix and every field
+    /// buffer of the run are `n_cells + n_halo` long (SPEC-LIT §139.1). The
+    /// constraint arrays are filled by the exchange in `load_matrix`, not
+    /// here - there is no host copy of them to upload.
+    ///
+    /// Refused (`Error::Config`, starting `distsolve: `) when
+    /// `comm.size() != dec.n_parts`, naming both numbers, BEFORE any upload:
+    /// a failure here is per-rank and leaves no rank waiting in a collective.
+    pub fn for_rank(gpu: &Gpu, comm: &dyn Comm, dec: &Decomposition) -> Result<Self> {
+        if comm.size() != dec.n_parts {
+            return Err(Error::Config(format!(
+                "distsolve: for_rank needs one rank per part: the world has \
+                 {} ranks, the decomposition has {} parts",
+                comm.size(),
+                dec.n_parts
+            )));
+        }
+        let p = comm.rank();
+        let part = &dec.parts[p];
+        let mesh = GpuMesh::upload_with_halo(gpu, &part.mesh, part.n_halo)?;
+        let a = GpuLduMatrix::new(gpu, &mesh)?;
+        Ok(Self {
+            mesh: vec![mesh],
+            a: vec![a],
+            n: vec![part.mesh.n_cells],
+            n_local: vec![part.n_local()],
+            n_global_cells: dec.n_global_cells,
+            part: Some(p),
+        })
+    }
+
+    /// Copy a part-assembled matrix in, then fill the halo of `is_fixed`
+    /// (FIRST) and `fixed_value` (second) through `halo`, exactly as
+    /// [`Self::split_one`] fills them (SPEC-LIT §139.3, PAR-10b).
+    ///
+    /// Every cell-array copy is `0..n_cells`: the halo slots of `diag` and
+    /// `source` are never read (`lduAmul` launches over the owned rows and
+    /// `lduSetValues` reads only its own face's cells) and stay as they are.
+    /// The two constraint arrays ARE read at a halo index - at a coupled
+    /// face's neighbour - so they cross the exchange: `label` first and
+    /// `scalar` second, the order `split` and `split_one` use.
+    ///
+    /// Four refusals, in this order, all `Error::Config` starting
+    /// `distsolve: `, all BEFORE any copy or any exchange, so a rank that
+    /// refuses sends nothing: `self.part` is `None` (a system
+    /// [`Self::split`] built holds every part); `a.n_cells` differs from the
+    /// system's; `a.n_internal_faces` or `a.n_boundary_faces` differs; any
+    /// source buffer is shorter than what would be copied.
+    pub fn load_matrix(
+        &mut self,
+        gpu: &Gpu,
+        halo: &mut SpmdHalo,
+        comm: &dyn Comm,
+        a: &GpuLduMatrix,
+    ) -> Result<()> {
+        if self.part.is_none() {
+            return Err(Error::Config(
+                "distsolve: load_matrix needs the one-part system for_rank \
+                 builds; this system holds every part of one process and has \
+                 no rank's halo to fill"
+                    .to_string(),
+            ));
+        }
+        let n_cells = self.n[0];
+        let a0 = &mut self.a[0];
+        if a.n_cells != n_cells {
+            return Err(Error::Config(format!(
+                "distsolve: load_matrix's matrix has {} cells, the system \
+                 was built for {}; the matrix given must be the one \
+                 assembled on this rank's own part",
+                a.n_cells, n_cells
+            )));
+        }
+        if a.n_internal_faces != a0.n_internal_faces
+            || a.n_boundary_faces != a0.n_boundary_faces
+        {
+            return Err(Error::Config(format!(
+                "distsolve: load_matrix's matrix has {} internal and {} \
+                 boundary faces, the system was built for {} and {}; both \
+                 come from the same part's mesh and must agree",
+                a.n_internal_faces,
+                a.n_boundary_faces,
+                a0.n_internal_faces,
+                a0.n_boundary_faces
+            )));
+        }
+        let wants: [(&str, usize, usize); 8] = [
+            ("diag", a.diag.len(), n_cells),
+            ("source", a.source.len(), n_cells),
+            ("is_fixed", a.is_fixed.len(), n_cells),
+            ("fixed_value", a.fixed_value.len(), n_cells),
+            ("upper", a.upper.len(), a.n_internal_faces),
+            ("lower", a.lower.len(), a.n_internal_faces),
+            ("internal_coeffs", a.internal_coeffs.len(), a.n_boundary_faces),
+            ("boundary_coeffs", a.boundary_coeffs.len(), a.n_boundary_faces),
+        ];
+        for (name, got, need) in wants {
+            if got < need {
+                return Err(Error::Config(format!(
+                    "distsolve: load_matrix's source array {name} is {got} \
+                     long, the copy needs {need}"
+                )));
+            }
+        }
+
+        // Device-to-device on the solve's stream, the length actually
+        // carried - a zero-length face count copies nothing.
+        macro_rules! copy {
+            ($src:expr, $dst:expr, $k:expr) => {
+                if $k > 0 {
+                    gpu.stream()
+                        .memcpy_dtod(&$src.slice(0..$k), &mut $dst.slice_mut(0..$k))?;
+                }
+            };
+        }
+        copy!(a.diag, a0.diag, n_cells);
+        copy!(a.source, a0.source, n_cells);
+        copy!(a.is_fixed, a0.is_fixed, n_cells);
+        copy!(a.fixed_value, a0.fixed_value, n_cells);
+        let k = a.n_internal_faces;
+        copy!(a.upper, a0.upper, k);
+        copy!(a.lower, a0.lower, k);
+        let k = a.n_boundary_faces;
+        copy!(a.internal_coeffs, a0.internal_coeffs, k);
+        copy!(a.boundary_coeffs, a0.boundary_coeffs, k);
+
+        // The two constraint arrays are the only matrix state a kernel reads
+        // at a halo index, so they are the only ones the exchange has to
+        // fill - `is_fixed` FIRST and `fixed_value` second, exactly as
+        // `split` and `split_one` fill them.
+        halo.label(gpu, comm, &mut a0.is_fixed)?;
+        halo.scalar(gpu, comm, &mut a0.fixed_value)
+    }
+
+    /// The part this system is, when [`Self::split_one`] built it - `None`
+    /// for a system [`Self::split`] built, which holds every part.
+    pub fn rank_part(&self) -> Option<usize> {
+        self.part
     }
 
     pub fn n_parts(&self) -> usize {
@@ -288,6 +520,11 @@ pub struct DistWorkspace {
     initial_res: DevBuf<Scalar>,
     final_res: DevBuf<Scalar>,
     flag: DevBuf<Label>,
+
+    /// SPEC-LIT §118.12: the refinement's per-part state, `single` only.
+    /// `None` only while a refined solve has it out.
+    #[cfg(feature = "single")]
+    ir: Option<refine::DistIr>,
 }
 
 /// What a distributed solve did.
@@ -311,6 +548,15 @@ impl DistWorkspace {
         if np == 0 {
             return Err(Error::Config(
                 "distsolve: a system with no parts has nothing to solve".to_string(),
+            ));
+        }
+        if sys.rank_part().is_some() {
+            return Err(Error::Config(
+                "distsolve: this system is one rank's part, which \
+                 DistSystem::split_one built; a DistWorkspace spans every \
+                 part of one process, so a rank's system needs an \
+                 SpmdWorkspace instead (SPEC-LIT 138.5)"
+                    .to_string(),
             ));
         }
         Ok(Self {
@@ -345,11 +591,28 @@ impl DistWorkspace {
             initial_res: gpu.zeros(1)?,
             final_res: gpu.zeros(1)?,
             flag: gpu.zeros(1)?,
+            #[cfg(feature = "single")]
+            ir: Some(refine::DistIr::new(gpu, &sys.n, &sys.n_local)?),
         })
     }
 
     pub fn n_parts(&self) -> usize {
         self.n.len()
+    }
+
+    /// `[P]` the double solution of the last REFINED solve on this
+    /// workspace, each part's `n_local` long - the owned cells are the
+    /// answer (SPEC-LIT §118.12). `single` only.
+    #[cfg(feature = "single")]
+    pub fn refined_solution(&self) -> Option<&[DevBuf<f64>]> {
+        self.ir.as_ref().map(|i| i.x_hi())
+    }
+
+    /// Outer refinement steps of the LAST solve; 0 for a solve that was
+    /// not refined (SPEC-LIT §118.12). `single` only.
+    #[cfg(feature = "single")]
+    pub fn ir_outer_steps(&self) -> usize {
+        self.ir.as_ref().map(|i| i.outer_steps).unwrap_or(0)
     }
 
     pub fn reduce_mode(&self) -> DistReduce {
@@ -396,6 +659,10 @@ impl DistWorkspace {
             // Block-local: the factorisation drops the couplings across every
             // cut, and it is coloured in local order.
             Preconditioner::Dic | Preconditioner::Dilu => false,
+            // The distributed cycle aggregates block-locally, so every cut
+            // is another hierarchy (SPEC-LIT §141.11); in one process it is
+            // refused anyway, below.
+            Preconditioner::Gamg => false,
         };
         reduction_ok && precon_ok
     }
@@ -420,6 +687,17 @@ impl DistWorkspace {
                     )
                 }
             }
+            Preconditioner::Gamg => crate::io::contract::unsupported(
+                "solvers/<var>/preconditioner",
+                requested.name(),
+                &["none", "diagonal"],
+                "diagonal (Jacobi): the distributed GAMG cycle (AMG-07b, \
+                 SPEC-LIT 141.11) runs one part per rank, on the SPMD path - \
+                 amg::DistGamg attached with SpmdWorkspace::set_gamg, then \
+                 spmd_pcg or spmd_solve; this in-process workspace holds \
+                 every part and has no cycle",
+                Preconditioner::Diagonal,
+            ),
         }
     }
 
@@ -630,7 +908,8 @@ fn dist_build_preconditioner(
     Ok(())
 }
 
-/// `w.b[p] = a[p].source`, and the SPEC-LIT §8.4 normalisation factor.
+/// `w.b[p] = a[p].source` (or `rhs[p]`, the refinement's correction system,
+/// SPEC-LIT §118.12), and the SPEC-LIT §8.4 normalisation factor.
 ///
 /// Leaves `A psi` in `w.apsi`, exactly as `solver::device_norm_factor` does,
 /// so the residual is one subtraction and not a second product.
@@ -640,6 +919,7 @@ fn dist_build_preconditioner(
 /// would make the normalisation - and therefore the convergence test, and
 /// therefore the iteration count - a function of the cut. SPEC-LIT §72.7
 /// listed this as open; it is closed here.
+#[allow(clippy::too_many_arguments)]
 fn dist_norm_factor(
     gpu: &Gpu,
     sol: &SolverKernels,
@@ -647,11 +927,13 @@ fn dist_norm_factor(
     sys: &DistSystem,
     w: &mut DistWorkspace,
     psi: &mut [DevBuf<Scalar>],
+    rhs: Option<&[DevBuf<Scalar>]>,
     perf: &mut DistPerformance,
 ) -> Result<()> {
     for p in 0..sys.n_parts() {
         let DistWorkspace { b, n, .. } = &mut *w;
-        solver::vec_copy(gpu, sol, &mut b[p], &sys.a[p].source, n[p])?;
+        let src = rhs.map_or(&sys.a[p].source, |r| &r[p]);
+        solver::vec_copy(gpu, sol, &mut b[p], src, n[p])?;
     }
 
     {
@@ -802,10 +1084,40 @@ fn dist_finish(
 /// dropping a cut's off-diagonal couplings while keeping the diagonal share
 /// they contributed leaves each block strictly more diagonally dominant than
 /// the matrix it came from.
+///
+/// Under `single` the solve is refined (SPEC-LIT §118.12): this float
+/// method solves only the scaled correction, inside §118.4's double loop. A
+/// `fixed_iters` solve and an empty system are not refined.
 pub fn dist_pcg(
     gpu: &Gpu,
     sol: &SolverKernels,
     psi: &mut [DevBuf<Scalar>],
+    sys: &DistSystem,
+    ex: &mut HaloExchange,
+    w: &mut DistWorkspace,
+    ctrl: &SolverControls,
+) -> Result<DistPerformance> {
+    #[cfg(feature = "single")]
+    {
+        if let Some(i) = w.ir.as_mut() {
+            i.outer_steps = 0;
+        }
+        if refine::refines(ctrl, w.n_global_cells) {
+            w.check(sys, psi, "dist_pcg")?;
+            return refine::dist_refined(gpu, sol, psi, sys, ex, w, ctrl, refine::Method::Pcg);
+        }
+    }
+    dist_pcg_float(gpu, sol, psi, None, sys, ex, w, ctrl)
+}
+
+/// [`dist_pcg`]'s float body against `rhs` (`None`: every part's
+/// `a[p].source`, the f64 path) - unchanged otherwise.
+#[allow(clippy::too_many_arguments)]
+fn dist_pcg_float(
+    gpu: &Gpu,
+    sol: &SolverKernels,
+    psi: &mut [DevBuf<Scalar>],
+    rhs: Option<&[DevBuf<Scalar>]>,
     sys: &DistSystem,
     ex: &mut HaloExchange,
     w: &mut DistWorkspace,
@@ -824,7 +1136,7 @@ pub fn dist_pcg(
     let precon = w.effective_preconditioner(ctrl.precon)?;
     dist_build_preconditioner(gpu, sol, sys, w, precon)?;
 
-    dist_norm_factor(gpu, sol, ex, sys, w, psi, &mut perf)?;
+    dist_norm_factor(gpu, sol, ex, sys, w, psi, rhs, &mut perf)?;
     dist_residual(gpu, sol, w)?;
     {
         let DistWorkspace { red, r, initial_res, reduce, .. } = &mut *w;
@@ -1044,10 +1356,39 @@ pub fn dist_pcg(
 /// reason not to fuse is that the exact accumulator's dot needs two passes
 /// anyway (the anchor must precede the limbs, SPEC-LIT §72.3), so a fused
 /// exact `dot2` would save nothing on the path that matters.
+///
+/// Under `single` the solve is refined (SPEC-LIT §118.12), as
+/// [`dist_pcg`] is.
 pub fn dist_pbicgstab(
     gpu: &Gpu,
     sol: &SolverKernels,
     psi: &mut [DevBuf<Scalar>],
+    sys: &DistSystem,
+    ex: &mut HaloExchange,
+    w: &mut DistWorkspace,
+    ctrl: &SolverControls,
+) -> Result<DistPerformance> {
+    #[cfg(feature = "single")]
+    {
+        if let Some(i) = w.ir.as_mut() {
+            i.outer_steps = 0;
+        }
+        if refine::refines(ctrl, w.n_global_cells) {
+            w.check(sys, psi, "dist_pbicgstab")?;
+            return refine::dist_refined(gpu, sol, psi, sys, ex, w, ctrl, refine::Method::Pbicgstab);
+        }
+    }
+    dist_pbicgstab_float(gpu, sol, psi, None, sys, ex, w, ctrl)
+}
+
+/// [`dist_pbicgstab`]'s float body against `rhs` (`None`: every part's
+/// `a[p].source`, the f64 path) - unchanged otherwise.
+#[allow(clippy::too_many_arguments)]
+fn dist_pbicgstab_float(
+    gpu: &Gpu,
+    sol: &SolverKernels,
+    psi: &mut [DevBuf<Scalar>],
+    rhs: Option<&[DevBuf<Scalar>]>,
     sys: &DistSystem,
     ex: &mut HaloExchange,
     w: &mut DistWorkspace,
@@ -1066,7 +1407,7 @@ pub fn dist_pbicgstab(
     let precon = w.effective_preconditioner(ctrl.precon)?;
     dist_build_preconditioner(gpu, sol, sys, w, precon)?;
 
-    dist_norm_factor(gpu, sol, ex, sys, w, psi, &mut perf)?;
+    dist_norm_factor(gpu, sol, ex, sys, w, psi, rhs, &mut perf)?;
     dist_residual(gpu, sol, w)?;
     {
         let DistWorkspace { r0, r, n, .. } = &mut *w;
@@ -1330,10 +1671,10 @@ pub fn dist_pbicgstab(
 
 /// Solve `A psi = b` over a decomposition with the method the case asked for.
 ///
-/// `GAMG` is refused by name for the same reason [`solver::solve`] refuses
-/// it - it is a pressure *backend* here, not a Krylov method - and the
-/// distributed path adds a second reason: no pressure backend has a decomposed
-/// form at all (SPEC-LIT §73.7).
+/// `GAMG` is refused by name in this in-process form, with `PBiCGStab` as
+/// the alternative: the distributed GAMG cycle (SPEC-LIT §141.11) runs one
+/// part per rank, so it is [`spmd_solve`]'s, with a cycle attached by
+/// [`SpmdWorkspace::set_gamg`].
 pub fn dist_solve(
     gpu: &Gpu,
     sol: &SolverKernels,
@@ -1351,8 +1692,9 @@ pub fn dist_solve(
                 "solvers/<var>/solver",
                 "GAMG",
                 &["PCG", "PBiCGStab"],
-                "PBiCGStab: GAMG is a pressure backend in this code, not a \
-                 Krylov method, and no pressure backend has a decomposed form",
+                "PBiCGStab: the distributed GAMG cycle runs one part per rank \
+                 (spmd_solve with SpmdWorkspace::set_gamg, SPEC-LIT 141.11); \
+                 this in-process solve holds every part and has no cycle",
                 (),
             )?;
             dist_pbicgstab(gpu, sol, psi, sys, ex, w, ctrl)

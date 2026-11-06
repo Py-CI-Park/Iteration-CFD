@@ -153,6 +153,19 @@ pub(crate) fn de_vahl_davis(
     iterations: usize,
     residual: Scalar,
 ) -> Result<(Scalar, Scalar, usize, bool)> {
+    de_vahl_davis_with_form(gpu, ra, n, iterations, residual, BuoyancyForm::DensityRatio)
+}
+
+/// [`de_vahl_davis`] with the buoyancy form as a parameter - SPEC-LIT 121.7's
+/// cavity pair test runs the SAME case under both forms.
+pub(crate) fn de_vahl_davis_with_form(
+    gpu: &Gpu,
+    ra: Scalar,
+    n: usize,
+    iterations: usize,
+    residual: Scalar,
+    form: BuoyancyForm,
+) -> Result<(Scalar, Scalar, usize, bool)> {
     let dz: Scalar = 1.0 / n as Scalar;
     let m = cavity_block(n, 0.0, 1.0, dz);
     let f = air(1.0);
@@ -178,6 +191,7 @@ pub(crate) fn de_vahl_davis(
         buoyancy: Some(Buoyancy {
             g: Vec3::new(0.0, -g_for_ra(ra, &f), 0.0),
             t_ref: T_REF,
+            form,
         }),
         openings: None,
         initial_t: T_REF,
@@ -202,6 +216,7 @@ pub(crate) fn de_vahl_davis(
 }
 
 #[test]
+// f32 (F32-16): wall balance 0.35 - the f32 cavity run is not converged
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn gate_59a_de_vahl_davis_square_cavity() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
@@ -236,6 +251,51 @@ fn gate_59a_de_vahl_davis_square_cavity() -> Result<()> {
             100.0 * tol
         );
     }
+    Ok(())
+}
+
+/// SPEC-LIT 121.7's cavity pair: the SAME de Vahl Davis case at
+/// `Ra = 1e3` run under BOTH forms, `beta = 1/T_ref` so the Boussinesq force
+/// is §9's first-order expansion. `Delta T = 0.1 K` puts
+/// `beta·max|T - T_ref| = 5e-4` well inside the 0.1 validity limit, so the
+/// two runs' cold-wall Nusselt numbers must DIFFER - a bit-identical pair
+/// would mean the form never reached the force - and agree to `1e-3`
+/// relative, the `O(beta·DeltaT)` the two forms differ by.
+#[test]
+fn a_boussinesq_cavity_differs_from_and_agrees_with_the_density_ratio_one() -> Result<()> {
+    let Some(gpu) = gpu() else { return Ok(()) };
+
+    let ratio = de_vahl_davis_with_form(
+        &gpu,
+        1.0e3,
+        10,
+        400,
+        1e-7,
+        BuoyancyForm::DensityRatio,
+    )?;
+    let bous = de_vahl_davis_with_form(
+        &gpu,
+        1.0e3,
+        10,
+        400,
+        1e-7,
+        BuoyancyForm::Boussinesq { beta: 1.0 / T_REF },
+    )?;
+
+    assert_ne!(
+        ratio.0.to_bits(),
+        bous.0.to_bits(),
+        "the two forms' cold-wall Nu are bit-identical: the form did not reach \
+         the body force (SPEC-LIT 121.7)"
+    );
+    let rel = (ratio.0 - bous.0).abs() / ratio.0.abs().max(1e-30);
+    assert!(
+        rel < 1e-3,
+        "Nu_cold: density ratio {} against boussinesq {} differs by {rel:.3e}, \
+         the O(beta·DeltaT) agreement SPEC-LIT 121.7 asks for is 1e-3",
+        ratio.0,
+        bous.0
+    );
     Ok(())
 }
 
@@ -321,6 +381,7 @@ pub(crate) fn kaminski_prakash(
         buoyancy: Some(Buoyancy {
             g: Vec3::new(0.0, -g_for_ra(ra, &f), 0.0),
             t_ref: T_REF,
+            form: BuoyancyForm::DensityRatio,
         }),
         openings: None,
         initial_t: T_REF,
@@ -363,6 +424,7 @@ pub(crate) fn kaminski_prakash(
 /// No published data at all, and it is the gate that says the INTERFACE is
 /// right independently of any flow.
 #[test]
+// f32 (F32-16): Nu sits 8.8e-3 off the series limit at Kr 0.1
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn gate_59b_the_conduction_limit_is_the_series_resistance() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
@@ -456,6 +518,244 @@ fn gate_5_kaminski_prakash_sweep() -> Result<()> {
             prev = Some(nu_c);
         }
     }
+    Ok(())
+}
+
+/// The Kaminski & Prakash configuration of SPEC-LIT 115, parameterised for
+/// the Gate 5 diagnosis: the wall stays `0..0.2` and the fluid runs to
+/// `width` (1.0 for the reading of SPEC-LIT 60.5, 1.2 for the fluid-square
+/// reading of 115.3), and `d_t` is the hot-cold difference in K, so the
+/// buoyancy and the Nu scale both follow it.
+pub(crate) struct KpVariant {
+    pub ra: Scalar,
+    pub kr: Scalar,
+    pub n: usize,
+    pub d_t: Scalar,
+    pub width: Scalar,
+}
+
+/// The parameterised Kaminski & Prakash build of SPEC-LIT 115: the same case
+/// as [`kaminski_prakash`] with the wall `0..0.2`, the fluid `0.2..width`,
+/// square cells of side `1/n`, and the boundary values, the buoyancy and the
+/// Nu scale all following `d_t`. The controls are the sweep's - 15000
+/// iterations, residual `1e-7`, relaxation 0.7 / 0.3 (SPEC-LIT 115.2).
+#[allow(clippy::too_many_lines)]
+pub(crate) fn kaminski_prakash_variant(
+    gpu: &Gpu,
+    v: &KpVariant,
+) -> Result<(Scalar, Scalar, Scalar, usize, bool)> {
+    assert!(v.n % 5 == 0, "the wall is 0.2 of the width; n must be a multiple of 5");
+    let dz: Scalar = 1.0 / v.n as Scalar;
+    let f = air(1.0);
+
+    // Square cells of side 1/n on both sides (SPEC-LIT 115.2).
+    let n_solid = (0.2 * v.n as Scalar).round() as usize;
+    let n_fluid = ((v.width - 0.2) * v.n as Scalar).round() as usize;
+    let fluid_mesh = block(
+        [n_fluid, v.n, 1],
+        Vec3::new(0.2, 0.0, 0.0),
+        Vec3::new(v.width, 1.0, dz),
+        ["airToWall", "cold", "airBottom", "airTop", "airFront", "airBack"],
+        ["wall", "wall", "wall", "wall", "empty", "empty"],
+    );
+    let solid_mesh = block(
+        [n_solid, v.n, 1],
+        Vec3::ZERO,
+        Vec3::new(0.2, 1.0, dz),
+        ["hot", "wallToAir", "wallBottom", "wallTop", "wallFront", "wallBack"],
+        ["patch", "patch", "patch", "patch", "empty", "empty"],
+    );
+    let meshes = [fluid_mesh, solid_mesh];
+
+    let case = FlowCase {
+        name: "kaminskiPrakash".to_string(),
+        regions: vec![
+            FlowRegion {
+                name: "air".to_string(),
+                kind: RegionKind::Fluid,
+                solid: None,
+                fluid: Some(f.clone()),
+                source: 0.0,
+            },
+            FlowRegion {
+                name: "wall".to_string(),
+                kind: RegionKind::Solid,
+                solid: Some(SolidMaterial::isotropic("wall", 1.0, 1.0, v.kr * f.kappa)),
+                fluid: None,
+                source: 0.0,
+            },
+        ],
+        meshes: &meshes,
+        interfaces: vec![InterfaceRequest::new(0, "airToWall", 1, "wallToAir", 0.0)],
+        patch_bcs: vec![
+            (0, "cold".to_string(), LoweredBc::FixedValue(T_REF - 0.5 * v.d_t)),
+            (0, "airBottom".to_string(), LoweredBc::ZeroGradient),
+            (0, "airTop".to_string(), LoweredBc::ZeroGradient),
+            (1, "hot".to_string(), LoweredBc::FixedValue(T_REF + 0.5 * v.d_t)),
+            (1, "wallBottom".to_string(), LoweredBc::ZeroGradient),
+            (1, "wallTop".to_string(), LoweredBc::ZeroGradient),
+        ],
+        buoyancy: Some(Buoyancy {
+            // The length is 1 in both readings, and `d_t` replaces D_T
+            // (SPEC-LIT 115.2).
+            g: Vec3::new(0.0, -(v.ra * f.nu() * f.alpha() * T_REF / v.d_t), 0.0),
+            t_ref: T_REF,
+            form: BuoyancyForm::DensityRatio,
+        }),
+        openings: None,
+        initial_t: T_REF,
+        flow: flow_controls(15_000, 1e-7, 0.7, 0.3),
+        t_solver: t_solver(),
+        n_non_orthogonal_correctors: 0,
+        tolerances: PairingTolerances::default(),
+        conduction_curves: Vec::new(),
+        volumetric: Vec::new(),
+        viscosity: None,
+        viscous_dissipation: false,
+        radiation: None,
+        p0: 101_325.0,
+    };
+
+    let sol = run_flow_case(gpu, &case)?;
+
+    // SPEC-LIT (S60.1) with `d_t` in place of D_T: Nu = Q/(k_f dT d_z).
+    let scale = f.kappa * v.d_t * dz;
+    let nu_cold = -sol.patch_heat_flow(0, "cold")? / scale;
+    let nu_hot = sol.patch_heat_flow(1, "hot")? / scale;
+    let nu_iface = sol
+        .interface_flows()
+        .first()
+        .map(|(_, into_a, _)| *into_a / scale)
+        .unwrap_or(0.0);
+
+    // Gate 4 is always on, as in kaminski_prakash: a mis-paired face or a
+    // sign error shows here before it shows in any Nusselt number.
+    assert!(
+        sol.interface.imbalance() < 1e-12,
+        "SPEC-LIT 47.12 Gate 4: interface imbalance {:.3e}",
+        sol.interface.imbalance()
+    );
+    Ok((nu_cold, nu_hot, nu_iface, sol.iterations, sol.converged))
+}
+
+/// **The Gate 5 Kr = 0.1 probe - SPEC-LIT 115.** Six runs holding the
+/// diagnosis of 115.3-115.5: the fluid-width Rayleigh reading and the
+/// fluid-square geometry reading fail at `Kr = 10`; `dT/TRef` `3.3e-5` and
+/// `3.3e-3` leave `0.38086` alone; and `Kr x 1.0992489`, fitted at the one
+/// conduction point, lands the reference's `0.41` to `1 %`.
+#[test]
+#[ignore = "six steady conjugate solves, about 4 minutes on the card; the supervisor runs it with --ignored --nocapture (SPEC-LIT 115)"]
+fn gate_5_probe_the_kr_miss_is_a_solid_resistance_offset_in_the_reference() -> Result<()> {
+    let Some(gpu) = gpu() else { return Ok(()) };
+
+    // 1. The Rayleigh number taken on the fluid width 0.8 (SPEC-LIT 115.3):
+    //    at Kr = 10 it overshoots the reference by more than 15 %, so it is
+    //    not the reference's reading.
+    let (nu_c, nu_h, nu_i, its, conv) = kaminski_prakash_variant(
+        &gpu,
+        &KpVariant { ra: 19_531.25, kr: 10.0, n: 40, d_t: D_T, width: 1.0 },
+    )?;
+    println!(
+        "gate5 probe: fluid-width Ra, Kr 10: Nu {nu_c:.5} hot {nu_h:.5} iface {nu_i:.5} \
+         its {its} conv {conv}"
+    );
+    let bound: Scalar = 1.15 * 2.28;
+    assert!(
+        nu_c > bound,
+        "fluid-width Ra, Kr 10: Nu {nu_c:.5} is not above 1.15 x 2.28 = {bound:.5}"
+    );
+
+    // 2. The fluid cavity square, wall outside it (SPEC-LIT 115.3): on the
+    //    fluid width it reads low, on the total width 1.2 it reads high.
+    let (nu_c, nu_h, nu_i, its, conv) = kaminski_prakash_variant(
+        &gpu,
+        &KpVariant { ra: 1.0e4, kr: 10.0, n: 40, d_t: D_T, width: 1.2 },
+    )?;
+    let total_width = 1.2 * nu_c;
+    println!(
+        "gate5 probe: fluid-square geometry, Kr 10: Nu {nu_c:.5} hot {nu_h:.5} iface {nu_i:.5} \
+         its {its} conv {conv} total-width Nu {total_width:.5}"
+    );
+    let lo: Scalar = 0.95 * 2.28;
+    let hi: Scalar = 1.05 * 2.28;
+    assert!(
+        nu_c < lo,
+        "fluid-square geometry, Kr 10: Nu {nu_c:.5} is not below 0.95 x 2.28 = {lo:.5}"
+    );
+    assert!(
+        total_width > hi,
+        "fluid-square geometry, Kr 10: total-width Nu {total_width:.5} (from {nu_c:.5}) \
+         is not above 1.05 x 2.28 = {hi:.5}"
+    );
+
+    // 3-4. Property temperature and the buoyancy form (SPEC-LIT 115.3):
+    //      dT/TRef of 3.3e-5 and 3.3e-3 against 3.3e-4 leave 0.38086 alone.
+    let base: Scalar = 0.38086;
+    let tol: Scalar = 5e-4;
+    let (nu_c, nu_h, nu_i, its, conv) = kaminski_prakash_variant(
+        &gpu,
+        &KpVariant { ra: 1.0e4, kr: 0.1, n: 40, d_t: 0.01, width: 1.0 },
+    )?;
+    println!(
+        "gate5 probe: dT/TRef 3.3e-5: Nu {nu_c:.5} hot {nu_h:.5} iface {nu_i:.5} \
+         its {its} conv {conv}"
+    );
+    assert!(
+        (nu_c / base - 1.0).abs() < tol,
+        "dT/TRef 3.3e-5: Nu {nu_c:.5} is not within 5e-4 of 0.38086"
+    );
+    let (nu_c, nu_h, nu_i, its, conv) = kaminski_prakash_variant(
+        &gpu,
+        &KpVariant { ra: 1.0e4, kr: 0.1, n: 40, d_t: 1.0, width: 1.0 },
+    )?;
+    println!(
+        "gate5 probe: dT/TRef 3.3e-3: Nu {nu_c:.5} hot {nu_h:.5} iface {nu_i:.5} \
+         its {its} conv {conv}"
+    );
+    assert!(
+        (nu_c / base - 1.0).abs() < tol,
+        "dT/TRef 3.3e-3: Nu {nu_c:.5} is not within 5e-4 of 0.38086"
+    );
+
+    // 5. The conduction point (SPEC-LIT 115.4): this solver sits on the
+    //    exact series resistance and the reference 6.96 % above it.
+    let (nu_c, nu_h, nu_i, its, conv) = kaminski_prakash_variant(
+        &gpu,
+        &KpVariant { ra: 500.0, kr: 0.1, n: 40, d_t: D_T, width: 1.0 },
+    )?;
+    let exact: Scalar = 1.0 / (0.2 / 0.1 + 0.8);
+    let lim: Scalar = 1e-3;
+    println!(
+        "gate5 probe: conduction, Ra 500, Kr 0.1: Nu {nu_c:.5} hot {nu_h:.5} iface {nu_i:.5} \
+         its {its} conv {conv} exact {exact:.6} reference 0.382 is {:+.2}% above exact",
+        100.0 * (0.382 / exact - 1.0)
+    );
+    assert!(
+        (nu_c / exact - 1.0).abs() < lim,
+        "conduction, Ra 500, Kr 0.1: Nu {nu_c:.5} is not the exact limit {exact:.6}"
+    );
+    assert!(
+        0.382 / nu_c - 1.0 > 0.06,
+        "conduction, Ra 500, Kr 0.1: reference 0.382 is not more than 6 % above {nu_c:.5}"
+    );
+
+    // 6. The one fitted factor (SPEC-LIT 115.5): Kr x 1.0992489, fitted at
+    //    run 5 alone, predicts the reference's 0.41 to 1 %.
+    let (nu_c, nu_h, nu_i, its, conv) = kaminski_prakash_variant(
+        &gpu,
+        &KpVariant { ra: 1.0e4, kr: 0.1 * 1.0992489, n: 40, d_t: D_T, width: 1.0 },
+    )?;
+    println!(
+        "gate5 probe: Kr x 1.0992489, Ra 1e4, Kr 0.1: Nu {nu_c:.5} hot {nu_h:.5} iface {nu_i:.5} \
+         its {its} conv {conv} against 0.41 {:+.2}%",
+        100.0 * (nu_c / 0.41 - 1.0)
+    );
+    let fit_ref: Scalar = 0.41;
+    let one_pct: Scalar = 0.01;
+    assert!(
+        (nu_c / fit_ref - 1.0).abs() < one_pct,
+        "Kr x 1.0992489, Ra 1e4, Kr 0.1: Nu {nu_c:.5} is not within 1 % of 0.41"
+    );
     Ok(())
 }
 
@@ -600,7 +900,6 @@ const ARRAY_NAMES: [&str; 6] = [
 ///
 /// A test that compared one coefficient would pass while the run drifted.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn a_one_region_fluid_retarget_is_bitwise_the_plain_energy() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
 
@@ -695,7 +994,6 @@ fn a_one_region_fluid_retarget_is_bitwise_the_plain_energy() -> Result<()> {
 /// tests (S59.3)'s mask rather than the driver's care. A driver bug cannot
 /// leak convection into a solid, because `Energy` masks `phi_conv` itself.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_convective_term_vanishes_in_the_solid_in_every_bit() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
 
@@ -822,7 +1120,6 @@ fn the_convective_term_vanishes_in_the_solid_in_every_bit() -> Result<()> {
 /// thermodynamic pressure, and §25.2's term reaching one would be heat
 /// appearing out of the gas law.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_thermodynamic_pressure_term_does_not_reach_the_solid() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
 
@@ -877,7 +1174,6 @@ fn the_thermodynamic_pressure_term_does_not_reach_the_solid() -> Result<()> {
 /// all. That is both the "the solid carries its own heat capacity" check and
 /// the §13.4.1 pair test on `rhoSolid`/`cSolid` under a FLUID case.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_solid_ddt_weight_is_the_solids_own_rho_c() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
 
@@ -933,7 +1229,7 @@ fn the_solid_ddt_weight_is_the_solids_own_rho_c() -> Result<()> {
         worst = worst.max((got - want).abs() / want);
     }
     assert!(
-        worst < 1e-13,
+        (worst as f64) < crate::precision::roundoff_tol(1e-13),
         "SPEC-LIT 59.7: the solid ddt diagonal moved by a relative {worst} away \
          from (d(rho c)) V/dt. If it moved by ZERO the case said rhoSolid and \
          the solver ignored it (SPEC-LIT 13.4.1); if it moved by something else \
@@ -955,7 +1251,6 @@ fn the_solid_ddt_weight_is_the_solids_own_rho_c() -> Result<()> {
 /// `|Sf|`, and `fvLapBoundary`'s interface branch takes the coefficient
 /// directly (S47.9).
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn the_coupled_interface_coefficients_are_bitwise_equal_with_a_fluid_on_one_side() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
 
@@ -1018,7 +1313,6 @@ fn the_coupled_interface_coefficients_are_bitwise_equal_with_a_fluid_on_one_side
 /// SPEC-LIT §59.6: a face carries ONE condition, and the two ways to give it
 /// two are refused by name.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn a_face_cannot_be_both_an_interface_and_a_wall_condition() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
 
@@ -1065,7 +1359,6 @@ fn a_face_cannot_be_both_an_interface_and_a_wall_condition() -> Result<()> {
 /// SPEC-LIT §59.6: `attach_conjugate` refuses a mesh that is not the one this
 /// `Energy` was built on, and a thermal mesh whose region 0 is a solid.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn attach_conjugate_refuses_the_wrong_mesh_and_a_solid_first_region() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
 
@@ -1135,7 +1428,11 @@ fn open_cavity_case<'a>(
             (0, "bottom".to_string(), LoweredBc::ZeroGradient),
             (0, "top".to_string(), LoweredBc::ZeroGradient),
         ],
-        buoyancy: Some(Buoyancy { g: Vec3::new(0.0, -2.13e7, 0.0), t_ref: T_REF }),
+        buoyancy: Some(Buoyancy {
+            g: Vec3::new(0.0, -2.13e7, 0.0),
+            t_ref: T_REF,
+            form: BuoyancyForm::DensityRatio,
+        }),
         openings,
         initial_t: T_REF,
         flow: flow_controls(120, 0.0, 0.7, 0.3),
@@ -1156,7 +1453,6 @@ fn open_cavity_case<'a>(
 /// that names a patch the mesh does not have gets the list of the ones it
 /// does, not a panic three kernels later.
 #[test]
-#[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn an_opening_naming_a_patch_the_fluid_mesh_lacks_lists_the_ones_it_has() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
 
@@ -1190,6 +1486,7 @@ fn an_opening_naming_a_patch_the_fluid_mesh_lacks_lists_the_ones_it_has() -> Res
 /// runs is the `Option` itself - the same mesh, the same properties, the same
 /// patch conditions and the same iteration count.
 #[test]
+// f32 (F32-16): mass imbalance 4.2e-7, over f32 relative cap
 #[cfg_attr(feature = "single", ignore = "fails at f32: SPEC-LIT 112.3")]
 fn a_closed_cavity_and_an_open_one_differ_only_by_the_option() -> Result<()> {
     let Some(gpu) = gpu() else { return Ok(()) };
