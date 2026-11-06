@@ -1,0 +1,184 @@
+{
+  "candidate": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02",
+  "points_exact": true,
+  "wall_vertex_id_multiset_exact": true,
+  "cells": 1251054,
+  "positive_volumes": true,
+  "volume_method": "reconstructed from saved faces with shared tested fan geometry, no intermediate volume file",
+  "jacobian_nonpositive": 0,
+  "jacobian_min_m3": 7.104946599020976e-17,
+  "max_nonorth_deg": 89.99267520771238,
+  "bad_faces_by_type": {
+    "tet_tet": 196693,
+    "tet_prism": 48607,
+    "prism_prism": 214088
+  },
+  "internal_faces_by_type": {
+    "tet_tet": 364611,
+    "tet_prism": 129522,
+    "prism_prism": 2460918
+  },
+  "bad_prism_owner_by_band": [
+    26763,
+    26766,
+    26761,
+    26760,
+    26762,
+    26766,
+    26764,
+    26746
+  ],
+  "worst_faces": [
+    {
+      "face_id": 352795,
+      "angle_deg": 89.99267520771238,
+      "owner": 135241,
+      "neighbour": 211367,
+      "xyz_m": [
+        31.091656006585954,
+        10.118218407872797,
+        6.814747128384295
+      ]
+    },
+    {
+      "face_id": 352796,
+      "angle_deg": 89.99264595130558,
+      "owner": 135242,
+      "neighbour": 135397,
+      "xyz_m": [
+        31.066698935446443,
+        10.031456449091745,
+        6.80662307384344
+      ]
+    },
+    {
+      "face_id": 352805,
+      "angle_deg": 89.9926171446331,
+      "owner": 135245,
+      "neighbour": 135249,
+      "xyz_m": [
+        31.050259233342558,
+        9.97430518456864,
+        6.801271678679094
+      ]
+    },
+    {
+      "face_id": 233083,
+      "angle_deg": 89.99255928271435,
+      "owner": 81120,
+      "neighbour": 81486,
+      "xyz_m": [
+        31.025897890569393,
+        9.889613969203575,
+        6.793341705067294
+      ]
+    },
+    {
+      "face_id": 229750,
+      "angle_deg": 89.99250230859408,
+      "owner": 79636,
+      "neighbour": 80937,
+      "xyz_m": [
+        30.993018513748364,
+        9.775312067990372,
+        6.782639075882145
+      ]
+    },
+    {
+      "face_id": 46127,
+      "angle_deg": 89.9924442209333,
+      "owner": 12082,
+      "neighbour": 80988,
+      "xyz_m": [
+        30.960139107657096,
+        9.66101017605265,
+        6.7719361214429155
+      ]
+    },
+    {
+      "face_id": 119449,
+      "angle_deg": 89.99238511510077,
+      "owner": 35084,
+      "neighbour": 69056,
+      "xyz_m": [
+        30.927260366707326,
+        9.546708276647085,
+        6.761233158170305
+      ]
+    },
+    {
+      "face_id": 209085,
+      "angle_deg": 89.99230243487946,
+      "owner": 70688,
+      "neighbour": 84302,
+      "xyz_m": [
+        30.894382348885088,
+        9.432406566278965,
+        6.750467752150389
+      ]
+    },
+    {
+      "face_id": 469765,
+      "angle_deg": 89.99206362703495,
+      "owner": 195591,
+      "neighbour": 204612,
+      "xyz_m": [
+        30.82862423681766,
+        9.203802780995774,
+        6.7281947672101765
+      ]
+    },
+    {
+      "face_id": 16273,
+      "angle_deg": 89.99019965007993,
+      "owner": 4162,
+      "neighbour": 35367,
+      "xyz_m": [
+        23.207489222765272,
+        -1.1465101532349202,
+        2.5309046798550185
+      ]
+    },
+    {
+      "face_id": 126693,
+      "angle_deg": 89.98850005794849,
+      "owner": 37945,
+      "neighbour": 1212912,
+      "xyz_m": [
+        23.359590480638513,
+        -6.573335563128457,
+        3.56158559175539
+      ]
+    },
+    {
+      "face_id": 16274,
+      "angle_deg": 89.986774671642,
+      "owner": 4162,
+      "neighbour": 35373,
+      "xyz_m": [
+        23.28972855181887,
+        -1.220950762850732,
+        2.574473728144437
+      ]
+    }
+  ],
+  "longdouble_mantissa_bits": 52,
+  "max_relative_closure_extended": 1.527622327730356e-09,
+  "max_absolute_closure_m2": 9.094947356542455e-13,
+  "first_layer_min_m": 3.179227529392351e-08,
+  "first_layer_median_m": 0.0001905251500903338,
+  "closure_gate": false,
+  "nonorth_gate": false,
+  "global_cell_overlap": "NOT_MEASURED",
+  "solved_y_plus": "NOT_MEASURED",
+  "status": "FIX_FIRST",
+  "gpu_compute": false,
+  "solver_executed": false,
+  "polyMesh_sha256": {
+    "boundary": "241a6eb92c849b856b0d13aac9efa00b6244f78ea47d54eb56851b7cf0612e1f",
+    "faces": "9aab2184d5e4533b1196b63673d56f65d802c92e7b40ccbc22bf6f2680470160",
+    "neighbour": "f754800a7d2fafabcf7a2adb5ca250cb94e3272f06cae0449b6de90bb7443cb7",
+    "owner": "336cb176bf8b3ad8d7191ff0fc485c5f7bc78a7285f1e8d6cdc3658c3f314b3e",
+    "points": "b918fdb63661572ab11b1dcb47a6b93192b329ab8e6ae7730e3a1e8fa25b8a5c"
+  }
+}

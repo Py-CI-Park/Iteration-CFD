@@ -1,0 +1,30 @@
+{
+  "source_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "triangles": 60216,
+  "vertices": 30110,
+  "watertight": true,
+  "winding": true,
+  "kernel_status": "Error.NoError",
+  "edge_min_m": 0.0013112857394921146,
+  "edge_p01_m": 0.04764018293803331,
+  "triangle_mean_ratio_min": 0.023231274798422796,
+  "triangle_mean_ratio_p01": 0.16608577233829505,
+  "sampled_proximity": [
+    {
+      "direction": "R3_to_candidate",
+      "samples": 6000,
+      "p95_m": 0.0029542600448084623,
+      "max_m": 0.07431850728352274
+    },
+    {
+      "direction": "candidate_to_R3",
+      "samples": 6000,
+      "p95_m": 1.312491781924056e-15,
+      "max_m": 5.598857150542855e-14
+    }
+  ],
+  "surface_operation_tolerance_m": 0.004,
+  "seconds": 31.666978199966252,
+  "gpu_compute": false,
+  "geometry_status": "R3_APPROXIMATION_NOT_BYTE_IDENTICAL; measured sample bound not full Hausdorff"
+}

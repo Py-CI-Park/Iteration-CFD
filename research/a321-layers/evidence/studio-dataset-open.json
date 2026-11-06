@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "status": 200,
+  "statusText": "OK",
+  "url": "http://127.0.0.1:5183/api/datasets/open",
+  "headers": {
+    "access-control-allow-origin": "http://127.0.0.1:5183",
+    "cache-control": "no-store",
+    "connection": "close",
+    "content-length": "104",
+    "content-type": "application/json; charset=utf-8",
+    "date": "Fri, 06 Nov 2026 12:51:04 GMT",
+    "vary": "Origin"
+  },
+  "body": "{\"datasetId\":\"f09bb0ff4261e4ba81ee1bbb091273de8e6b0544\",\"status\":\"loading\",\"manifest\":null,\"error\":null}"
+}

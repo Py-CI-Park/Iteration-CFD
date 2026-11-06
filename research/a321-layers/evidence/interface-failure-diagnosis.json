@@ -1,0 +1,80 @@
+[
+  {
+    "candidate": "quality-exterior-02",
+    "input_outer_vertices": 64763,
+    "output_vertices": 120346,
+    "exact_outer_matches": 64761,
+    "missing_exact_coordinates": 2,
+    "max_nearest_distance_m": 1.878900456427762e-05,
+    "missing_samples": [
+      {
+        "input_id": 45401,
+        "input_xyz_m": [
+          24.49783087289756,
+          -16.290240817184,
+          4.48263252869005
+        ],
+        "nearest_xyz_m": [
+          24.497848205420855,
+          -16.290242894269664,
+          4.4826255791545355
+        ],
+        "nearest_distance_m": 1.878900456427762e-05
+      },
+      {
+        "input_id": 52585,
+        "input_xyz_m": [
+          42.46052937291096,
+          6.225197455848324,
+          5.440466100541022
+        ],
+        "nearest_xyz_m": [
+          42.460539151484355,
+          6.225199072602573,
+          5.440458718947217
+        ],
+        "nearest_distance_m": 1.2358087190533569e-05
+      }
+    ],
+    "interpretation": "exact coordinate membership failed; nearest distance is not a tracked vertex displacement"
+  },
+  {
+    "candidate": "quality-exterior-03",
+    "input_outer_vertices": 64763,
+    "output_vertices": 120346,
+    "exact_outer_matches": 64761,
+    "missing_exact_coordinates": 2,
+    "max_nearest_distance_m": 1.878900456427762e-05,
+    "missing_samples": [
+      {
+        "input_id": 45401,
+        "input_xyz_m": [
+          24.49783087289756,
+          -16.290240817184,
+          4.48263252869005
+        ],
+        "nearest_xyz_m": [
+          24.497848205420855,
+          -16.290242894269664,
+          4.4826255791545355
+        ],
+        "nearest_distance_m": 1.878900456427762e-05
+      },
+      {
+        "input_id": 52585,
+        "input_xyz_m": [
+          42.46052937291096,
+          6.225197455848324,
+          5.440466100541022
+        ],
+        "nearest_xyz_m": [
+          42.460539151484355,
+          6.225199072602573,
+          5.440458718947217
+        ],
+        "nearest_distance_m": 1.2358087190533569e-05
+      }
+    ],
+    "interpretation": "exact coordinate membership failed; nearest distance is not a tracked vertex displacement"
+  }
+]

@@ -1,0 +1,44 @@
+{
+  "surface": "exact R3 indexed coordinates",
+  "surface_vertices": 64763,
+  "surface_triangles": 129522,
+  "prism_cells": 1036176,
+  "layer_count": 8,
+  "min_normal_projection": 0.07683795467052058,
+  "attempts": [
+    {
+      "attempt": 0,
+      "bad_prisms": 174,
+      "min_jacobian_m3": -2.5581341049591035e-08
+    },
+    {
+      "attempt": 1,
+      "bad_prisms": 68,
+      "min_jacobian_m3": -1.4811169792579184e-09
+    },
+    {
+      "attempt": 2,
+      "bad_prisms": 21,
+      "min_jacobian_m3": -8.366722083043042e-11
+    },
+    {
+      "attempt": 3,
+      "bad_prisms": 6,
+      "min_jacobian_m3": -3.0036190791300857e-12
+    },
+    {
+      "attempt": 4,
+      "bad_prisms": 0,
+      "min_jacobian_m3": 7.104946599020976e-17
+    }
+  ],
+  "nonpositive_prism_samples": 0,
+  "nominal_first_m": 0.0005,
+  "achieved_first_min_m": 3.179227529392351e-08,
+  "achieved_first_median_m": 0.0001905251500903338,
+  "achieved_stack_median_m": 0.0031434906078731447,
+  "seconds": 32.99982329993509,
+  "gpu_compute": false,
+  "solver_run": false,
+  "status": "PRISM_SAMPLES_PASS_ONLY"
+}

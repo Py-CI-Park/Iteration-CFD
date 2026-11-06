@@ -1,0 +1,73 @@
+{
+  "platform": "Windows-11-10.0.26300-SP0",
+  "packaging_python": "3.13.5",
+  "precision_note": "Windows NumPy longdouble mantissa measured as 52; not extended precision",
+  "environment_note": "observed uv script caches, including dependency-header revisions; not per-process historical timestamps",
+  "script_environments": [
+    {
+      "cached_environment": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\build-layers-211eb22fa71db3ea",
+      "packages": {
+        "networkx": "3.7",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "trimesh": "5.2.0"
+      }
+    },
+    {
+      "cached_environment": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\remesh-surface-d12616b4ed2bca9b",
+      "packages": {
+        "manifold3d": "3.5.4",
+        "msvc_runtime": "14.51.36231",
+        "numpy": "2.5.4",
+        "pymeshlab": "2025.7.post1",
+        "rtree": "1.4.1",
+        "scipy": "1.18.1",
+        "trimesh": "5.2.0"
+      }
+    },
+    {
+      "cached_environment": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\exterior-tets-4b7072f1b9a0d9cd",
+      "packages": {
+        "meshpy": "2026.1.1",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "trimesh": "5.2.0"
+      }
+    },
+    {
+      "cached_environment": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\convert-oriented-8bd461c9bf03c329",
+      "packages": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "trimesh": "5.2.0"
+      }
+    },
+    {
+      "cached_environment": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\audit-saved-0a88d576dbc99a5c",
+      "packages": {
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "trimesh": "5.2.0"
+      }
+    },
+    {
+      "cached_environment": "C:\\Users\\parkc\\AppData\\Local\\uv\\cache\\environments-v2\\plot-section-e268b8dd469f94b8",
+      "packages": {
+        "contourpy": "1.4.0",
+        "cycler": "0.12.1",
+        "fonttools": "4.68.0",
+        "kiwisolver": "1.5.1",
+        "matplotlib": "3.11.2",
+        "networkx": "3.7",
+        "numpy": "2.5.4",
+        "packaging": "26.3",
+        "pillow": "13.0.0",
+        "pyparsing": "3.3.3",
+        "python-dateutil": "4.0.0",
+        "scipy": "1.18.1",
+        "trimesh": "5.2.0",
+        "tzdata": "2026.6"
+      }
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "nPoints": 583254,
+  "nCells": 1251054,
+  "nFaces": 3085341,
+  "nInternalFaces": 2955051,
+  "orientation": "cell topology; tetrahedra made positive before face generation",
+  "prisms": 1036176,
+  "tets": 214878,
+  "readback_exact": true,
+  "patches": [
+    [
+      "inlet",
+      "patch",
+      128
+    ],
+    [
+      "outlet",
+      "patch",
+      128
+    ],
+    [
+      "yMin",
+      "patch",
+      128
+    ],
+    [
+      "yMax",
+      "patch",
+      128
+    ],
+    [
+      "zMin",
+      "patch",
+      128
+    ],
+    [
+      "zMax",
+      "patch",
+      128
+    ],
+    [
+      "wall_aircraft",
+      "wall",
+      129522
+    ]
+  ],
+  "min_volume_m3": 2.6594527642081094e-16,
+  "nonpositive_cells": 0,
+  "max_nonorth_deg": 89.99267520771241,
+  "faces_nonorth_gt70": 459388,
+  "max_relative_closure": 4.0103043991965083e-10,
+  "fluid_components": 1,
+  "total_volume_m3": 2339495.139175644,
+  "status": "FIX_FIRST",
+  "ofgpu_gate": "NOT_RUN",
+  "solver_executed": false,
+  "gpu_compute": false
+}

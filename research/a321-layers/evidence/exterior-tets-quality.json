@@ -1,0 +1,8 @@
+{
+  "gpu_compute": false,
+  "solver_executed": false,
+  "options": "pq2a100YQ",
+  "status": "EXTERIOR_BUILD_FAILED",
+  "error": "INTERFACE_MOVED",
+  "seconds": 66.41902929998469
+}

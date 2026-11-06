@@ -1,0 +1,64 @@
+{
+  "scope": "research implementation and CPU mesh diagnostics; not engineering acceptance",
+  "branch": "codex/a321-aero-shell-20261105",
+  "base_head": "ab176ae27e5368c58900162ef4435e0c0a7957c0",
+  "checks": [
+    {
+      "command": "uv run --with numpy --with scipy --with trimesh --with meshpy --with pytest python -m pytest research/a321-layers -q",
+      "exit_code": 0,
+      "parent_output": "19 passed in 26.55s",
+      "independent_QA_output": "19 passed in 27.10s"
+    },
+    {
+      "command": "uvx ruff check research/a321-layers",
+      "exit_code": 0,
+      "output": "All checks passed!"
+    },
+    {
+      "command": "uvx ruff format --check research/a321-layers",
+      "exit_code": 0,
+      "output": "23 files already formatted"
+    },
+    {
+      "command": "uv run research/a321-layers/convert_oriented.py --verify-only",
+      "exit_code": 0,
+      "positive_finite_jacobians": true,
+      "opposite_internal_winding": true,
+      "interface_membership_exact": true,
+      "wall_membership_exact": true,
+      "quality": "FIX_FIRST"
+    },
+    {
+      "command": "uv run research/a321-layers/audit_saved.py",
+      "exit_code": 0,
+      "receipt": "independent-quality-v2.json",
+      "interpretation": "diagnostic completed, mesh quality failed"
+    },
+    {
+      "command": "uv run research/a321-layers/audit_incidence.py",
+      "exit_code": 0,
+      "receipt": "polyMesh-readback-contract.json",
+      "all_face_cell_incidence_exact": true
+    }
+  ],
+  "browser": {
+    "engine": "Ego Lite",
+    "task_space": 6,
+    "geometry_screenshot": "studio-outer.png",
+    "polyMesh_screenshot": "studio-polyMesh.png",
+    "polyMesh_dom": "studio-polyMesh-dom.json",
+    "polyMesh_cells": 1251054,
+    "report_images_loaded": true,
+    "gpu_and_AI_header": "DEMO indicators, not runtime solver evidence"
+  },
+  "engineering_status": "FIX_FIRST",
+  "max_nonorth_deg": 89.99267520771241,
+  "max_relative_closure_primary": 4.0103043991965083e-10,
+  "max_relative_closure_alternate": 1.527622327730356e-9,
+  "global_cell_overlap": "NOT_MEASURED",
+  "solved_y_plus": "NOT_MEASURED",
+  "ofgpu_mesh_gate": "NOT_RUN",
+  "gpu_compute": false,
+  "aircraft_solver_run": false,
+  "third_party_AI_API": "NOT_USED"
+}

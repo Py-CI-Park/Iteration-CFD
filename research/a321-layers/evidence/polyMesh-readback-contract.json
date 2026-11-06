@@ -1,0 +1,54 @@
+{
+  "all_face_cell_incidence_exact": true,
+  "boundary_names_types_ranges_checked": true,
+  "boundary_contiguous_complete": true,
+  "outer_patch_coordinate_planes_checked": true,
+  "aircraft_wall_face_membership_exact": true,
+  "expected_patch_counts_checked": true,
+  "patches": [
+    {
+      "name": "inlet",
+      "type": "patch",
+      "count": 128,
+      "start": 2955051
+    },
+    {
+      "name": "outlet",
+      "type": "patch",
+      "count": 128,
+      "start": 2955179
+    },
+    {
+      "name": "yMin",
+      "type": "patch",
+      "count": 128,
+      "start": 2955307
+    },
+    {
+      "name": "yMax",
+      "type": "patch",
+      "count": 128,
+      "start": 2955435
+    },
+    {
+      "name": "zMin",
+      "type": "patch",
+      "count": 128,
+      "start": 2955563
+    },
+    {
+      "name": "zMax",
+      "type": "patch",
+      "count": 128,
+      "start": 2955691
+    },
+    {
+      "name": "wall_aircraft",
+      "type": "wall",
+      "count": 129522,
+      "start": 2955819
+    }
+  ],
+  "mesh_quality_status": "FIX_FIRST",
+  "solver_run": false
+}

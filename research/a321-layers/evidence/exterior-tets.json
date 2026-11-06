@@ -1,0 +1,10 @@
+{
+  "gpu_compute": false,
+  "solver_executed": false,
+  "options": "pYQ",
+  "status": "BUILT_QUALITY_PENDING",
+  "tets": 214878,
+  "prisms": 1036176,
+  "points": 583254,
+  "seconds": 8.585141999996267
+}

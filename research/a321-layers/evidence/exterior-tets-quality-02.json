@@ -1,0 +1,9 @@
+{
+  "gpu_compute": false,
+  "solver_executed": false,
+  "options": "pq2a100YQ",
+  "initial_interface_sequence_exact": false,
+  "status": "EXTERIOR_BUILD_FAILED",
+  "error": "INTERFACE_COORDINATE_CHANGE max_distance_m=1.8789004564277618e-05",
+  "seconds": 58.90707029995974
+}

@@ -1,0 +1,2 @@
+const task=await taskSpace(6);const p=task.page('p1');await p.keyboard.press('Escape');
+console.log(await p.evaluate(()=>({canvas:[...document.querySelectorAll('canvas')].map(n=>({width:n.width,height:n.height,rect:{x:n.getBoundingClientRect().x,y:n.getBoundingClientRect().y,width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height}})),tabs:[...document.querySelectorAll('[role=tab]')].map(n=>n.textContent)})));

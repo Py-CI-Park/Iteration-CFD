@@ -1,0 +1,97 @@
+{
+  "artifact_policy": "generated meshes remain local, ignored by git; regenerate from committed scripts",
+  "files": [
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-01\\layers.npz",
+      "bytes": 22780837,
+      "sha256": "cd0b3e25f4314eefda0667d57553c89362801e814ebb5024a8b362f800f7194e"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-01\\outer.stl",
+      "bytes": 6476184,
+      "sha256": "9fc922ba1b90c1b23d5a020bfeb3d12cdd23a8cc118a7828eca07671848a8559"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\case\\constant\\polyMesh\\boundary",
+      "bytes": 1774,
+      "sha256": "241a6eb92c849b856b0d13aac9efa00b6244f78ea47d54eb56851b7cf0612e1f"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\case\\constant\\polyMesh\\faces",
+      "bytes": 83386535,
+      "sha256": "9aab2184d5e4533b1196b63673d56f65d802c92e7b40ccbc22bf6f2680470160"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\case\\constant\\polyMesh\\neighbour",
+      "bytes": 21320721,
+      "sha256": "f754800a7d2fafabcf7a2adb5ca250cb94e3272f06cae0449b6de90bb7443cb7"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\case\\constant\\polyMesh\\owner",
+      "bytes": 21774953,
+      "sha256": "336cb176bf8b3ad8d7191ff0fc485c5f7bc78a7285f1e8d6cdc3658c3f314b3e"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\case\\constant\\polyMesh\\points",
+      "bytes": 34711586,
+      "sha256": "b918fdb63661572ab11b1dcb47a6b93192b329ab8e6ae7730e3a1e8fa25b8a5c"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\case\\system\\README_MESH_ONLY.txt",
+      "bytes": 250,
+      "sha256": "44065e6dbf368ffed67a46fbcb8c816b0753ef7d6dc508f255081f28ed43368e"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\face-data.npz",
+      "bytes": 200140974,
+      "sha256": "f3b7abbe4b5627b39e38144f35eb4460031dd88b9d5845950d69956647aa9dca"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\hybrid.npz",
+      "bytes": 23025182,
+      "sha256": "3316cc2ce919e562b695d44362973b3d444a6811bca7ed653644b917f75e7e99"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\layers.npz",
+      "bytes": 22780837,
+      "sha256": "cd0b3e25f4314eefda0667d57553c89362801e814ebb5024a8b362f800f7194e"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\constrained-exact-02\\outer.stl",
+      "bytes": 6476184,
+      "sha256": "9fc922ba1b90c1b23d5a020bfeb3d12cdd23a8cc118a7828eca07671848a8559"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\isotropic-01\\surface.npz",
+      "bytes": 942363,
+      "sha256": "a3d227b6c995a0069faf135219e401f0dcb69b3f6690c7c976d05e23b2a1245d"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\isotropic-01\\surface.stl",
+      "bytes": 3010884,
+      "sha256": "f22eb733e0e9a2365747c4e0eecb5ba30e864f5b8ee21c750ba2ab5e517517fd"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\quality-exterior-02\\tetgen-raw.npz",
+      "bytes": 8828720,
+      "sha256": "ba1e81591def6b6e6362c86e72d4b5cb748b8811aa5f617bc16f4bdead54da77"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-layers\\artifacts\\quality-exterior-03\\tetgen-raw.npz",
+      "bytes": 8828720,
+      "sha256": "ba1e81591def6b6e6362c86e72d4b5cb748b8811aa5f617bc16f4bdead54da77"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\models\\A321_AIRFRAME_SHELL_R3.blend",
+      "bytes": 2699114,
+      "sha256": "bbeff0e0c85ebaf76f7b81f5b98a9f283b4be1e13cad004dbb81705d535f7b97"
+    },
+    {
+      "path": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\models\\A321_AIRFRAME_SHELL_R3.stl",
+      "bytes": 6476184,
+      "sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745"
+    }
+  ],
+  "gpu_compute": false,
+  "solver_run": false
+}
