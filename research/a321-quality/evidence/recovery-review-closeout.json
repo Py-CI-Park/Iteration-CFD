@@ -1,0 +1,22 @@
+{
+  "procedure": "review-work: five independent read-only review lanes, followed by focused fix checks",
+  "base_head": "3a67a103408e5fba2a4e123565b57e8e9bba0348",
+  "lanes": [
+    {"lane":"goal","reviewer":"Linnaeus","initial":"FIX_FIRST: native mean parser selected requested row","recheck":"SCOPED_PASS after final-table fix; five focused tests passed"},
+    {"lane":"code","reviewer":"Sartre","initial":"FIX_FIRST: native mean parser selected requested row","recheck":"SCOPED_PASS after helper and receipt correction"},
+    {"lane":"custody","reviewer":"Kepler","recheck":"SCOPED_PASS; current and preserved manifests matched; browser hard stop respected"},
+    {"lane":"QA","reviewer":"Curie","recheck":"SCOPED_PASS; eight focused tests, source binds and 193 artifacts verified"},
+    {"lane":"context","reviewer":"Lagrange","recheck":"SCOPED_PASS; single-input trial changes and physical limits verified"}
+  ],
+  "prior_turn_findings_closed": [
+    "measure_wall_centers now requires exact candidate and mesh seal identity",
+    "runner captures absolute self path before cd; relative/absolute inspection match"
+  ],
+  "parent_tests_after_all_fixes": "41 passed in 11.60s",
+  "final_static_report_QA": "PASS: 16 images, 56 local links, unique anchors and three preserved detail sections",
+  "live_report_layout_QA": "PENDING_USER_CONTROL: Ego hard stop received after successful restored Studio colour captures; no retry or alternate Chrome route",
+  "scope_limits": "reviewers did not regenerate meshes, rerun proximity measurements, access live gateway, execute GPU/CFD or push",
+  "engineering_status": "FIX_FIRST_GPU_HOLD",
+  "requested_flow_plan": "30 m/s, reference angle 0 degrees, preparation only",
+  "new_CFD_or_GPU_runs_after_reboot": false
+}

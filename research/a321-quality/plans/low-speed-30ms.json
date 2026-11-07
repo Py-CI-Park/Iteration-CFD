@@ -1,0 +1,59 @@
+{
+  "status": "PREPARATION_ONLY_NOT_EXECUTABLE_SOLVER_CASE",
+  "updated_date_KST": "2026-11-08",
+  "user_selection": {
+    "speed_m_s": 30.0,
+    "angle_of_attack_reference_deg": 0.0,
+    "purpose": "first low-speed external-flow learning test"
+  },
+  "coordinates": {
+    "nose_to_tail_axis": "+X",
+    "proposed_freestream_m_s": [30.0, 0.0, 0.0],
+    "proposed_drag_direction": [1.0, 0.0, 0.0],
+    "proposed_lift_direction": [0.0, 0.0, 1.0],
+    "angle_note": "zero relative to the frozen model axes; not an asserted zero-lift angle"
+  },
+  "planning_assumptions_not_measured_air": {
+    "density_kg_m3": 1.225,
+    "kinematic_viscosity_m2_s": 0.000015,
+    "temperature_K": null,
+    "altitude_m": null,
+    "atmosphere_note": "constant-property preliminary planning values; no atmospheric or wind-tunnel condition measurement claimed"
+  },
+  "derived_planning_values": {
+    "dynamic_pressure_Pa": 551.25,
+    "formula_dynamic_pressure": "0.5 * assumed_density * speed^2",
+    "Reynolds_number_per_meter": 2000000.0,
+    "formula_Reynolds": "speed * length / assumed_kinematic_viscosity",
+    "coefficient_reference_length_m": null,
+    "coefficient_reference_area_m2": null
+  },
+  "research_geometry": {
+    "source_R3_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+    "next_conditioning_candidate": "snappy-06",
+    "engine_pylon_landinggear": "omitted in the research shell",
+    "mesh_source": "external CPU mesh generation, independent of freestream choice"
+  },
+  "proposed_case_contract_pending_engine_verification": {
+    "xMin": "inlet with U=(30,0,0); final turbulence and pressure contract pending",
+    "xMax": "outlet; final gauge pressure and backflow contract pending",
+    "yMin_yMax_zMin_zMax": "farfield or slip treatment, not moving ground; verify engine support before choosing",
+    "aircraft": "stationary no-slip wall; turbulence wall treatment not yet selected",
+    "turbulence_model": null,
+    "turbulence_inlet_intensity_and_length": null,
+    "wall_treatment_and_yplus_target": null,
+    "pressure_reference_and_force_integration": "must be bound before any coefficient is reported",
+    "iteration_limit_and_abort_conditions": "to be chosen after CPU mesh acceptance and binary compatibility"
+  },
+  "unclosed_gates": [
+    "three extended mesh checks still fail",
+    "remaining unlayered area and feature fidelity tolerance",
+    "actual engine CPU mesh ingestion",
+    "wall treatment and force-reference definitions",
+    "case memory budget and exact solver CUDA/SM89 compatibility"
+  ],
+  "solver_input_fields_created": false,
+  "CFD_solver_executed": false,
+  "GPU_solver_executed": false,
+  "pressure_velocity_force_results_available": false
+}

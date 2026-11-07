@@ -1,0 +1,290 @@
+{
+  "cut": {
+    "ok": true,
+    "state": {
+      "backend": "webgpu",
+      "datasetId": "dfa84a1739b129053277afac9f54c7030192033b",
+      "datasetName": "snappy-04-owner-diagnostic",
+      "source": "polymesh",
+      "geometryFidelity": "exact",
+      "cellCount": 935120,
+      "bounds": {
+        "min": [
+          -45.00000000000001,
+          -65.00000000000001,
+          -45.00000000000001
+        ],
+        "max": [
+          135.00000000000003,
+          65.00000000000001,
+          55.00000000000002
+        ]
+      },
+      "field": "diagnostic_owner_layer_min",
+      "component": null,
+      "range": [
+        0,
+        8
+      ],
+      "warp": null,
+      "colormap": "turbo",
+      "representation": "surface",
+      "time": {
+        "index": 0,
+        "value": 0,
+        "count": 1
+      },
+      "layers": [
+        {
+          "id": "layer-diagnostic-cut-y10",
+          "type": "slice",
+          "summary": "slice y=10 (cut, 6237 tris)"
+        }
+      ],
+      "camera": {
+        "position": [
+          25,
+          12.999999999999996,
+          14.000000000000002
+        ],
+        "target": [
+          22.8,
+          7.999999999999998,
+          3.9
+        ],
+        "projection": "perspective"
+      },
+      "patches": {
+        "visible": [
+          "aircraft"
+        ],
+        "hidden": [
+          "inlet",
+          "outlet",
+          "yMin",
+          "yMax",
+          "zMin",
+          "zMax"
+        ]
+      },
+      "loading": false,
+      "message": "polyMesh is not a structured lattice: slices and planes are exact cuts of its cells, iso-surfaces are contoured and streamlines traced on them; glyphs are unavailable"
+    },
+    "error": null,
+    "image": null
+  },
+  "rep": {
+    "ok": true,
+    "state": {
+      "backend": "webgpu",
+      "datasetId": "dfa84a1739b129053277afac9f54c7030192033b",
+      "datasetName": "snappy-04-owner-diagnostic",
+      "source": "polymesh",
+      "geometryFidelity": "exact",
+      "cellCount": 935120,
+      "bounds": {
+        "min": [
+          -45.00000000000001,
+          -65.00000000000001,
+          -45.00000000000001
+        ],
+        "max": [
+          135.00000000000003,
+          65.00000000000001,
+          55.00000000000002
+        ]
+      },
+      "field": "diagnostic_owner_layer_min",
+      "component": null,
+      "range": [
+        0,
+        8
+      ],
+      "warp": null,
+      "colormap": "turbo",
+      "representation": "wireframe",
+      "time": {
+        "index": 0,
+        "value": 0,
+        "count": 1
+      },
+      "layers": [
+        {
+          "id": "layer-diagnostic-cut-y10",
+          "type": "slice",
+          "summary": "slice y=10 (cut, 6237 tris)"
+        }
+      ],
+      "camera": {
+        "position": [
+          25,
+          12.999999999999996,
+          14.000000000000002
+        ],
+        "target": [
+          22.8,
+          7.999999999999998,
+          3.9
+        ],
+        "projection": "perspective"
+      },
+      "patches": {
+        "visible": [],
+        "hidden": [
+          "inlet",
+          "outlet",
+          "yMin",
+          "yMax",
+          "zMin",
+          "zMax",
+          "aircraft"
+        ]
+      },
+      "loading": false,
+      "message": "polyMesh is not a structured lattice: slices and planes are exact cuts of its cells, iso-surfaces are contoured and streamlines traced on them; glyphs are unavailable"
+    },
+    "error": null,
+    "image": null
+  },
+  "camera": {
+    "ok": true,
+    "state": {
+      "backend": "webgpu",
+      "datasetId": "dfa84a1739b129053277afac9f54c7030192033b",
+      "datasetName": "snappy-04-owner-diagnostic",
+      "source": "polymesh",
+      "geometryFidelity": "exact",
+      "cellCount": 935120,
+      "bounds": {
+        "min": [
+          -45.00000000000001,
+          -65.00000000000001,
+          -45.00000000000001
+        ],
+        "max": [
+          135.00000000000003,
+          65.00000000000001,
+          55.00000000000002
+        ]
+      },
+      "field": "diagnostic_owner_layer_min",
+      "component": null,
+      "range": [
+        0,
+        8
+      ],
+      "warp": null,
+      "colormap": "turbo",
+      "representation": "wireframe",
+      "time": {
+        "index": 0,
+        "value": 0,
+        "count": 1
+      },
+      "layers": [
+        {
+          "id": "layer-diagnostic-cut-y10",
+          "type": "slice",
+          "summary": "slice y=10 (cut, 6237 tris)"
+        }
+      ],
+      "camera": {
+        "position": [
+          22.700000000000003,
+          19.999999999994998,
+          3.90001
+        ],
+        "target": [
+          22.700000000000003,
+          10,
+          3.9
+        ],
+        "projection": "perspective"
+      },
+      "patches": {
+        "visible": [],
+        "hidden": [
+          "inlet",
+          "outlet",
+          "yMin",
+          "yMax",
+          "zMin",
+          "zMax",
+          "aircraft"
+        ]
+      },
+      "loading": false,
+      "message": "polyMesh is not a structured lattice: slices and planes are exact cuts of its cells, iso-surfaces are contoured and streamlines traced on them; glyphs are unavailable"
+    },
+    "error": null,
+    "image": null
+  },
+  "state": {
+    "backend": "webgpu",
+    "datasetId": "dfa84a1739b129053277afac9f54c7030192033b",
+    "datasetName": "snappy-04-owner-diagnostic",
+    "source": "polymesh",
+    "geometryFidelity": "exact",
+    "cellCount": 935120,
+    "bounds": {
+      "min": [
+        -45.00000000000001,
+        -65.00000000000001,
+        -45.00000000000001
+      ],
+      "max": [
+        135.00000000000003,
+        65.00000000000001,
+        55.00000000000002
+      ]
+    },
+    "field": "diagnostic_owner_layer_min",
+    "component": null,
+    "range": [
+      0,
+      8
+    ],
+    "warp": null,
+    "colormap": "turbo",
+    "representation": "wireframe",
+    "time": {
+      "index": 0,
+      "value": 0,
+      "count": 1
+    },
+    "layers": [
+      {
+        "id": "layer-diagnostic-cut-y10",
+        "type": "slice",
+        "summary": "slice y=10 (cut, 6237 tris)"
+      }
+    ],
+    "camera": {
+      "position": [
+        22.700000000000003,
+        19.999999999994998,
+        3.90001
+      ],
+      "target": [
+        22.700000000000003,
+        10,
+        3.9
+      ],
+      "projection": "perspective"
+    },
+    "patches": {
+      "visible": [],
+      "hidden": [
+        "inlet",
+        "outlet",
+        "yMin",
+        "yMax",
+        "zMin",
+        "zMax",
+        "aircraft"
+      ]
+    },
+    "loading": false,
+    "message": "polyMesh is not a structured lattice: slices and planes are exact cuts of its cells, iso-surfaces are contoured and streamlines traced on them; glyphs are unavailable"
+  }
+}

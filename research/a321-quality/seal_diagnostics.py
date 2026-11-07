@@ -20,7 +20,13 @@ ROOT = Path(__file__).resolve().parent
 
 def main(candidate: str = "snappy-03") -> None:
     """Capture diagnostic dependencies after complete external geometry checks."""
-    if candidate not in {"snappy-03", "snappy-04", "snappy-05"}:
+    if candidate not in {
+        "snappy-03",
+        "snappy-04",
+        "snappy-05",
+        "snappy-06",
+        "snappy-07",
+    }:
         raise RuntimeError("INVALID_CANDIDATE")
     case = ROOT / "artifacts" / candidate
     log = case / "log.checkMesh-extended"

@@ -1,0 +1,101 @@
+{
+  "trials": [
+    {
+      "candidate": "snappy-04",
+      "cells": 935120,
+      "nonorth_deg": 66.202013263564,
+      "relative_closure": 8.891919257206641e-15,
+      "nonpositive_volumes": 0,
+      "area_coverage_percent": 42.59782141102342,
+      "full_8_layer_faces": 380,
+      "wall_faces": 57556,
+      "zero_layer_faces": 19948,
+      "failure_counts_det_concave_weight": [
+        28086,
+        38769,
+        3114
+      ],
+      "mean_layers_native_rounded": 1.81,
+      "standard": "PASS",
+      "extended": "FAIL",
+      "native_illegal": 0,
+      "named_CPU_gate": "NAMED_CPU_GATES_PASS",
+      "p95_R3_to_candidate_m": 0.004244471728546321,
+      "max_sampled_R3_to_candidate_m": 0.046308655586335096,
+      "runner_copy_captured": false,
+      "layered_center_distance_m": {
+        "count": 37608,
+        "min": 0.0004935514981281005,
+        "median": 0.0022638337189981924,
+        "p95": 0.0057903976212771106,
+        "max": 0.007569649095306478
+      }
+    },
+    {
+      "candidate": "snappy-06",
+      "cells": 1011805,
+      "nonorth_deg": 65.4371700319106,
+      "relative_closure": 5.519066688129522e-15,
+      "nonpositive_volumes": 0,
+      "area_coverage_percent": 92.76204804019433,
+      "full_8_layer_faces": 2897,
+      "wall_faces": 57556,
+      "zero_layer_faces": 3663,
+      "failure_counts_det_concave_weight": [
+        2964,
+        44911,
+        176
+      ],
+      "mean_layers_native_rounded": 3.14,
+      "standard": "PASS",
+      "extended": "FAIL",
+      "native_illegal": 0,
+      "named_CPU_gate": "NAMED_CPU_GATES_PASS",
+      "p95_R3_to_candidate_m": 0.00424447172854628,
+      "max_sampled_R3_to_candidate_m": 0.04630865558633525,
+      "runner_copy_captured": true,
+      "layered_center_distance_m": {
+        "count": 53893,
+        "min": 0.0012280603957814827,
+        "median": 0.007704676078610684,
+        "p95": 0.02318466010165611,
+        "max": 0.0316462875232271
+      }
+    },
+    {
+      "candidate": "snappy-07",
+      "cells": 1260388,
+      "nonorth_deg": 66.20148309522648,
+      "relative_closure": 1.1177219917208272e-14,
+      "nonpositive_volumes": 0,
+      "area_coverage_percent": 83.01560798263775,
+      "full_8_layer_faces": 11138,
+      "wall_faces": 86436,
+      "zero_layer_faces": 14545,
+      "failure_counts_det_concave_weight": [
+        146407,
+        56414,
+        11419
+      ],
+      "mean_layers_native_rounded": 3.16,
+      "standard": "PASS",
+      "extended": "FAIL",
+      "native_illegal": 0,
+      "named_CPU_gate": "NAMED_CPU_GATES_PASS",
+      "p95_R3_to_candidate_m": 0.0015723661950687966,
+      "max_sampled_R3_to_candidate_m": 0.046308834942945236,
+      "runner_copy_captured": true
+    }
+  ],
+  "research_candidate": "snappy-06",
+  "reason": "92.76% layer-area coverage and fewer determinant/weight failures with named CPU gates retained; concavity still fails",
+  "not": "not first-cell-height, y+ or physical wall-treatment acceptance",
+  "engineering_status": "FIX_FIRST_GPU_HOLD",
+  "flow_solver_run": false,
+  "physical_test_target": {
+    "speed_m_s": 30,
+    "angle_reference_deg": 0,
+    "source": "user selection"
+  },
+  "recovery": "Saved candidates and hashes verified after computer shutdown; no new generation to recreate completed results"
+}

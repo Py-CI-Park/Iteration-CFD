@@ -1,0 +1,78 @@
+{
+  "date_KST": "2026-11-08",
+  "base_head": "3a67a103408e5fba2a4e123565b57e8e9bba0348",
+  "branch": "codex/a321-aero-shell-20261105",
+  "power_off_recovery": {
+    "mesh_generation_already_finished": ["snappy-06", "snappy-07"],
+    "mesh_generation_repeated_after_reboot": false,
+    "source_R3_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+    "source_and_preserved_candidates": "hashes verified; not reset, regenerated, deleted or overwritten",
+    "UI": "research Studio restarted on 5185/API8815 in demo/mock; local report restarted on 8776",
+    "restart_helper": "start-research.ps1; does not launch mesh generators or solvers",
+    "historical_space15_not_restored": true,
+    "new_recovery_space": 10
+  },
+  "selected_flow_target": {
+    "source": "user reply",
+    "speed_m_s": 30,
+    "reference_angle_deg": 0,
+    "plan": "plans/low-speed-30ms.json",
+    "runnable_solver_case": false,
+    "physical_results": false
+  },
+  "new_results_preserved": {
+    "snappy06_cells": 1011805,
+    "snappy06_nonorth_deg": 65.4371700319106,
+    "snappy06_relative_closure": 5.519066688129522e-15,
+    "snappy06_covered_area_percent": 92.76204804019433,
+    "snappy06_extended_status": "FAIL: determinant, concave cells, interpolation weight",
+    "snappy07_cells": 1260388,
+    "snappy07_extended_status": "FAIL: same three categories",
+    "engineering_status": "FIX_FIRST_GPU_HOLD"
+  },
+  "fixes": {
+    "stale_seal": "both owner diagnostic and wall-center distance verify candidate and reconstructed mesh identity",
+    "relative_runner": "absolute self path resolved before cd; relative and absolute --inspect outputs matched; bash -n passed",
+    "mean_layer_parser": {
+      "prior_bug": "first requested aircraft row returned 8 as achieved average",
+      "fix": "select final overall thickness table",
+      "red_phase": "5 failed against former first-row parser",
+      "green_phase": "5 passed including saved native logs",
+      "means_04_06_07": [1.81, 3.14, 3.16],
+      "coverage_and_geometry_audits_affected": false
+    }
+  },
+  "tests": {
+    "command": "uv run --with numpy --with scipy --with trimesh --with meshpy --with matplotlib --with typer --with pydantic --with pytest pytest research/a321-quality -q",
+    "exit_code": 0,
+    "output": "41 passed in 11.60s",
+    "lint": "All checks passed",
+    "format": "54 files already formatted",
+    "independent_recovery_QA_before_mean_fix": "8 focused tests passed, full suite not independently repeated"
+  },
+  "saved_bytes_manifest": {
+    "file": "conditioning-artifact-manifest.json",
+    "entries": 193,
+    "independent_review_size_hash_mismatches": 0,
+    "seals": "post-generation snapshots, not invented launch-time freezes"
+  },
+  "browser_evidence": {
+    "file": "studio-recovery-20261108.json",
+    "displayed_source_case": "snappy-06-owner-diagnostic",
+    "volume_cells": 1011805,
+    "field": "diagnostic_owner_layer_min",
+    "range": [0, 8],
+    "field_meaning": "minimum native face layer count per wall-adjacent owner; all 57556 source faces match, zero ambiguity for this candidate",
+    "solver_solution": false
+  },
+  "gpu_memory_test_repeated_after_reboot": false,
+  "CUDA_kernel_run": false,
+  "CFD_solver_run": false,
+  "GPU_solver_run": false,
+  "live_AI_API_or_OpenCodex_run": false,
+  "final_reviews": "all five scoped lanes passed; review-closeout receipt preserves exact execution boundaries",
+  "final_static_report_QA": {"images": 16, "local_links": 56, "status": "PASS_STATIC_ONLY"},
+  "final_live_report_QA": "PENDING_USER_CONTROL: Ego hard stop after successful Studio colour captures; async continue question pending; browser not retried",
+  "restart_helper_checked_on_running_servers": true,
+  "restart_check_did_not_replace_existing_listeners": true
+}

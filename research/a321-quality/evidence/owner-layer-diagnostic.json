@@ -1,0 +1,22 @@
+{
+  "source_case": "snappy-04",
+  "view_case": "snappy-04-owner-diagnostic",
+  "field": "diagnostic_owner_layer_min",
+  "cells": 935120,
+  "source_wall_faces": 57556,
+  "wall_owner_cells": 57350,
+  "ambiguous_wall_owner_faces": 0,
+  "exact_face_value_matches": 57556,
+  "meaning": "minimum native layer count across source wall faces sharing each volume cell; conservative where values differ",
+  "non_wall_value": -1,
+  "physics_solution": false,
+  "solver_run": false,
+  "mesh": {
+    "points": "a36ecb583a2729b111f9175df8db60c5cc269b9d434ba3d86e9d10db004d008a",
+    "faces": "b0fceca534348f33fd96b4587fea1fec8ddae17309b26dd8583a1ec99dd19b26",
+    "owner": "8e2d9749ae8bdf831cbcabfd1040fbac3fe1e8fa34a104843e41d366af3161a9",
+    "neighbour": "cf07659e3981be44082d009a261b1359f004e80fe6dc3bf9ecd97ed8b8bdf1cf",
+    "boundary": "9871898f12005b14959766f77015aafde4d018fbf48816458bd9aae535dfa7e5"
+  },
+  "field_sha256": "2703427a479b3016cd27efe43dfef2703ba0aed6bfd06e4286b59f5c75e5755e"
+}

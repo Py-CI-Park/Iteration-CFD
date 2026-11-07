@@ -1,0 +1,33 @@
+{
+  "status": "PASS_STATIC_ONLY",
+  "images": 16,
+  "local_links": 56,
+  "sections": [
+    "progress",
+    "studio",
+    "trials",
+    "distance",
+    "flow",
+    "next",
+    "history",
+    "hotspot-report",
+    "hotspot-progress",
+    "hotspot-hotspot-map",
+    "hotspot-trials",
+    "hotspot-studio",
+    "hotspot-gpu",
+    "hotspot-api",
+    "hotspot-next",
+    "hotspot-history",
+    "prior-report",
+    "prior-progress",
+    "prior-gallery",
+    "prior-next",
+    "prior-history",
+    "prior-upstream",
+    "prior-detail",
+    "detail"
+  ],
+  "prior_details": 3,
+  "browser_layout_validation": "PENDING_USER_CONTROL"
+}

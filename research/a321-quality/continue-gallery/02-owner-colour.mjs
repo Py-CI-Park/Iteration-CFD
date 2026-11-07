@@ -1,0 +1,22 @@
+const task=await taskSpace(15),p=task.page("p1");
+const fs=await import("node:fs/promises");
+const dir="D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence";
+await p.waitForFunction(()=>document.body.innerText.includes("온라인"),undefined,{timeout:20000});
+const tabs=await task.tabs();
+const {windowId}=await task.cdp("Browser.getWindowForTarget",{targetId:tabs.find(t=>t.label==="p1").targetId});
+await task.cdp("Browser.setWindowBounds",{windowId,bounds:{windowState:"normal"}});
+await p.cdp("Page.bringToFront");
+const result=await p.evaluate(async()=>{
+ const {getViewerApi}=await import("/src/viewer/api/viewerApi.ts");
+ const api=getViewerApi();
+ const load=await api.execute({type:"load",path:"research/a321-quality/artifacts/snappy-04-owner-diagnostic",field:"diagnostic_owner_layer_min"});
+ if(!load.ok)return {load};
+ const field=await api.execute({type:"setField",field:"diagnostic_owner_layer_min",range:[0,8],colormap:"turbo"});
+ const rep=await api.execute({type:"setRepresentation",mode:"surface",patches:["aircraft"]});
+ const camera=await api.execute({type:"setCamera",position:[49,35,38],target:[22,0,6],projection:"perspective"});
+ return {load,field,rep,camera,state:api.getState()};
+});
+await fs.writeFile(dir+"/owner-diagnostic-studio.json",JSON.stringify(result,null,2)+"\n");
+if(!result.field?.ok||result.state?.field!=="diagnostic_owner_layer_min")throw Error(JSON.stringify(result).slice(0,1800));
+await p.screenshot({path:dir+"/studio-owner-layer-count.png"});
+console.log({field:result.state.field,cells:result.state.cellCount,range:result.state.range});

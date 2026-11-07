@@ -12,12 +12,20 @@ from collections.abc import Mapping
 from pathlib import Path
 
 import numpy as np
-from custody import digest
+from custody import MeshDigests, digest
 from layer_fields import wall_values
 from numpy.typing import NDArray
 from poly_io import count_list, read_labels, read_patches, require_end
 
 SETS = ("underdeterminedCells", "concaveCells", "lowWeightFaces")
+
+
+def require_seal_identity(
+    case: Path, current: MeshDigests, candidate: str, sealed: MeshDigests
+) -> None:
+    """Do not combine old processor diagnostics with a different reconstructed mesh."""
+    if candidate != case.name or sealed != current:
+        raise RuntimeError("DIAGNOSTIC_SEAL_WRONG_MESH")
 
 
 def verify_diagnostic_files(case: Path, expected: Mapping[str, str]) -> None:

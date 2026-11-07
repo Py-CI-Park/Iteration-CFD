@@ -1,0 +1,56 @@
+{
+  "candidate": "snappy-07",
+  "cell_family": "hex_dominant_polyhedra, not tetrahedra",
+  "cells": 1260388,
+  "points": 1406126,
+  "faces": 3921500,
+  "max_face_arity": 7,
+  "internal_faces": 3822712,
+  "fluid_components": 1,
+  "nonpositive_volumes": 0,
+  "min_volume_m3": 3.538397855013187e-06,
+  "max_nonorth_deg": 66.20148309522648,
+  "faces_nonorth_gt70": 0,
+  "max_relative_closure": 1.1177219917208272e-14,
+  "max_absolute_closure_m2": 6.287781813575643e-15,
+  "wall_faces": 86436,
+  "wall_closed": true,
+  "raw_wall_edge_incidence_closed": true,
+  "cell_geometry_method": "signed triangle tetrahedral moments; arithmetic face-center fan defines warped face surface",
+  "wall_winding": true,
+  "wall_volume_m3": 504.5210323537626,
+  "reference_volume_m3": 504.8608243561819,
+  "sampled_surface_distance": [
+    {
+      "direction": "R3_to_calculation",
+      "samples": 12000,
+      "max_m": 0.046308834942945236,
+      "p95_m": 0.0015723661950687966
+    },
+    {
+      "direction": "calculation_to_R3",
+      "samples": 12000,
+      "max_m": 0.035181322151948684,
+      "p95_m": 0.0015153349475045409
+    }
+  ],
+  "reference_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "thresholds": {
+    "nonorth_deg": 70,
+    "relative_closure": 1e-10
+  },
+  "nonorth_closure_gate": true,
+  "boundary_layer_coverage": "SEE_EXTERNAL_LAYER_LOG_AND_FIELDS",
+  "solved_y_plus": "NOT_MEASURED",
+  "solver_run": false,
+  "gpu_compute": false,
+  "polyMesh_sha256": {
+    "points": "7793cc069f042e847378087ab908517a10ddac128ae0d2a4855d719b4668cf9e",
+    "faces": "42c0673994e2044a377d1001794aea0fd8a42e989d3fb541b1237d33a8187743",
+    "owner": "e4b6b61c003b3a827182c35e909c8a85f84eaafb32ec7b4904155040ee811c62",
+    "neighbour": "334676ae661719dcb1d1b719c69230cd020a4d042accdd33a4933083a63b24d2",
+    "boundary": "d194a1febadf222e8c8d30cf82ad0a1e71b557906dcb56d24128c892f69496d9"
+  },
+  "mesh_unchanged_during_audit": true,
+  "audited_geometry_sha256": "8e194f28d1d1cdc896666826f988a3b786fff4015b69097b802cf2384482480e"
+}

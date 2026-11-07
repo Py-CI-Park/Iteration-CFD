@@ -1,0 +1,39 @@
+{
+  "candidate": "snappy-04",
+  "definition": "Euclidean distance from each wall-adjacent owner center to nearest point of the explicit float64 calculation-wall triangles",
+  "not": "not first-layer thickness, not solved wall-distance field, not y+",
+  "sampling": "all wall faces, repeated owner counts retained and explicitly face-weighted",
+  "wall_faces": 57556,
+  "layered_faces": 37608,
+  "summaries_m": {
+    "all_faces": {
+      "count": 57556,
+      "min": 0.0004935514981281005,
+      "median": 0.003355059283232755,
+      "p95": 0.08599938625339548,
+      "max": 0.12909670026714593
+    },
+    "layered_faces": {
+      "count": 37608,
+      "min": 0.0004935514981281005,
+      "median": 0.0022638337189981924,
+      "p95": 0.0057903976212771106,
+      "max": 0.007569649095306478
+    },
+    "unlayered_faces": {
+      "count": 19948,
+      "min": 0.00363112040266197,
+      "median": 0.04890282626795604,
+      "p95": 0.10057424987851679,
+      "max": 0.12909670026714593
+    }
+  },
+  "npz_sha256": "03309276e9303d081244c12a1c7707e840afcb3077b73409f14f7f1c204cbdff",
+  "mesh": {
+    "points": "a36ecb583a2729b111f9175df8db60c5cc269b9d434ba3d86e9d10db004d008a",
+    "faces": "b0fceca534348f33fd96b4587fea1fec8ddae17309b26dd8583a1ec99dd19b26",
+    "owner": "8e2d9749ae8bdf831cbcabfd1040fbac3fe1e8fa34a104843e41d366af3161a9",
+    "neighbour": "cf07659e3981be44082d009a261b1359f004e80fe6dc3bf9ecd97ed8b8bdf1cf",
+    "boundary": "9871898f12005b14959766f77015aafde4d018fbf48816458bd9aae535dfa7e5"
+  }
+}

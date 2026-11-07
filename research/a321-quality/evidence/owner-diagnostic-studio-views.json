@@ -1,0 +1,130 @@
+{
+  "overview": {
+    "backend": "webgpu",
+    "datasetId": "dfa84a1739b129053277afac9f54c7030192033b",
+    "datasetName": "snappy-04-owner-diagnostic",
+    "source": "polymesh",
+    "geometryFidelity": "exact",
+    "cellCount": 935120,
+    "bounds": {
+      "min": [
+        -45.00000000000001,
+        -65.00000000000001,
+        -45.00000000000001
+      ],
+      "max": [
+        135.00000000000003,
+        65.00000000000001,
+        55.00000000000002
+      ]
+    },
+    "field": "diagnostic_owner_layer_min",
+    "component": null,
+    "range": [
+      0,
+      8
+    ],
+    "warp": null,
+    "colormap": "turbo",
+    "representation": "surface",
+    "time": {
+      "index": 0,
+      "value": 0,
+      "count": 1
+    },
+    "layers": [],
+    "camera": {
+      "position": [
+        49,
+        35,
+        38
+      ],
+      "target": [
+        22.000000000000004,
+        0,
+        6.000000000000001
+      ],
+      "projection": "perspective"
+    },
+    "patches": {
+      "visible": [
+        "aircraft"
+      ],
+      "hidden": [
+        "inlet",
+        "outlet",
+        "yMin",
+        "yMax",
+        "zMin",
+        "zMax"
+      ]
+    },
+    "loading": false,
+    "message": "polyMesh is not a structured lattice: slices and planes are exact cuts of its cells, iso-surfaces are contoured and streamlines traced on them; glyphs are unavailable"
+  },
+  "wing": {
+    "backend": "webgpu",
+    "datasetId": "dfa84a1739b129053277afac9f54c7030192033b",
+    "datasetName": "snappy-04-owner-diagnostic",
+    "source": "polymesh",
+    "geometryFidelity": "exact",
+    "cellCount": 935120,
+    "bounds": {
+      "min": [
+        -45.00000000000001,
+        -65.00000000000001,
+        -45.00000000000001
+      ],
+      "max": [
+        135.00000000000003,
+        65.00000000000001,
+        55.00000000000002
+      ]
+    },
+    "field": "diagnostic_owner_layer_min",
+    "component": null,
+    "range": [
+      0,
+      8
+    ],
+    "warp": null,
+    "colormap": "turbo",
+    "representation": "surface",
+    "time": {
+      "index": 0,
+      "value": 0,
+      "count": 1
+    },
+    "layers": [],
+    "camera": {
+      "position": [
+        25,
+        12.999999999999998,
+        14.000000000000002
+      ],
+      "target": [
+        22.8,
+        7.999999999999999,
+        3.9
+      ],
+      "projection": "perspective"
+    },
+    "patches": {
+      "visible": [
+        "aircraft"
+      ],
+      "hidden": [
+        "inlet",
+        "outlet",
+        "yMin",
+        "yMax",
+        "zMin",
+        "zMax"
+      ]
+    },
+    "loading": false,
+    "message": "polyMesh is not a structured lattice: slices and planes are exact cuts of its cells, iso-surfaces are contoured and streamlines traced on them; glyphs are unavailable"
+  },
+  "meaning": "layer count diagnostic only, not pressure",
+  "solverRun": false
+}

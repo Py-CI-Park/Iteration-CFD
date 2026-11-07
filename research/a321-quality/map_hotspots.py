@@ -47,7 +47,11 @@ def band_indices(points: NDArray[np.float64]) -> NDArray[np.int64]:
 
 def main(candidate: str = "snappy-03", audit_id: str = "v5") -> None:
     """Create a projection, complete CSV index and per-band counts for one frozen mesh."""
-    if candidate not in {"snappy-03", "snappy-04", "snappy-05"} or audit_id != "v5":
+    if (
+        candidate
+        not in {"snappy-03", "snappy-04", "snappy-05", "snappy-06", "snappy-07"}
+        or audit_id != "v5"
+    ):
         raise RuntimeError("UNSUPPORTED_CANDIDATE")
     case = ROOT / "artifacts" / candidate
     pm = case / "constant/polyMesh"
