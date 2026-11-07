@@ -20,3 +20,18 @@ Ego의 이전 작업 space15는 종료 후 복구 목록에 없어서 새 복구
 ## 검증
 
 `uv run --with numpy --with scipy --with trimesh --with meshpy --with matplotlib --with typer --with pydantic --with pytest pytest research/a321-quality -q`와 Ruff 검사, 실제 Ego 시각 검사를 사용한다. 격자 gate가 통과했다고 저속 시험이 실행됐거나 벽처리 적합성이 검증됐다는 뜻은 아니다. 전체 절차·오류 수정·범위는 `evidence/recovery-20261108.json`을 따른다.
+
+## 사용자 승인 후 최종 보고서 화면 검증
+
+사용자가 제어권 재개 질문에 **계속 진행**으로 답한 뒤 기존 TaskSpace 10을 이어받았다. 이전 제어권 중단 기록과 정적 검증 기록은 보존하고, 최종 화면 검증 결과를 별도 증거로 추가했다.
+
+| 조작 원장 | 실제 결과 |
+| --- | --- |
+| 08 | 사용자 승인에 따라 기존 TaskSpace 10 제어권 재개. |
+| 09 | 보고서 p2 생성. PC 및 390×844 모바일 표시, 이미지 16개 로딩, 중복 제거 로컬 링크 49개 HTTP 200, 목차·고유 ID·진행표 8행 검사 통과. |
+| 10 | 층 수 지도 이동 뒤 창 최소화 상태로 스크린샷 실패. 완료로 기록하지 않음. |
+| 11 | 동일 창을 복원해 PC·모바일 갤러리 촬영. 이전 보고서 3개를 모두 펼친 모바일도 문서 폭 390px로 가로 넘침 없음. 모바일 에뮬레이션 해제 후 Studio와 보고서를 사용자에게 남기고 finish 1회 완료. 후속 목록에서 소유권 user 확인. |
+
+실제 결과는 [브라우저 QA 기록](../evidence/report-conditioning-qa-20261108.json), [PC 화면](../evidence/report-conditioning-desktop-20261108.png), [모바일 화면](../evidence/report-conditioning-mobile-20261108.png), [PC 층 수 지도](../evidence/report-conditioning-gallery-desktop-20261108.png), [모바일 층 수 지도](../evidence/report-conditioning-gallery-mobile-20261108.png)에 보존했다. 정적 기록의 링크 56개는 중복 포함 참조 수이며 브라우저 검사 49개는 중복 제거 URL 수다.
+
+이번 후속 작업은 보고서 표시 검증과 증거 정리에 한정한다. 기존 41개 테스트 통과는 이전 구현 검증 결과이며 이번에 다시 실행한 것으로 기록하지 않는다. R3와 계산 격자를 수정하거나 CFD·GPU 계산을 실행하지 않았다. 확장 품질 실패 3종과 실제 평균 층 수 3.14 등 공학적 제한은 유지하며 GPU 해석은 HOLD다.

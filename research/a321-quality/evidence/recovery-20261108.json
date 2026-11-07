@@ -72,7 +72,27 @@
   "live_AI_API_or_OpenCodex_run": false,
   "final_reviews": "all five scoped lanes passed; review-closeout receipt preserves exact execution boundaries",
   "final_static_report_QA": {"images": 16, "local_links": 56, "status": "PASS_STATIC_ONLY"},
-  "final_live_report_QA": "PENDING_USER_CONTROL: Ego hard stop after successful Studio colour captures; async continue question pending; browser not retried",
+  "initial_live_report_QA": "PENDING_USER_CONTROL: Ego hard stop after successful Studio colour captures; no retry until user explicitly replied continue",
+  "final_live_report_QA": {
+    "status": "PASS_BROWSER_RENDER_AND_LOCAL_LINKS",
+    "receipt": "report-conditioning-qa-20261108.json",
+    "user_explicit_resume": true,
+    "images_loaded": 16,
+    "unique_local_links_HTTP_200": 49,
+    "static_local_link_occurrences": 56,
+    "mobile_viewport_and_scroll_width_px": [390, 390],
+    "archive_sections_opened": 3,
+    "screenshots": [
+      "report-conditioning-desktop-20261108.png",
+      "report-conditioning-mobile-20261108.png",
+      "report-conditioning-gallery-desktop-20261108.png",
+      "report-conditioning-gallery-mobile-20261108.png"
+    ],
+    "intermediate_capture_failure": "10-report-gallery-check: window minimized; 11 restored the same window and completed captures, not a control-stop bypass",
+    "task_space": 10,
+    "completion": "finished once keeping Studio and report for the user; inventory confirmed ownership user",
+    "engineering_acceptance_changed": false
+  },
   "restart_helper_checked_on_running_servers": true,
   "restart_check_did_not_replace_existing_listeners": true
 }
