@@ -1,0 +1,38 @@
+{
+  "nasa": {
+    "title": "Tutorial on CFD Verification & Validation",
+    "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/tutorial.html",
+    "links": [
+      {
+        "text": "AIAA G-077-1998, \n\"Guide for the Verification and Validation of Computational Fluid \nDynamics Simulations\"",
+        "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/bibliog.html#AIAA98"
+      },
+      {
+        "text": "Overview",
+        "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/overview.html"
+      },
+      {
+        "text": "CFD Analysis Process",
+        "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/process.html"
+      },
+      {
+        "text": "Verification Assessment",
+        "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/verassess.html"
+      },
+      {
+        "text": "Validation Assessment",
+        "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/valassess.html"
+      },
+      {
+        "text": "Examining Spatial (Grid) Convergence",
+        "url": "https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html"
+      }
+    ]
+  },
+  "blender": {
+    "title": "Introduction - Blender 5.2 LTS Manual",
+    "url": "https://docs.blender.org/manual/en/latest/modeling/surfaces/introduction.html",
+    "intro": "Skip to content\nBlender 5.2 LTS Manual\n\nGETTING STARTED\n\nAbout Blender\nInstalling Blender\nConfiguring Blender\nHelp System\n\nSECTIONS\n\nUser Interface\nEditors\nScenes & Objects\nModeling\nIntroduction\nMeshes\nCurves\nCurves (New)\nSurfaces\nIntroduction\nToolbar\nStructure\nPrimitives\nSelecting\nEditing\nProperties\nMetaball\nText\nPoint Cloud\nVolumes\nEmpties\nModifiers\nGeometry Nodes\nTransform\nSculpting & Painting\nGrease Pencil\nAnimation & Rigging\nPhysics\nRendering\nCompositing\nMotion Tracking & Masking\nVideo Editing\nAssets, Files, & Data System\nAdd-ons\nAdvanced\nTroubleshooting\nGlossary\nManual Index\n\nGET INVOLVED\n\nContribute Documentation\nTranslate Blender\nTranslate the User Manual\n5.2\nEnglish\nEdit this page\nIntroduction\n\nA Surface is a smooth sheet that’s defined by a set of control points. It’s an extension of a Curve, which is a smooth line.\n\nSurface in Edit Mode.\n\nThe control points are arranged in a grid with yellow lines indicating the rows (U direction) and pink lines the columns (V direction). The surface can be open or closed (cyclic) in either or both directions, which allows the creation of, say, a cylinder or a sphere.\n\nA Surface can be converted to a mesh using the menu item Object ‣ Convert ‣ Mesh or the context menu item Convert To ‣ Mesh.\n\nNext\nToolbar\nPrevious\nSurfaces\nCopyright © : This page is licensed under a CC-BY-SA 4.0 Int. License\nMade with Furo\nLast updated on 2026-11-08\n"
+  },
+  "scope": "public documentation; no GPL implementation source consulted"
+}

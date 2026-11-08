@@ -1,0 +1,149 @@
+{
+  "status": "PASS_PLAN_DOCUMENT_RENDER_AND_LINKS",
+  "state": {
+    "title": "A321 외형 재구성·공력 해석 전체 로드맵",
+    "h1": 1,
+    "tables": 5,
+    "ids": [
+      "answer",
+      "status",
+      "geometry",
+      "flow",
+      "roadmap",
+      "solver",
+      "environment",
+      "validation",
+      "next"
+    ],
+    "nav": [
+      {
+        "hash": "#answer",
+        "found": true
+      },
+      {
+        "hash": "#status",
+        "found": true
+      },
+      {
+        "hash": "#geometry",
+        "found": true
+      },
+      {
+        "hash": "#flow",
+        "found": true
+      },
+      {
+        "hash": "#roadmap",
+        "found": true
+      },
+      {
+        "hash": "#solver",
+        "found": true
+      },
+      {
+        "hash": "#environment",
+        "found": true
+      },
+      {
+        "hash": "#next",
+        "found": true
+      }
+    ],
+    "diagramChecks": [
+      {
+        "text": "STATUS DASHBOARD",
+        "found": true
+      },
+      {
+        "text": "TEXT TREE",
+        "found": true
+      },
+      {
+        "text": "ASCII FLOWCHART",
+        "found": true
+      },
+      {
+        "text": "NEXT BATCH",
+        "found": true
+      },
+      {
+        "text": "[###-----] 3 / 8",
+        "found": true
+      }
+    ],
+    "boundaries": [
+      {
+        "text": "미리 보장할 수는 없다",
+        "found": true
+      },
+      {
+        "text": "R5 생성·새 격자·GPU 계산은 아직 실행하지 않았다",
+        "found": true
+      },
+      {
+        "text": "12.6",
+        "found": true
+      },
+      {
+        "text": "13.x",
+        "found": true
+      },
+      {
+        "text": "ofgpu-lowmach",
+        "found": true
+      }
+    ],
+    "links": [
+      "report.html",
+      "evidence/surface-study-closeout.json",
+      "evidence/surface-comparison.json",
+      "evidence/rebuild-roadmap-environment.json",
+      "evidence/rebuild-roadmap-sources.json",
+      "evidence/rebuild-roadmap-nasa-method.json",
+      "plans/rebuild-r5-plan.json"
+    ]
+  },
+  "links": [
+    {
+      "link": "report.html",
+      "status": 200
+    },
+    {
+      "link": "evidence/surface-study-closeout.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/surface-comparison.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/rebuild-roadmap-environment.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/rebuild-roadmap-sources.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/rebuild-roadmap-nasa-method.json",
+      "status": 200
+    },
+    {
+      "link": "plans/rebuild-r5-plan.json",
+      "status": 200
+    }
+  ],
+  "linkMethod": "HTTP HEAD",
+  "fileSHA": "fd1eda45ed8cc0f487c0c58fbf540afc3f53085c01bf1ab79993b38418cfc33b",
+  "servedSHA": "fd1eda45ed8cc0f487c0c58fbf540afc3f53085c01bf1ab79993b38418cfc33b",
+  "mobile": {
+    "viewport": 390,
+    "scroll": 390,
+    "preCount": 4
+  },
+  "scope": "planning and read-only inspection; prior143tests not rerun",
+  "new_geometry_generated": false,
+  "CPU_mesh_run": false,
+  "CFD_solver_run": false,
+  "GPU_solver_run": false
+}

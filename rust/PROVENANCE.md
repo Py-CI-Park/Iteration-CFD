@@ -1023,3 +1023,7 @@ project spent a phase removing.
 | Source files | Classification and writing basis |
 |---|---|
 | `../research/a321-quality/` surface-trial tools, native surface-binding helper, tests and `smooth-gallery/*.mjs` | Original CPU research and format/API orchestration, individually recorded in [`research/a321-quality/PROVENANCE.md`](../research/a321-quality/PROVENANCE.md), including the separate Blender adapter's existing outbound classification. Written from preserved R3 inputs, public format/API documentation and external CLI output; no GPL implementation source consulted. No solver numerics change or CFD/GPU solve. |
+
+### A321 outer-shell rebuild planning (2026-11-08)
+
+`research/a321-quality/roadmap-gallery/*.mjs`: original Ego browser source-reading and standalone roadmap HTML QA orchestration; see that directory's PROVENANCE.md. No CFD/mesher/numerics implementation changed and no GPL implementation source consulted. Planning records distinguish existing R3/R4/CPU evidence from unexecuted R5 and GPU work.

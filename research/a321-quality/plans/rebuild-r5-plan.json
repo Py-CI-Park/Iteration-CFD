@@ -1,0 +1,71 @@
+{
+  "status": "PLAN_ONLY_R5_NOT_GENERATED_GPU_HOLD",
+  "baseline_commit": "9b132e6377d9fbff8490d3a47c770b0fb37ffa6f",
+  "decision": "preserve R3/R4 and trials06-11; prefer a separately named parameterized Blender R5_REBUILD outer-shell reconstruction",
+  "direct_execution_possible": [
+    "Blender CLI/bpy",
+    "independent geometry checks",
+    "CPU meshing and readback",
+    "Ego Studio display and reports",
+    "case and engine preparation",
+    "conditional GPU tests after gates"
+  ],
+  "not_guaranteed": [
+    "mesh acceptance before measurement",
+    "flow convergence before execution",
+    "OEM A321 geometry recovery from current reference",
+    "real A321 aerodynamic accuracy without validation data"
+  ],
+  "existing_checkpoints": {
+    "complete": 3,
+    "total": 8,
+    "interpretation": "unweighted checkpoint count, not engineering completion percentage"
+  },
+  "target": {
+    "speed_m_s": 30,
+    "reference_angle_deg": 0,
+    "purpose": "educational external-flow study"
+  },
+  "next_batch": [
+    "baseline and model-hash check",
+    "geometry/feature/source authority and tolerance contract",
+    "separate Blender R5 draft",
+    "section/topology/intersection/native-STL verification",
+    "same-camera Studio comparisons and change ledger",
+    "only after geometry gate: CPU surface and boundary-layer mesh"
+  ],
+  "gates": {
+    "independent_nonorth_max_deg": 70,
+    "relative_closure_max": 1e-10,
+    "nonpositive_volume_cells": 0,
+    "fluid_components": 1,
+    "extended_check_status": "PASS_REQUIRED",
+    "shape_feature_tolerances": "MUST_BE_DEFINED_AND_FROZEN_BEFORE_GENERATION",
+    "physical_layer_design": "MUST_BE_DEFINED_BEFORE_MESH_ACCEPTANCE",
+    "actual_engine_CPU_ingestion": "REQUIRED",
+    "GPU_runtime_memory_and_abort_limits": "REQUIRED"
+  },
+  "engine_preparation": {
+    "read_only_snapshot": "../evidence/rebuild-roadmap-environment.json",
+    "current_nvcc": "12.6",
+    "README_requirement": "13.x",
+    "inspected_release_directories_exist": false,
+    "workflow_candidate": "ofgpu-lowmach subject to actual contract verification; U/p/T/turbulence required",
+    "forbidden_as_full_flow_driver": [
+      "ofgpu-k-epsilon",
+      "ofgpu-k-omega",
+      "ofgpu-sa"
+    ]
+  },
+  "device_target": {
+    "name": "NVIDIA GeForce RTX 4080 SUPER",
+    "uuid": "GPU-2147afeb-b9fc-c7f5-398b-d5d00a3a5a90",
+    "actual_case_memory_capacity": "UNMEASURED"
+  },
+  "iteration_policy": "controlled hypotheses; no criterion relaxation or endless unchanged parameter sweep",
+  "new_geometry_generated": false,
+  "new_CPU_mesh_run": false,
+  "GPU_probe_run": false,
+  "CFD_solver_run": false,
+  "GPU_solver_run": false
+}

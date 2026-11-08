@@ -1,0 +1,46 @@
+{
+  "status": "PLAN_DOCUMENTED_NOT_R5_EXECUTED",
+  "baseline_commit": "9b132e6377d9fbff8490d3a47c770b0fb37ffa6f",
+  "branch": "codex/a321-aero-shell-20261105",
+  "decision": "preserve R3/R4 and06-11; prefer new parameterized R5_REBUILD shell, geometry/mesh/physics/engine/runtime gates separated",
+  "answer_scope": "direct implementation possible across Blender, CPU checks/meshing, Studio, inputs/build, conditional GPU tests; no advance guarantee of acceptance/convergence/OEM fidelity",
+  "documents": [
+    "REBUILD_ROADMAP_KO.md",
+    "rebuild-roadmap.html",
+    "plans/rebuild-r5-plan.json"
+  ],
+  "progress": {
+    "existing_checkpoints_complete": 3,
+    "total": 8,
+    "new_R5_execution": "NOT_STARTED",
+    "engineering_status": "FIX_FIRST_GPU_HOLD"
+  },
+  "new_read_only_verification": "rebuild-roadmap-environment.json; GPU telemetry, nvcc, two release directories and four preserved model hashes; no GPU computation",
+  "environment_findings": {
+    "nvcc": "12.6",
+    "README_requirement": "13.x",
+    "two_inspected_release_paths_exist": false,
+    "Super_memory_reported_MiB": 16376
+  },
+  "browser_QA": {
+    "receipt": "rebuild-roadmap-final-qa.json",
+    "status": "PASS_PLAN_DOCUMENT_RENDER_AND_LINKS",
+    "tables": 5,
+    "local_links_HEAD200": 7,
+    "mobile_viewport_and_scroll": [
+      390,
+      390
+    ],
+    "text_diagrams": 4,
+    "report_and_served_SHA256": "fd1eda45ed8cc0f487c0c58fbf540afc3f53085c01bf1ab79993b38418cfc33b",
+    "finish": "completed once retaining roadmap p1 and existing Studio p2"
+  },
+  "historical_results": "143 tests and480artifact checks from prior9b132e6; not repeated or promoted to new engineering acceptance",
+  "prior_report_and_experiment_docs_unchanged": true,
+  "new_Blend_or_STL_generated": false,
+  "new_CPU_mesh_generated": false,
+  "GPU_probe_executed": false,
+  "CFD_solver_executed": false,
+  "GPU_solver_executed": false,
+  "next_execution_batch": "R5 geometry/source/feature contract, then a separate Blender draft with independent checks; only after geometry gates generate new CPU mesh"
+}

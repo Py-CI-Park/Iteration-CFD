@@ -1,0 +1,55 @@
+{
+  "scope": "READ_ONLY_PLANNING_INSPECTION_NO_GPU_COMPUTE",
+  "checked_at": "2026-11-08T18:28:31.6142524+09:00",
+  "gpu_query_columns": "index,name,memory.total,uuid,driver_version",
+  "gpu_query_rows": [
+    "0, NVIDIA GeForce RTX 4080, 16376 MiB, GPU-2a049786-66c9-1729-6e84-03680b1cadcd, 617.42",
+    "1, NVIDIA GeForce RTX 4080 SUPER, 16376 MiB, GPU-2147afeb-b9fc-c7f5-398b-d5d00a3a5a90, 617.42"
+  ],
+  "nvcc_version": [
+    "nvcc: NVIDIA (R) Cuda compiler driver",
+    "Copyright (c) 2005-2024 NVIDIA Corporation",
+    "Built on Thu_Sep_12_02:55:00_Pacific_Daylight_Time_2024",
+    "Cuda compilation tools, release 12.6, V12.6.77",
+    "Build cuda_12.6.r12.6/compiler.34841621_0"
+  ],
+  "release_paths": [
+    {
+      "path": "D:/Chanil_Park/Project/Programming/Iteration-CFD/rust/target/release",
+      "exists": false,
+      "ofgpu_exes": []
+    },
+    {
+      "path": "D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/rust/target/release",
+      "exists": false,
+      "ofgpu_exes": []
+    }
+  ],
+  "blender_path": "D:/Chanil_Park/Project/Programming/Aircraft-Workbench/.workstation/tools/blender-5.2.2-portable/blender.exe",
+  "blender_exists": true,
+  "GPU_probe_executed": false,
+  "CFD_solver_executed": false,
+  "new_geometry_generated": false,
+  "model_hashes_checked_now": [
+    {
+      "path": "research/a321-integration/models/A321_AIRFRAME_SHELL_R3.stl",
+      "sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+      "git_blob_matches_HEAD": true
+    },
+    {
+      "path": "research/a321-integration/models/A321_AIRFRAME_SHELL_R3.blend",
+      "sha256": "bbeff0e0c85ebaf76f7b81f5b98a9f283b4be1e13cad004dbb81705d535f7b97",
+      "git_blob_matches_HEAD": true
+    },
+    {
+      "path": "research/a321-quality/models/A321_AIRFRAME_SHELL_R4.stl",
+      "sha256": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6",
+      "git_blob_matches_HEAD": true
+    },
+    {
+      "path": "research/a321-quality/models/A321_AIRFRAME_SHELL_R4.blend",
+      "sha256": "433dd26a198b616a82293a2dca543cfe807860190137dd862211effa144ce427",
+      "git_blob_matches_HEAD": true
+    }
+  ]
+}
