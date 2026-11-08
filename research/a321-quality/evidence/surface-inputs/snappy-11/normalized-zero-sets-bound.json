@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "candidate": "snappy-11",
+  "external_check_log": {
+    "path": "log.checkMesh-extended",
+    "sha256": "b24f6fb30e3e7d06a124287ce139446315db09e45ac4ab52994f1b2d2de710e9"
+  },
+  "replay_check_log": {
+    "path": "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/snappy-11-bound-check/log.bound-check-extended",
+    "sha256": "f0c04847e17343a0bcba20d8e5f1d078d03a97a40a7c2aafed2552f1d4b57b03"
+  },
+  "bound_replay": {
+    "path": "snappy-11-bound-check.json",
+    "sha256": "283eb093709e0266b02e14aecd7ddf2b8e90dda617a9142a85c62a34231499fe"
+  },
+  "mesh": {
+    "points": "3cee3acec46f07af032ba1ca4fd2ee4f76fdfd8b0aaf6a682e4e51dd4fbf6f38",
+    "faces": "496438ad22db77b4cd9b931c0afa72a24c4fb28f57da015a5cb17732d0e78502",
+    "owner": "779a8605b3cac6595a38be9fd7db77e4cc86954ce9801771c60e5b4e62c462fc",
+    "neighbour": "6ed78dcb5a2d3a8922bc9d6529c9fe07cfb785154ef916dd3ddd5e275d40dcd0",
+    "boundary": "5a0cc6d8a00885a735716e186f1fd88e1a80d2f99fad0adcb9bf7fc5117ff8c7"
+  },
+  "sets": [
+    {
+      "name": "lowWeightFaces",
+      "path": "constant/polyMesh/sets/lowWeightFaces",
+      "pass_marker": "Face interpolation weight check OK.",
+      "sha256": "870d190d7588a100091349434e87bc97ff870801d641151840450a1a643e1287",
+      "synthesized": true,
+      "count": 0
+    }
+  ],
+  "proven_zero_checks": [
+    "lowWeightFaces"
+  ],
+  "status": "DIAGNOSTICS_ONLY_NOT_MESH_ACCEPTANCE"
+}

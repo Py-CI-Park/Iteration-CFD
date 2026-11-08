@@ -1,0 +1,10 @@
+{
+  "status": "PASS_EXACT_NATIVE_COORDINATES_AND_TRIANGLES",
+  "vertices": 77051,
+  "triangles": 154098,
+  "native_sha256": "433dd26a198b616a82293a2dca543cfe807860190137dd862211effa144ce427",
+  "blender": "5.2.2 LTS",
+  "R3_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "GPU_solver_run": false,
+  "render_run": false
+}

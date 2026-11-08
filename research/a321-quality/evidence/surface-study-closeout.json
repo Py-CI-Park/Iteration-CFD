@@ -1,0 +1,89 @@
+{
+  "status": "CPU_STUDY_PARTIAL_IMPROVEMENT_GPU_HOLD",
+  "base_head": "b2de36457114af0cdf41e51a37cd7f0d8b201795",
+  "branch": "codex/a321-aero-shell-20261105",
+  "R3_STL_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "R3_native_git_blob_unchanged": "e722038a62c97cd5cce81202632346b441f57046",
+  "R4_STL_sha256": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6",
+  "R4_native_sha256": "433dd26a198b616a82293a2dca543cfe807860190137dd862211effa144ce427",
+  "geometry_scope": "local interior wing seam Hermite rounding, protected LE/TE; not global CAD curvature or aerodynamic acceptance",
+  "native_STL_exact_correspondence": "blender-r4-stl-binding.json; post-generation supplementary binding; original receipt and trial inputs unchanged",
+  "CPU_trials_executed": [
+    "snappy-08",
+    "snappy-09",
+    "snappy-10",
+    "snappy-11"
+  ],
+  "CPU_trials_engine": "external OpenFOAM v1912 WSL; separate programs, no implementation source consulted",
+  "independent_audits": "all four serialized meshes: positive volumes, single fluid component, closed/winding wall, nonorth <=70 degrees and relative closure <=1e-10",
+  "extended_checks": "08/10/11 FAIL 2, 09 FAIL 3; numeric thresholds unchanged",
+  "layer_tradeoff": "11: determinant85, concave35393, lowWeight0, area94.068441%, mean1.93, full8faces0; not adopted as a final boundary-layer mesh",
+  "artifact_manifest": {
+    "file": "surface-artifact-manifest.json",
+    "entries": 480
+  },
+  "bound_replays": {
+    "candidates": [
+      "08",
+      "09",
+      "10",
+      "11"
+    ],
+    "status": "BOUND_REPLAY_COMPLETE",
+    "source_and_clone_mesh_and_prior_sets_unchanged": true,
+    "runner_sha256": "f1d2ad36ec6c6ff6b4f6d4ef5ec5f74b065b2a9bac23f760f9c47381ef045374",
+    "meaning": "post-generation independent repeated checks, not invented original launch freezes"
+  },
+  "review_fixes": [
+    "reject other Case/time/region and require a bound constant-only cloned check",
+    "bind NPZ/native triangles to independently receipt-pinned STL; fresh Blender readback",
+    "validate current bound and historical synthesized-zero provenance",
+    "reject incomplete/fatal/concatenated native success logs",
+    "remove only owned failed-copy output and preserve replacement owners",
+    "complete source headers, dependency declarations and provenance"
+  ],
+  "tests": {
+    "earlier_full_suite": "108 passed in 242.03s",
+    "after_review_full_suite": "129 passed, 1 failed in 178.09s; receipt guard order finding",
+    "final_status": "PASS",
+    "final_full_suite": "143 passed in 177.08s",
+    "python_source_snapshot_unchanged_during_final_tests": true,
+    "post_test_formatting": "9 files formatted; all Python AST unchanged",
+    "format_AST_sha256": "4a9ab9cd3b4c102121f63ff63826c7eeb94b036bf5e76ac184a1e5b17534ad26",
+    "ruff_E9_F": "All checks passed",
+    "independent_focused_QA": "13 passed in 8.45s; not a full suite or native engineering rerun"
+  },
+  "final_report_browser_QA": {
+    "receipt": "surface-report-qa.json",
+    "status": "PASS_EGO_REPORT_LAYOUT_AND_ASSET_LINKS",
+    "images_decoded": 25,
+    "unique_local_links_HTTP_HEAD_200": 82,
+    "mobile_viewport_and_scroll_px": [390, 390],
+    "expanded_archives": 4,
+    "report_file_and_served_SHA256": "2e98765279e0054fa5a54ad4b13351d4f61eed6f18ac5725bbfb03f578c6cb9b",
+    "Ego_task_finish": "completed once; Studio snappy-10 and final report retained for user"
+  },
+  "independent_review": {
+    "status": "FIVE_SCOPED_LANES_PASS_NOT_ENGINEERING_ACCEPTANCE",
+    "goal": "Banach: PASS after candidate-specific weight and unmeasured physical layer-depth wording fixes",
+    "code": "Gibbs: PASS after bound provenance, incomplete native log and failed-copy cleanup fixes plus provenance entries",
+    "security": "Bacon: PASS; both P1 closed; current source/clone and native/STL crossbindings verified read-only",
+    "QA": "Nietzsche: PASS; 13 focused independent rechecks; earlier missing matplotlib declaration corrected",
+    "context": "Hubble: PASS; source history, unchanged gates, frozen inputs, archive preservation and headers/provenance checked",
+    "scope": "reviewer passes do not mean extended mesh acceptance, physical adequacy, original launch freeze or GPU approval"
+  },
+  "hypotheses_results": {
+    "H1": "local interior wing trajectory smoothing achieved; R4-only09 did not remove extended failures, so source roughness is not established as sole cause",
+    "H2": "controlled R3 weight threshold alignment08 eliminated176 low-weight failures; coverage fell by about1.60 percentage points",
+    "H3": "buffer1->3 on sameR4/weight reduced determinant2901->85 and concavity44883->35393, increased coverage but removed all full8-layer faces; not accepted"
+  },
+  "artifact_manifest_verification": "480 of480 saved entries matched size and SHA256 after packaging",
+  "presentation_manifest": "surface-presentation-manifest.json",
+  "engineering_status": "FIX_FIRST_GPU_HOLD",
+  "CFD_solver_run": false,
+  "GPU_solver_run": false,
+  "CUDA_kernel_run": false,
+  "new_GPU_memory_test": false,
+  "live_AI_API_run": false,
+  "flow_target": "30m/s reference angle0degrees plan only; no runnable physical case created"
+}

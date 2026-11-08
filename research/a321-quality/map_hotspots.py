@@ -49,7 +49,17 @@ def main(candidate: str = "snappy-03", audit_id: str = "v5") -> None:
     """Create a projection, complete CSV index and per-band counts for one frozen mesh."""
     if (
         candidate
-        not in {"snappy-03", "snappy-04", "snappy-05", "snappy-06", "snappy-07"}
+        not in {
+            "snappy-03",
+            "snappy-04",
+            "snappy-05",
+            "snappy-06",
+            "snappy-07",
+            "snappy-08",
+            "snappy-09",
+            "snappy-10",
+            "snappy-11",
+        }
         or audit_id != "v5"
     ):
         raise RuntimeError("UNSUPPORTED_CANDIDATE")

@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "candidate": "snappy-08",
+  "source_case": "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/snappy-08",
+  "clone_case": "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/snappy-08-bound-check",
+  "command": [
+    "checkMesh",
+    "-constant",
+    "-allTopology",
+    "-allGeometry"
+  ],
+  "old_log_sha256": "f7f108886b3b8622d371216dc7df61feed7538ad644351db358e6ce2a7bc562e",
+  "new_log_sha256": "1bb467cb60276d66cf1cb7ca4f5802a89a76840d2ec0007ca4e19cb624e6b15c",
+  "source_mesh_before": {
+    "points": "16768b7c7cdc9312238161b940f3aded05f40ed5d9cb184cdc2bbedf69448b8e",
+    "faces": "124a91de21a4b6fffd327b0ff05a7d97bc12cd3f9f5bf34725df84ff46ccb606",
+    "owner": "cc116203deac85796684b252a51228fb34e304fb377bb6b6a8febc9358073aa5",
+    "neighbour": "ed6b6e4c867680484188c7dfc72120e56f8b9b3ac577e0d7c0f79529a1daaa33",
+    "boundary": "1aa17b12f894786f7f930db2cde2e1812f17c6c29a2e55e0d7e4d2cbf55f8987"
+  },
+  "source_mesh_after": {
+    "points": "16768b7c7cdc9312238161b940f3aded05f40ed5d9cb184cdc2bbedf69448b8e",
+    "faces": "124a91de21a4b6fffd327b0ff05a7d97bc12cd3f9f5bf34725df84ff46ccb606",
+    "owner": "cc116203deac85796684b252a51228fb34e304fb377bb6b6a8febc9358073aa5",
+    "neighbour": "ed6b6e4c867680484188c7dfc72120e56f8b9b3ac577e0d7c0f79529a1daaa33",
+    "boundary": "1aa17b12f894786f7f930db2cde2e1812f17c6c29a2e55e0d7e4d2cbf55f8987"
+  },
+  "clone_mesh_before": {
+    "points": "16768b7c7cdc9312238161b940f3aded05f40ed5d9cb184cdc2bbedf69448b8e",
+    "faces": "124a91de21a4b6fffd327b0ff05a7d97bc12cd3f9f5bf34725df84ff46ccb606",
+    "owner": "cc116203deac85796684b252a51228fb34e304fb377bb6b6a8febc9358073aa5",
+    "neighbour": "ed6b6e4c867680484188c7dfc72120e56f8b9b3ac577e0d7c0f79529a1daaa33",
+    "boundary": "1aa17b12f894786f7f930db2cde2e1812f17c6c29a2e55e0d7e4d2cbf55f8987"
+  },
+  "clone_mesh_after": {
+    "points": "16768b7c7cdc9312238161b940f3aded05f40ed5d9cb184cdc2bbedf69448b8e",
+    "faces": "124a91de21a4b6fffd327b0ff05a7d97bc12cd3f9f5bf34725df84ff46ccb606",
+    "owner": "cc116203deac85796684b252a51228fb34e304fb377bb6b6a8febc9358073aa5",
+    "neighbour": "ed6b6e4c867680484188c7dfc72120e56f8b9b3ac577e0d7c0f79529a1daaa33",
+    "boundary": "1aa17b12f894786f7f930db2cde2e1812f17c6c29a2e55e0d7e4d2cbf55f8987"
+  },
+  "source_sets_before": {
+    "concaveCells": "2aa2a2e94d0393b2b4fb41a47f7e8dab1c9b2ee112547ac50e6b6f17ebbaec1f",
+    "concaveFaces": "9161c5dbbac5b465f60e30a053d6fee87986702826d723409b6396ec5d1f6982",
+    "edgeFaces": "f88f4e687bd2430b636ad6e000cc12d03568bedb8d1ea8ba44ccf753f73e559f",
+    "lowWeightFaces": "e974e468b2e61c79d5bd8faa3d54cd028c2104a66562d019f9ad83db7485de96",
+    "underdeterminedCells": "4aa78d55472fd9f685cbfb92b6d582434b14d1ac4a84aa306f843a78a9d65bf3",
+    "warpedFaces": "5a56925580d9963dc736b95bc82055af3137ca5a28513147c1f1acdb585070fd"
+  },
+  "source_sets_after": {
+    "concaveCells": "2aa2a2e94d0393b2b4fb41a47f7e8dab1c9b2ee112547ac50e6b6f17ebbaec1f",
+    "concaveFaces": "9161c5dbbac5b465f60e30a053d6fee87986702826d723409b6396ec5d1f6982",
+    "edgeFaces": "f88f4e687bd2430b636ad6e000cc12d03568bedb8d1ea8ba44ccf753f73e559f",
+    "lowWeightFaces": "e974e468b2e61c79d5bd8faa3d54cd028c2104a66562d019f9ad83db7485de96",
+    "underdeterminedCells": "4aa78d55472fd9f685cbfb92b6d582434b14d1ac4a84aa306f843a78a9d65bf3",
+    "warpedFaces": "5a56925580d9963dc736b95bc82055af3137ca5a28513147c1f1acdb585070fd"
+  },
+  "clone_sets_before": {
+    "concaveCells": "2aa2a2e94d0393b2b4fb41a47f7e8dab1c9b2ee112547ac50e6b6f17ebbaec1f",
+    "concaveFaces": "9161c5dbbac5b465f60e30a053d6fee87986702826d723409b6396ec5d1f6982",
+    "edgeFaces": "f88f4e687bd2430b636ad6e000cc12d03568bedb8d1ea8ba44ccf753f73e559f",
+    "lowWeightFaces": "e974e468b2e61c79d5bd8faa3d54cd028c2104a66562d019f9ad83db7485de96",
+    "underdeterminedCells": "4aa78d55472fd9f685cbfb92b6d582434b14d1ac4a84aa306f843a78a9d65bf3",
+    "warpedFaces": "5a56925580d9963dc736b95bc82055af3137ca5a28513147c1f1acdb585070fd"
+  },
+  "clone_sets_after": {
+    "concaveCells": "2aa2a2e94d0393b2b4fb41a47f7e8dab1c9b2ee112547ac50e6b6f17ebbaec1f",
+    "concaveFaces": "9161c5dbbac5b465f60e30a053d6fee87986702826d723409b6396ec5d1f6982",
+    "edgeFaces": "f88f4e687bd2430b636ad6e000cc12d03568bedb8d1ea8ba44ccf753f73e559f",
+    "lowWeightFaces": "e974e468b2e61c79d5bd8faa3d54cd028c2104a66562d019f9ad83db7485de96",
+    "underdeterminedCells": "4aa78d55472fd9f685cbfb92b6d582434b14d1ac4a84aa306f843a78a9d65bf3",
+    "warpedFaces": "5a56925580d9963dc736b95bc82055af3137ca5a28513147c1f1acdb585070fd"
+  },
+  "returncode": 0,
+  "status": "BOUND_REPLAY_COMPLETE"
+}

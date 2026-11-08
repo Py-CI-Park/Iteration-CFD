@@ -1,0 +1,56 @@
+{
+  "candidate": "snappy-11",
+  "cell_family": "hex_dominant_polyhedra, not tetrahedra",
+  "cells": 941938,
+  "points": 1048854,
+  "faces": 2928343,
+  "max_face_arity": 9,
+  "internal_faces": 2858432,
+  "fluid_components": 1,
+  "nonpositive_volumes": 0,
+  "min_volume_m3": 4.189091906942181e-06,
+  "max_nonorth_deg": 65.94826187870916,
+  "faces_nonorth_gt70": 0,
+  "max_relative_closure": 4.571889390638382e-15,
+  "max_absolute_closure_m2": 6.619697025648909e-15,
+  "wall_faces": 57559,
+  "wall_closed": true,
+  "raw_wall_edge_incidence_closed": true,
+  "cell_geometry_method": "signed triangle tetrahedral moments; arithmetic face-center fan defines warped face surface",
+  "wall_winding": true,
+  "wall_volume_m3": 503.99286902696605,
+  "reference_volume_m3": 504.8608243561819,
+  "sampled_surface_distance": [
+    {
+      "direction": "R3_to_calculation",
+      "samples": 12000,
+      "max_m": 0.04630865558633493,
+      "p95_m": 0.004244910917141798
+    },
+    {
+      "direction": "calculation_to_R3",
+      "samples": 12000,
+      "max_m": 0.035173617362098474,
+      "p95_m": 0.004221733691498452
+    }
+  ],
+  "reference_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "thresholds": {
+    "nonorth_deg": 70,
+    "relative_closure": 1e-10
+  },
+  "nonorth_closure_gate": true,
+  "boundary_layer_coverage": "SEE_EXTERNAL_LAYER_LOG_AND_FIELDS",
+  "solved_y_plus": "NOT_MEASURED",
+  "solver_run": false,
+  "gpu_compute": false,
+  "polyMesh_sha256": {
+    "points": "3cee3acec46f07af032ba1ca4fd2ee4f76fdfd8b0aaf6a682e4e51dd4fbf6f38",
+    "faces": "496438ad22db77b4cd9b931c0afa72a24c4fb28f57da015a5cb17732d0e78502",
+    "owner": "779a8605b3cac6595a38be9fd7db77e4cc86954ce9801771c60e5b4e62c462fc",
+    "neighbour": "6ed78dcb5a2d3a8922bc9d6529c9fe07cfb785154ef916dd3ddd5e275d40dcd0",
+    "boundary": "5a0cc6d8a00885a735716e186f1fd88e1a80d2f99fad0adcb9bf7fc5117ff8c7"
+  },
+  "mesh_unchanged_during_audit": true,
+  "audited_geometry_sha256": "948122c346a87722af0a7f3866384866eb718db349db4175b9c1016e195754d9"
+}

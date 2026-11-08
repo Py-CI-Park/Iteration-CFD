@@ -26,6 +26,10 @@ def main(candidate: str = "snappy-03") -> None:
         "snappy-05",
         "snappy-06",
         "snappy-07",
+        "snappy-08",
+        "snappy-09",
+        "snappy-10",
+        "snappy-11",
     }:
         raise RuntimeError("INVALID_CANDIDATE")
     case = ROOT / "artifacts" / candidate

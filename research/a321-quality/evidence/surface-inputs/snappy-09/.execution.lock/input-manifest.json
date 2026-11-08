@@ -1,0 +1,20 @@
+{
+  "candidate": "snappy-09",
+  "plan": "06 -> 09: receipt-bound smooth R4 only; identical system dictionaries",
+  "source_path": "D:/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/smooth-r4/A321_AIRFRAME_SHELL_R4.stl",
+  "source_sha256": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6",
+  "baseline06_sha256": "a4bd8c95305eb5b71fd84c61400bac7c6c41e2e6d73be7cb19debdee8731c346",
+  "canonical_r3_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "geometry_receipt_sha256": "f7b975662f20f1f8c0ced9b292c763ac942b238e050bc982756645bd130c2ae4",
+  "sha256": {
+    "constant/triSurface/aircraft.stl": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6",
+    "system/blockMeshDict": "b4ccb0f2d93077c036e03b1f96afe13cbf5c634fdd4dac5dba721b6b1d532ebd",
+    "system/controlDict": "a32c9f780c7eb579b6065007b64cdd8c345b977a7b43fe3b558fdcbd232ab4a7",
+    "system/decomposeParDict": "702c029b98acaf304d3ec624905335301c187f323deb22242f2694e83efa170b",
+    "system/fvSchemes": "1ca96c0c187c6a2a1a4ed854d2f942b5d2ac2d588c6fc8f46106155bcaaa4ff9",
+    "system/fvSolution": "dd1a1b770d13a911d031f624948a6d03a7436d77bb21151276cb45b4cbfa084f",
+    "system/snappyHexMeshDict": "190661fea3b142aea9145193fbac0382b7cf7c40405a219b73cec923f2e24aa4",
+    "system/surfaceFeatureExtractDict": "616001e40bd63941fa69c015d8d13a4d6f2b90cf038f2325465748677ed5c1d4",
+    "geometry-receipt.json": "f7b975662f20f1f8c0ced9b292c763ac942b238e050bc982756645bd130c2ae4"
+  }
+}

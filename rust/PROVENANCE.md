@@ -1017,3 +1017,9 @@ characteristic speed `2 sqrt(g h0)`.
 Agreement with another solver to 1e-13 is not evidence that this code is
 correct. It is evidence of something else entirely, and it is exactly what this
 project spent a phase removing.
+
+## 2026-11-08 A321 surface-quality research
+
+| Source files | Classification and writing basis |
+|---|---|
+| `../research/a321-quality/` surface-trial tools, native surface-binding helper, tests and `smooth-gallery/*.mjs` | Original CPU research and format/API orchestration, individually recorded in [`research/a321-quality/PROVENANCE.md`](../research/a321-quality/PROVENANCE.md), including the separate Blender adapter's existing outbound classification. Written from preserved R3 inputs, public format/API documentation and external CLI output; no GPL implementation source consulted. No solver numerics change or CFD/GPU solve. |

@@ -1,0 +1,19 @@
+{
+  "sources": [
+    {
+      "title": "OpenFOAM Documentation - Layer addition",
+      "url": "https://doc.openfoam.com/2212/tools/pre-processing/mesh/generation/snappyhexmesh/layers/",
+      "term": "nBufferCellsNoExtrude",
+      "found": true,
+      "context": "celled. With default value 0 points are extruded directly next to the feature.\n\nnBufferCellsNoExtrude [label]🔗\n\nCreate buffer region for new layer terminations, i.e. gradually step down number of layers. Set to less than 0 to terminate layer in one go\n\nnLayerIter [label]🔗\n\nOverall max number of layer addition iterations. The mesher will exit if it reaches this number of iterations; possibly with an illegal mesh.\n\nnRelaxedIter [label]🔗\n\nMax number of iterations after which relaxed mesh quality controls are used. Up to nRelaxedIter it uses the settings in meshQualityContro"
+    },
+    {
+      "title": "Mesh quality | OpenFOAM Documentation",
+      "url": "https://doc.openfoam.com/2606/tools/pre-processing/mesh/generation/snappyhexmesh/meshquality/",
+      "term": "minFaceWeight",
+      "found": true,
+      "context": "terminant [scalar]​\n\nMinimum cell determinant:\n\nminDeterminant          0.001;\n\nminFaceWeight [scalar]​\n\nMinimum face interpolation weight\n\nminFaceWeight           0.05;\n\nminFaceFlatness [scalar]​\n\nminFaceFlatness: Optional\n\nminFaceFlatness         -1;\n\nminVolRatio [scalar]​\n\nminVolRatio:\n\nminVolRatio             0.01;\n\nminTriangleTwist [scalar]​\n\nminTriangleTwist:\n\nminTriangleTwist        -1;\n\nnSmoothScale [scalar]​\n\nSmoothing iterations. Used in combination with errorReduction:\n\nnSmoothScale            4;\n\nerrorReduction [scalar]​\n\nError reduction. Used in combination wit"
+    }
+  ],
+  "note": "Public parameter documentation; installed external executable is OpenFOAM v1912; no implementation source consulted"
+}

@@ -53,7 +53,15 @@ def owner_minimum(
 
 def main(candidate: str = "snappy-04") -> None:
     """Copy the frozen mesh and attach the minimum native face count per owner cell."""
-    if candidate not in {"snappy-04", "snappy-06", "snappy-07"}:
+    if candidate not in {
+        "snappy-04",
+        "snappy-06",
+        "snappy-07",
+        "snappy-08",
+        "snappy-09",
+        "snappy-10",
+        "snappy-11",
+    }:
         raise RuntimeError("INVALID_DIAGNOSTIC_CANDIDATE")
     case = ROOT / "artifacts" / candidate
     audit = BoundAudit.model_validate_json(

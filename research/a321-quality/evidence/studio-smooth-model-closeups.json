@@ -1,0 +1,9 @@
+{
+  "wheelDeltaY": -700,
+  "modelPaths": [
+    "research/a321-quality/models/A321_AIRFRAME_SHELL_R4.stl",
+    "research/a321-integration/models/A321_AIRFRAME_SHELL_R3.stl"
+  ],
+  "note": "same auto-fit start and same zoom input; previous R4 capture failed only because window minimized; no second R4 zoom",
+  "CFD_solver_run": false
+}

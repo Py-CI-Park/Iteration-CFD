@@ -1,0 +1,26 @@
+{
+  "surface": "research\\a321-quality\\artifacts\\smooth-r4\\A321_AIRFRAME_SHELL_R4.stl",
+  "vertices": 77051,
+  "triangles": 154098,
+  "closed": true,
+  "winding": true,
+  "components": 1,
+  "minimum_triangle_angle_deg": 0.0027870556363007674,
+  "minimum_edge_m": 1.0490868921187777e-05,
+  "distances": [
+    {
+      "direction": "reference_to_candidate",
+      "samples": 12000,
+      "max_m": 8.337938902157881e-06,
+      "p95_m": 9.992007221626409e-16
+    },
+    {
+      "direction": "candidate_to_reference",
+      "samples": 12000,
+      "max_m": 3.909909557082263e-05,
+      "p95_m": 1.0190492755571723e-15
+    }
+  ],
+  "gpu_compute": false,
+  "solver_run": false
+}

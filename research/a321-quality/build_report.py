@@ -19,8 +19,11 @@ def render(root: Path) -> str:
     overview = (root / "PROGRESS_KO.md").read_text(encoding="utf8")
     archive = (root / "README_KO.md").read_text(encoding="utf8")
     extensions = ["tables", "fenced_code", "attr_list"]
-    latest = (root / "LAYER_CONDITIONING_KO.md").read_text(encoding="utf8")
+    latest = (root / "SURFACE_REFINEMENT_KO.md").read_text(encoding="utf8")
     body = markdown.markdown(latest, extensions=extensions)
+    conditioning = (root / "LAYER_CONDITIONING_KO.md").read_text(encoding="utf8")
+    conditioning = re.sub(r"\{#([^}]+)\}", r"{#conditioning-\1}", conditioning)
+    previous_conditioning = markdown.markdown("#" + conditioning, extensions=extensions)
     hotspots = (root / "HOTSPOTS_KO.md").read_text(encoding="utf8")
     hotspots = re.sub(r"\{#([^}]+)\}", r"{#hotspot-\1}", hotspots)
     previous_hotspots = markdown.markdown("#" + hotspots, extensions=extensions)
@@ -33,12 +36,14 @@ def render(root: Path) -> str:
         "<title>A321 공력 해석 준비 · R3 · GPU 보류</title>"
         '<link rel="stylesheet" href="report.css"></head><body>'
         '<nav aria-label="보고서 목차"><a href="#progress">진행률</a>'
-        '<a href="#studio">층 수 지도</a><a href="#trials">개선 비교</a>'
-        '<a href="#distance">근벽 거리</a><a href="#flow">30 m/s 계획</a>'
+        '<a href="#models">R3·R4 모델</a><a href="#trials">CPU 비교</a>'
+        '<a href="#studio">격자·층 수 지도</a>'
         '<a href="#next">남은 단계</a>'
         '<a href="#history">이전 연구</a>'
         '<a href="#detail">상세 원문</a></nav>'
-        f'<main>{body}<details class="archive" id="hotspot-report">'
+        f'<main>{body}<details class="archive" id="conditioning-report">'
+        "<summary>이전 06·07 경계층·실제 근벽 거리·30 m/s 준비 전체 보기</summary>"
+        f'{previous_conditioning}</details><details class="archive" id="hotspot-report">'
         "<summary>이전 03→04·05 위치 지도·GPU 진단·API 검토 전체 보기</summary>"
         f'{previous_hotspots}</details><details class="archive" id="prior-report">'
         "<summary>이전 통합 준비표·모델 갤러리 전체 보기</summary>"

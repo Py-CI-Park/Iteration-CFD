@@ -1,0 +1,11 @@
+{
+  "status": "SEPARATE_RESEARCH_MODEL_SAVED",
+  "vertices": 77051,
+  "triangles": 154098,
+  "native_sha256": "433dd26a198b616a82293a2dca543cfe807860190137dd862211effa144ce427",
+  "stl_sha256": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6",
+  "blender": "5.2.2 LTS",
+  "R3_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "GPU_solver_run": false,
+  "render_run": false
+}

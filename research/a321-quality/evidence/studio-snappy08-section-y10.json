@@ -1,0 +1,72 @@
+{
+  "state": {
+    "backend": "webgpu",
+    "datasetId": "ef0938a119128efcc0ab5d25c674c4881a1275fc",
+    "datasetName": "snappy-08-owner-diagnostic",
+    "source": "polymesh",
+    "geometryFidelity": "exact",
+    "cellCount": 1010837,
+    "bounds": {
+      "min": [
+        -45.00000000000001,
+        -65.00000000000001,
+        -45.00000000000001
+      ],
+      "max": [
+        135.00000000000003,
+        65.00000000000001,
+        55.00000000000002
+      ]
+    },
+    "field": "diagnostic_owner_layer_min",
+    "component": null,
+    "range": [
+      0,
+      8
+    ],
+    "warp": null,
+    "colormap": "turbo",
+    "representation": "wireframe",
+    "time": {
+      "index": 0,
+      "value": 0,
+      "count": 1
+    },
+    "layers": [
+      {
+        "id": "smooth-08-section-y10",
+        "type": "slice",
+        "summary": "slice y=10 (cut, 6399 tris)"
+      }
+    ],
+    "camera": {
+      "position": [
+        22.700000000000003,
+        19.999999999994998,
+        3.90001
+      ],
+      "target": [
+        22.700000000000003,
+        10,
+        3.9
+      ],
+      "projection": "perspective"
+    },
+    "patches": {
+      "visible": [],
+      "hidden": [
+        "inlet",
+        "outlet",
+        "yMin",
+        "yMax",
+        "zMin",
+        "zMax",
+        "aircraft"
+      ]
+    },
+    "loading": false,
+    "message": "polyMesh is not a structured lattice: slices and planes are exact cuts of its cells, iso-surfaces are contoured and streamlines traced on them; glyphs are unavailable"
+  },
+  "meaning": "exact geometric cell cut y=10m, native layer diagnostic, not CFD solution",
+  "CFD_solver_run": false
+}

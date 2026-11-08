@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "candidate": "snappy-08",
+  "external_check_log": {
+    "path": "log.checkMesh-extended",
+    "sha256": "f7f108886b3b8622d371216dc7df61feed7538ad644351db358e6ce2a7bc562e"
+  },
+  "replay_check_log": {
+    "path": "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/snappy-08-bound-check/log.bound-check-extended",
+    "sha256": "1bb467cb60276d66cf1cb7ca4f5802a89a76840d2ec0007ca4e19cb624e6b15c"
+  },
+  "bound_replay": {
+    "path": "snappy-08-bound-check.json",
+    "sha256": "aaa1f2415928167335f88d591232ddc4c1e5dd5f12daaa2e02ef21df14ec462f"
+  },
+  "mesh": {
+    "points": "16768b7c7cdc9312238161b940f3aded05f40ed5d9cb184cdc2bbedf69448b8e",
+    "faces": "124a91de21a4b6fffd327b0ff05a7d97bc12cd3f9f5bf34725df84ff46ccb606",
+    "owner": "cc116203deac85796684b252a51228fb34e304fb377bb6b6a8febc9358073aa5",
+    "neighbour": "ed6b6e4c867680484188c7dfc72120e56f8b9b3ac577e0d7c0f79529a1daaa33",
+    "boundary": "1aa17b12f894786f7f930db2cde2e1812f17c6c29a2e55e0d7e4d2cbf55f8987"
+  },
+  "sets": [],
+  "proven_zero_checks": [
+    "lowWeightFaces"
+  ],
+  "status": "DIAGNOSTICS_ONLY_NOT_MESH_ACCEPTANCE"
+}

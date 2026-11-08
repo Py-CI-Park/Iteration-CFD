@@ -1,0 +1,72 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:                                        |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : OPENFOAM=1912 patch=200626
+Arch   : "LSB;label=32;scalar=64"
+Exec   : surfaceFeatureExtract
+Date   : Nov 08 2026
+Time   : 08:12:11
+Host   : WORKSTATION
+PID    : 2117
+I/O    : uncollated
+Case   : /mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/snappy-08
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+
+Note: Feature line extraction only valid on closed manifold surfaces
+
+Reading surfaceFeatureExtractDict
+
+Surfaces     : aircraft.stl
+Output       : aircraft
+Load options : offset
+Write options: writeObj=no writeVTK=off
+
+Statistics:
+Triangles    : 129522 in 1 region(s)
+Vertices     : 64763
+Bounding Box : (0 -16.290000915527344 1.9500000476837158) (44.509998321533203 16.290000915527344 11.960000038146973)
+
+Constructing feature set from included angle 150
+Selecting edges based purely on geometric tests: no
+
+Initial Feature set:
+    points : 137
+    edges  : 3183
+    of which
+        region edges   : 0
+        external edges : 1384
+        internal edges : 1799
+
+Final Feature set:
+    points : 3105
+    of which
+        convex             : 7
+        concave            : 29
+        mixed              : 101
+        non-feature        : 2968
+    edges  : 3183
+    of which
+        external edges     : 1384
+        internal edges     : 1799
+        flat edges         : 0
+        open edges         : 0
+        multiply connected : 0
+
+Writing extendedFeatureEdgeMesh to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/snappy-08/constant/extendedFeatureEdgeMesh/aircraft.extendedFeatureEdgeMesh"
+
+Writing featureEdgeMesh to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/snappy-08/constant/triSurface/aircraft.eMesh"
+ExecutionTime = 0.33000000000000002 s  ClockTime = 1 s
+
+End
+

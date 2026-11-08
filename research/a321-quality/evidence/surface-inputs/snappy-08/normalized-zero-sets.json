@@ -1,0 +1,26 @@
+{
+  "candidate": "snappy-08",
+  "external_check_log": {
+    "path": "log.checkMesh-extended",
+    "sha256": "f7f108886b3b8622d371216dc7df61feed7538ad644351db358e6ce2a7bc562e"
+  },
+  "mesh": {
+    "points": "16768b7c7cdc9312238161b940f3aded05f40ed5d9cb184cdc2bbedf69448b8e",
+    "faces": "124a91de21a4b6fffd327b0ff05a7d97bc12cd3f9f5bf34725df84ff46ccb606",
+    "owner": "cc116203deac85796684b252a51228fb34e304fb377bb6b6a8febc9358073aa5",
+    "neighbour": "ed6b6e4c867680484188c7dfc72120e56f8b9b3ac577e0d7c0f79529a1daaa33",
+    "boundary": "1aa17b12f894786f7f930db2cde2e1812f17c6c29a2e55e0d7e4d2cbf55f8987"
+  },
+  "sets": [
+    {
+      "name": "lowWeightFaces",
+      "path": "constant/polyMesh/sets/lowWeightFaces",
+      "pass_marker": "Face interpolation weight check OK.",
+      "sha256": "e974e468b2e61c79d5bd8faa3d54cd028c2104a66562d019f9ad83db7485de96",
+      "synthesized": true,
+      "count": 0
+    }
+  ],
+  "status": "DIAGNOSTICS_ONLY_NOT_MESH_ACCEPTANCE",
+  "marker_source": "Installed OpenFOAM v1912 /lib/libOpenFOAM.so messages"
+}

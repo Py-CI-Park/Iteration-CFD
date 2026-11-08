@@ -1,0 +1,157 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:                                        |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : OPENFOAM=1912 patch=200626
+Arch   : "LSB;label=32;scalar=64"
+Exec   : reconstructParMesh -constant
+Date   : Nov 08 2026
+Time   : 08:40:02
+Host   : WORKSTATION
+PID    : 2389
+I/O    : uncollated
+Case   : /mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/snappy-10
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+This is an experimental tool which tries to merge individual processor
+meshes back into one master mesh. Use it if the original master mesh has
+been deleted or if the processor meshes have been modified (topology change).
+This tool will write the resulting mesh to a new time step and construct
+xxxxProcAddressing files in the processor meshes so reconstructPar can be
+used to regenerate the fields on the master mesh.
+
+Not well tested & use at your own risk!
+
+Merge tolerance : 9.9999999999999995e-08
+Write tolerance : 1.0000000000000001e-17
+Doing geometric matching on correct procBoundaries only.
+This assumes a correct decomposition.
+Found 8 processor directories
+
+Reading database "snappy-10/processor0"
+Reading database "snappy-10/processor1"
+Reading database "snappy-10/processor2"
+Reading database "snappy-10/processor3"
+Reading database "snappy-10/processor4"
+Reading database "snappy-10/processor5"
+Reading database "snappy-10/processor6"
+Reading database "snappy-10/processor7"
+Time = constant
+
+Reading points from "snappy-10/processor0" for time = constant
+
+Reading points from "snappy-10/processor1" for time = constant
+
+Reading points from "snappy-10/processor2" for time = constant
+
+Reading points from "snappy-10/processor3" for time = constant
+
+Reading points from "snappy-10/processor4" for time = constant
+
+Reading points from "snappy-10/processor5" for time = constant
+
+Reading points from "snappy-10/processor6" for time = constant
+
+Reading points from "snappy-10/processor7" for time = constant
+
+Overall mesh bounding box  : (-45.000000000000007 -65.000000000000014 -45.000000000000007) (135.00000000000003 65.000000000000014 55.000000000000021)
+Relative tolerance         : 9.9999999999999995e-08
+Absolute matching distance : 2.4351591323771843e-05
+
+Merging mesh 0 with 1
+Merging mesh 2 with 3
+Merging mesh 4 with 5
+Merging mesh 6 with 7
+Merging mesh 0 with 2
+Merging mesh 4 with 6
+Merging mesh 0 with 4
+Reading mesh to add from "snappy-10/processor0" for time = constant
+
+
+Reading mesh to add from "snappy-10/processor1" for time = constant
+
+
+Reading mesh to add from "snappy-10/processor2" for time = constant
+
+
+Reading mesh to add from "snappy-10/processor3" for time = constant
+
+
+Reading mesh to add from "snappy-10/processor4" for time = constant
+
+
+Reading mesh to add from "snappy-10/processor5" for time = constant
+
+
+Reading mesh to add from "snappy-10/processor6" for time = constant
+
+
+Reading mesh to add from "snappy-10/processor7" for time = constant
+
+
+mergeSharedPoints : detected 0 points that are to be merged.
+
+Writing merged mesh to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/artifacts/snappy-10/constant"
+
+Reconstructing the addressing from the processor meshes to the newly reconstructed mesh
+
+Reading processor 0 mesh from "snappy-10/processor0"
+Writing pointProcAddressing to "snappy-10/processor0/constant/polyMesh"
+Writing faceProcAddressing to "snappy-10/processor0/constant/polyMesh"
+Writing cellProcAddressing to "snappy-10/processor0/constant/polyMesh"
+Writing boundaryProcAddressing to "snappy-10/processor0/constant/polyMesh"
+
+Reading processor 1 mesh from "snappy-10/processor1"
+Writing pointProcAddressing to "snappy-10/processor1/constant/polyMesh"
+Writing faceProcAddressing to "snappy-10/processor1/constant/polyMesh"
+Writing cellProcAddressing to "snappy-10/processor1/constant/polyMesh"
+Writing boundaryProcAddressing to "snappy-10/processor1/constant/polyMesh"
+
+Reading processor 2 mesh from "snappy-10/processor2"
+Writing pointProcAddressing to "snappy-10/processor2/constant/polyMesh"
+Writing faceProcAddressing to "snappy-10/processor2/constant/polyMesh"
+Writing cellProcAddressing to "snappy-10/processor2/constant/polyMesh"
+Writing boundaryProcAddressing to "snappy-10/processor2/constant/polyMesh"
+
+Reading processor 3 mesh from "snappy-10/processor3"
+Writing pointProcAddressing to "snappy-10/processor3/constant/polyMesh"
+Writing faceProcAddressing to "snappy-10/processor3/constant/polyMesh"
+Writing cellProcAddressing to "snappy-10/processor3/constant/polyMesh"
+Writing boundaryProcAddressing to "snappy-10/processor3/constant/polyMesh"
+
+Reading processor 4 mesh from "snappy-10/processor4"
+Writing pointProcAddressing to "snappy-10/processor4/constant/polyMesh"
+Writing faceProcAddressing to "snappy-10/processor4/constant/polyMesh"
+Writing cellProcAddressing to "snappy-10/processor4/constant/polyMesh"
+Writing boundaryProcAddressing to "snappy-10/processor4/constant/polyMesh"
+
+Reading processor 5 mesh from "snappy-10/processor5"
+Writing pointProcAddressing to "snappy-10/processor5/constant/polyMesh"
+Writing faceProcAddressing to "snappy-10/processor5/constant/polyMesh"
+Writing cellProcAddressing to "snappy-10/processor5/constant/polyMesh"
+Writing boundaryProcAddressing to "snappy-10/processor5/constant/polyMesh"
+
+Reading processor 6 mesh from "snappy-10/processor6"
+Writing pointProcAddressing to "snappy-10/processor6/constant/polyMesh"
+Writing faceProcAddressing to "snappy-10/processor6/constant/polyMesh"
+Writing cellProcAddressing to "snappy-10/processor6/constant/polyMesh"
+Writing boundaryProcAddressing to "snappy-10/processor6/constant/polyMesh"
+
+Reading processor 7 mesh from "snappy-10/processor7"
+Writing pointProcAddressing to "snappy-10/processor7/constant/polyMesh"
+Writing faceProcAddressing to "snappy-10/processor7/constant/polyMesh"
+Writing cellProcAddressing to "snappy-10/processor7/constant/polyMesh"
+Writing boundaryProcAddressing to "snappy-10/processor7/constant/polyMesh"
+
+
+End
+

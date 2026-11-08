@@ -1,0 +1,17 @@
+{
+  "candidate": "snappy-09",
+  "external_check_log": {
+    "path": "log.checkMesh-extended",
+    "sha256": "2e4883d9e113dfb73828b3fa5424b249173ee8fcfec68f384dba4070267633af"
+  },
+  "mesh": {
+    "points": "174dae739b143e8f0d1873f4646c0c67c69ae9d5f89617f5a711cb0782ce6032",
+    "faces": "38ef2ad409411a018e53d6943848930d5c8a37140bffba8312cc534cd0695929",
+    "owner": "2c7b390b957ee2553311ff659fd3ede1164fa1a3384c62ea358a19afb5756375",
+    "neighbour": "3a4bd20c586aa1450e77495d0a0ae992a328abe5ea1e890f901b8fa59eed9782",
+    "boundary": "a5e110befe403ff77d9bf96b9140a2bfa3840529b5708a093ee5d58ce1df17c7"
+  },
+  "sets": [],
+  "status": "DIAGNOSTICS_ONLY_NOT_MESH_ACCEPTANCE",
+  "marker_source": "Installed OpenFOAM v1912 /lib/libOpenFOAM.so messages"
+}

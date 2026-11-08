@@ -1,0 +1,157 @@
+{
+  "candidate": "snappy-09",
+  "mesh": {
+    "points": "174dae739b143e8f0d1873f4646c0c67c69ae9d5f89617f5a711cb0782ce6032",
+    "faces": "38ef2ad409411a018e53d6943848930d5c8a37140bffba8312cc534cd0695929",
+    "owner": "2c7b390b957ee2553311ff659fd3ede1164fa1a3384c62ea358a19afb5756375",
+    "neighbour": "3a4bd20c586aa1450e77495d0a0ae992a328abe5ea1e890f901b8fa59eed9782",
+    "boundary": "a5e110befe403ff77d9bf96b9140a2bfa3840529b5708a093ee5d58ce1df17c7"
+  },
+  "diagnostic_seal_sha256": "01d29e7ad345ed29cd565ebbda2d121bdc9e2345053ade6383ebb8bd3325fa76",
+  "diagnostic_seal_is_post_generation_snapshot": true,
+  "diagnostics_sha256": {
+    "constant/polyMesh/sets/underdeterminedCells": "edc0b3ad2ef0c211299745bd3b308a9585bfa38fee95bef12e8bed9c73c7358f",
+    "constant/polyMesh/sets/concaveCells": "7cf9f6f85eed4717798f7016b7a7af4e71f64bd6e592257b2c576339d920b423",
+    "constant/polyMesh/sets/lowWeightFaces": "8dde9dec41570075b5ae00fb5158fc7d48f718eb068952e1c2a5d59c15b7967e",
+    "processor0/constant/polyMesh/boundary": "efce56178c24a59c0fa6a9c31bc93cfc0f20df60ddec0a15100be3398ca56876",
+    "processor0/constant/polyMesh/faceProcAddressing": "83c86501c06e220fb017230cc693c95f1d135dee62475fd3ee3c04723aa05200",
+    "processor0/0/nSurfaceLayers": "c32f847eb4c8baa0dd1a299eaf6717d617b2db9ff64239ae541a44d08c0b32cd",
+    "processor0/0/thickness": "bfe0d58ca6f152b92f5670643337f5e541892213e4954233d7456abea9a4ee59",
+    "processor1/constant/polyMesh/boundary": "7e363b8f9123843f23175f55ce2b13489352ba106974f1c5caf1184eea44cfb1",
+    "processor1/constant/polyMesh/faceProcAddressing": "1fd952c76e5286a35e19e2152b8992c8363fa486f89a95cebe2b68d256589345",
+    "processor1/0/nSurfaceLayers": "c0be5d85038461f67d045dc386081b4d9729a39da877144f13be6becabaab80b",
+    "processor1/0/thickness": "f7f66ee92b3f88062c7a634b96998956f5969dfe3ceeaf629f27cc4625aaab25",
+    "processor2/constant/polyMesh/boundary": "f7f996f7b4b62288c573a1ddb4c887bfa726ac69fd7d1063eb5fff58fc205935",
+    "processor2/constant/polyMesh/faceProcAddressing": "66b063e965ad8036ae3645aaf98f4ea63052238565913cb315549634e465f30f",
+    "processor2/0/nSurfaceLayers": "7dc17a3a71324ed04afe138f302cd9105199b24c0619d38be45fc3ba6592647d",
+    "processor2/0/thickness": "e5ce1806dc39524c013b1f436dab1a646aab4b6ab6405949e21ec4a442dee502",
+    "processor3/constant/polyMesh/boundary": "a281a16cdfb96783e967921434e0f8f834b39df0fef5030d8942f9e9a8957d9a",
+    "processor3/constant/polyMesh/faceProcAddressing": "7c171baaea59d640ccd9af3ab5a880d4a4a3d0a307a93e63f713920075ba39b6",
+    "processor3/0/nSurfaceLayers": "a82f6543943b3d08c0675b6c731a0285f6d54e2d4702523e7f1a5a9bb4bdee65",
+    "processor3/0/thickness": "0f8a47c45437665560e38e2715aef899793e37e40c68132b5a3fa8815c1a5570",
+    "processor4/constant/polyMesh/boundary": "c1d70b94bf5d38bf1acd06b725e07d4c4dda0f25a6169f0f852afa08efe615f5",
+    "processor4/constant/polyMesh/faceProcAddressing": "06ba71f064c5b1dea4eddd24b1f9816b7a0c3637a50a72382b10807de36b3c71",
+    "processor4/0/nSurfaceLayers": "3dfa623bb76cdf7a5fc5d177e10c89108de15549c09d3c6b7e82ca8a2fd86834",
+    "processor4/0/thickness": "f56ed4674633ed40464981fa1564429be3c0f0bf4fd7297f68435b0918c90064",
+    "processor5/constant/polyMesh/boundary": "34620b7874a2c74d26ed1b210480e85c13d91aa45326a8ccad3ebd186f81354e",
+    "processor5/constant/polyMesh/faceProcAddressing": "e3620b5aeb1829278cb354729c12618adc96ff7ef1b5a37f1f9f214c881560c3",
+    "processor5/0/nSurfaceLayers": "3e43bbd060a1a0f98c1c4e10df94fb15fa29b2f73cd7048a7a44c09062976b2d",
+    "processor5/0/thickness": "c8932895492bb883a72ef6599863a9b3819782a534c1bce9f5f23ec697be0161",
+    "processor6/constant/polyMesh/boundary": "6e0603294aac53aa732991fc8e66f412ec7322d8bfc834dc4dab4fdb02132dee",
+    "processor6/constant/polyMesh/faceProcAddressing": "56eecae21934b0c4f632a7027076a12312d7a50b337b6e2b7eea9638ea9aec27",
+    "processor6/0/nSurfaceLayers": "597a1cd111a96f48b812d8fcc50fc2c4a6c70ab69e5e93690d175357fcab0367",
+    "processor6/0/thickness": "e7be17e721d1c0f56b33c8a31d38b6e6e1a2f4b93631b36f6d9ffaed44bc806b",
+    "processor7/constant/polyMesh/boundary": "67e8f768bf40525264456e65cfe534faff650a4e3500efa502fa9519b044539a",
+    "processor7/constant/polyMesh/faceProcAddressing": "8628f4a56dc304dd4c9746ef13b70d9a9a5402aad7310d38b861a7806642401f",
+    "processor7/0/nSurfaceLayers": "62f1da9c8a6f6d5043c871ad61031bb4d3ce4f659dd179a2b8fb4a23da5f27f5",
+    "processor7/0/thickness": "68e297dc21a1eed24b0591988e0c54ab9dda605898c6b69bb6d94b269caf8616"
+  },
+  "audited_centers_sha256": "2aef13f6350abb56533d85cf338b7295df9a6f8dbc1dbf68a0743e6accc410bd",
+  "set_order": [
+    "underdeterminedCells",
+    "concaveCells",
+    "lowWeightFaces"
+  ],
+  "counts": [
+    2966,
+    45077,
+    182
+  ],
+  "unique_cells_in_two_cell_sets": 48043,
+  "outside_chart": [
+    0,
+    737,
+    0
+  ],
+  "wall_faces": 57559,
+  "zero_layer_faces": 3489,
+  "covered_area_percent": 92.95302946012694,
+  "full_8_layer_faces": 2915,
+  "bins": [
+    {
+      "x_m": [
+        0,
+        12
+      ],
+      "wall_area_m2": 136.81533141119797,
+      "missing_area_m2": 20.676571255905237,
+      "missing_percent": 15.112758959565634,
+      "failures": [
+        1432,
+        2786,
+        60
+      ]
+    },
+    {
+      "x_m": [
+        12,
+        20
+      ],
+      "wall_area_m2": 134.36032021311846,
+      "missing_area_m2": 6.017744170514834,
+      "missing_percent": 4.478810530497145,
+      "failures": [
+        1121,
+        6003,
+        8
+      ]
+    },
+    {
+      "x_m": [
+        20,
+        26
+      ],
+      "wall_area_m2": 245.69284625615566,
+      "missing_area_m2": 9.669220357381894,
+      "missing_percent": 3.9354912056743037,
+      "failures": [
+        39,
+        19334,
+        38
+      ]
+    },
+    {
+      "x_m": [
+        26,
+        33
+      ],
+      "wall_area_m2": 89.05395359547106,
+      "missing_area_m2": 1.6143381036684135,
+      "missing_percent": 1.812764103659641,
+      "failures": [
+        276,
+        3421,
+        6
+      ]
+    },
+    {
+      "x_m": [
+        33,
+        39
+      ],
+      "wall_area_m2": 71.58304381979399,
+      "missing_area_m2": 10.717569393375296,
+      "missing_percent": 14.97221803023092,
+      "failures": [
+        73,
+        2670,
+        39
+      ]
+    },
+    {
+      "x_m": [
+        39,
+        45
+      ],
+      "wall_area_m2": 117.1634392960427,
+      "missing_area_m2": 7.3046424293601575,
+      "missing_percent": 6.2345749435565425,
+      "failures": [
+        25,
+        10126,
+        31
+      ]
+    }
+  ],
+  "note": "Longitudinal bins are projections, not named anatomical patches. Cell sets can overlap."
+}

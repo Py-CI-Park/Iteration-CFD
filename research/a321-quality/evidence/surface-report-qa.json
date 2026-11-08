@@ -1,0 +1,653 @@
+{
+  "status": "PASS_EGO_REPORT_LAYOUT_AND_ASSET_LINKS",
+  "state": {
+    "title": "A321 공력 해석 준비 · R3 · GPU 보류",
+    "h1": 1,
+    "progressRows": 8,
+    "archives": 4,
+    "ids": [
+      "progress",
+      "models",
+      "trials",
+      "studio",
+      "next",
+      "history",
+      "conditioning-report",
+      "conditioning-progress",
+      "conditioning-studio",
+      "conditioning-trials",
+      "conditioning-distance",
+      "conditioning-flow",
+      "conditioning-next",
+      "conditioning-history",
+      "hotspot-report",
+      "hotspot-progress",
+      "hotspot-hotspot-map",
+      "hotspot-trials",
+      "hotspot-studio",
+      "hotspot-gpu",
+      "hotspot-api",
+      "hotspot-next",
+      "hotspot-history",
+      "prior-report",
+      "prior-progress",
+      "prior-gallery",
+      "prior-next",
+      "prior-history",
+      "prior-upstream",
+      "prior-detail",
+      "detail"
+    ],
+    "nav": [
+      {
+        "hash": "#progress",
+        "found": true
+      },
+      {
+        "hash": "#models",
+        "found": true
+      },
+      {
+        "hash": "#trials",
+        "found": true
+      },
+      {
+        "hash": "#studio",
+        "found": true
+      },
+      {
+        "hash": "#next",
+        "found": true
+      },
+      {
+        "hash": "#history",
+        "found": true
+      },
+      {
+        "hash": "#detail",
+        "found": true
+      }
+    ],
+    "images": [
+      {
+        "src": "evidence/studio-smooth-reference-r3.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-smooth-r4-model.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/smooth-r4-sections-verified.png",
+        "width": 2040,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-snappy10-layer-map.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-snappy11-layer-map.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-snappy10-wing-grid.png",
+        "width": 1700,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-snappy11-wing-grid.png",
+        "width": 1700,
+        "loaded": true
+      },
+      {
+        "src": "evidence/snappy-10-hotspots.png",
+        "width": 1800,
+        "loaded": true
+      },
+      {
+        "src": "evidence/snappy-11-hotspots.png",
+        "width": 1800,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-snappy06-layer-map-20261108.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-snappy06-wing-layers-20261108.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/snappy-06-hotspots.png",
+        "width": 1800,
+        "loaded": true
+      },
+      {
+        "src": "evidence/snappy-07-hotspots.png",
+        "width": 1800,
+        "loaded": true
+      },
+      {
+        "src": "evidence/snappy-03-hotspots.png",
+        "width": 1800,
+        "loaded": true
+      },
+      {
+        "src": "evidence/snappy-04-hotspots.png",
+        "width": 1800,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-snappy04-grid.png",
+        "width": 1700,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-snappy04-wing.png",
+        "width": 1700,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-r3.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-wall.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-domain.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-airframe-grid.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-20261107-wing.png",
+        "width": 3428,
+        "loaded": true
+      },
+      {
+        "src": "evidence/mesh-section.png",
+        "width": 2210,
+        "loaded": true
+      },
+      {
+        "src": "evidence/mesh-section.png",
+        "width": 2210,
+        "loaded": true
+      },
+      {
+        "src": "evidence/studio-calculation-wall.png",
+        "width": 1700,
+        "loaded": true
+      }
+    ],
+    "textChecks": [
+      {
+        "text": "35393",
+        "found": true
+      },
+      {
+        "text": "94.07%",
+        "found": true
+      },
+      {
+        "text": "1.93",
+        "found": true
+      },
+      {
+        "text": "0.250164",
+        "found": true
+      },
+      {
+        "text": "09에는 182면",
+        "found": true
+      },
+      {
+        "text": "GPU 해석 미실행",
+        "found": true
+      }
+    ],
+    "links": [
+      "models/A321_AIRFRAME_SHELL_R4.blend",
+      "models/A321_AIRFRAME_SHELL_R4.stl",
+      "evidence/smooth-r4.json",
+      "evidence/smooth-r4-surface-metrics.json",
+      "evidence/blender-r4.json",
+      "evidence/blender-r4-readback.json",
+      "evidence/blender-r4-stl-binding.json",
+      "evidence/studio-smooth-reference-r3.png",
+      "evidence/studio-smooth-r4-model.png",
+      "evidence/smooth-r4-sections-verified.png",
+      "evidence/surface-comparison.json",
+      "evidence/studio-snappy10-layer-map.png",
+      "evidence/studio-snappy11-layer-map.png",
+      "evidence/studio-snappy10-wing-grid.png",
+      "evidence/studio-snappy11-wing-grid.png",
+      "evidence/studio-snappy08-views.json",
+      "evidence/studio-snappy10-views.json",
+      "evidence/studio-snappy11-views.json",
+      "evidence/snappy-10-hotspots.png",
+      "evidence/snappy-11-hotspots.png",
+      "evidence/snappy-08-hotspots.json",
+      "evidence/snappy-09-hotspots.json",
+      "evidence/snappy-10-hotspots.json",
+      "evidence/snappy-11-hotspots.json",
+      "evidence/smooth-study-nasa-source.json",
+      "PROVENANCE.md",
+      "plans/low-speed-30ms.json",
+      "API_KO.md",
+      "evidence/snappy-08-bound-check.json",
+      "evidence/snappy-09-bound-check.json",
+      "evidence/snappy-10-bound-check.json",
+      "evidence/snappy-11-bound-check.json",
+      "evidence/snappy-11-normalized-zero-sets-bound.json",
+      "evidence/surface-study-closeout.json",
+      "evidence/surface-artifact-manifest.json",
+      "evidence/studio-snappy06-layer-map-20261108.png",
+      "evidence/studio-snappy06-wing-layers-20261108.png",
+      "evidence/studio-recovery-20261108.json",
+      "evidence/snappy-06-owner-layer-diagnostic.json",
+      "evidence/conditioning-comparison.json",
+      "evidence/snappy-06-hotspots.png",
+      "evidence/snappy-07-hotspots.png",
+      "evidence/snappy-04-wall-center-distance.json",
+      "evidence/snappy-06-wall-center-distance.json",
+      "evidence/recovery-20261108.json",
+      "evidence/gpu-memory-20261107.json",
+      "evidence/snappy-03-hotspots.png",
+      "evidence/snappy-04-hotspots.png",
+      "evidence/snappy-03-hotspots.json",
+      "evidence/snappy-04-hotspots.json",
+      "evidence/snappy-03-check-replay.json",
+      "evidence/hotspot-comparison.json",
+      "evidence/studio-snappy04-grid.png",
+      "evidence/studio-snappy04-wing.png",
+      "evidence/studio-hotspot-20261107.json",
+      "evidence/anthropic-loopback-20261107.json",
+      "evidence/postprocess-incident.json",
+      "../a321-preflight/report.html",
+      "../a321-shell/report.html",
+      "../a321-integration/report.html",
+      "../a321-layers/report.html",
+      "evidence/studio-20261107-r3.png",
+      "evidence/studio-20261107-wall.png",
+      "evidence/studio-20261107-domain.png",
+      "evidence/studio-20261107-airframe-grid.png",
+      "evidence/studio-20261107-wing.png",
+      "evidence/mesh-section.png",
+      "evidence/studio-20261107-receipt.json",
+      "evidence/snappy-03-layer-fields.json",
+      "evidence/snappy-03-audit-v5.json",
+      "evidence/acceptance.json",
+      "evidence/snappy-03-standard.log",
+      "evidence/snappy-03-extended.log",
+      "evidence/snappy-03-mesher.log",
+      "DIAGNOSIS_KO.md",
+      "evidence/studio-snappy03-status.json",
+      "evidence/studio-snappy03-dom.json",
+      "evidence/studio-calculation-wall.png",
+      "evidence/studio-snappy03.png",
+      "RUNBOOK_KO.md",
+      "REVIEW_KO.md",
+      "evidence/artifact-manifest.json"
+    ]
+  },
+  "links": [
+    {
+      "link": "models/A321_AIRFRAME_SHELL_R4.blend",
+      "status": 200
+    },
+    {
+      "link": "models/A321_AIRFRAME_SHELL_R4.stl",
+      "status": 200
+    },
+    {
+      "link": "evidence/smooth-r4.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/smooth-r4-surface-metrics.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/blender-r4.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/blender-r4-readback.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/blender-r4-stl-binding.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-smooth-reference-r3.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-smooth-r4-model.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/smooth-r4-sections-verified.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/surface-comparison.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy10-layer-map.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy11-layer-map.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy10-wing-grid.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy11-wing-grid.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy08-views.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy10-views.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy11-views.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-10-hotspots.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-11-hotspots.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-08-hotspots.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-09-hotspots.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-10-hotspots.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-11-hotspots.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/smooth-study-nasa-source.json",
+      "status": 200
+    },
+    {
+      "link": "PROVENANCE.md",
+      "status": 200
+    },
+    {
+      "link": "plans/low-speed-30ms.json",
+      "status": 200
+    },
+    {
+      "link": "API_KO.md",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-08-bound-check.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-09-bound-check.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-10-bound-check.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-11-bound-check.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-11-normalized-zero-sets-bound.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/surface-study-closeout.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/surface-artifact-manifest.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy06-layer-map-20261108.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy06-wing-layers-20261108.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-recovery-20261108.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-06-owner-layer-diagnostic.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/conditioning-comparison.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-06-hotspots.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-07-hotspots.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-04-wall-center-distance.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-06-wall-center-distance.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/recovery-20261108.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/gpu-memory-20261107.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-03-hotspots.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-04-hotspots.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-03-hotspots.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-04-hotspots.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-03-check-replay.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/hotspot-comparison.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy04-grid.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy04-wing.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-hotspot-20261107.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/anthropic-loopback-20261107.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/postprocess-incident.json",
+      "status": 200
+    },
+    {
+      "link": "../a321-preflight/report.html",
+      "status": 200
+    },
+    {
+      "link": "../a321-shell/report.html",
+      "status": 200
+    },
+    {
+      "link": "../a321-integration/report.html",
+      "status": 200
+    },
+    {
+      "link": "../a321-layers/report.html",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-20261107-r3.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-20261107-wall.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-20261107-domain.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-20261107-airframe-grid.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-20261107-wing.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/mesh-section.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-20261107-receipt.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-03-layer-fields.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-03-audit-v5.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/acceptance.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-03-standard.log",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-03-extended.log",
+      "status": 200
+    },
+    {
+      "link": "evidence/snappy-03-mesher.log",
+      "status": 200
+    },
+    {
+      "link": "DIAGNOSIS_KO.md",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy03-status.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy03-dom.json",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-calculation-wall.png",
+      "status": 200
+    },
+    {
+      "link": "evidence/studio-snappy03.png",
+      "status": 200
+    },
+    {
+      "link": "RUNBOOK_KO.md",
+      "status": 200
+    },
+    {
+      "link": "REVIEW_KO.md",
+      "status": 200
+    },
+    {
+      "link": "evidence/artifact-manifest.json",
+      "status": 200
+    }
+  ],
+  "linkMethod": "HTTP HEAD; images independently decoded in DOM",
+  "fileSHA": "2e98765279e0054fa5a54ad4b13351d4f61eed6f18ac5725bbfb03f578c6cb9b",
+  "servedSHA": "2e98765279e0054fa5a54ad4b13351d4f61eed6f18ac5725bbfb03f578c6cb9b",
+  "mobile": {
+    "viewport": 390,
+    "scroll": 390
+  },
+  "expanded": {
+    "viewport": 390,
+    "scroll": 390,
+    "open": 4
+  },
+  "CFD_solver_run": false,
+  "GPU_solver_run": false
+}
