@@ -42,17 +42,17 @@ function Show-Report {
     $behindMain = [int](Invoke-Git @('rev-list', '--count', 'main..upstream/main'))
     $behindDev = [int](Invoke-Git @('rev-list', '--count', "$DevBranch..upstream/main"))
     $upHead = Invoke-Git @('log', '-1', '--format=%h %ad', '--date=short', 'upstream/main')
-    Write-Output "upstream/main      : $upHead"
-    Write-Output "main behind        : $behindMain"
-    Write-Output "$DevBranch behind : $behindDev"
-    if ($behindDev -eq 0) { Write-Output 'RESULT: up to date - nothing to merge'; return $false }
-    Write-Output '--- new upstream commits (max 30) ---'
-    Invoke-Git @('log', '--oneline', '-30', "$DevBranch..upstream/main") | ForEach-Object { $_.Substring(0, [Math]::Min(140, $_.Length)) }
+    Write-Host "upstream/main      : $upHead"
+    Write-Host "main behind        : $behindMain"
+    Write-Host "$DevBranch behind : $behindDev"
+    if ($behindDev -eq 0) { Write-Host 'RESULT: up to date - nothing to merge'; return $false }
+    Write-Host '--- new upstream commits (max 30) ---'
+    Invoke-Git @('log', '--oneline', '-30', "$DevBranch..upstream/main") | ForEach-Object { Write-Host $_.Substring(0, [Math]::Min(140, $_.Length)) }
     $base = Invoke-Git @('merge-base', $DevBranch, 'upstream/main')
     $changed = Invoke-Git @('diff', '--name-only', $base, 'upstream/main')
     $hits = $changed | Where-Object { $f = $_; $Hotspots | Where-Object { $f -eq $_ -or $f.StartsWith("$_/") } }
-    Write-Output "--- upstream files changed: $(@($changed).Count); hotspots touched: $(@($hits).Count) ---"
-    $hits | ForEach-Object { Write-Output "  HOTSPOT $_" }
+    Write-Host "--- upstream files changed: $(@($changed).Count); hotspots touched: $(@($hits).Count) ---"
+    $hits | ForEach-Object { Write-Host "  HOTSPOT $_" }
     return $true
 }
 
