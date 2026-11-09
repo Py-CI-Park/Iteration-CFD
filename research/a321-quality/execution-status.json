@@ -30,8 +30,9 @@
     },
     {
       "id": "M3",
-      "state": "FAIL_SELF_INTERSECTION_C_15",
-      "evidence": "evidence/r5-c-independent-handoff.json"
+      "state": "FAIL_SELF_INTERSECTION_C_15_MAPPED_CAUSE_UNCONFIRMED",
+      "evidence": "evidence/r5-c-independent-handoff.json",
+      "evidence_m3a": "m3/c15-map/c15-locations.json"
     },
     {
       "id": "M4",
@@ -67,11 +68,31 @@
   "CFD_solver_run": false,
   "GPU_solver_run": false,
   "browser_state": "SPACE15_CREATED_WITH_PERMISSION_R5_DISPLAY_QA_PENDING_CURRENT_LIVENESS_UNVERIFIED",
-  "next_action": "Map C's 15 intersection locations and define feature/transition changes before a fresh candidate; no mesher/solver in handoff task",
+  "next_action": "M3-b: controlled experiments (diagonal choice, centerline single-topology seam, shoulder fan repatch) plus a second independent self-intersection checker, under a new pre-registered R6 contract; M3 stays FAIL until surfaceCheck reports 0",
   "known_defects": [
     "C native scope and mesh labels inherited R4 wording",
     "C frozen artifact STL basename says B; directory/receipt/hash identify C",
     "final five-lane review not closed"
   ],
-  "raw_receipts_immutable": true
+  "raw_receipts_immutable": true,
+  "m3a_c15_map": {
+    "commit": "bc88cbaf6f256b744b33c8874894112aa5c40ef5",
+    "branch": "feat/a321-m3-c15-map",
+    "report": "m3/c15-map/C15_MAP_KO.md",
+    "surfaceCheck_records": 15,
+    "unique_coordinates": 14,
+    "independent_nonadjacent_pairs": 0,
+    "narrow_phase_pairs_checked": 801534,
+    "component": "fuselage only",
+    "cause_groups_hypothesis": {
+      "A_shared_diagonal": 8,
+      "B_mirror_centerline_seam": 3,
+      "C_station_shoulder_vertex_fan": 4
+    },
+    "checker_pair_identity": "UNKNOWN",
+    "input_sha256_unchanged": true,
+    "tests": "5 passed (re-run by orchestrator 2026-11-09)",
+    "scope_exception": "first surfaceCheck wrote triangle-quality.vtp beside source; relocated into attempt dir; contained rerun identical",
+    "worker": "gpt-6.1-sol effort high service_tier default (rollout-verified)"
+  }
 }
