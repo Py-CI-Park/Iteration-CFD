@@ -1,0 +1,5 @@
+﻿COMMAND: & C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with matplotlib --with pydantic python -B research/a321-quality/m3/c15-map/assemble_map.py
+START_UTC: 2026-11-09T13:49:27.0967901Z
+Mapped 15 records. Cause groups: {'A_shared_diagonal_contact': 8, 'B_mirror_centerline_seam': 3, 'C_ring_vertex_fan': 4}. Wall seconds: 14.741
+EXIT_CODE: 0
+WALL_SECONDS: 69.6599349

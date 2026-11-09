@@ -1,0 +1,62 @@
+﻿COMMAND: $taskReport=Get-Content research/a321-quality/m3/c15-map/C15_MAP_KO.md -Raw -Encoding utf8; if($taskReport.Contains("__ROWS__") -or $taskReport.Contains("__COMMANDS__")){throw "Unexpanded report"}; $taskData=Get-Content research/a321-quality/m3/c15-map/c15-locations.json -Raw -Encoding utf8 | ConvertFrom-Json; $taskScan=Get-Content research/a321-quality/m3/c15-map/independent-scan.json -Raw -Encoding utf8 | ConvertFrom-Json; "Records=$($taskData.locations.Count), distinct=$($taskData.unique_printed_coordinates), narrow=$($taskScan.narrow_phase_pairs)"; Get-ChildItem research/a321-quality/m3/c15-map -Recurse -Filter *.log | Sort-Object Length -Descending | Select-Object -First 3 Name,Length | Format-Table; Get-Content research/a321-quality/m3/c15-map/C15_MAP_KO.md -Encoding utf8 -TotalCount 50
+START_UTC: 2026-11-09T13:55:19.5746047Z
+Records=15, distinct=14, narrow=801534
+Microsoft.PowerShell.Commands.Internal.Format.FormatStartData
+Microsoft.PowerShell.Commands.Internal.Format.GroupStartData
+Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData
+Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData
+Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData
+Microsoft.PowerShell.Commands.Internal.Format.GroupEndData
+Microsoft.PowerShell.Commands.Internal.Format.FormatEndData
+# R5-C C15 위치 지도 — M3-a 진단
+
+**결론: surfaceCheck v1912의 15레코드를 모두 좌표·국소 STL 삼각형으로 지도화했다. 독립 비인접 삼각형 검사는 0쌍/0클러스터다. 두 검사 결과의 차이는 미해결이며 M3 FAIL·C 미채택을 유지한다.** 15레코드는 14개의 서로 다른 출력 좌표이고, 1·2번 좌표는 완전히 같은 OBJ 텍스트다. 15개의 고유 결함 또는 확정 교차쌍을 찾았다고 주장하지 않는다.
+
+권위 있는 위치 목록은 [첫 OBJ](surfacecheck-nMM86x/selfInterPoints.obj)다. 새 로컬 복사본을 검사한 [contained 재검사](surfacecheck-qNy1jX/result.log)도 15, `End`, FATAL 없음이며 두 OBJ의 SHA가 동일하다. 두 surfaceCheck 실행 모두 exit 0이지만 형상 합격은 아니다.
+
+| 구분 | 결과 | 근거 |
+|---|---|---|
+| 입력 C | 305,764 facets; 원 binary STL 순서 0-based index 유지 | [independent-scan.json](independent-scan.json) |
+| source STL 전·후 SHA256 | `5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b` 동일 | [최초](input-before.json), [첫 재검사](surfacecheck-nMM86x/before.sha256), [후](surfacecheck-nMM86x/after.sha256), [최종 보존 확인](custody-contained-check.log) |
+| 독립 broad/narrow phase | rtree AABB 전체 스캔, 비인접 후보 801,534쌍 검사; 발견 0쌍/0클러스터 | [원시 진행 로그](independent-scan.log), JSON의 실제 `narrow_phase_pairs`를 기준으로 확인 |
+| 권위 있는 위치 | 15 OBJ vertex rows /14 unique printed coordinates | [c15-locations.json](c15-locations.json) |
+| 부품 | 15레코드 모두 fuselage bounds에만 해당 | M1 원장과 원 `reconstruction-r3.json` station/bbox 대조 |
+| 인접 정밀 검사 | 후보별 exact Fraction 교차가 공유 정점/변을 넘는 경우 0 | JSON의 `rational_beyond_shared_topology`, `exact_contact_vertices_m` |
+| 테스트 | 최초 3 failed(`NotImplementedError`) → 필수3 passed → 확장5 passed | [RED](pytest-red.log), [3 GREEN](pytest-green.log), [확장](pytest-expanded.log), [최종](final-pytest.log) |
+| 별도 QA | 5 passed, 순열 216 assertions 통과 | [QA](review-qa.md), [순열 로그](qa-permutations.log) |
+
+## 15레코드 표
+
+모든 행의 부품은 **fuselage**다. 주익·수평/수직미익, LE/TE/tip, wing-body/tail-body junction에 해당한다는 증거는 없다. 좌우 부품 구분은 해당 없음. X는 길이, Y는 횡방향, Z는 수직이며 단위 m이다. M1 원장이 참조하는 source station/bbox 파일 SHA `405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb`를 현재 파일에서 확인했다.
+
+아래 ID는 **100µm 국소 반경 내 후보 facet**이다. surfaceCheck OBJ는 edge/facet ID를 쓰지 않으므로 실제 checker 교차쌍의 신원은 **UNKNOWN**이다. 두 facet뿐인 A군은 그 인접쌍을 제시할 수 있고, fan/seam은 JSON에 모든 인접 후보쌍을 보존한다. 이를 확인된 비인접 교차쌍으로 승격하지 않았다. 각 pair의 공유 정점 수·정확 접촉 좌표·법선각, 각 facet의 좌표3개·변3개·면적·품질2종은 JSON에 있다.
+
+| # | world (X,Y,Z) m | 국소 STL facet IDs | feature | 최소 Qeq | 변 길이 min–max m | 후보 법선각 min–max ° | 원인 가설 |
+|---:|---|---|---|---:|---:|---:|---|
+| 1 | (4.22802, 0.206553, 2.02366) | 5388,68601,68606,68608,68611,68618 | section ring seam (추론) | 0.0019818 | 0.0024895–0.62232 | 1.2074E-06–10.456 | C: station/shoulder 정점 fan 접촉 가설 |
+| 2 | (4.22802, 0.206553, 2.02366) | 5388,68601,68606,68608,68611,68618 | section ring seam (추론) | 0.0019818 | 0.0024895–0.62232 | 1.2074E-06–10.456 | C: station/shoulder 정점 fan 접촉 가설 |
+| 3 | (6.42599, -0.0294316, 1.95089) | 13055,13056 | other / 패치 대각선 | 0.85371 | 0.10073–0.15617 | 0.0099179–0.0099179 | A: 공유 대각선 판정 민감성 가설 |
+| 4 | (10.1419, -0.0411171, 1.95124) | 16648,16649 | other / 패치 대각선 | 0.85371 | 0.10073–0.15618 | 0.0098012–0.0098012 | A: 공유 대각선 판정 민감성 가설 |
+| 5 | (6.49484, -0.0205902, 6.08937) | 30694,30696 | other / 패치 대각선 | 0.85233 | 0.10162–0.15723 | 0.024342–0.024342 | A: 공유 대각선 판정 민감성 가설 |
+| 6 | (6.70952, 1.11022E-16, 6.09) | 30735,30736,30738,94331,94332,94333 | section ring seam (추론) | 0.16556 | 0.0099459–0.15771 | 0–3.5486 | B: 동체 상부 미러 seam 접촉 가설 |
+| 7 | (9.95065, -0.0903181, 6.0872) | 32650,32652 | other / 패치 대각선 | 0.16528 | 0.0099459–0.10375 | 0–0 | A: 공유 대각선 판정 민감성 가설 |
+| 8 | (10.58, -0.00972425, 6.08971) | 32785,32788 | other / 패치 대각선 | 0.85496 | 0.10163–0.15676 | 0.036508–0.036508 | A: 공유 대각선 판정 민감성 가설 |
+| 9 | (1.24673, -0.0620968, 4.44314) | 9908,9911,9912,9915,9916,9919 | section ring seam (추론) | 0.084713 | 0.0030444–0.062309 | 0.22685–4.3848 | C: station/shoulder 정점 fan 접촉 가설 |
+| 10 | (18.4059, 0.101541, 1.95308) | 106768,106770,106774,106894,106895,106899,106900 | section ring seam (추론) | 0.04238 | 0.0024872–1.4953 | 0–2.9153 | C: station/shoulder 정점 fan 접촉 가설 |
+| 11 | (27.5689, -0.0227856, 1.95069) | 142732,142733 | other / 패치 대각선 | 0.848 | 0.099416–0.15602 | 0.0058564–0.0058564 | A: 공유 대각선 판정 민감성 가설 |
+| 12 | (27.6206, -0.0126672, 6.08961) | 161893,161894 | other / 패치 대각선 | 0.85634 | 0.1027–0.15745 | 0.03555–0.03555 | A: 공유 대각선 판정 민감성 가설 |
+| 13 | (27.3473, 1.11022E-16, 6.09) | 161815,161835,161836,161837,240462,240467,240473 | section ring seam (추론) | 0.084101 | 0.0049725–0.98987 | 8.5377E-07–3.4752 | B: 동체 상부 미러 seam 접촉 가설 |
+| 14 | (27.4766, 1.249E-16, 6.09) | 161839,161882,161883,240475,240476,240494 | section ring seam (추론) | 0.85254 | 0.10163–0.15815 | 0.023427–3.559 | B: 동체 상부 미러 seam 접촉 가설 |
+| 15 | (27.5995, 0.0356957, 1.95108) | 219692,219693 | other / 패치 대각선 | 0.17158 | 0.0099468–0.099912 | 8.5377E-07–8.5377E-07 | A: 공유 대각선 판정 민감성 가설 |
+
+Qeq=`4√3 A / Σe²`, Qradius=`2r/R=16A²/(pabc)`이다. `radius_ratio_quality`를 OpenFOAM의 출력 품질과 동일한 구현이라고 주장하지 않는다. 법선각은 `acos(n1·n2)`이며 0°는 같은 방향의 공면이다. 공유 변이 없는 정점 접촉쌍은 통상적인 edge dihedral이 아니므로 후보 facet 법선 사이 각도로 해석한다. 극소각은 double precision 반올림에 민감하다.
+
+기존 전역 최소 품질 `9.70744e-13`(triangle5617)은 surfaceCheck가 보고한 별도 값이다. C15 인근의 품질로 바꿔 쓰지 않았다. C15 대부분의 정상 크기 facet에서 접촉 경고가 발생하므로, 전역 극소품질 하나만으로 15개의 원인을 확정할 수 없다.
+
+## 원인군과 R6 권고 — 가설, 생성하지 않음
+
+| 군 | 레코드 수 | 대상 | 관찰과 가설 | R6에서 변경·검증할 항목 |
+|---|---:|---|---|---|
+| A: shared diagonal | 8 | 3,4,5,7,8,11,12,15 | 각 위치에 공유 변을 갖는 두 facet. 법선각 약0–0.03651°, exact arithmetic은 공유 변 밖 교차 없음. near-coplanar edge/face 수치 판정 민감성 가설 | station 사이 패치 triangulation을 명시하고 diagonal 선택·곡률 적응 분할을 재설계. 동일 shape에서 대각선만 달리한 대조 후보로 원인 분리. checker 무시·tolerance 확대 금지 |
+EXIT_CODE: 0
+WALL_SECONDS: 1.2848755

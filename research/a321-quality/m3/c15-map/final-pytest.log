@@ -1,0 +1,6 @@
+﻿COMMAND: & C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with pytest python -B -m pytest -p no:cacheprovider research/a321-quality/m3/c15-map/test_locate_intersections.py -q
+START_UTC: 2026-11-09T13:51:32.4192423Z
+.....                                                                    [100%]
+5 passed in 8.31s
+EXIT_CODE: 0
+WALL_SECONDS: 15.8280395

@@ -1,0 +1,48 @@
+﻿COMMAND: wsl bash research/a321-quality/m3/c15-map/run_surfacecheck.sh
+START_UTC: 2026-11-09T13:45:51.7908519Z
+/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/m3/c15-map/surfacecheck-qNy1jX
+total 25M
+-rwxrwxrwx 1 parkchanil docker  218 Nov  9 22:45 after.sha256
+-rwxrwxrwx 1 parkchanil docker  218 Nov  9 22:45 before.sha256
+-rwxrwxrwx 1 parkchanil docker  15M Nov  9 22:45 input.stl
+-rwxrwxrwx 1 parkchanil docker  11M Nov  9 22:45 input.vtp
+-rwxrwxrwx 1 parkchanil docker   76 Nov  9 22:45 local-copy.sha256
+-rwxrwxrwx 1 parkchanil docker 3.0K Nov  9 22:45 result.log
+-rwxrwxrwx 1 parkchanil docker  418 Nov  9 22:45 selfInterPoints.obj
+    0.75 .. 0.8  : 0.042281
+    0.8 .. 0.85  : 0.0381438
+    0.85 .. 0.9  : 0.0332152
+    0.9 .. 0.95  : 0.00978205
+    0.95 .. 1  : 0.00837247
+
+    min 9.70744e-13 for triangle 5617
+    max 0.999986 for triangle 192830
+
+Wrote triangle-quality to "./input.vtp"
+
+Edges:
+    min 1.71669e-05 for edge 11268 points (2e-05 -0.000351941 3.45826)(2e-05 -0.000352102 3.45828)
+    max 5.58731 for edge 323884 points (41.7212 -0.0488011 11.5952)(38.2352 -0.114395 7.2292)
+
+Checking for points less than 1e-6 of bounding box ((44.51 32.58 10.01) metre) apart.
+    small edge between points 3885 (2e-05 -0.000352102 3.45828) and 3886 (2e-05 -0.000351941 3.45826) distance:1.71669e-05
+Found 1 nearby points.
+
+Surface is closed. All edges connected to two faces.
+
+Number of unconnected parts : 1
+
+Number of zones (connected area with consistent normal) : 1
+
+Checking self-intersection.
+Surface is self-intersecting at 15 locations.
+Writing intersection points to "selfInterPoints.obj"
+
+
+End
+
+real 4.70
+user 2.14
+sys 0.24
+EXIT_CODE: 0
+WALL_SECONDS: 8.3329368

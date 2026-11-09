@@ -1,0 +1,30 @@
+﻿COMMAND: $taskBefore=Get-Content research/a321-quality/m3/c15-map/surfacecheck-nMM86x/selfInterPoints.obj -Raw; $taskAfter=Get-Content research/a321-quality/m3/c15-map/surfacecheck-qNy1jX/selfInterPoints.obj -Raw; if($taskBefore -cne $taskAfter){throw "OBJ differs"}; Get-FileHash research/a321-quality/m3/c15-map/surfacecheck-nMM86x/selfInterPoints.obj,research/a321-quality/m3/c15-map/surfacecheck-qNy1jX/selfInterPoints.obj -Algorithm SHA256 | ConvertTo-Json; Get-FileHash research/a321-quality/rebuild/artifacts/rebuild-r5-c/A321_AIRFRAME_REBUILD_R5_B.stl,research/a321-quality/models/A321_AIRFRAME_REBUILD_R5_C.stl -Algorithm SHA256 | ConvertTo-Json; git diff --name-only; git status --short --branch
+START_UTC: 2026-11-09T13:47:45.9616942Z
+[
+    {
+        "Algorithm":  "SHA256",
+        "Hash":  "F78B5FA1CAA397F4C5F139E45A47C12E0E7EEC92727687FD44B49CC3AEE0FC8C",
+        "Path":  "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\m3\\c15-map\\surfacecheck-nMM86x\\selfInterPoints.obj"
+    },
+    {
+        "Algorithm":  "SHA256",
+        "Hash":  "F78B5FA1CAA397F4C5F139E45A47C12E0E7EEC92727687FD44B49CC3AEE0FC8C",
+        "Path":  "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\m3\\c15-map\\surfacecheck-qNy1jX\\selfInterPoints.obj"
+    }
+]
+[
+    {
+        "Algorithm":  "SHA256",
+        "Hash":  "5466466CFDB9361AEA0F20FE5DAABBAB3BEA7835DF90887652310FFAD7F6CD7B",
+        "Path":  "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\rebuild\\artifacts\\rebuild-r5-c\\A321_AIRFRAME_REBUILD_R5_B.stl"
+    },
+    {
+        "Algorithm":  "SHA256",
+        "Hash":  "5466466CFDB9361AEA0F20FE5DAABBAB3BEA7835DF90887652310FFAD7F6CD7B",
+        "Path":  "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\models\\A321_AIRFRAME_REBUILD_R5_C.stl"
+    }
+]
+## feat/a321-m3-c15-map...origin/feat/a321-m3-c15-map
+?? research/a321-quality/m3/
+EXIT_CODE: 0
+WALL_SECONDS: 3.4986096

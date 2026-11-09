@@ -1,0 +1,6 @@
+﻿COMMAND: uv run --with numpy --with scipy --with trimesh --with rtree --with pytest python -B -m pytest -p no:cacheprovider research/a321-quality/m3/c15-map/test_locate_intersections.py -q
+START_UTC: 2026-11-09T13:27:36.4645347Z
+...                                                                      [100%]
+3 passed in 7.28s
+EXIT_CODE: 0
+WALL_SECONDS: 18.8291919

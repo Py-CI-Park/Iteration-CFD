@@ -1,0 +1,18 @@
+﻿COMMAND: uv run --with numpy --with scipy --with trimesh --with rtree python -B research/a321-quality/m3/c15-map/locate_intersections.py research/a321-quality/rebuild/artifacts/rebuild-r5-c/A321_AIRFRAME_REBUILD_R5_B.stl --output research/a321-quality/m3/c15-map/independent-scan.json
+START_UTC: 2026-11-09T13:28:05.0551911Z
+facet=0/305764 narrow=1 hits=0
+facet=25000/305764 narrow=31495 hits=0
+facet=50000/305764 narrow=117467 hits=0
+facet=75000/305764 narrow=172681 hits=0
+facet=100000/305764 narrow=206836 hits=0
+facet=125000/305764 narrow=296345 hits=0
+facet=150000/305764 narrow=434777 hits=0
+facet=175000/305764 narrow=467164 hits=0
+facet=200000/305764 narrow=501806 hits=0
+facet=225000/305764 narrow=589946 hits=0
+facet=250000/305764 narrow=642934 hits=0
+facet=275000/305764 narrow=733521 hits=0
+facet=300000/305764 narrow=777336 hits=0
+{"pair_count": 0, "cluster_count": 0, "wall_seconds": 139.2867656999988}
+EXIT_CODE: 0
+WALL_SECONDS: 287.7019649

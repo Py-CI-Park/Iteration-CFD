@@ -1,0 +1,5110 @@
+{
+  "status": "M3_FAIL_RETAINED; DIAGNOSTIC_DISCREPANCY_UNRESOLVED",
+  "candidate": "R5-C",
+  "input_sha256_before": "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+  "input_sha256_after": "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+  "input": "research\\a321-quality\\rebuild\\artifacts\\rebuild-r5-c\\A321_AIRFRAME_REBUILD_R5_B.stl",
+  "units": "metres, world STL coordinates",
+  "stl_indexing": "zero-based binary STL facet order; no welding/reordering",
+  "source_ledger": "research\\a321-quality\\evidence\\r5-m1-source-ledger.json",
+  "source_station_and_bbox_file": "research\\a321-integration\\evidence\\reconstruction-r3.json",
+  "source_station_sha256": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "surfacecheck_reported_count": 15,
+  "surfacecheck_obj_rows": 15,
+  "unique_printed_coordinates": 14,
+  "independent_pair_count": 0,
+  "independent_cluster_count": 0,
+  "method": "See independent-scan.json: rtree AABB + plane cuts/interval overlap, exact shared-vertex exclusion, fixed 1e-12 m epsilon; authoritative OBJ matched to local AABBs within fixed 1e-4 m for six-digit text rounding; closest-point filter; all adjacent candidate pairs retained",
+  "tool_versions": {
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "trimesh": "5.2.0",
+    "rtree": "1.4.1",
+    "matplotlib": "3.11.2",
+    "pydantic": "2.14.3"
+  },
+  "surfacecheck_version": "OpenFOAM 1912 patch=200626, label32 scalar64",
+  "cause_groups_are_hypotheses": true,
+  "cause_groups": {
+    "A_shared_diagonal_contact": 8,
+    "B_mirror_centerline_seam": 3,
+    "C_ring_vertex_fan": 4
+  },
+  "locations": [
+    {
+      "id": 1,
+      "world_coordinates_m": [
+        4.22802,
+        0.206553,
+        2.02366
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "section ring seam",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 18,
+        "x_m": 4.228016600369076,
+        "delta_x_m": 3.3996309243278233e-06
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            5388,
+            68601
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 1.2074182697257333e-06,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              -0.31115877628326416,
+              2.0235695838928223
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            5388,
+            68606
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 10.456149315262234,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.10302723944187164,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            5388,
+            68608
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.191686299561134,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            5388,
+            68611
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.193459325393736,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            5388,
+            68618
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 1.2074182697257333e-06,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68601,
+            68606
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 10.45614931526227,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68601,
+            68608
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.191686299561173,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68601,
+            68611
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.193459325393775,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68601,
+            68618
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 1.4787793334710982e-06,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              0.31115877628326416,
+              2.0235695838928223
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68606,
+            68608
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 1.2648854741909514,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.22553014755249,
+              0.10295573621988297,
+              2.0232996940612793
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68606,
+            68611
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 1.2626899898686925,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68606,
+            68618
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 10.45614931526227,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68608,
+            68611
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.03072068579641029,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.22553014755249,
+              0.20640400052070618,
+              2.023355484008789
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68608,
+            68618
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.191686299561173,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68611,
+            68618
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 9.193459325393775,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.31108543276786804,
+              2.023662805557251
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 5388,
+          "vertices_m": [
+            [
+              4.228016376495361,
+              0.10302723944187164,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              -0.31115877628326416,
+              2.0235695838928223
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10352574288845062,
+            0.5177177391230549,
+            0.4141934910379177
+          ],
+          "equilateral_quality": 0.0019818058203773694,
+          "radius_ratio_quality": 1.1549071715585789e-05,
+          "area_m2": 0.0001288094475846991,
+          "normal": [
+            -0.03746170115718495,
+            0.0,
+            -0.9992980641162124
+          ],
+          "point_distance_m": 4.582712025967807e-06
+        },
+        {
+          "index": 68601,
+          "vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              0.31115877628326416,
+              2.0235695838928223
+            ],
+            [
+              4.230503082275391,
+              -0.31115877628326416,
+              2.0235695838928223
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10463538848993913,
+            0.6223175525665283,
+            0.5177177391230549
+          ],
+          "equilateral_quality": 0.008051720840911063,
+          "radius_ratio_quality": 0.00022861496780423286,
+          "area_m2": 0.0007743038391400829,
+          "normal": [
+            -0.037461701157184946,
+            0.0,
+            -0.9992980641162122
+          ],
+          "point_distance_m": 2.6678452816613548e-06
+        },
+        {
+          "index": 68606,
+          "vertices_m": [
+            [
+              4.22553014755249,
+              0.10295573621988297,
+              2.0232996940612793
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.10302723944187164,
+              2.023662805557251
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10362771147710349,
+            0.10352574288845062,
+            0.0025136222917597362
+          ],
+          "equilateral_quality": 0.04198371593102262,
+          "radius_ratio_quality": 0.04786859155662334,
+          "area_m2": 0.00013005965402256405,
+          "normal": [
+            0.1445159440654942,
+            0.0,
+            -0.9895024719074021
+          ],
+          "point_distance_m": 4.5827120323682524e-06
+        },
+        {
+          "index": 68608,
+          "vertices_m": [
+            [
+              4.22553014755249,
+              0.10295573621988297,
+              2.0232996940612793
+            ],
+            [
+              4.22553014755249,
+              0.20640400052070618,
+              2.023355484008789
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10344827934466197,
+            0.002509576950427189,
+            0.10362771147710349
+          ],
+          "equilateral_quality": 0.04185898481160722,
+          "radius_ratio_quality": 0.04764417582131407,
+          "area_m2": 0.00012957626355406074,
+          "normal": [
+            0.12264425679332644,
+            0.0005352314475489115,
+            -0.9924505528251321
+          ],
+          "point_distance_m": 4.5827120323682524e-06
+        },
+        {
+          "index": 68611,
+          "vertices_m": [
+            [
+              4.22553014755249,
+              0.20640400052070618,
+              2.023355484008789
+            ],
+            [
+              4.228016376495361,
+              0.31108543276786804,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10471140357290441,
+            0.10453245043754578,
+            0.002509576950427189
+          ],
+          "equilateral_quality": 0.04142618810953747,
+          "radius_ratio_quality": 0.04715784398584418,
+          "area_m2": 0.00013093477967290719,
+          "normal": [
+            0.12267586432435157,
+            0.0,
+            -0.9924467906705493
+          ],
+          "point_distance_m": 4.582677967531866e-06
+        },
+        {
+          "index": 68618,
+          "vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.31108543276786804,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              0.31115877628326416,
+              2.0235695838928223
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10453245043754578,
+            0.0024895331261906586,
+            0.10463538848993913
+          ],
+          "equilateral_quality": 0.0411801720854455,
+          "radius_ratio_quality": 0.046961281308866225,
+          "area_m2": 0.00013006201955047592,
+          "normal": [
+            -0.037461701157184946,
+            0.0,
+            -0.9992980641162122
+          ],
+          "point_distance_m": 4.581479507516116e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "C_ring_vertex_fan",
+      "likely_cause": "Station/shoulder ring vertex fan; likely shared-vertex edge/face classification sensitivity (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 2,
+      "world_coordinates_m": [
+        4.22802,
+        0.206553,
+        2.02366
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": 1,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "section ring seam",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 18,
+        "x_m": 4.228016600369076,
+        "delta_x_m": 3.3996309243278233e-06
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            5388,
+            68601
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 1.2074182697257333e-06,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              -0.31115877628326416,
+              2.0235695838928223
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            5388,
+            68606
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 10.456149315262234,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.10302723944187164,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            5388,
+            68608
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.191686299561134,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            5388,
+            68611
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.193459325393736,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            5388,
+            68618
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 1.2074182697257333e-06,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68601,
+            68606
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 10.45614931526227,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68601,
+            68608
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.191686299561173,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68601,
+            68611
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.193459325393775,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68601,
+            68618
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 1.4787793334710982e-06,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              0.31115877628326416,
+              2.0235695838928223
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68606,
+            68608
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 1.2648854741909514,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.22553014755249,
+              0.10295573621988297,
+              2.0232996940612793
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68606,
+            68611
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 1.2626899898686925,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68606,
+            68618
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 10.45614931526227,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68608,
+            68611
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.03072068579641029,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.22553014755249,
+              0.20640400052070618,
+              2.023355484008789
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68608,
+            68618
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 9.191686299561173,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            68611,
+            68618
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 9.193459325393775,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.31108543276786804,
+              2.023662805557251
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 5388,
+          "vertices_m": [
+            [
+              4.228016376495361,
+              0.10302723944187164,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              -0.31115877628326416,
+              2.0235695838928223
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10352574288845062,
+            0.5177177391230549,
+            0.4141934910379177
+          ],
+          "equilateral_quality": 0.0019818058203773694,
+          "radius_ratio_quality": 1.1549071715585789e-05,
+          "area_m2": 0.0001288094475846991,
+          "normal": [
+            -0.03746170115718495,
+            0.0,
+            -0.9992980641162124
+          ],
+          "point_distance_m": 4.582712025967807e-06
+        },
+        {
+          "index": 68601,
+          "vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              0.31115877628326416,
+              2.0235695838928223
+            ],
+            [
+              4.230503082275391,
+              -0.31115877628326416,
+              2.0235695838928223
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10463538848993913,
+            0.6223175525665283,
+            0.5177177391230549
+          ],
+          "equilateral_quality": 0.008051720840911063,
+          "radius_ratio_quality": 0.00022861496780423286,
+          "area_m2": 0.0007743038391400829,
+          "normal": [
+            -0.037461701157184946,
+            0.0,
+            -0.9992980641162122
+          ],
+          "point_distance_m": 2.6678452816613548e-06
+        },
+        {
+          "index": 68606,
+          "vertices_m": [
+            [
+              4.22553014755249,
+              0.10295573621988297,
+              2.0232996940612793
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.10302723944187164,
+              2.023662805557251
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10362771147710349,
+            0.10352574288845062,
+            0.0025136222917597362
+          ],
+          "equilateral_quality": 0.04198371593102262,
+          "radius_ratio_quality": 0.04786859155662334,
+          "area_m2": 0.00013005965402256405,
+          "normal": [
+            0.1445159440654942,
+            0.0,
+            -0.9895024719074021
+          ],
+          "point_distance_m": 4.5827120323682524e-06
+        },
+        {
+          "index": 68608,
+          "vertices_m": [
+            [
+              4.22553014755249,
+              0.10295573621988297,
+              2.0232996940612793
+            ],
+            [
+              4.22553014755249,
+              0.20640400052070618,
+              2.023355484008789
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10344827934466197,
+            0.002509576950427189,
+            0.10362771147710349
+          ],
+          "equilateral_quality": 0.04185898481160722,
+          "radius_ratio_quality": 0.04764417582131407,
+          "area_m2": 0.00012957626355406074,
+          "normal": [
+            0.12264425679332644,
+            0.0005352314475489115,
+            -0.9924505528251321
+          ],
+          "point_distance_m": 4.5827120323682524e-06
+        },
+        {
+          "index": 68611,
+          "vertices_m": [
+            [
+              4.22553014755249,
+              0.20640400052070618,
+              2.023355484008789
+            ],
+            [
+              4.228016376495361,
+              0.31108543276786804,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10471140357290441,
+            0.10453245043754578,
+            0.002509576950427189
+          ],
+          "equilateral_quality": 0.04142618810953747,
+          "radius_ratio_quality": 0.04715784398584418,
+          "area_m2": 0.00013093477967290719,
+          "normal": [
+            0.12267586432435157,
+            0.0,
+            -0.9924467906705493
+          ],
+          "point_distance_m": 4.582677967531866e-06
+        },
+        {
+          "index": 68618,
+          "vertices_m": [
+            [
+              4.228016376495361,
+              0.20655298233032227,
+              2.023662805557251
+            ],
+            [
+              4.228016376495361,
+              0.31108543276786804,
+              2.023662805557251
+            ],
+            [
+              4.230503082275391,
+              0.31115877628326416,
+              2.0235695838928223
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10453245043754578,
+            0.0024895331261906586,
+            0.10463538848993913
+          ],
+          "equilateral_quality": 0.0411801720854455,
+          "radius_ratio_quality": 0.046961281308866225,
+          "area_m2": 0.00013006201955047592,
+          "normal": [
+            -0.037461701157184946,
+            0.0,
+            -0.9992980641162122
+          ],
+          "point_distance_m": 4.581479507516116e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "C_ring_vertex_fan",
+      "likely_cause": "Station/shoulder ring vertex fan; likely shared-vertex edge/face classification sensitivity (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 3,
+      "world_coordinates_m": [
+        6.42599,
+        -0.0294316,
+        1.95089
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "other",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 27,
+        "x_m": 6.4658489182115275,
+        "delta_x_m": -0.03985891821152787
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            13055,
+            13056
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.009917898643859356,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.341525077819824,
+              -0.10068057477474213,
+              1.953039526939392
+            ],
+            [
+              6.460875988006592,
+              -3.951565664734349e-16,
+              1.9500000476837158
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 13055,
+          "vertices_m": [
+            [
+              6.341525077819824,
+              -0.10068057477474213,
+              1.953039526939392
+            ],
+            [
+              6.460875988006592,
+              -3.951565664734349e-16,
+              1.9500000476837158
+            ],
+            [
+              6.460875988006592,
+              -0.10150686651468277,
+              1.9530779123306274
+            ]
+          ],
+          "edge_lengths_m": [
+            0.1561744419984522,
+            0.10155351889725071,
+            0.11935377662180453
+          ],
+          "equilateral_quality": 0.8577652006032201,
+          "radius_ratio_quality": 0.8232368760105282,
+          "area_m2": 0.006060252494295802,
+          "normal": [
+            0.0001116427616766758,
+            -0.030307808741165447,
+            -0.9995406066114586
+          ],
+          "point_distance_m": 1.4309423723408072e-06
+        },
+        {
+          "index": 13056,
+          "vertices_m": [
+            [
+              6.341525077819824,
+              -0.10068057477474213,
+              1.953039526939392
+            ],
+            [
+              6.341525077819824,
+              -4.197796024918806e-16,
+              1.9500000476837158
+            ],
+            [
+              6.460875988006592,
+              -3.951565664734349e-16,
+              1.9500000476837158
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10072644424935313,
+            0.11935091018676758,
+            0.1561744419984522
+          ],
+          "equilateral_quality": 0.8537091575789322,
+          "radius_ratio_quality": 0.8183530111578926,
+          "area_m2": 0.006010896400518498,
+          "normal": [
+            4.509319826207542e-18,
+            -0.030175583763801826,
+            -0.9995446133837718
+          ],
+          "point_distance_m": 2.671263430927625e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "A_shared_diagonal_contact",
+      "likely_cause": "Shared-edge coplanar/near-coplanar facet contact; likely edge/face numerical classification sensitivity, not a non-adjacent crossing (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 4,
+      "world_coordinates_m": [
+        10.1419,
+        -0.0411171,
+        1.95124
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "other",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 42,
+        "x_m": 10.195569447948946,
+        "delta_x_m": -0.05366944794894657
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            16648,
+            16649
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.00980120697682414,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              10.071245193481445,
+              -0.10068338364362717,
+              1.9530397653579712
+            ],
+            [
+              10.190596580505371,
+              -3.938676999650691e-16,
+              1.9500000476837158
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 16648,
+          "vertices_m": [
+            [
+              10.071245193481445,
+              -0.10068338364362717,
+              1.9530397653579712
+            ],
+            [
+              10.190596580505371,
+              -3.938676999650691e-16,
+              1.9500000476837158
+            ],
+            [
+              10.190596580505371,
+              -0.10150697827339172,
+              1.9530779123306274
+            ]
+          ],
+          "edge_lengths_m": [
+            0.15617662184207928,
+            0.10155363060461921,
+            0.11935423472939961
+          ],
+          "equilateral_quality": 0.8577553258259544,
+          "radius_ratio_quality": 0.8232237062943759,
+          "area_m2": 0.006060283371873879,
+          "normal": [
+            0.00011033074265812206,
+            -0.030307775407474168,
+            -0.9995406077678771
+          ],
+          "point_distance_m": 1.4124104924424495e-06
+        },
+        {
+          "index": 16649,
+          "vertices_m": [
+            [
+              10.071245193481445,
+              -0.10068338364362717,
+              1.9530397653579712
+            ],
+            [
+              10.071245193481445,
+              -3.875578868431758e-16,
+              1.9500000476837158
+            ],
+            [
+              10.190596580505371,
+              -3.938676999650691e-16,
+              1.9500000476837158
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10072925903365373,
+            0.11935138702392578,
+            0.15617662184207928
+          ],
+          "equilateral_quality": 0.8537125932459745,
+          "radius_ratio_quality": 0.8183558263940157,
+          "area_m2": 0.006011088389779439,
+          "normal": [
+            0.0,
+            -0.03017710746030405,
+            -0.9995445673832305
+          ],
+          "point_distance_m": 2.8485740560465557e-05
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "A_shared_diagonal_contact",
+      "likely_cause": "Shared-edge coplanar/near-coplanar facet contact; likely edge/face numerical classification sensitivity, not a non-adjacent crossing (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 5,
+      "world_coordinates_m": [
+        6.49484,
+        -0.0205902,
+        6.08937
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "other",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 27,
+        "x_m": 6.4658489182115275,
+        "delta_x_m": 0.028991081788472428
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            30694,
+            30696
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.024341645781998166,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.470821857452393,
+              1.1297413107078558e-16,
+              6.090000152587891
+            ],
+            [
+              6.59017276763916,
+              -0.10230652987957001,
+              6.086863040924072
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 30694,
+          "vertices_m": [
+            [
+              6.470821857452393,
+              -0.10157190263271332,
+              6.086918354034424
+            ],
+            [
+              6.59017276763916,
+              -0.10230652987957001,
+              6.086863040924072
+            ],
+            [
+              6.470821857452393,
+              1.1297413107078558e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.11935318386679872,
+            0.15722947334390108,
+            0.10161864438553374
+          ],
+          "equilateral_quality": 0.8523298631248938,
+          "radius_ratio_quality": 0.8158191673200955,
+          "area_m2": 0.006064139081600792,
+          "normal": [
+            0.0002765672609998702,
+            -0.03032709651107072,
+            0.9995399895590762
+          ],
+          "point_distance_m": 1.2209033590717185e-06
+        },
+        {
+          "index": 30696,
+          "vertices_m": [
+            [
+              6.59017276763916,
+              -0.10230652987957001,
+              6.086863040924072
+            ],
+            [
+              6.59017276763916,
+              1.1539732027931272e-16,
+              6.090000152587891
+            ],
+            [
+              6.470821857452393,
+              1.1297413107078558e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.1023546165328689,
+            0.11935091018676758,
+            0.15722947334390108
+          ],
+          "equilateral_quality": 0.8559056216153025,
+          "radius_ratio_quality": 0.8201522526849631,
+          "area_m2": 0.006108058322507736,
+          "normal": [
+            0.0,
+            -0.03064943986000813,
+            0.999530195560028
+          ],
+          "point_distance_m": 1.9646816155897208e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "A_shared_diagonal_contact",
+      "likely_cause": "Shared-edge coplanar/near-coplanar facet contact; likely edge/face numerical classification sensitivity, not a non-adjacent crossing (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 6,
+      "world_coordinates_m": [
+        6.70952,
+        1.11022e-16,
+        6.09
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "section ring seam",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 28,
+        "x_m": 6.714496953527355,
+        "delta_x_m": -0.004976953527354944
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            30735,
+            30736
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.0,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              -0.1030411496758461,
+              6.086808204650879
+            ],
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30735,
+            30738
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.0,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30735,
+            94331
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 3.530666060152787,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.59017276763916,
+              1.1539732027931272e-16,
+              6.090000152587891
+            ],
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30735,
+            94332
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.5486482511211035,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30735,
+            94333
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.5486149095234896,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30736,
+            30738
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.0,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ],
+            [
+              6.719470024108887,
+              -0.1030411496758461,
+              6.086808204650879
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30736,
+            94331
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.5306660601526834,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30736,
+            94332
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.548648251121001,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30736,
+            94333
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.548614909523387,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30738,
+            94331
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.5306660601526834,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30738,
+            94332
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.548648251121001,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            30738,
+            94333
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 3.548614909523387,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ],
+            [
+              6.719470024108887,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            94331,
+            94332
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.023645259867242713,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.59017276763916,
+              0.10230652987957001,
+              6.086863040924072
+            ],
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            94331,
+            94333
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.017948849345230007,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            94332,
+            94333
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.01539276216188693,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ],
+            [
+              6.709524154663086,
+              0.1030411496758461,
+              6.086808204650879
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 30735,
+          "vertices_m": [
+            [
+              6.709524154663086,
+              -0.1030411496758461,
+              6.086808204650879
+            ],
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ],
+            [
+              6.59017276763916,
+              1.1539732027931272e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10309057696100422,
+            0.11935138702392578,
+            0.15770992563148223
+          ],
+          "equilateral_quality": 0.8568188534520872,
+          "radius_ratio_quality": 0.8208999921121756,
+          "area_m2": 0.006152001674696311,
+          "normal": [
+            0.0,
+            -0.030962557695444152,
+            0.9995205450719642
+          ],
+          "point_distance_m": 1.5251473172134937e-07
+        },
+        {
+          "index": 30736,
+          "vertices_m": [
+            [
+              6.709524154663086,
+              -0.1030411496758461,
+              6.086808204650879
+            ],
+            [
+              6.719470024108887,
+              -0.1030411496758461,
+              6.086808204650879
+            ],
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.009945869445800781,
+            0.1035692395317531,
+            0.10309057696100422
+          ],
+          "equilateral_quality": 0.16556204303369357,
+          "radius_ratio_quality": 0.18281889329021042,
+          "area_m2": 0.0005126627097732129,
+          "normal": [
+            0.0,
+            -0.030962557695444155,
+            0.9995205450719643
+          ],
+          "point_distance_m": 4.15746149686893e-06
+        },
+        {
+          "index": 30738,
+          "vertices_m": [
+            [
+              6.719470024108887,
+              -0.1030411496758461,
+              6.086808204650879
+            ],
+            [
+              6.719470024108887,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ],
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10309057696100422,
+            0.009945869445800781,
+            0.1035692395317531
+          ],
+          "equilateral_quality": 0.16556204303369357,
+          "radius_ratio_quality": 0.18281889329021042,
+          "area_m2": 0.0005126627097732129,
+          "normal": [
+            0.0,
+            -0.030962557695444155,
+            0.9995205450719643
+          ],
+          "point_distance_m": 4.157464181320669e-06
+        },
+        {
+          "index": 94331,
+          "vertices_m": [
+            [
+              6.59017276763916,
+              1.1539732027931272e-16,
+              6.090000152587891
+            ],
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ],
+            [
+              6.59017276763916,
+              0.10230652987957001,
+              6.086863040924072
+            ]
+          ],
+          "edge_lengths_m": [
+            0.11935138702392578,
+            0.15722983530528012,
+            0.10235461653286868
+          ],
+          "equilateral_quality": 0.8559051003754413,
+          "radius_ratio_quality": 0.820151825845601,
+          "area_m2": 0.00610808272574996,
+          "normal": [
+            -6.222750633076858e-19,
+            0.030649439860008204,
+            0.999530195560028
+          ],
+          "point_distance_m": 1.5251620399475696e-07
+        },
+        {
+          "index": 94332,
+          "vertices_m": [
+            [
+              6.59017276763916,
+              0.10230652987957001,
+              6.086863040924072
+            ],
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ],
+            [
+              6.709524154663086,
+              0.1030411496758461,
+              6.086808204650879
+            ]
+          ],
+          "edge_lengths_m": [
+            0.15722983530528012,
+            0.103090576961004,
+            0.11935366042898247
+          ],
+          "equilateral_quality": 0.859421722661064,
+          "radius_ratio_quality": 0.8244271596085978,
+          "area_m2": 0.006152001896707208,
+          "normal": [
+            0.00026865437836912304,
+            0.030962556578080187,
+            0.9995205090016783
+          ],
+          "point_distance_m": 2.7053850752705298e-06
+        },
+        {
+          "index": 94333,
+          "vertices_m": [
+            [
+              6.709524154663086,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ],
+            [
+              6.719470024108887,
+              1.1782050948783986e-16,
+              6.090000152587891
+            ],
+            [
+              6.709524154663086,
+              0.1030411496758461,
+              6.086808204650879
+            ]
+          ],
+          "edge_lengths_m": [
+            0.009945869445800781,
+            0.10356923953175289,
+            0.103090576961004
+          ],
+          "equilateral_quality": 0.16556204303369387,
+          "radius_ratio_quality": 0.18281889329021073,
+          "area_m2": 0.0005126627097732118,
+          "normal": [
+            -0.0,
+            0.03096255769544422,
+            0.9995205450719643
+          ],
+          "point_distance_m": 4.157461496868919e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "B_mirror_centerline_seam",
+      "likely_cause": "Mirrored fuselage crown meets at the shared centerline seam; likely endpoint/edge classification sensitivity (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 7,
+      "world_coordinates_m": [
+        9.95065,
+        -0.0903181,
+        6.0872
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "other",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 41,
+        "x_m": 9.946921412633118,
+        "delta_x_m": 0.0037285873668810865
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            32650,
+            32652
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.0,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              9.941948890686035,
+              1.2155452188691244e-16,
+              6.090000152587891
+            ],
+            [
+              9.951894760131836,
+              -0.10322070866823196,
+              6.0868000984191895
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 32650,
+          "vertices_m": [
+            [
+              9.941948890686035,
+              -0.10322070866823196,
+              6.0868000984191895
+            ],
+            [
+              9.951894760131836,
+              -0.10322070866823196,
+              6.0868000984191895
+            ],
+            [
+              9.941948890686035,
+              1.2155452188691244e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.009945869445800781,
+            0.10374813426605597,
+            0.1032703008839166
+          ],
+          "equilateral_quality": 0.16527921180656135,
+          "radius_ratio_quality": 0.18251964010034494,
+          "area_m2": 0.0005135564651099997,
+          "normal": [
+            0.0,
+            -0.030987168056170068,
+            0.9995197824034594
+          ],
+          "point_distance_m": 1.0576213073837856e-07
+        },
+        {
+          "index": 32652,
+          "vertices_m": [
+            [
+              9.951894760131836,
+              -0.10322070866823196,
+              6.0868000984191895
+            ],
+            [
+              9.951894760131836,
+              1.2155452188691244e-16,
+              6.090000152587891
+            ],
+            [
+              9.941948890686035,
+              1.2155452188691244e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.1032703008839166,
+            0.009945869445800781,
+            0.10374813426605597
+          ],
+          "equilateral_quality": 0.16527921180656135,
+          "radius_ratio_quality": 0.18251964010034494,
+          "area_m2": 0.0005135564651099997,
+          "normal": [
+            0.0,
+            -0.030987168056170068,
+            0.9995197824034594
+          ],
+          "point_distance_m": 1.5214890329612418e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "A_shared_diagonal_contact",
+      "likely_cause": "Shared-edge coplanar/near-coplanar facet contact; likely edge/face numerical classification sensitivity, not a non-adjacent crossing (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 8,
+      "world_coordinates_m": [
+        10.58,
+        -0.00972425,
+        6.08971
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "other",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 44,
+        "x_m": 10.692865518580602,
+        "delta_x_m": -0.11286551858060179
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            32785,
+            32788
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.03650819060714475,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              10.568541526794434,
+              1.207349910406643e-16,
+              6.090000152587891
+            ],
+            [
+              10.68789291381836,
+              -0.10158547013998032,
+              6.086917400360107
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 32785,
+          "vertices_m": [
+            [
+              10.568541526794434,
+              -0.10264565795660019,
+              6.0868353843688965
+            ],
+            [
+              10.68789291381836,
+              -0.10158547013998032,
+              6.086917400360107
+            ],
+            [
+              10.568541526794434,
+              1.207349910406643e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.11935612388714809,
+            0.1567605329456164,
+            0.10269443439263562
+          ],
+          "equilateral_quality": 0.8600783489858727,
+          "radius_ratio_quality": 0.825577388262275,
+          "area_m2": 0.006128362115124086,
+          "normal": [
+            -0.0004131068446584071,
+            -0.030817326836319138,
+            0.9995249480175061
+          ],
+          "point_distance_m": 2.2438479658315563e-05
+        },
+        {
+          "index": 32788,
+          "vertices_m": [
+            [
+              10.68789291381836,
+              -0.10158547013998032,
+              6.086917400360107
+            ],
+            [
+              10.68789291381836,
+              1.1318763631305287e-16,
+              6.090000152587891
+            ],
+            [
+              10.568541526794434,
+              1.207349910406643e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10163223457574254,
+            0.11935138702392578,
+            0.1567605329456164
+          ],
+          "equilateral_quality": 0.8549606167760945,
+          "radius_ratio_quality": 0.819378289257696,
+          "area_m2": 0.006064974081477929,
+          "normal": [
+            -4.469112967014127e-18,
+            -0.03033242593407457,
+            0.9995398661068773
+          ],
+          "point_distance_m": 4.941014038798968e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "A_shared_diagonal_contact",
+      "likely_cause": "Shared-edge coplanar/near-coplanar facet contact; likely edge/face numerical classification sensitivity, not a non-adjacent crossing (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 9,
+      "world_coordinates_m": [
+        1.24673,
+        -0.0620968,
+        4.44314
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "section ring seam",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 6,
+        "x_m": 1.2442401765791398,
+        "delta_x_m": 0.0024898234208601266
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            9908,
+            9911
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.7377105238468231,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.12416574358940125,
+              4.439822673797607
+            ],
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9908,
+            9912
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 2.543088083307837,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ],
+            [
+              1.2492130994796753,
+              -0.12433850765228271,
+              4.441638946533203
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9908,
+            9915
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.5978055380356313,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9908,
+            9916
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.4976098408778262,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9908,
+            9919
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.6879899575969386,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9911,
+            9912
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.280097958969908,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9911,
+            9915
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 2.490191568819176,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.244240164756775,
+              -0.06199907511472702,
+              4.441367149353027
+            ],
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9911,
+            9916
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 4.066574966010805,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9911,
+            9919
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.5187343683708687,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9912,
+            9915
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 4.1948122025443695,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9912,
+            9916
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 2.5207034122411254,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ],
+            [
+              1.2492130994796753,
+              -0.062190938740968704,
+              4.44513463973999
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9912,
+            9919
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 4.384828689053541,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9915,
+            9916
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.288401532920907,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9915,
+            9919
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.2268502236287821,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.244240164756775,
+              8.934136921190876e-17,
+              4.441367149353027
+            ],
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            9916,
+            9919
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 3.514960880494827,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ],
+            [
+              1.246726632118225,
+              8.899429746177132e-17,
+              4.443123817443848
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 9908,
+          "vertices_m": [
+            [
+              1.246726632118225,
+              -0.12416574358940125,
+              4.439822673797607
+            ],
+            [
+              1.2492130994796753,
+              -0.12433850765228271,
+              4.441638946533203
+            ],
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ],
+          "edge_lengths_m": [
+            0.0030840256177679048,
+            0.06230943913996881,
+            0.06215749081203876
+          ],
+          "equilateral_quality": 0.08559727130815734,
+          "radius_ratio_quality": 0.09642122874704018,
+          "area_m2": 9.58188257865752e-05,
+          "normal": [
+            -0.5912568239519368,
+            -0.043023595337873366,
+            0.8053349231062014
+          ],
+          "point_distance_m": 3.645109504272928e-06
+        },
+        {
+          "index": 9911,
+          "vertices_m": [
+            [
+              1.246726632118225,
+              -0.12416574358940125,
+              4.439822673797607
+            ],
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ],
+            [
+              1.244240164756775,
+              -0.06199907511472702,
+              4.441367149353027
+            ]
+          ],
+          "edge_lengths_m": [
+            0.06215749081203876,
+            0.003054520943608036,
+            0.062235541243897775
+          ],
+          "equilateral_quality": 0.08490656870860533,
+          "radius_ratio_quality": 0.09574721897742126,
+          "area_m2": 9.493063150089518e-05,
+          "normal": [
+            -0.5808242447884573,
+            -0.04342613465447054,
+            0.8128698342876859
+          ],
+          "point_distance_m": 3.6476923259639237e-06
+        },
+        {
+          "index": 9912,
+          "vertices_m": [
+            [
+              1.2492130994796753,
+              -0.12433850765228271,
+              4.441638946533203
+            ],
+            [
+              1.2492130994796753,
+              -0.062190938740968704,
+              4.44513463973999
+            ],
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ]
+          ],
+          "edge_lengths_m": [
+            0.062245804618323484,
+            0.0031899162982454146,
+            0.06230943913996881
+          ],
+          "equilateral_quality": 0.0885542783064053,
+          "radius_ratio_quality": 0.09977853680539743,
+          "area_m2": 9.927786043226967e-05,
+          "normal": [
+            -0.6264149045600368,
+            -0.043775757386760004,
+            0.7782596291792705
+          ],
+          "point_distance_m": 1.01829918268724e-06
+        },
+        {
+          "index": 9915,
+          "vertices_m": [
+            [
+              1.244240164756775,
+              -0.06199907511472702,
+              4.441367149353027
+            ],
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ],
+            [
+              1.244240164756775,
+              8.934136921190876e-17,
+              4.441367149353027
+            ]
+          ],
+          "edge_lengths_m": [
+            0.003054520943608036,
+            0.06217176674524516,
+            0.06199907511472711
+          ],
+          "equilateral_quality": 0.08494960059586255,
+          "radius_ratio_quality": 0.09567026358672605,
+          "area_m2": 9.464029960383942e-05,
+          "normal": [
+            -0.5802404721910561,
+            0.0,
+            0.8144452065249695
+          ],
+          "point_distance_m": 3.6476923259639237e-06
+        },
+        {
+          "index": 9916,
+          "vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ],
+            [
+              1.2492130994796753,
+              -0.062190938740968704,
+              4.44513463973999
+            ],
+            [
+              1.246726632118225,
+              8.899429746177132e-17,
+              4.443123817443848
+            ]
+          ],
+          "edge_lengths_m": [
+            0.0031899162982454146,
+            0.06227309842724348,
+            0.06209676516162374
+          ],
+          "equilateral_quality": 0.08856770760040508,
+          "radius_ratio_quality": 0.09965784510857995,
+          "area_m2": 9.899813314053956e-05,
+          "normal": [
+            -0.6260029809156774,
+            0.00018563401037261429,
+            0.7798206418303507
+          ],
+          "point_distance_m": 1.01829918268724e-06
+        },
+        {
+          "index": 9919,
+          "vertices_m": [
+            [
+              1.246726632118225,
+              -0.06209676340222359,
+              4.443138599395752
+            ],
+            [
+              1.246726632118225,
+              8.899429746177132e-17,
+              4.443123817443848
+            ],
+            [
+              1.244240164756775,
+              8.934136921190876e-17,
+              4.441367149353027
+            ]
+          ],
+          "edge_lengths_m": [
+            0.06209676516162374,
+            0.0030444051505775934,
+            0.06217176674524516
+          ],
+          "equilateral_quality": 0.08471270463920956,
+          "radius_ratio_quality": 0.09553569377594871,
+          "area_m2": 9.452385495444203e-05,
+          "normal": [
+            -0.5770152035403138,
+            0.00019442097958380765,
+            0.8167333818840841
+          ],
+          "point_distance_m": 3.6476923259639237e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "C_ring_vertex_fan",
+      "likely_cause": "Station/shoulder ring vertex fan; likely shared-vertex edge/face classification sensitivity (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 10,
+      "world_coordinates_m": [
+        18.4059,
+        0.101541,
+        1.95308
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "section ring seam",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 75,
+        "x_m": 18.40095461337127,
+        "delta_x_m": 0.00494538662873012
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            106768,
+            106770
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.0,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.403440475463867,
+              -3.9413062428585274e-16,
+              1.9500000476837158
+            ],
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106768,
+            106774
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.914996572073362,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106768,
+            106894
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.0,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              -3.9413062428585274e-16,
+              1.9500000476837158
+            ],
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106768,
+            106895
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.9149965722150832,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106768,
+            106899
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.00028693146293370665,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106768,
+            106900
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.9138728424065357,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106770,
+            106774
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 2.914996572073362,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.403440475463867,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106770,
+            106894
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.0,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106770,
+            106895
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.9149965722150832,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106770,
+            106899
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.00028693146293370665,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106770,
+            106900
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.9138728424065357,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106774,
+            106894
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.914996572073487,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106774,
+            106895
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 2.8750756231172085e-05,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              18.405927658081055,
+              0.2027626633644104,
+              1.9613161087036133
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106774,
+            106899
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.9152828425523345,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106774,
+            106900
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.001124741712907359,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106894,
+            106895
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.9149965722152085,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106894,
+            106899
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.00028693273314614367,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              19.897815704345703,
+              -3.9232755583894436e-16,
+              1.9500000476837158
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106894,
+            106900
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.913872842406661,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106895,
+            106899
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 2.91528284250143,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106895,
+            106900
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.0011263271102515107,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              19.897815704345703,
+              0.20269425213336945,
+              1.961309790611267
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            106899,
+            106900
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 2.914159113204549,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              19.897815704345703,
+              0.10150693356990814,
+              1.9530779123306274
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 106768,
+          "vertices_m": [
+            [
+              18.403440475463867,
+              -3.9413062428585274e-16,
+              1.9500000476837158
+            ],
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              18.405927658081055,
+              -3.9413062428585274e-16,
+              1.9500000476837158
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10161842151901776,
+            0.10158797918378697,
+            0.0024871826171875
+          ],
+          "equilateral_quality": 0.042380466546407515,
+          "radius_ratio_quality": 0.04835226222239482,
+          "area_m2": 0.00012633392797056027,
+          "normal": [
+            0.0,
+            0.030312782992805546,
+            -0.9995404620060316
+          ],
+          "point_distance_m": 2.7648366485627863e-05
+        },
+        {
+          "index": 106770,
+          "vertices_m": [
+            [
+              18.403440475463867,
+              -3.9413062428585274e-16,
+              1.9500000476837158
+            ],
+            [
+              18.403440475463867,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10158797918378697,
+            0.0024871826171875,
+            0.10161842151901776
+          ],
+          "equilateral_quality": 0.042380466546407515,
+          "radius_ratio_quality": 0.04835226222239482,
+          "area_m2": 0.00012633392797056027,
+          "normal": [
+            0.0,
+            0.030312782992805546,
+            -0.9995404620060316
+          ],
+          "point_distance_m": 5.466633025761051e-07
+        },
+        {
+          "index": 106774,
+          "vertices_m": [
+            [
+              18.403440475463867,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              18.405927658081055,
+              0.2027626633644104,
+              1.9613161087036133
+            ],
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10158638544560121,
+            0.10155593350726003,
+            0.0024871826171875
+          ],
+          "equilateral_quality": 0.0423938235480655,
+          "radius_ratio_quality": 0.048367321429343864,
+          "area_m2": 0.00012629407624575336,
+          "normal": [
+            0.0,
+            0.08110453390330816,
+            -0.9967056007569773
+          ],
+          "point_distance_m": 6.138372920329288e-07
+        },
+        {
+          "index": 106894,
+          "vertices_m": [
+            [
+              18.405927658081055,
+              -3.9413062428585274e-16,
+              1.9500000476837158
+            ],
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              19.897815704345703,
+              -3.9232755583894436e-16,
+              1.9500000476837158
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10158797918378697,
+            1.4953427901661864,
+            1.4918880462646484
+          ],
+          "equilateral_quality": 0.11739717886892408,
+          "radius_ratio_quality": 0.13125182523713227,
+          "area_m2": 0.07577894589423687,
+          "normal": [
+            -3.66354718701281e-20,
+            0.030312782992805543,
+            -0.9995404620060315
+          ],
+          "point_distance_m": 2.7663482941364904e-05
+        },
+        {
+          "index": 106895,
+          "vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              18.405927658081055,
+              0.2027626633644104,
+              1.9613161087036133
+            ],
+            [
+              19.897815704345703,
+              0.20269425213336945,
+              1.961309790611267
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10155593350726003,
+            1.4918880478465415,
+            1.4953359493777179
+          ],
+          "equilateral_quality": 0.11736085382675726,
+          "radius_ratio_quality": 0.13121267411506085,
+          "area_m2": 0.07575504161337389,
+          "normal": [
+            -5.01925745765838e-07,
+            0.08110453390329794,
+            -0.9967056007568519
+          ],
+          "point_distance_m": 2.7664891901142386e-05
+        },
+        {
+          "index": 106899,
+          "vertices_m": [
+            [
+              19.897815704345703,
+              -3.9232755583894436e-16,
+              1.9500000476837158
+            ],
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              19.897815704345703,
+              0.10150693356990814,
+              1.9530779123306274
+            ]
+          ],
+          "edge_lengths_m": [
+            1.4953427901661864,
+            1.4918880466611775,
+            0.10155358592167256
+          ],
+          "equilateral_quality": 0.11735761661599255,
+          "radius_ratio_quality": 0.13120885001722485,
+          "area_m2": 0.07575329044593097,
+          "normal": [
+            -3.402200628432866e-07,
+            0.030307788927171658,
+            -0.9995406134471128
+          ],
+          "point_distance_m": 2.7664891901142386e-05
+        },
+        {
+          "index": 106900,
+          "vertices_m": [
+            [
+              18.405927658081055,
+              0.10154129564762115,
+              1.9530794620513916
+            ],
+            [
+              19.897815704345703,
+              0.20269425213336945,
+              1.961309790611267
+            ],
+            [
+              19.897815704345703,
+              0.10150693356990814,
+              1.9530779123306274
+            ]
+          ],
+          "edge_lengths_m": [
+            1.4953359493777179,
+            0.10152160980840812,
+            1.4918880466611775
+          ],
+          "equilateral_quality": 0.1173213713633854,
+          "radius_ratio_quality": 0.13116978484550004,
+          "area_m2": 0.07572943805538021,
+          "normal": [
+            8.322546409477886e-07,
+            0.08108498571064843,
+            -0.9967071912510771
+          ],
+          "point_distance_m": 2.7664891901142386e-05
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "C_ring_vertex_fan",
+      "likely_cause": "Station/shoulder ring vertex fan; likely shared-vertex edge/face classification sensitivity (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 11,
+      "world_coordinates_m": [
+        27.5689,
+        -0.0227856,
+        1.95069
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "other",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 112,
+        "x_m": 27.600931920056905,
+        "delta_x_m": -0.03203192005690525
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            142732,
+            142733
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.005856399884961379,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              -0.10043381154537201,
+              1.9530378580093384
+            ],
+            [
+              27.595958709716797,
+              -3.7329795482725163e-16,
+              1.9500000476837158
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 142732,
+          "vertices_m": [
+            [
+              27.476608276367188,
+              -0.10043381154537201,
+              1.9530378580093384
+            ],
+            [
+              27.595958709716797,
+              -3.7329795482725163e-16,
+              1.9500000476837158
+            ],
+            [
+              27.595958709716797,
+              -0.09937062859535217,
+              1.9529979228973389
+            ]
+          ],
+          "edge_lengths_m": [
+            0.15601507854641883,
+            0.09941583919693986,
+            0.11935517539486058
+          ],
+          "equilateral_quality": 0.8480048513475735,
+          "radius_ratio_quality": 0.8116565161317081,
+          "area_m2": 0.005932661757839559,
+          "normal": [
+            -6.582942032503455e-05,
+            -0.030154905207697126,
+            -0.999545235273723
+          ],
+          "point_distance_m": 7.596830318804734e-07
+        },
+        {
+          "index": 142733,
+          "vertices_m": [
+            [
+              27.476608276367188,
+              -0.10043381154537201,
+              1.9530378580093384
+            ],
+            [
+              27.476608276367188,
+              -3.8350171075657096e-16,
+              1.9500000476837158
+            ],
+            [
+              27.595958709716797,
+              -3.7329795482725163e-16,
+              1.9500000476837158
+            ]
+          ],
+          "edge_lengths_m": [
+            0.100479743197849,
+            0.11935043334960938,
+            0.15601507854641883
+          ],
+          "equilateral_quality": 0.8533555077536252,
+          "radius_ratio_quality": 0.8180632102435249,
+          "area_m2": 0.0059961504467603705,
+          "normal": [
+            4.5204093114077986e-18,
+            -0.030233062196834817,
+            -0.9995428764941514
+          ],
+          "point_distance_m": 1.198102497845674e-05
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "A_shared_diagonal_contact",
+      "likely_cause": "Shared-edge coplanar/near-coplanar facet contact; likely edge/face numerical classification sensitivity, not a non-adjacent crossing (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 12,
+      "world_coordinates_m": [
+        27.6206,
+        -0.0126672,
+        6.08961
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "other",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 112,
+        "x_m": 27.600931920056905,
+        "delta_x_m": 0.01966807994309505
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            161893,
+            161894
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.03554981281058451,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.605905532836914,
+              1.282847412833297e-16,
+              6.090000152587891
+            ],
+            [
+              27.725255966186523,
+              -0.10264664143323898,
+              6.0868353843688965
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 161893,
+          "vertices_m": [
+            [
+              27.605905532836914,
+              -0.10370776802301407,
+              6.086753845214844
+            ],
+            [
+              27.725255966186523,
+              -0.10264664143323898,
+              6.0868353843688965
+            ],
+            [
+              27.605905532836914,
+              1.282847412833297e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.11935517826643602,
+            0.15745118194584462,
+            0.10375856427242824
+          ],
+          "equilateral_quality": 0.8613676882578964,
+          "radius_ratio_quality": 0.8266393359783627,
+          "area_m2": 0.006191815311846746,
+          "normal": [
+            -0.00040468750671409623,
+            -0.03128712439289616,
+            0.9995103561620786
+          ],
+          "point_distance_m": 4.1204275105605373e-07
+        },
+        {
+          "index": 161894,
+          "vertices_m": [
+            [
+              27.725255966186523,
+              -0.10264664143323898,
+              6.0868353843688965
+            ],
+            [
+              27.725255966186523,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ],
+            [
+              27.605905532836914,
+              1.282847412833297e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10269541740216023,
+            0.11935043334960938,
+            0.15745118194584462
+          ],
+          "equilateral_quality": 0.8563352897660117,
+          "radius_ratio_quality": 0.8205040826958334,
+          "area_m2": 0.00612837128498342,
+          "normal": [
+            0.0,
+            -0.030817034479744647,
+            0.9995250424005765
+          ],
+          "point_distance_m": 2.2221910534703777e-05
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "A_shared_diagonal_contact",
+      "likely_cause": "Shared-edge coplanar/near-coplanar facet contact; likely edge/face numerical classification sensitivity, not a non-adjacent crossing (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 13,
+      "world_coordinates_m": [
+        27.3473,
+        1.11022e-16,
+        6.09
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "section ring seam",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 111,
+        "x_m": 27.352283884741077,
+        "delta_x_m": -0.004983884741076139
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            161815,
+            161835
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 8.537736462515939e-07,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              -0.10154129564762115,
+              6.086920738220215
+            ],
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161815,
+            161836
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.023038417574433135,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161815,
+            161837
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.0011253384418834038,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161815,
+            240462
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 3.4741212414412868,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              26.3626651763916,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161815,
+            240467
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.4741212414412868,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161815,
+            240473
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.4741212414412868,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161835,
+            161836
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.023038417574433135,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              27.352283477783203,
+              -0.10154129564762115,
+              6.086920738220215
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161835,
+            161837
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.0011253384418834038,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161835,
+            240462
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.4741212414412868,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161835,
+            240467
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.4741212414412868,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161835,
+            240473
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.4741212414412868,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161836,
+            161837
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.023120771012019512,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              27.357255935668945,
+              -0.1015855073928833,
+              6.086917400360107
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161836,
+            240462
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.473071058172425,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161836,
+            240467
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.473071058172425,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161836,
+            240473
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.473071058172425,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161837,
+            240462
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.475246579809517,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161837,
+            240467
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.475246579809517,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161837,
+            240473
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 3.475246579809517,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              27.357255935668945,
+              1.1318768925261207e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            240462,
+            240467
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 8.537736462515939e-07,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              26.3626651763916,
+              0.10154129564762115,
+              6.086920738220215
+            ],
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            240462,
+            240473
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 8.537736462515939e-07,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            240467,
+            240473
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 8.537736462515939e-07,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              27.34731101989746,
+              0.10154129564762115,
+              6.086920738220215
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 161815,
+          "vertices_m": [
+            [
+              27.34731101989746,
+              -0.10154129564762115,
+              6.086920738220215
+            ],
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              26.3626651763916,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10158797918378669,
+            0.9846458435058594,
+            0.9898724941364977
+          ],
+          "equilateral_quality": 0.17681719125009798,
+          "radius_ratio_quality": 0.19469442604768578,
+          "area_m2": 0.05001409072673767,
+          "normal": [
+            0.0,
+            -0.030312782992805626,
+            0.9995404620060315
+          ],
+          "point_distance_m": 1.5251777063279574e-07
+        },
+        {
+          "index": 161835,
+          "vertices_m": [
+            [
+              27.34731101989746,
+              -0.10154129564762115,
+              6.086920738220215
+            ],
+            [
+              27.352283477783203,
+              -0.10154129564762115,
+              6.086920738220215
+            ],
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.0049724578857421875,
+            0.10170960058947709,
+            0.10158797918378669
+          ],
+          "equilateral_quality": 0.08457658872242574,
+          "radius_ratio_quality": 0.09538600981496059,
+          "area_m2": 0.00025257097409451667,
+          "normal": [
+            0.0,
+            -0.030312782992805626,
+            0.9995404620060315
+          ],
+          "point_distance_m": 1.1020952849301658e-05
+        },
+        {
+          "index": 161836,
+          "vertices_m": [
+            [
+              27.352283477783203,
+              -0.10154129564762115,
+              6.086920738220215
+            ],
+            [
+              27.357255935668945,
+              -0.1015855073928833,
+              6.086917400360107
+            ],
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.00497265555264075,
+            0.10211767732997745,
+            0.10170960058947709
+          ],
+          "equilateral_quality": 0.08410110115631364,
+          "radius_ratio_quality": 0.09456415176378567,
+          "area_m2": 0.00025246087293937885,
+          "normal": [
+            0.00040161541481032636,
+            -0.03029313158335903,
+            0.9995409770909504
+          ],
+          "point_distance_m": 1.1020953819909617e-05
+        },
+        {
+          "index": 161837,
+          "vertices_m": [
+            [
+              27.357255935668945,
+              -0.1015855073928833,
+              6.086917400360107
+            ],
+            [
+              27.357255935668945,
+              1.1318768925261207e-16,
+              6.090000152587891
+            ],
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10163227181150421,
+            0.009944915771484375,
+            0.10211767732997745
+          ],
+          "equilateral_quality": 0.1678771214098059,
+          "radius_ratio_quality": 0.1852668509575318,
+          "area_m2": 0.0005053621914150075,
+          "normal": [
+            0.0,
+            -0.03033241482096096,
+            0.99953986644412
+          ],
+          "point_distance_m": 1.1020953819909617e-05
+        },
+        {
+          "index": 240462,
+          "vertices_m": [
+            [
+              26.3626651763916,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              26.3626651763916,
+              0.10154129564762115,
+              6.086920738220215
+            ]
+          ],
+          "edge_lengths_m": [
+            0.9846458435058594,
+            0.9898724941364977,
+            0.10158797918378647
+          ],
+          "equilateral_quality": 0.1768171912500976,
+          "radius_ratio_quality": 0.1946944260476854,
+          "area_m2": 0.050014090726737556,
+          "normal": [
+            -0.0,
+            0.030312782992805692,
+            0.9995404620060315
+          ],
+          "point_distance_m": 1.5251777063232095e-07
+        },
+        {
+          "index": 240467,
+          "vertices_m": [
+            [
+              26.3626651763916,
+              0.10154129564762115,
+              6.086920738220215
+            ],
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              27.34731101989746,
+              0.10154129564762115,
+              6.086920738220215
+            ]
+          ],
+          "edge_lengths_m": [
+            0.9898724941364977,
+            0.10158797918378647,
+            0.9846458435058594
+          ],
+          "equilateral_quality": 0.1768171912500976,
+          "radius_ratio_quality": 0.1946944260476854,
+          "area_m2": 0.050014090726737556,
+          "normal": [
+            0.0,
+            0.030312782992805692,
+            0.9995404620060315
+          ],
+          "point_distance_m": 1.1366211002255966e-06
+        },
+        {
+          "index": 240473,
+          "vertices_m": [
+            [
+              27.34731101989746,
+              1.128731620964949e-16,
+              6.090000152587891
+            ],
+            [
+              27.357255935668945,
+              1.1318768925261207e-16,
+              6.090000152587891
+            ],
+            [
+              27.34731101989746,
+              0.10154129564762115,
+              6.086920738220215
+            ]
+          ],
+          "edge_lengths_m": [
+            0.009944915771484375,
+            0.1020735953336971,
+            0.10158797918378647
+          ],
+          "equilateral_quality": 0.16794892699381536,
+          "radius_ratio_quality": 0.18534273414489952,
+          "area_m2": 0.0005051419481890322,
+          "normal": [
+            -9.587002693438414e-19,
+            0.030312782992805692,
+            0.9995404620060315
+          ],
+          "point_distance_m": 1.1020952849301654e-05
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "B_mirror_centerline_seam",
+      "likely_cause": "Mirrored fuselage crown meets at the shared centerline seam; likely endpoint/edge classification sensitivity (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 14,
+      "world_coordinates_m": [
+        27.4766,
+        1.249e-16,
+        6.09
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "section ring seam",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 111,
+        "x_m": 27.352283884741077,
+        "delta_x_m": 0.1243161152589245
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            161839,
+            161882
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.0234269273308117,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              -0.10264664143323898,
+              6.0868353843688965
+            ],
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161839,
+            161883
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.026947309914375436,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161839,
+            240475
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 3.504151567003068,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.357255935668945,
+              1.1318768925261207e-16,
+              6.090000152587891
+            ],
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161839,
+            240476
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.532010330516367,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161839,
+            240494
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.531931215828449,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161882,
+            161883
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.035706839607947266,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ],
+            [
+              27.595958709716797,
+              -0.10370776802301407,
+              6.086753845214844
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161882,
+            240475
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.5042297785689125,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161882,
+            240476
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.5319309249919333,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161882,
+            240494
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.532008810708949,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161883,
+            240475
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.531098876916432,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161883,
+            240476
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 3.5589570398720536,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            161883,
+            240494
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 3.558878525741825,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ],
+            [
+              27.595958709716797,
+              1.282847412833297e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            240475,
+            240476
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.03648670083113199,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.357255935668945,
+              0.1015855073928833,
+              6.086917400360107
+            ],
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            240475,
+            240494
+          ],
+          "shared_vertex_count": 1,
+          "normal_angle_deg": 0.02777964883010481,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ]
+        },
+        {
+          "triangles": [
+            240476,
+            240494
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 0.023655242380847437,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ],
+            [
+              27.476608276367188,
+              0.10264664143323898,
+              6.0868353843688965
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 161839,
+          "vertices_m": [
+            [
+              27.476608276367188,
+              -0.10264664143323898,
+              6.0868353843688965
+            ],
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ],
+            [
+              27.357255935668945,
+              1.1318768925261207e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10269541740216023,
+            0.11935234069824219,
+            0.15745262775054975
+          ],
+          "equilateral_quality": 0.8563332481947429,
+          "radius_ratio_quality": 0.820502411076809,
+          "area_m2": 0.006128469222965409,
+          "normal": [
+            4.422809893629876e-18,
+            -0.030817034479744647,
+            0.9995250424005765
+          ],
+          "point_distance_m": 1.5251541748582587e-07
+        },
+        {
+          "index": 161882,
+          "vertices_m": [
+            [
+              27.476608276367188,
+              -0.10264664143323898,
+              6.0868353843688965
+            ],
+            [
+              27.595958709716797,
+              -0.10370776802301407,
+              6.086753845214844
+            ],
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.11935517826643602,
+            0.15814665851865217,
+            0.10269541740216023
+          ],
+          "equilateral_quality": 0.8525418123642713,
+          "radius_ratio_quality": 0.8153589953476793,
+          "area_m2": 0.00612837179725528,
+          "normal": [
+            0.0004088770041183984,
+            -0.030817031903742395,
+            0.9995249588500725
+          ],
+          "point_distance_m": 8.277772330437836e-06
+        },
+        {
+          "index": 161883,
+          "vertices_m": [
+            [
+              27.595958709716797,
+              -0.10370776802301407,
+              6.086753845214844
+            ],
+            [
+              27.595958709716797,
+              1.282847412833297e-16,
+              6.090000152587891
+            ],
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ]
+          ],
+          "edge_lengths_m": [
+            0.10375856427242824,
+            0.11935043334960938,
+            0.15814665851865217
+          ],
+          "equilateral_quality": 0.8576074419918285,
+          "radius_ratio_quality": 0.8215455161921574,
+          "area_m2": 0.006191814804823804,
+          "normal": [
+            0.0,
+            -0.0312871269548736,
+            0.9995104380079828
+          ],
+          "point_distance_m": 8.277773666036623e-06
+        },
+        {
+          "index": 240475,
+          "vertices_m": [
+            [
+              27.357255935668945,
+              1.1318768925261207e-16,
+              6.090000152587891
+            ],
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ],
+            [
+              27.357255935668945,
+              0.1015855073928833,
+              6.086917400360107
+            ]
+          ],
+          "edge_lengths_m": [
+            0.11935234069824219,
+            0.15676128317833044,
+            0.10163227181150399
+          ],
+          "equilateral_quality": 0.8549595781190067,
+          "radius_ratio_quality": 0.819377438475746,
+          "area_m2": 0.006065024765591489,
+          "normal": [
+            -1.91839742537312e-18,
+            0.03033241482096103,
+            0.99953986644412
+          ],
+          "point_distance_m": 1.525176802356631e-07
+        },
+        {
+          "index": 240476,
+          "vertices_m": [
+            [
+              27.357255935668945,
+              0.1015855073928833,
+              6.086917400360107
+            ],
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ],
+            [
+              27.476608276367188,
+              0.10264664143323898,
+              6.0868353843688965
+            ]
+          ],
+          "edge_lengths_m": [
+            0.15676128317833044,
+            0.10269541740215998,
+            0.11935708593218793
+          ],
+          "equilateral_quality": 0.8600818374081391,
+          "radius_ratio_quality": 0.8255820045919564,
+          "area_m2": 0.006128469745279295,
+          "normal": [
+            0.00041286185336137624,
+            0.030817031853287196,
+            0.9995249572135974
+          ],
+          "point_distance_m": 5.3644211506976186e-06
+        },
+        {
+          "index": 240494,
+          "vertices_m": [
+            [
+              27.476608276367188,
+              1.2073622188541578e-16,
+              6.090000152587891
+            ],
+            [
+              27.595958709716797,
+              1.282847412833297e-16,
+              6.090000152587891
+            ],
+            [
+              27.476608276367188,
+              0.10264664143323898,
+              6.0868353843688965
+            ]
+          ],
+          "edge_lengths_m": [
+            0.11935043334960938,
+            0.15745118194584445,
+            0.10269541740215998
+          ],
+          "equilateral_quality": 0.8563352897660114,
+          "radius_ratio_quality": 0.820504082695833,
+          "area_m2": 0.006128371284983405,
+          "normal": [
+            -1.9490753072937727e-18,
+            0.030817034479744727,
+            0.9995250424005765
+          ],
+          "point_distance_m": 8.277772330437841e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "B_mirror_centerline_seam",
+      "likely_cause": "Mirrored fuselage crown meets at the shared centerline seam; likely endpoint/edge classification sensitivity (unconfirmed).",
+      "independent_cluster_ids": []
+    },
+    {
+      "id": 15,
+      "world_coordinates_m": [
+        27.5995,
+        0.0356957,
+        1.95108
+      ],
+      "coordinate_authority": "surfacecheck-nMM86x/selfInterPoints.obj; six significant digits; duplicate rows retained",
+      "duplicate_of": null,
+      "component": "fuselage",
+      "component_candidates_from_m1_bounds": [
+        "fuselage"
+      ],
+      "side_convention": "not applicable: fuselage; no L/R wing/tail events",
+      "feature_class": "other",
+      "feature_confidence": "geometric inference, not a preserved generator face tag",
+      "nearest_original_station": {
+        "index": 112,
+        "x_m": 27.600931920056905,
+        "delta_x_m": -0.0014319200569055113
+      },
+      "intersecting_triangle_pairs": [],
+      "pair_identity_status": "UNKNOWN: OBJ omits edge/facet IDs; no non-adjacent independent crossing; adjacent candidate identities below are not authoritative surfaceCheck hit IDs",
+      "adjacent_triangle_pair_candidates": [
+        {
+          "triangles": [
+            219692,
+            219693
+          ],
+          "shared_vertex_count": 2,
+          "normal_angle_deg": 8.537736462515939e-07,
+          "dihedral_definition": "angle between oriented facet normals; 0 = coplanar aligned",
+          "status": "local adjacent contact candidate, not an independently confirmed crossing",
+          "rational_beyond_shared_topology": false,
+          "exact_contact_vertices_m": [
+            [
+              27.595958709716797,
+              -3.7329795482725163e-16,
+              1.9500000476837158
+            ],
+            [
+              27.605905532836914,
+              0.09937062859535217,
+              1.9529979228973389
+            ]
+          ]
+        }
+      ],
+      "triangle_metrics": [
+        {
+          "index": 219692,
+          "vertices_m": [
+            [
+              27.595958709716797,
+              -3.7329795482725163e-16,
+              1.9500000476837158
+            ],
+            [
+              27.605905532836914,
+              0.09937062859535217,
+              1.9529979228973389
+            ],
+            [
+              27.605905532836914,
+              -3.7329795482725163e-16,
+              1.9500000476837158
+            ]
+          ],
+          "edge_lengths_m": [
+            0.09991220332579424,
+            0.09941583919694061,
+            0.009946823120117188
+          ],
+          "equilateral_quality": 0.17157876304308564,
+          "radius_ratio_quality": 0.1891752694202418,
+          "area_m2": 0.0004944358839149907,
+          "normal": [
+            0.0,
+            0.030154905273035233,
+            -0.9995452374394939
+          ],
+          "point_distance_m": 3.178476890410803e-05
+        },
+        {
+          "index": 219693,
+          "vertices_m": [
+            [
+              27.595958709716797,
+              -3.7329795482725163e-16,
+              1.9500000476837158
+            ],
+            [
+              27.595958709716797,
+              0.09937062859535217,
+              1.9529979228973389
+            ],
+            [
+              27.605905532836914,
+              0.09937062859535217,
+              1.9529979228973389
+            ]
+          ],
+          "edge_lengths_m": [
+            0.09941583919694061,
+            0.009946823120117188,
+            0.09991220332579424
+          ],
+          "equilateral_quality": 0.17157876304308564,
+          "radius_ratio_quality": 0.1891752694202418,
+          "area_m2": 0.0004944358839149907,
+          "normal": [
+            0.0,
+            0.030154905273035233,
+            -0.9995452374394939
+          ],
+          "point_distance_m": 3.0607422487158175e-06
+        }
+      ],
+      "quality_definitions": {
+        "equilateral_quality": "4*sqrt(3)*area/sum(edge^2)",
+        "radius_ratio_quality": "2*inradius/circumradius = 16*area^2/(perimeter*a*b*c); analytic metric; equivalence to OpenFOAM printed quality NOT established"
+      },
+      "cause_group": "A_shared_diagonal_contact",
+      "likely_cause": "Shared-edge coplanar/near-coplanar facet contact; likely edge/face numerical classification sensitivity, not a non-adjacent crossing (unconfirmed).",
+      "independent_cluster_ids": []
+    }
+  ]
+}

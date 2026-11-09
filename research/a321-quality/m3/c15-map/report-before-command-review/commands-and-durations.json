@@ -1,0 +1,137 @@
+﻿[
+    {
+        "wall_seconds":  "146.9303761",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with matplotlib --with pydantic python -B research/a321-quality/m3/c15-map/assemble_map.py",
+        "log":  "assemble-map.log"
+    },
+    {
+        "wall_seconds":  "72.1356021",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with matplotlib --with pydantic python -B research/a321-quality/m3/c15-map/assemble_map.py",
+        "log":  "assemble-map-exact.log"
+    },
+    {
+        "wall_seconds":  "69.6599349",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with matplotlib --with pydantic python -B research/a321-quality/m3/c15-map/assemble_map.py",
+        "log":  "assemble-map-final.log"
+    },
+    {
+        "wall_seconds":  "3.4986096",
+        "command":  "$taskBefore=Get-Content research/a321-quality/m3/c15-map/surfacecheck-nMM86x/selfInterPoints.obj -Raw; $taskAfter=Get-Content research/a321-quality/m3/c15-map/surfacecheck-qNy1jX/selfInterPoints.obj -Raw; if($taskBefore -cne $taskAfter){throw \"OBJ differs\"}; Get-FileHash research/a321-quality/m3/c15-map/surfacecheck-nMM86x/selfInterPoints.obj,research/a321-quality/m3/c15-map/surfacecheck-qNy1jX/selfInterPoints.obj -Algorithm SHA256 | ConvertTo-Json; Get-FileHash research/a321-quality/rebuild/artifacts/rebuild-r5-c/A321_AIRFRAME_REBUILD_R5_B.stl,research/a321-quality/models/A321_AIRFRAME_REBUILD_R5_C.stl -Algorithm SHA256 | ConvertTo-Json; git diff --name-only; git status --short --branch",
+        "log":  "custody-contained-check.log"
+    },
+    {
+        "wall_seconds":  "4.8856653",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with ruff ruff check research/a321-quality/m3/c15-map --output-format concise",
+        "log":  "final-code-checks.log"
+    },
+    {
+        "wall_seconds":  "15.8280395",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with pytest python -B -m pytest -p no:cacheprovider research/a321-quality/m3/c15-map/test_locate_intersections.py -q",
+        "log":  "final-pytest.log"
+    },
+    {
+        "wall_seconds":  "5.5693282",
+        "command":  "\u0026 C:/Python/64/Python31313/python.exe -B C:/Users/parkc/.codex/skills/programming/scripts/python/check-no-excuse-rules.py research/a321-quality/m3/c15-map/locate_intersections.py research/a321-quality/m3/c15-map/inspect_locations.py research/a321-quality/m3/c15-map/assemble_map.py research/a321-quality/m3/c15-map/exact_contacts.py research/a321-quality/m3/c15-map/test_locate_intersections.py",
+        "log":  "hygiene-direct.log"
+    },
+    {
+        "wall_seconds":  "1.8657636",
+        "command":  "\u0026 C:/Python/64/Python31313/python.exe -B C:/Users/parkc/.codex/skills/programming/scripts/python/check-no-excuse-rules.py research/a321-quality/m3/c15-map/locate_intersections.py research/a321-quality/m3/c15-map/inspect_locations.py research/a321-quality/m3/c15-map/assemble_map.py research/a321-quality/m3/c15-map/exact_contacts.py research/a321-quality/m3/c15-map/test_locate_intersections.py",
+        "log":  "hygiene-final.log"
+    },
+    {
+        "wall_seconds":  "31.1193224",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with pytest --with ruff python -B C:/Users/parkc/.codex/skills/programming/scripts/python/check-no-excuse-rules.py research/a321-quality/m3/c15-map/locate_intersections.py research/a321-quality/m3/c15-map/inspect_locations.py research/a321-quality/m3/c15-map/test_locate_intersections.py",
+        "log":  "independent-locator-checks.log"
+    },
+    {
+        "wall_seconds":  "287.7019649",
+        "command":  "uv run --with numpy --with scipy --with trimesh --with rtree python -B research/a321-quality/m3/c15-map/locate_intersections.py research/a321-quality/rebuild/artifacts/rebuild-r5-c/A321_AIRFRAME_REBUILD_R5_B.stl --output research/a321-quality/m3/c15-map/independent-scan.json",
+        "log":  "independent-scan.log"
+    },
+    {
+        "wall_seconds":  "52.0650265",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree python -B research/a321-quality/m3/c15-map/inspect_locations.py research/a321-quality/rebuild/artifacts/rebuild-r5-c/A321_AIRFRAME_REBUILD_R5_B.stl research/a321-quality/m3/c15-map/surfacecheck-nMM86x/selfInterPoints.obj research/a321-quality/m3/c15-map/local-inspection.json",
+        "log":  "local-inspection.log"
+    },
+    {
+        "wall_seconds":  "35.2640922",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree python -B research/a321-quality/m3/c15-map/inspect_locations.py research/a321-quality/rebuild/artifacts/rebuild-r5-c/A321_AIRFRAME_REBUILD_R5_B.stl research/a321-quality/m3/c15-map/surfacecheck-nMM86x/selfInterPoints.obj research/a321-quality/m3/c15-map/local-inspection.json",
+        "log":  "local-inspection-neutral.log"
+    },
+    {
+        "wall_seconds":  "56.020406",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with pytest python -B -m pytest -p no:cacheprovider research/a321-quality/m3/c15-map/test_locate_intersections.py -q",
+        "log":  "pytest-expanded.log"
+    },
+    {
+        "wall_seconds":  "18.8291919",
+        "command":  "uv run --with numpy --with scipy --with trimesh --with rtree --with pytest python -B -m pytest -p no:cacheprovider research/a321-quality/m3/c15-map/test_locate_intersections.py -q",
+        "log":  "pytest-green.log"
+    },
+    {
+        "wall_seconds":  "119.2717894",
+        "command":  "uv run --with numpy --with scipy --with trimesh --with rtree --with pytest python -B -m pytest -p no:cacheprovider research/a321-quality/m3/c15-map/test_locate_intersections.py -q",
+        "log":  "pytest-red.log"
+    },
+    {
+        "wall_seconds":  "35.1632971",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with ruff python -B C:/Users/parkc/.codex/skills/programming/scripts/python/check-no-excuse-rules.py research/a321-quality/m3/c15-map/locate_intersections.py research/a321-quality/m3/c15-map/inspect_locations.py research/a321-quality/m3/c15-map/test_locate_intersections.py",
+        "log":  "python-checks.log"
+    },
+    {
+        "wall_seconds":  "1.1322179",
+        "command":  "Get-ChildItem research/a321-quality/m3/c15-map/*.py | ForEach-Object { $taskLoc=(Get-Content $_.FullName | Where-Object { $_ -match \"\\S\" -and $_ -notmatch \"^\\s*#\" }).Count; \"$($_.Name) $taskLoc pure LOC\" }",
+        "log":  "python-loc-count.log"
+    },
+    {
+        "wall_seconds":  "27.3970712",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with pytest python -B -c \u0027import sys",
+        "log":  "qa-permutations.log"
+    },
+    {
+        "wall_seconds":  "60.6685054",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with pytest python -B -m pytest -p no:cacheprovider research/a321-quality/m3/c15-map/test_locate_intersections.py -q",
+        "log":  "qa-review-tests.log"
+    },
+    {
+        "wall_seconds":  "10.4941596",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with ruff ruff check research/a321-quality/m3/c15-map --fix --output-format concise",
+        "log":  "ruff-fix-new-files.log"
+    },
+    {
+        "wall_seconds":  "1.3423569",
+        "command":  "$taskSource=Get-Content research/a321-integration/evidence/reconstruction-r3.json -Raw | ConvertFrom-Json; $taskSource.parts | Select-Object name,axis,bounds_m | ConvertTo-Json -Depth 4; $taskSource.parts[0].stations_m | Where-Object { ($_ -ge 1 -and $_ -le 1.5) -or ($_ -ge 18 -and $_ -le 18.7) -or ($_ -ge 27 -and $_ -le 28) }",
+        "log":  "source-station-read.log"
+    },
+    {
+        "wall_seconds":  "8.3329368",
+        "command":  "wsl bash research/a321-quality/m3/c15-map/run_surfacecheck.sh",
+        "log":  "surfacecheck-contained.log"
+    },
+    {
+        "wall_seconds":  "미기록 / log 참조",
+        "command":  "wsl bash research/a321-quality/m3/c15-map/run_surfacecheck.sh",
+        "log":  "surfacecheck-retry.log"
+    },
+    {
+        "wall_seconds":  "5.7116081",
+        "command":  "wsl bash research/a321-quality/m3/c15-map/run_surfacecheck.sh",
+        "log":  "surfacecheck-run.log"
+    },
+    {
+        "wall_seconds":  "33.429695",
+        "command":  "\u0026 C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree python -B -c \"import sys; print(sys.executable, flush=True); import numpy; print(numpy.__version__, flush=True); import scipy; print(scipy.__version__, flush=True); import rtree; print(rtree.__version__, flush=True)\"",
+        "log":  "uv-diagnostic.log"
+    },
+    {
+        "wall_seconds":  "1.1797854",
+        "command":  "\u0026 research/a321-quality/m3/c15-map/write_report.ps1",
+        "log":  "write-report.log"
+    },
+    {
+        "wall_seconds":  "미기록 / log 참조",
+        "command":  "\u0026 research/a321-quality/m3/c15-map/write_report.ps1",
+        "log":  "write-report-utf8.log"
+    }
+]

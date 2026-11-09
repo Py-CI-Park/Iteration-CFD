@@ -1,0 +1,21 @@
+﻿COMMAND: & C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree --with pytest python -B -c 'import sys
+from itertools import permutations
+import numpy as np
+sys.path.insert(0, ''research/a321-quality/m3/c15-map'')
+from locate_intersections import intersection_points
+from exact_contacts import audit_contact
+a = np.array([[0.,0.,0.],[2.,0.,0.],[0.,2.,0.]])
+cases = [(''crossing'', np.array([[.5,.5,-1.],[.5,.5,1.],[1.,1.,0.]]), True), (''coplanar_overlap'', np.array([[.25,.25,0.],[1.,.25,0.],[.25,1.,0.]]), True), (''parallel_disjoint'', a + [0.,0.,1.], False)]
+checks = 0
+for name, b, expected in cases:
+    for p in permutations(range(3)):
+        for q in permutations(range(3)):
+            aa, bb = a[list(p)], b[list(q)]
+            assert bool(len(intersection_points(aa,bb))) == expected, (name,p,q)
+            assert audit_contact(aa,bb)[0] == expected, (name,p,q)
+            checks += 2
+print(f''PASS: {checks} checks; 3 cases x 36 vertex permutation pairs x 2 algorithms'')'
+START_UTC: 2026-11-09T13:45:12.9020440Z
+PASS: 216 checks; 3 cases x 36 vertex permutation pairs x 2 algorithms
+EXIT_CODE: 0
+WALL_SECONDS: 27.3970712

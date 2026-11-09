@@ -1,0 +1,9 @@
+﻿COMMAND: Get-ChildItem research/a321-quality/m3/c15-map/*.py | ForEach-Object { $taskLoc=(Get-Content $_.FullName | Where-Object { $_ -match "\S" -and $_ -notmatch "^\s*#" }).Count; "$($_.Name) $taskLoc pure LOC" }
+START_UTC: 2026-11-09T13:50:05.3484942Z
+assemble_map.py 168 pure LOC
+exact_contacts.py 65 pure LOC
+inspect_locations.py 83 pure LOC
+locate_intersections.py 149 pure LOC
+test_locate_intersections.py 31 pure LOC
+EXIT_CODE: 0
+WALL_SECONDS: 1.1322179

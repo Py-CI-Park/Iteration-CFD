@@ -1,0 +1,19 @@
+﻿COMMAND: & C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree python -B research/a321-quality/m3/c15-map/inspect_locations.py research/a321-quality/rebuild/artifacts/rebuild-r5-c/A321_AIRFRAME_REBUILD_R5_B.stl research/a321-quality/m3/c15-map/surfacecheck-nMM86x/selfInterPoints.obj research/a321-quality/m3/c15-map/local-inspection.json
+START_UTC: 2026-11-09T13:47:36.9637711Z
+point=1 local_triangles=7 ray_pairs=12
+point=2 local_triangles=7 ray_pairs=12
+point=3 local_triangles=2 ray_pairs=0
+point=4 local_triangles=2 ray_pairs=0
+point=5 local_triangles=2 ray_pairs=0
+point=6 local_triangles=8 ray_pairs=9
+point=7 local_triangles=2 ray_pairs=0
+point=8 local_triangles=2 ray_pairs=0
+point=9 local_triangles=7 ray_pairs=15
+point=10 local_triangles=8 ray_pairs=19
+point=11 local_triangles=2 ray_pairs=0
+point=12 local_triangles=2 ray_pairs=0
+point=13 local_triangles=9 ray_pairs=18
+point=14 local_triangles=8 ray_pairs=15
+point=15 local_triangles=2 ray_pairs=0
+EXIT_CODE: 0
+WALL_SECONDS: 35.2640922

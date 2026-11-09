@@ -1,0 +1,5 @@
+﻿COMMAND: & C:/Users/parkc/.local/bin/uv.exe run --with ruff ruff check research/a321-quality/m3/c15-map --fix --output-format concise
+START_UTC: 2026-11-09T13:43:40.2095843Z
+Found 6 errors (6 fixed, 0 remaining).
+EXIT_CODE: 0
+WALL_SECONDS: 10.4941596

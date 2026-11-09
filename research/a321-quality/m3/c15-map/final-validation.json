@@ -1,0 +1,19 @@
+﻿{
+    "m3":  "FAIL_RETAINED",
+    "strict_hygiene":  "hygiene-final.log: no violations in 5 files",
+    "independent_pairs":  0,
+    "historical_scope_violation":  "new VTP emitted beside source then relocated; see report",
+    "independent_clusters":  0,
+    "presentation_sha256":  "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+    "obj_distinct_coordinates":  14,
+    "r6_built":  false,
+    "obj_records":  15,
+    "pytest_passed":  5,
+    "pytest_log":  "final-pytest.log",
+    "input_sha256_after":  "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+    "input_sha256_before":  "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+    "surfacecheck_locations":  15,
+    "ruff":  "final-ruff.log: All checks passed",
+    "authoritative_hit_pair_ids":  "UNKNOWN",
+    "surfacecheck_attempts":  2
+}

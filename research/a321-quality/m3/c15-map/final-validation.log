@@ -1,0 +1,23 @@
+﻿COMMAND: $taskOut="research/a321-quality/m3/c15-map"; $taskMap=Get-Content "$taskOut/c15-locations.json" -Raw -Encoding utf8 | ConvertFrom-Json; $taskSourceHash=(Get-FileHash research/a321-quality/rebuild/artifacts/rebuild-r5-c/A321_AIRFRAME_REBUILD_R5_B.stl -Algorithm SHA256).Hash.ToLowerInvariant(); $taskPresentationHash=(Get-FileHash research/a321-quality/models/A321_AIRFRAME_REBUILD_R5_C.stl -Algorithm SHA256).Hash.ToLowerInvariant(); if($taskSourceHash -ne $taskMap.input_sha256_before -or $taskSourceHash -ne $taskPresentationHash){throw "SHA mismatch"}; $taskLogs=@(Get-ChildItem "$taskOut/surfacecheck-*/result.log"); foreach($taskLog in $taskLogs){$taskText=Get-Content $taskLog.FullName -Raw; if($taskText -notmatch "(?m)^End\s*$" -or $taskText -match "FATAL" -or $taskText -notmatch "self-intersecting at 15 locations"){throw "Invalid checker completion"}}; $taskValidation=@{input_sha256_before=$taskMap.input_sha256_before;input_sha256_after=$taskSourceHash;presentation_sha256=$taskPresentationHash;surfacecheck_attempts=$taskLogs.Count;surfacecheck_locations=15;independent_pairs=0;independent_clusters=0;obj_records=$taskMap.locations.Count;obj_distinct_coordinates=$taskMap.unique_printed_coordinates;pytest_passed=5;pytest_log="final-pytest.log";ruff="final-ruff.log: All checks passed";strict_hygiene="hygiene-final.log: no violations in 5 files";m3="FAIL_RETAINED";r6_built=$false;historical_scope_violation="new VTP emitted beside source then relocated; see report";authoritative_hit_pair_ids="UNKNOWN"}; $taskValidation | ConvertTo-Json -Depth 4 | Out-File "$taskOut/final-validation.json" -Encoding utf8; $taskValidation | ConvertTo-Json -Depth 4; git diff --check; git diff --exit-code
+START_UTC: 2026-11-09T13:58:35.5061876Z
+{
+    "m3":  "FAIL_RETAINED",
+    "strict_hygiene":  "hygiene-final.log: no violations in 5 files",
+    "independent_pairs":  0,
+    "historical_scope_violation":  "new VTP emitted beside source then relocated; see report",
+    "independent_clusters":  0,
+    "presentation_sha256":  "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+    "obj_distinct_coordinates":  14,
+    "r6_built":  false,
+    "obj_records":  15,
+    "pytest_passed":  5,
+    "pytest_log":  "final-pytest.log",
+    "input_sha256_after":  "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+    "input_sha256_before":  "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+    "surfacecheck_locations":  15,
+    "ruff":  "final-ruff.log: All checks passed",
+    "authoritative_hit_pair_ids":  "UNKNOWN",
+    "surfacecheck_attempts":  2
+}
+EXIT_CODE: 0
+WALL_SECONDS: 4.9806328

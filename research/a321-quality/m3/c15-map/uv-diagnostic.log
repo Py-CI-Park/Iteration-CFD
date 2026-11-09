@@ -1,0 +1,8 @@
+﻿COMMAND: & C:/Users/parkc/.local/bin/uv.exe run --with numpy --with scipy --with trimesh --with rtree python -B -c "import sys; print(sys.executable, flush=True); import numpy; print(numpy.__version__, flush=True); import scipy; print(scipy.__version__, flush=True); import rtree; print(rtree.__version__, flush=True)"
+START_UTC: 2026-11-09T13:30:45.2367317Z
+C:\Users\parkc\AppData\Local\uv\cache\archive-v0\cgkMZsEsfKUTat653vBqL\Scripts\python.exe
+2.5.4
+1.18.1
+1.4.1
+EXIT_CODE: 0
+WALL_SECONDS: 33.429695
