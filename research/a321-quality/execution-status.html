@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>A321 실행 상태·문서 관리</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="report.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">A321 실행 상태·문서 관리</h1>
+</header>
+<h1 id="로드맵-실행-관리">로드맵 실행 관리</h1>
+<p>기준 계획: <a href="REBUILD_ROADMAP_KO.md">전체 로드맵</a>. 실행 시작
+HEAD <code>e3b809de24f0a40ee689831406a9a5931fd49b21</code>.
+<strong>2026-11-09 중단 복구·핸드오프 정리.</strong> 기존 실험·계획과
+원시 영수증은 당시 기록으로 보존한다. 새 세션은 <a
+href="HANDOFF_20261109_KO.md">상세 핸드오프</a>를 먼저 읽는다.</p>
+<h2 id="상태-대시보드">상태 대시보드</h2>
+<pre class="text"><code>기존 준비 : [###-----] 3/8 기존 체크포인트 완료
+현재 위치 : M1 부분 → M2 R5-A/C 초안 생성 → M3 FAIL(자기교차 15곳)
+중단 작업 : C 독립 검사·Blender 재읽기는 완료되어 파일로 확인됨
+다음 작업 : C 실패 위치 지도 + feature/접합 설계 + 새 후보 → 재검사
+GPU       : HOLD / 항공기 유동 미실행</code></pre>
+<p>3/8은 기존 무가중 체크포인트 수다. R5 생성 횟수나 소프트웨어 테스트
+통과 수로 공학적 GPU 준비율을 올리지 않는다.</p>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>현재 상태</th>
+<th>근거·재개 조건</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M0 보존</td>
+<td>보존</td>
+<td>R3/R4·기존 06~11; 이번 핸드오프 manifest로 핵심 해시 재확인</td>
+</tr>
+<tr>
+<td>M1 명세</td>
+<td>초기 계약 동결 / 전체 feature 설계 부분</td>
+<td>M1_GEOMETRY_SPEC_KO.md·방법 보충01. 신규 wing-body fillet·의도한
+kink 분류 미완료</td>
+</tr>
+<tr>
+<td>M2 R5 외형</td>
+<td>A·C 초안 실제 생성 / 미채택</td>
+<td>A 761,090삼각형, C 305,764삼각형, 별도 Blender 및 STL 대응
+영수증</td>
+</tr>
+<tr>
+<td>M3 형상 인수</td>
+<td><strong>FAIL / C 자기교차 15곳</strong></td>
+<td>A 4,184곳; B 1µm 상한 초과로 생성 전 거부. C도 전체 형상 합격
+아님</td>
+</tr>
+<tr>
+<td>M4 물리·층 설계</td>
+<td>준비 자료 / 미수용</td>
+<td>30m/s·기준0°, source gross 면적만 산출. 최종 벽처리·층 설계·힘 기준
+필요</td>
+</tr>
+<tr>
+<td>M5 새 CPU 격자</td>
+<td>차단</td>
+<td>M3 통과 전 새 R5 체적 격자 생성하지 않음. 기존 격자는 대조군</td>
+</tr>
+<tr>
+<td>M6 엔진 CPU 인수</td>
+<td>host-only 경로 미확보</td>
+<td>lowmach case load 전 GPU 초기화. -iters0은 CPU-only가 아님</td>
+</tr>
+<tr>
+<td>M7 GPU 준비</td>
+<td>미완료</td>
+<td>CUDA·sm_89 빌드·UUID·VRAM·기준 문제 검증 필요</td>
+</tr>
+<tr>
+<td>M8 첫 항공기 GPU</td>
+<td><strong>차단 / 미실행</strong></td>
+<td>형상·격자·물리·엔진 선행 gate 모두 필요</td>
+</tr>
+<tr>
+<td>M9 신뢰도</td>
+<td>대기</td>
+<td>질량·반복수렴·격자/영역 민감도·검증 범위</td>
+</tr>
+</tbody>
+</table>
+<h2 id="후보별-실제-결과">후보별 실제 결과</h2>
+<table>
+<thead>
+<tr>
+<th>대상</th>
+<th style="text-align: right;">삼각형</th>
+<th style="text-align: right;">독립 자기교차 위치</th>
+<th>최종 해석</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R3 원본 대조</td>
+<td style="text-align: right;">원본 보존</td>
+<td style="text-align: right;">72</td>
+<td>원본도 동일 CLI 기준 문제 존재</td>
+</tr>
+<tr>
+<td>R4 국소 개선 대조</td>
+<td style="text-align: right;">원본 보존</td>
+<td style="text-align: right;">86</td>
+<td>전체 곡면 재구성 아님</td>
+</tr>
+<tr>
+<td>R5-A</td>
+<td style="text-align: right;">761,090</td>
+<td style="text-align: right;">4,184</td>
+<td>내부 위상 PASS, 독립 형상 FAIL</td>
+</tr>
+<tr>
+<td>R5-B</td>
+<td style="text-align: right;">미생성</td>
+<td style="text-align: right;">검사 안 함</td>
+<td>요청1µm보다 kernel 실제 최소5.306005µm가 커 거부</td>
+</tr>
+<tr>
+<td>R5-C</td>
+<td style="text-align: right;">305,764</td>
+<td style="text-align: right;"><strong>15</strong></td>
+<td>요청6µm 별도 계약, 내부 검사 PASS, 독립 형상 FAIL</td>
+</tr>
+</tbody>
+</table>
+<p>위 개수는 checker가 보고한 위치 수로 고유 삼각형 쌍이나 심각도 척도가
+아니다. 후보 간 단순 비율을 공력 품질 개선률로 해석하지 않는다.</p>
+<p>C bbox 변화0m, R3 대비 상대 체적 변화3.2680332447930774e-8. A↔︎C
+양방향 각2,000표본의 최대 거리는 각각5.046749µm/5.189853µm다. 전역
+Hausdorff 보증이 아니다. C 최소 삼각형 품질9.70744e-13이며, 작은
+면/접합/feature 검사가 남는다.</p>
+<p>C 저장 및 새 Blender 프로세스의 정확 좌표·삼각형 대응은 PASS다. 다만
+native의 scope와 mesh 이름에 복사된 R4 설명이 남아 <strong>설명
+메타데이터 결함</strong>으로 보류한다. 원 파일·영수증을 수정하지 말고
+다음 presentation 버전에서 정정·새 해시·재읽기를 남긴다.</p>
+<ul>
+<li><a href="evidence/r5-c-independent-handoff.json">C 독립 검사 후속
+판정</a></li>
+<li><a href="evidence/r5-c-check02.log">C 원시 로그</a></li>
+<li><a href="evidence/r5-cleanup-c.json">C 생성 영수증</a></li>
+<li><a href="evidence/blender-r5c-stl-binding.json">C native/STL
+대응</a></li>
+<li><a href="rebuild/evidence/rebuild-r5-a-independent.json">A 독립
+판정</a></li>
+</ul>
+<h2 id="문서-관리-규칙">문서 관리 규칙</h2>
+<ol type="1">
+<li>기준 계획과 당시 보고서를 보존하고, 현재 상태는 본
+문서·execution-status.json에 반영한다.</li>
+<li>생성 영수증의 PENDING 필드는 그대로 남기고 후속 검사 영수증으로
+해소한다. 원시 기록을 사후 덮어쓰지 않는다.</li>
+<li>후보별 사전 계약·코드/입력 해시·명령·산출물·검사·실패를
+연결한다.</li>
+<li>생성 성공 / 내부 위상 / 독립 형상 / 격자 / 엔진 / 공력 검증을 별도
+판정한다.</li>
+<li>허용오차·기준을 실패 후 완화해 같은 후보를 PASS로 바꾸지
+않는다.</li>
+<li>큰 격자의 원격 보관 여부를 명시하고 새 clone에서 존재한다고 가정하지
+않는다.</li>
+<li>단계 종료마다 실제 수행·미실행·실패·다음 조치와 한글 커밋을
+남긴다.</li>
+</ol>
+<h2 id="ego-lite와-실행-환경">Ego Lite와 실행 환경</h2>
+<p>사용자가 새 연구 공간 생성을 허용해 <strong>space15 / p1</strong>을
+생성했다. 기존 space10은 사라졌고 space15 Studio 탐색은 lifecycle
+timeout 뒤 같은 페이지로 이어갔다. <strong>R5-A/C의 Studio 표시·새
+스크린샷·최종 보고서 화면 검사는 미완료</strong>다. space15의 현재 생존
+여부는 재개 시 inventory로 확인한다. 새 공간 허용은 받았으나 재사용
+가능한 공간부터 확인한다.</p>
+<p>지난 환경 검사에서 lowmach는 GPU 초기화를 case load보다 먼저
+수행했다. 기본 arch sm_120, 목표 SUPER는 sm_89, 설치 Toolkit12.6/README
+요구13.x, 두 release 경로 바이너리 부재가 관찰됐다. 현재 런타임 준비
+완료라고 해석하지 않는다. <a
+href="evidence/r5-preflight-engine-findings.json">환경 근거</a>.</p>
+<p>이번 핸드오프에서는 형상·격자·GPU 실험을 추가 실행하지 않았다. 기존
+GPU 메모리 할당/복사 진단은 과거 제한적 결과이며 항공기 solver 호환
+증거가 아니다.</p>
+</body>
+</html>

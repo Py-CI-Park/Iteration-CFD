@@ -1,0 +1,27 @@
+{
+  "scope": "READ_ONLY_NATIVE_CODE_AND_PUBLIC_CLI_HELP",
+  "surfaceCheck": {
+    "version": "v1912 patch200626",
+    "command": "source /usr/share/openfoam/etc/bashrc >/dev/null 2>&1; surfaceCheck -checkSelfIntersection -outputThreshold 0 <absoluteSTL>",
+    "result_parser": "must confirm actual explicit no-self-intersection result plus completion and no fatal; exit0 alone insufficient",
+    "actual_R5_check_run_by_inspector": false
+  },
+  "engine": {
+    "cpu_ingestion": "BLOCKED_NATIVE_LOWMACH_GPU_INITIALIZATION_PRECEDES_CASE_LOAD",
+    "gpu_init_source": "rust/src/bin/lowmach.rs:2038",
+    "case_load_source": "rust/src/bin/lowmach.rs:2046",
+    "iters0_is_CPU_only": false,
+    "needs": "host-only validation path before Gpu::new, with regression tests; Python checks are not nativeengineacceptance"
+  },
+  "build": {
+    "installed_toolkit": "12.6",
+    "README_requirement": "13.x",
+    "default_arch": "sm_120",
+    "target_required": "sm_89 for4080SUPER",
+    "release_binaries": "none in two inspectedrelease paths",
+    "VS_vcvars64": "present",
+    "AMGX": "optional"
+  },
+  "GPU_executed": false,
+  "CFD_executed": false
+}

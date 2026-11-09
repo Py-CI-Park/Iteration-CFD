@@ -1,0 +1,46 @@
+{
+  "engineering_accepted": false,
+  "mesher_run": false,
+  "flags": [
+    "-checkSelfIntersection",
+    "-outputThreshold",
+    "0"
+  ],
+  "controls": [
+    {
+      "command": "set -o noclobber; source /usr/share/openfoam/etc/bashrc >/dev/null 2>&1 || exit 91; surfaceCheck -checkSelfIntersection -outputThreshold 0 '/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-integration/models/A321_AIRFRAME_SHELL_R3.stl' > '/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence/r5-control-r3-surfaceCheck.log' 2>&1",
+      "input_unchanged": true,
+      "sha256_before": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+      "control": "r3",
+      "log_sha256": "7d8aa4216dadb1e3fb5e73e2f6092e706156e9dd0ddfb2359c000a1838342cb6",
+      "CFD_run": false,
+      "parser_status": "PENDING_EXACT_LOG_INSPECTION",
+      "GPU_run": false,
+      "exit_code": 0,
+      "sha256_after": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+      "started_utc": "2026-11-08T11:19:18.3088293Z",
+      "log": "research/a321-quality/evidence/r5-control-r3-surfaceCheck.log",
+      "input": "research/a321-integration/models/A321_AIRFRAME_SHELL_R3.stl",
+      "finished_utc": "2026-11-08T11:19:23.5711391Z"
+    },
+    {
+      "command": "set -o noclobber; source /usr/share/openfoam/etc/bashrc >/dev/null 2>&1 || exit 91; surfaceCheck -checkSelfIntersection -outputThreshold 0 '/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/models/A321_AIRFRAME_SHELL_R4.stl' > '/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/evidence/r5-control-r4-surfaceCheck.log' 2>&1",
+      "input_unchanged": true,
+      "sha256_before": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6",
+      "control": "r4",
+      "log_sha256": "156d385c4d09992af90ee90f2808e7a554b5d9b0c42c086937bee70b586c1a83",
+      "CFD_run": false,
+      "parser_status": "PENDING_EXACT_LOG_INSPECTION",
+      "GPU_run": false,
+      "exit_code": 0,
+      "sha256_after": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6",
+      "started_utc": "2026-11-08T11:19:23.6515113Z",
+      "log": "research/a321-quality/evidence/r5-control-r4-surfaceCheck.log",
+      "input": "research/a321-quality/models/A321_AIRFRAME_SHELL_R4.stl",
+      "finished_utc": "2026-11-08T11:19:29.2817483Z"
+    }
+  ],
+  "CFD_run": false,
+  "GPU_run": false,
+  "scope": "PUBLIC_EXTERNAL_CPU_SURFACE_CHECK_CONTROLS_ONLY"
+}

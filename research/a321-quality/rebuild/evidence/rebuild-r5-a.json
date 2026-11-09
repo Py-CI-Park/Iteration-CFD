@@ -1,0 +1,120 @@
+{
+  "status": "DRAFT_INTERNAL_GATES_PASS_M3_OPEN",
+  "not_oem": true,
+  "engineering_accepted": false,
+  "GPU_solver_run": false,
+  "CFD_solver_run": false,
+  "method": "global corresponding-point PCHIP trajectories with PL shoulder controls at 2%/98%; original polygonal section rings preserved; symmetric wing/tail CPU union",
+  "C1_scope": "analytic length/span ring-point trajectories only; polygonal chordwise sections, STL and Boolean seams are NOT globally C1",
+  "feature_scope": "all original station-ring points incl LE/TE fixed within float32 tolerance; no new wing/body fillet; between-station planform/LE/TE departure subject to same caps, intentional outline kinks NOT independently classified",
+  "constraints_scope": "source section controls before Boolean union; internal buried stations need not be surface vertices; source rings are envelopes, not OEM airfoils",
+  "sampling_scope": "all generated stations; not continuous bound nor Hausdorff bound",
+  "independent_self_intersection": "PENDING_SEPARATE_CLI",
+  "native_STL_binding": "PENDING_SEPARATE_BLENDER",
+  "input_sha256": {
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\evidence\\reconstruction-r3.json": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\models\\A321_AIRFRAME_SHELL_R3.stl": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\plans\\r5-geometry-contract-01.json": "2c0e9c573f44cd8421f3c0e58f253e5d3e550266ecc540caf6ef3c6b12e1e1be",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\evidence\\r5-m1-freeze.json": "b2f65c0f29dd43ef2fe85c5c88773329f4ef763799d3ab5e91b5ab8fdf038a65",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\models\\A321_AIRFRAME_SHELL_R4.stl": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\models\\A321_AIRFRAME_SHELL_R4.blend": "433dd26a198b616a82293a2dca543cfe807860190137dd862211effa144ce427"
+  },
+  "stl_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+  "npz_sha256": "6f814b10566fffc5910825fd32375357e078c0a0b068abbe971561b9b63513e9",
+  "started_utc": "2026-11-08T10:38:15.942163+00:00",
+  "finished_utc": "2026-11-08T10:38:30.929601+00:00",
+  "parts": [
+    {
+      "part": "fuselage",
+      "original_stations": 182,
+      "generated_stations": 1087,
+      "ring_points": 128,
+      "sample_departure_m": 0.002039926782857717,
+      "sample_departure_cap_m": 0.025,
+      "source_station_float32_error_m": 2.431869454819087e-07,
+      "analytic_slope_jump_before": 193.99630975003964,
+      "analytic_near_station_slope_jump_after": 0.00038616125227011543,
+      "actually_changed_sample_points": 43454
+    },
+    {
+      "part": "wing",
+      "original_stations": 100,
+      "generated_stations": 595,
+      "ring_points": 128,
+      "sample_departure_m": 6.22547934517744e-05,
+      "sample_departure_cap_m": 0.01,
+      "source_station_float32_error_m": 9.807167940483045e-07,
+      "analytic_slope_jump_before": 0.14551383466223858,
+      "analytic_near_station_slope_jump_after": 2.910275409298086e-07,
+      "actually_changed_sample_points": 19470
+    },
+    {
+      "part": "horizontal",
+      "original_stations": 67,
+      "generated_stations": 397,
+      "ring_points": 96,
+      "sample_departure_m": 6.989540549618739e-06,
+      "sample_departure_cap_m": 0.01,
+      "source_station_float32_error_m": 1.9188998440280315e-06,
+      "analytic_slope_jump_before": 0.048031931779997615,
+      "analytic_near_station_slope_jump_after": 9.60638370036649e-08,
+      "actually_changed_sample_points": 7259
+    },
+    {
+      "part": "vertical",
+      "original_stations": 76,
+      "generated_stations": 451,
+      "ring_points": 96,
+      "sample_departure_m": 0.00026861027856739383,
+      "sample_departure_cap_m": 0.01,
+      "source_station_float32_error_m": 1.907197498808869e-06,
+      "analytic_slope_jump_before": 1.6600945271597705,
+      "analytic_near_station_slope_jump_after": 3.2967442806786096e-06,
+      "actually_changed_sample_points": 5224
+    }
+  ],
+  "checks": {
+    "station_constraints": true,
+    "sample_departure_caps": true,
+    "bounds": true,
+    "volume": true,
+    "closed_oriented_single": true,
+    "vertex_links": true,
+    "no_degenerate_duplicate": true,
+    "positive_coordinate_changes": true,
+    "sources_unchanged": true,
+    "stl_readback_closed_winding": true
+  },
+  "surface_topology": {
+    "closed": true,
+    "winding": true,
+    "positive_volume": true,
+    "components": 1,
+    "degenerate_faces": 0,
+    "duplicate_faces": 0,
+    "vertex_link_failures": 0
+  },
+  "triangles": 761090,
+  "volume_m3": 504.86086945391304,
+  "R3_volume_m3": 504.8608243561819,
+  "relative_volume_change": 8.932705597627663e-08,
+  "bounds_max_error_m": 0.0,
+  "bounds_m": [
+    [
+      0.0,
+      -16.290000915527344,
+      1.9500000476837158
+    ],
+    [
+      44.5099983215332,
+      16.290000915527344,
+      11.960000038146973
+    ]
+  ],
+  "kernel_status": "Error.NoError",
+  "kernel_components": 1,
+  "construction_parameters": {
+    "shoulder_fraction": 0.02,
+    "subdivisions_per_control_interval": 2
+  }
+}

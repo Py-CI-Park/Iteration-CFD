@@ -1,0 +1,17 @@
+{
+  "status": "PRE_EXECUTION_CLEANUP_C_CONTRACT",
+  "candidate": "R5-C",
+  "source_A_STL_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+  "original_geometry_contract_sha256": "2c0e9c573f44cd8421f3c0e58f253e5d3e550266ecc540caf6ef3c6b12e1e1be",
+  "requested_tolerance_m": 0.000006,
+  "reason": "B1um not executable within its declaredceiling becauseactualkernel minimum~5.306um; C is separatelydeclaredcontrolledcleanup, no B PASS retroactiveandnoM1thresholdrelaxation",
+  "unchanged_requirements": {
+    "bbox_error_max_m": 0.00001,
+    "relative_volume_change_max": 0.01,
+    "source_controls": "unchanged A provenance",
+    "independent_selfintersection": "must pass same CLI beforeM3 acceptance"
+  },
+  "sample_distance_limit_m": 0.000006,
+  "global_Hausdorff_proof": "not claimed",
+  "GPU_solver_run": false
+}

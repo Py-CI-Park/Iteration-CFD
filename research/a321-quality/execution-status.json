@@ -1,0 +1,77 @@
+{
+  "schema_version": 2,
+  "baseline_commit": "e3b809de24f0a40ee689831406a9a5931fd49b21",
+  "updated_date_kst": "2026-11-09",
+  "canonical_plan": "REBUILD_ROADMAP_KO.md",
+  "handoff": "HANDOFF_20261109_KO.md",
+  "human_status": "EXECUTION_STATUS_KO.md",
+  "contract": "plans/r5-geometry-contract-01.json",
+  "overall": "HANDOFF_SNAPSHOT_M3_FAIL_GPU_HOLD",
+  "checkpoints": {
+    "complete": 3,
+    "total": 8,
+    "meaning": "existing unweighted checkpoints; not engineering readiness percentage"
+  },
+  "stages": [
+    {
+      "id": "M0",
+      "state": "PRESERVED",
+      "evidence": "evidence/handoff-critical-assets.json"
+    },
+    {
+      "id": "M1",
+      "state": "INITIAL_CONTRACT_FROZEN_FEATURE_SPEC_PARTIAL",
+      "evidence": "M1_GEOMETRY_SPEC_KO.md"
+    },
+    {
+      "id": "M2",
+      "state": "R5_A_C_DRAFTS_GENERATED_NOT_ACCEPTED",
+      "evidence": "evidence/r5-cleanup-c.json"
+    },
+    {
+      "id": "M3",
+      "state": "FAIL_SELF_INTERSECTION_C_15",
+      "evidence": "evidence/r5-c-independent-handoff.json"
+    },
+    {
+      "id": "M4",
+      "state": "PREPARATORY_SOURCE_AREA_ONLY",
+      "evidence": "M4_PHYSICS_PREPARATION_KO.md"
+    },
+    {
+      "id": "M5",
+      "state": "BLOCKED_M3",
+      "evidence": null
+    },
+    {
+      "id": "M6",
+      "state": "BLOCKED_NO_HOST_ONLY_NATIVE_PATH",
+      "evidence": "evidence/r5-preflight-engine-findings.json"
+    },
+    {
+      "id": "M7",
+      "state": "WAITING_BUILD_DEVICE_MEMORY_VALIDATION",
+      "evidence": null
+    },
+    {
+      "id": "M8",
+      "state": "BLOCKED_GPU_QUALITY_GATE",
+      "evidence": null
+    },
+    {
+      "id": "M9",
+      "state": "WAITING_PREDECESSORS",
+      "evidence": null
+    }
+  ],
+  "CFD_solver_run": false,
+  "GPU_solver_run": false,
+  "browser_state": "SPACE15_CREATED_WITH_PERMISSION_R5_DISPLAY_QA_PENDING_CURRENT_LIVENESS_UNVERIFIED",
+  "next_action": "Map C's 15 intersection locations and define feature/transition changes before a fresh candidate; no mesher/solver in handoff task",
+  "known_defects": [
+    "C native scope and mesh labels inherited R4 wording",
+    "C frozen artifact STL basename says B; directory/receipt/hash identify C",
+    "final five-lane review not closed"
+  ],
+  "raw_receipts_immutable": true
+}

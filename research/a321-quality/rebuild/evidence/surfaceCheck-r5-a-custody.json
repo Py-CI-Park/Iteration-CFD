@@ -1,0 +1,7 @@
+{
+  "scope": "CLI hash custody only; parse log separately for geometric result",
+  "exit_code": 0,
+  "unchanged": true,
+  "after_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+  "before_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88"
+}

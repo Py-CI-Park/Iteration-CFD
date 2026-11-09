@@ -1027,3 +1027,16 @@ project spent a phase removing.
 ### A321 outer-shell rebuild planning (2026-11-08)
 
 `research/a321-quality/roadmap-gallery/*.mjs`: original Ego browser source-reading and standalone roadmap HTML QA orchestration; see that directory's PROVENANCE.md. No CFD/mesher/numerics implementation changed and no GPL implementation source consulted. Planning records distinguish existing R3/R4/CPU evidence from unexecuted R5 and GPU work.
+### A321 R5 execution and document management
+
+`research/a321-quality/rebuild/*`: original source-envelope curve/geometry generation, public STL binding, tests and external CLI orchestration; per-file basis is in `rebuild/PROVENANCE.md`. The bpy adapter follows the separate GPL-2.0-or-later Blender policy, not the solver licence. `execution-gallery/*.mjs`: original Ego/public-app API display and document QA scripts. No GPL implementation source consulted and no CFD/GPU solve.
+
+### A321 interruption handoff (2026-11-09)
+
+| Source files | Classification and basis |
+|---|---|
+| `../research/a321-quality/r5_cleanup_trial.py`, `r5_cleanup_c_trial.py`, `test_r5_cleanup_guard.py`, `r5_c_surface_check*.sh` | Original CPU-only public manifold/STL APIs and external OpenFOAM CLI orchestration; frozen failed experiments and regression guard. See the local provenance ledger for the archived test-header gap. No GPL implementation source consulted. |
+| `../research/a321-quality/blender_r5c.py` | Separate GPL-2.0-or-later bpy adapter under the existing Blender research outbound policy. Native/STL binding is scoped evidence; inherited R4 descriptive labels remain a documented defect. |
+| `../research/a321-quality/rebuild/artifacts/rebuild-r5-{b,c}/executed-code.py` | Exact historical snapshots of the corresponding parent cleanup runners, retained as execution evidence, with the same provenance/classification as their source runners. |
+
+The snapshot preserves WIP, failure logs and unaccepted models for continuation; it does not assert five-lane review closure, release acceptance, new mesh acceptance or GPU/CFD execution. Full per-file basis: `research/a321-quality/PROVENANCE.md` and `rebuild/PROVENANCE.md`.

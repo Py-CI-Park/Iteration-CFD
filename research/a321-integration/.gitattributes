@@ -1,3 +1,5 @@
 models/*.blend binary
 models/*.stl binary
 evidence/*.png binary
+# Preserve the captured R3 source-ledger bytes used by the M1 freeze.
+evidence/reconstruction-r3.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

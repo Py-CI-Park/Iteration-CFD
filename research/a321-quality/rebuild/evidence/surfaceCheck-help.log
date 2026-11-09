@@ -1,0 +1,29 @@
+
+Usage: surfaceCheck [OPTIONS] <input>
+Arguments:
+  <input>           The input surface file
+Options:
+  -blockMesh        Write vertices/blocks for blockMeshDict
+  -case <dir>       Specify case directory to use (instead of the cwd)
+  -checkSelfIntersection
+                    Also check for self-intersection
+  -outputThreshold <number>
+                    Upper limit on the number of files written. Default is 10,
+                    using 0 suppresses file writing.
+  -splitNonManifold
+                    Split surface along non-manifold edges (default split is
+                    fully disconnected)
+  -verbose          Additional verbosity
+  -writeSets <surfaceFormat>
+                    Reconstruct and write problem triangles/edges in selected
+                    format
+  -doc              Display documentation in browser
+  -help             Display short help and exit
+  -help-full        Display full help and exit
+
+Check geometric and topological quality of a surface
+
+Using: OpenFOAM- (1912) - visit www.openfoam.com
+Build:  (patch=200626)
+Arch:  LSB;label=32;scalar=64
+

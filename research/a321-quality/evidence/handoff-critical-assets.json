@@ -1,0 +1,325 @@
+{
+  "schema_version": 1,
+  "capture_date_kst": "2026-11-09",
+  "baseline_commit": "e3b809de24f0a40ee689831406a9a5931fd49b21",
+  "path_base": "checkout-root",
+  "purpose": "Portable custody of preserved inputs and interrupted R5 execution; excludes self and mutable documentation",
+  "asset_count": 45,
+  "assets": [
+    {
+      "path": "research/a321-integration/evidence/reconstruction-r3.json",
+      "bytes": 4584598,
+      "sha256": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-integration/models/A321_AIRFRAME_SHELL_R3.blend",
+      "bytes": 2699114,
+      "sha256": "bbeff0e0c85ebaf76f7b81f5b98a9f283b4be1e13cad004dbb81705d535f7b97",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-integration/models/A321_AIRFRAME_SHELL_R3.stl",
+      "bytes": 6476184,
+      "sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/blender_r5c.py",
+      "bytes": 6504,
+      "sha256": "b4c820b3eed07da33a103298cd3243f7798a0e524e3084b9bfe5be02a553bdde",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/evidence/blender-r5c-stl-binding.json",
+      "bytes": 797,
+      "sha256": "de58ef788707c53d1f45fdd20999b67fae499ccaac3aac9a23f1fe7b51f99a53",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/evidence/blender-r5c.json",
+      "bytes": 783,
+      "sha256": "a119f9fbbbcc0c92c6cd8c3dbb39f7d280dbe9abfbdc47a5dfcd57bb4d8e0de1",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/evidence/r5-c-check02-after.sha256",
+      "bytes": 218,
+      "sha256": "a9c4d3d4b8a5e3c47e35b487fc07de5278c78722ead4da2c472ca66ec4a6d547",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/evidence/r5-c-check02-before.sha256",
+      "bytes": 218,
+      "sha256": "a9c4d3d4b8a5e3c47e35b487fc07de5278c78722ead4da2c472ca66ec4a6d547",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/evidence/r5-c-check02.log",
+      "bytes": 3063,
+      "sha256": "82c37c3af230b269ba9740ac89ec6ab05c1d1ae9aee8ac01faabdc573df878d7",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/evidence/r5-cleanup-c.json",
+      "bytes": 3009,
+      "sha256": "41f7d1aa9fb6888d3b5a6fa04a889f4b8bb541a17a5baa22df00fbf24bd2381a",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/evidence/r5-m1-freeze.json",
+      "bytes": 1091,
+      "sha256": "b2f65c0f29dd43ef2fe85c5c88773329f4ef763799d3ab5e91b5ab8fdf038a65",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/evidence/r5-m1-source-ledger.json",
+      "bytes": 1190,
+      "sha256": "9c2733c37984afb7f21ab5417d71b983fb81223d7d95c178f539978a853c5820",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/models/A321_AIRFRAME_REBUILD_R5_C.blend",
+      "bytes": 6478526,
+      "sha256": "c148900370decc9d23d790dd5167e950cc3fdc39105326297751ec271adb2340",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/models/A321_AIRFRAME_REBUILD_R5_C.stl",
+      "bytes": 15288284,
+      "sha256": "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/models/A321_AIRFRAME_SHELL_R4.blend",
+      "bytes": 3195873,
+      "sha256": "433dd26a198b616a82293a2dca543cfe807860190137dd862211effa144ce427",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/models/A321_AIRFRAME_SHELL_R4.stl",
+      "bytes": 7704984,
+      "sha256": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/plans/r5-cleanup-c-contract.json",
+      "bytes": 843,
+      "sha256": "72a964bb5f7d31050844b7e82c37918aef0e5774276d616305f106a560dc89bf",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/plans/r5-geometry-contract-01.json",
+      "bytes": 1409,
+      "sha256": "2c0e9c573f44cd8421f3c0e58f253e5d3e550266ecc540caf6ef3c6b12e1e1be",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/plans/r5-method-supplement-01.json",
+      "bytes": 850,
+      "sha256": "11c7457e77ac75df896806ef2236080885b2451cfe1e99a63a59344fe88669f6",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/r5_cleanup_c_trial.py",
+      "bytes": 6945,
+      "sha256": "9634a72069fd33306f90ef826f11ed0428967c91ba90e7d8710336f72cdc699a",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/r5_cleanup_trial.py",
+      "bytes": 6803,
+      "sha256": "1232b71f644f15770ec620bb7b89f9c2088fdf2146e6eba3308cc68c798184cf",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/rebuild-r5-a/A321_AIRFRAME_REBUILD_R5_A.blend",
+      "bytes": 16237924,
+      "sha256": "494f3e67a88cba539cd6719303a9dd8891366c8a8301b93fee09604816f5dd6c",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/rebuild-r5-a/A321_AIRFRAME_REBUILD_R5_A.stl",
+      "bytes": 38054584,
+      "sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/rebuild-r5-a/shell.npz",
+      "bytes": 6131819,
+      "sha256": "6f814b10566fffc5910825fd32375357e078c0a0b068abbe971561b9b63513e9",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/rebuild-r5-b/executed-code.py",
+      "bytes": 6803,
+      "sha256": "1232b71f644f15770ec620bb7b89f9c2088fdf2146e6eba3308cc68c798184cf",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/rebuild-r5-b/run-inputs.json",
+      "bytes": 1679,
+      "sha256": "1e3f391d254bd2985090260f7b76f00d57f8918ab1ac1604eb24c15660b0faf8",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/rebuild-r5-c/A321_AIRFRAME_REBUILD_R5_B.stl",
+      "bytes": 15288284,
+      "sha256": "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/rebuild-r5-c/executed-code.py",
+      "bytes": 6945,
+      "sha256": "9634a72069fd33306f90ef826f11ed0428967c91ba90e7d8710336f72cdc699a",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/rebuild-r5-c/run-inputs.json",
+      "bytes": 1681,
+      "sha256": "98cedc4c7573cf55751649468f64a00868dfeffa2978c970dbb00aafce1ba8c6",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/rebuild-r5-c/shell.npz",
+      "bytes": 2569236,
+      "sha256": "d44efc66f7c7daec559b3a142c568b6d99549652bf547f2eec07c422dd36038a",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/blender-native-guard-regressions.json",
+      "bytes": 795,
+      "sha256": "21f2dfdc90025499b623277612e76057500996c7dc53e222dffb6fa8193918fe",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/blender-r5-a-readback-hardened.json",
+      "bytes": 764,
+      "sha256": "57dc8440e51482300eff2b47bf55fb5cf45ca5ee6b2dff904963690ec7943887",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/blender-r5-a-readback.json",
+      "bytes": 585,
+      "sha256": "388bd55850a1e711b0fd40615fdeb6936af3fc8112a66eacf4765ae5f93501f6",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/blender-r5-a-save.json",
+      "bytes": 590,
+      "sha256": "65b5081aad07a1518b054477b862bc40317c6e24e5af52daeb39550c0739a07b",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/rebuild-r5-a-code-postgeneration.json",
+      "bytes": 1795,
+      "sha256": "6f307435ea2df950a170a0adae689a904061bfc46f84d08dbcabc0cf4abc17d5",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/rebuild-r5-a-independent.json",
+      "bytes": 1002,
+      "sha256": "d842a7fcc0158c8eefab7fdf21846637f50a9a2407fb08b8764d9120d6c95c29",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/rebuild-r5-a.json",
+      "bytes": 5628,
+      "sha256": "67baf88f7f7437fa4a7d5fbc3cb4677a5ef49fb83f9cf38f969d56e62daa6856",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/rebuild-r5-b-attempt-01-failure.json",
+      "bytes": 601,
+      "sha256": "acce9520ba9afc9c810819ba2b13e9d78a14fbedb0de6d327de5994cfffabc06",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/rebuild-r5-b-code-freeze.json",
+      "bytes": 1810,
+      "sha256": "2adc658c76cc6a07e905bde436ed3114bff689f6e648182f7f109d5c6167d8ee",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/rebuild-safety-closeout.json",
+      "bytes": 1297,
+      "sha256": "c15b99456665b5f916257a13472990e1b809cbad48d961a72b0260697296f43e",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/rebuild-safety-code-snapshot.json",
+      "bytes": 1618,
+      "sha256": "f8d70dde4f9e1457728cdff2c67335f1d1206e51f7050761d61c30f18fe849c9",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/surfaceCheck-help.log",
+      "bytes": 1089,
+      "sha256": "ebe736a4e0b07bc0db03fe548a154dabf5ec02ab8783868ddad0bf8dce77ddc6",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/surfaceCheck-r5-a-confirm.log",
+      "bytes": 3082,
+      "sha256": "4f203d32251a666017d6444242999c9cf91cc5003ee70bcbef06eadcb73fd1dd",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/surfaceCheck-r5-a-custody.json",
+      "bytes": 301,
+      "sha256": "ba97c60bccd0d24ac473a0b320c91d11d2f7905220b00dbc7f56d3f8d89797ea",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    },
+    {
+      "path": "research/a321-quality/rebuild/evidence/surfaceCheck-r5-a.log",
+      "bytes": 3082,
+      "sha256": "58a79d3761e42638c27f52d5e1098c5448b5d29838bccf2e06a19ce6c1b48bf0",
+      "delivery": "git-snapshot",
+      "engineering_acceptance": "not-implied-by-preservation"
+    }
+  ]
+}

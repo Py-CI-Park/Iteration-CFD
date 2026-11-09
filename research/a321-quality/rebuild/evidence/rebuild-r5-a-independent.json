@@ -1,0 +1,21 @@
+{
+  "first_log_sha256": "58a79d3761e42638c27f52d5e1098c5448b5d29838bccf2e06a19ce6c1b48bf0",
+  "CPU_volume_mesh_authorized": false,
+  "interpretation": "Kernel topology PASS does not override independent surfaceCheck failure; no global smoothness or OEM acceptance",
+  "stl_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+  "cli_exit_code": 0,
+  "log_sha256": "4f203d32251a666017d6444242999c9cf91cc5003ee70bcbef06eadcb73fd1dd",
+  "engineering_accepted": false,
+  "GPU_solver_run": false,
+  "complete_End": true,
+  "native_readback_receipt_sha256": "388bd55850a1e711b0fd40615fdeb6936af3fc8112a66eacf4765ae5f93501f6",
+  "status": "FAIL_SELF_INTERSECTION_M3_HOLD",
+  "tests": {
+    "no_excuse_audit": "no violations in 8 files",
+    "rebuild_and_binding_pass": 5,
+    "topology_separate_pass": 2
+  },
+  "stl_unchanged": true,
+  "generation_receipt_sha256": "67baf88f7f7437fa4a7d5fbc3cb4677a5ef49fb83f9cf38f969d56e62daa6856",
+  "self_intersections": 4184
+}

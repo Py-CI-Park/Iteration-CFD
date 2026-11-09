@@ -1,0 +1,28 @@
+{
+  "scope": "PRE_GENERATION_M1_SNAPSHOT",
+  "captured_at": "2026-11-08T19:32:43.8544107+09:00",
+  "inputs": [
+    {
+      "path": "research/a321-quality/plans/r5-geometry-contract-01.json",
+      "sha256": "2c0e9c573f44cd8421f3c0e58f253e5d3e550266ecc540caf6ef3c6b12e1e1be"
+    },
+    {
+      "path": "research/a321-integration/models/A321_AIRFRAME_SHELL_R3.stl",
+      "sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745"
+    },
+    {
+      "path": "research/a321-integration/evidence/reconstruction-r3.json",
+      "sha256": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb"
+    },
+    {
+      "path": "research/a321-quality/models/A321_AIRFRAME_SHELL_R4.stl",
+      "sha256": "7fbd54495852337762add872f3c1d9bc755095a812e0c39247b193e3a14141e6"
+    },
+    {
+      "path": "research/a321-quality/models/A321_AIRFRAME_SHELL_R4.blend",
+      "sha256": "433dd26a198b616a82293a2dca543cfe807860190137dd862211effa144ce427"
+    }
+  ],
+  "baseline": "e3b809de24f0a40ee689831406a9a5931fd49b21",
+  "source_and_contract_only": true
+}

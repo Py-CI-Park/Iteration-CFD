@@ -1,0 +1,5 @@
+{
+  "status": "REFUSED_OR_FAILED_CONTRACT",
+  "reason": "EFFECTIVE_TOLERANCE_EXCEEDS_DECLARATION",
+  "GPU_solver_run": false
+}

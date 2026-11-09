@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "capture_date_kst": "2026-11-09",
+  "local_only_roots": [
+    {
+      "path": "research/a321-preflight/artifacts",
+      "exists": true,
+      "delivery": "local-only-not-part-of-handoff-git-snapshot",
+      "child_directories": [
+        "input",
+        "trial-v040",
+        "trial-v080",
+        "wing-guarded-check",
+        "wing-subsystem"
+      ],
+      "recursive_size": "NOT_MEASURED",
+      "recovery": "copy separately and verify historical manifests, or regenerate in a fresh candidate path using preserved inputs and runbooks"
+    },
+    {
+      "path": "research/a321-shell/artifacts",
+      "exists": true,
+      "delivery": "local-only-not-part-of-handoff-git-snapshot",
+      "child_directories": [
+        "cpu-mesh-r1",
+        "cpu-mesh-r2",
+        "meshpy-r1",
+        "reference",
+        "shell-r1",
+        "shell-r2"
+      ],
+      "recursive_size": "NOT_MEASURED",
+      "recovery": "copy separately and verify historical manifests, or regenerate in a fresh candidate path using preserved inputs and runbooks"
+    },
+    {
+      "path": "research/a321-integration/artifacts",
+      "exists": true,
+      "delivery": "local-only-not-part-of-handoff-git-snapshot",
+      "child_directories": [
+        "control-tets",
+        "hybrid-r1",
+        "hybrid-r2",
+        "hybrid-r3",
+        "hybrid-r4",
+        "hybrid-r5",
+        "r2-reference-polymesh",
+        "remesh-30k",
+        "remesh-30k-repair",
+        "shell-r3",
+        "tetgen-failure-root"
+      ],
+      "recursive_size": "NOT_MEASURED",
+      "recovery": "copy separately and verify historical manifests, or regenerate in a fresh candidate path using preserved inputs and runbooks"
+    },
+    {
+      "path": "research/a321-layers/artifacts",
+      "exists": true,
+      "delivery": "local-only-not-part-of-handoff-git-snapshot",
+      "child_directories": [
+        "constrained-exact-01",
+        "constrained-exact-02",
+        "isotropic-01",
+        "quality-exterior-01",
+        "quality-exterior-02",
+        "quality-exterior-03"
+      ],
+      "recursive_size": "NOT_MEASURED",
+      "recovery": "copy separately and verify historical manifests, or regenerate in a fresh candidate path using preserved inputs and runbooks"
+    },
+    {
+      "path": "research/a321-quality/artifacts",
+      "exists": true,
+      "delivery": "local-only-not-part-of-handoff-git-snapshot",
+      "child_directories": [
+        "gpu-check-20261107",
+        "guard-tests-01",
+        "netgen-surface-01",
+        "netgen-surface-02",
+        "netgen-surface-03",
+        "netgen-surface-04",
+        "smooth-r4",
+        "snappy-01",
+        "snappy-02",
+        "snappy-03",
+        "snappy-03-check-replay",
+        "snappy-03-hotspot-map",
+        "snappy-03-hotspot-map-first-pass",
+        "snappy-03-hotspot-map-pre-seal",
+        "snappy-04",
+        "snappy-04-hotspot-map",
+        "snappy-04-owner-diagnostic",
+        "snappy-05",
+        "snappy-05-hotspot-map",
+        "snappy-05-hotspot-map-pre-seal",
+        "snappy-06",
+        "snappy-06-hotspot-map",
+        "snappy-06-owner-diagnostic",
+        "snappy-07",
+        "snappy-07-hotspot-map",
+        "snappy-08",
+        "snappy-08-bound-check",
+        "snappy-08-hotspot-map",
+        "snappy-08-owner-diagnostic",
+        "snappy-09",
+        "snappy-09-bound-check",
+        "snappy-09-hotspot-map",
+        "snappy-09-owner-diagnostic",
+        "snappy-10",
+        "snappy-10-bound-check",
+        "snappy-10-hotspot-map",
+        "snappy-10-owner-diagnostic",
+        "snappy-11",
+        "snappy-11-bound-check",
+        "snappy-11-hotspot-map",
+        "snappy-11-owner-diagnostic",
+        "unsupported-vtu-diagnostics"
+      ],
+      "recursive_size": "NOT_MEASURED",
+      "recovery": "copy separately and verify historical manifests, or regenerate in a fresh candidate path using preserved inputs and runbooks"
+    },
+    {
+      "path": "research/a321-quality/rebuild/artifacts/native-guard-regressions",
+      "exists": true,
+      "delivery": "local-only-not-part-of-handoff-git-snapshot",
+      "child_directories": [
+        "changed_hash",
+        "exclusive_lock",
+        "modifier",
+        "parent",
+        "transform"
+      ],
+      "recursive_size": "NOT_MEASURED",
+      "recovery": "copy separately and verify historical manifests, or regenerate in a fresh candidate path using preserved inputs and runbooks"
+    }
+  ],
+  "frozen_r5_exceptions": "Only rebuild/artifacts/rebuild-r5-a,b,c are explicitly added to Git; see critical-assets manifest"
+}

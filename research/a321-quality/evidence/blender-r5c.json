@@ -1,0 +1,15 @@
+{
+  "status": "SEPARATE_RESEARCH_MODEL_SAVED",
+  "vertices": 152884,
+  "triangles": 305764,
+  "native_sha256": "c148900370decc9d23d790dd5167e950cc3fdc39105326297751ec271adb2340",
+  "stl_sha256": "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+  "blender": "5.2.2 LTS",
+  "R3_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "GPU_solver_run": false,
+  "render_run": false,
+  "npz_sha256": "d44efc66f7c7daec559b3a142c568b6d99549652bf547f2eec07c422dd36038a",
+  "generation_receipt_sha256": "41f7d1aa9fb6888d3b5a6fa04a889f4b8bb541a17a5baa22df00fbf24bd2381a",
+  "native_to_STL_triangle_coordinates_exact": true,
+  "binding_scope": "post-generation native/STL correspondence; frozen generation and trial inputs unchanged"
+}

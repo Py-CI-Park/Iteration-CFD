@@ -1,0 +1,15 @@
+{
+  "captured_utc": "2026-11-08T12:29:51.089240+00:00",
+  "input_sha256": {
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\rebuild\\evidence\\rebuild-r5-a.json": "67baf88f7f7437fa4a7d5fbc3cb4677a5ef49fb83f9cf38f969d56e62daa6856",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\plans\\r5-geometry-contract-01.json": "2c0e9c573f44cd8421f3c0e58f253e5d3e550266ecc540caf6ef3c6b12e1e1be",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\plans\\r5-method-supplement-01.json": "11c7457e77ac75df896806ef2236080885b2451cfe1e99a63a59344fe88669f6",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\rebuild\\artifacts\\rebuild-r5-a\\shell.npz": "6f814b10566fffc5910825fd32375357e078c0a0b068abbe971561b9b63513e9",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\rebuild\\artifacts\\rebuild-r5-a\\A321_AIRFRAME_REBUILD_R5_A.stl": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\models\\A321_AIRFRAME_SHELL_R3.stl": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r5_cleanup_trial.py": "1232b71f644f15770ec620bb7b89f9c2088fdf2146e6eba3308cc68c798184cf"
+  },
+  "requested_tolerance_m": 1e-06,
+  "command": "uv run research/a321-quality/r5_cleanup_trial.py",
+  "manifold3d_version": "3.5.4"
+}

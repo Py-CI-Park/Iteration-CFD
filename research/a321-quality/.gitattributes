@@ -13,3 +13,11 @@ evidence/conditioning-inputs/** whitespace=blank-at-eol,-blank-at-eof,space-befo
 evidence/surface-inputs/** whitespace=blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
 models/*.blend binary
 models/*.stl binary
+
+# Explicit handoff snapshots preserve historical model and executed-code bytes.
+rebuild/evidence/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+rebuild/artifacts/rebuild-r5-a/** -text
+rebuild/artifacts/rebuild-r5-b/** -text
+rebuild/artifacts/rebuild-r5-c/** -text
+rebuild/artifacts/rebuild-r5-b/run-inputs.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+rebuild/artifacts/rebuild-r5-c/run-inputs.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

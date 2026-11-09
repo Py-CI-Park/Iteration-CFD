@@ -1,0 +1,47 @@
+{
+  "command": "uv run cleanup_b.py",
+  "captured_utc": "2026-11-08T11:36:11.4283618Z",
+  "scope": "PRE_B_EXECUTION_CODE_AND_COMMAND_FREEZE",
+  "native_commands": [
+    "blender --background --factory-startup --disable-autoexec --python blender_adapter.py -- --candidate-b",
+    "blender --background --factory-startup --disable-autoexec --python blender_adapter.py -- --candidate-b --verify-hardened"
+  ],
+  "files": [
+    {
+      "path": "cleanup.py",
+      "sha256": "f028bfff5c2e84d22ad43feec8bf25360c51f5b859168c818102ef69deb08e32"
+    },
+    {
+      "path": "cleanup_b.py",
+      "sha256": "c5eda7d9109df21b4cc3d71c7b42baebca77d6f8eb440a143094f4f1857b823b"
+    },
+    {
+      "path": "curves.py",
+      "sha256": "8ee12ece28118909cc021da668d462e73f6014fb7c6420da2dc87f942b20b668"
+    },
+    {
+      "path": "geometry.py",
+      "sha256": "843e5a1a66ce463ef5854285942e44deb6f647c048093481dbe4f00da5b9f7d3"
+    },
+    {
+      "path": "generate.py",
+      "sha256": "f295170b231910d8ebb6dab39779052a97839753b842e2de1d3c2afbc55f66f7"
+    },
+    {
+      "path": "binding.py",
+      "sha256": "48ee2f2fcc92775d1deb958bf4ae3f005a7ea42336517a217f75db9ad6a9648c"
+    },
+    {
+      "path": "blender_adapter.py",
+      "sha256": "554d5da9951b85837ce964b303ad9511eb54fb8ba1999d92e09bc733b022334a"
+    },
+    {
+      "path": "surface_check.sh",
+      "sha256": "90b586e759e1c630d27b4b32c1bbf8ea7cd0a6891879fc0f88f9a55bb42a24ab"
+    }
+  ],
+  "sourceA_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+  "method_supplement_sha256": "11c7457e77ac75df896806ef2236080885b2451cfe1e99a63a59344fe88669f6",
+  "surface_check_command": "bash surface_check.sh b",
+  "contract_sha256": "2c0e9c573f44cd8421f3c0e58f253e5d3e550266ecc540caf6ef3c6b12e1e1be"
+}

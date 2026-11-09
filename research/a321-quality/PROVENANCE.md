@@ -25,3 +25,17 @@
 공개 파라미터 참고: [OpenFOAM layer controls](https://doc.openfoam.com/2212/tools/pre-processing/mesh/generation/snappyhexmesh/layers/), [mesh quality controls](https://doc.openfoam.com/2606/tools/pre-processing/mesh/generation/snappyhexmesh/meshquality/). 문서 버전과 설치 실행기 v1912는 다르므로 실제 저장 로그로 결과를 판정한다. 문서의 권장값을 항공기 공학적 합격 기준으로 승격하지 않는다.
 
 새 모델은 R3와 구분한 연구 파생 형상이며 OEM 형상 정확도·공력 성능은 미검증이다. GPU/항공기 솔버를 실행하지 않는다.
+
+## 2026-11-09 중단 복구 스냅샷
+
+| 파일/범위 | 작성 근거·분류 |
+|---|---|
+| rebuild/*.py, rebuild/surface_check.sh, rebuild/test_*.py | 독립 작성한 원 단면 궤적·삼각분할·CPU union·바이트 custody·native binding·회귀. 세부 파일별 근거는 rebuild/PROVENANCE.md. 공개 API/형식·별도 외부 CLI만 사용, GPL 구현 소스 참조 없음. |
+| r5_cleanup_trial.py / r5_cleanup_c_trial.py / test_r5_cleanup_guard.py | 공개 manifold3d simplify/get_tolerance, NumPy/SciPy/trimesh API 및 원 형상 계약. B는 상한 거부, C는 별도 사전 계약의 CPU 실험. test guard 원본에는 저장소 헤더가 누락돼 있으며 이 실행 스냅샷의 미해결 소스 메타데이터로 남긴다. 기능/실행 증거를 소급 변경하지 않는다. |
+| r5_c_surface_check.sh / r5_c_surface_check02.sh | 설치 OpenFOAM1912 공개 help와 외부 CLI만 사용. 01은 입력이름 부재 거부, 02가 실제 검사. 새 원시 로그로만 재실행. |
+| blender_r5c.py | 기존 독립 Blender adapter를 C용으로 파생. GPL-2.0-or-later 별도 bpy 프로그램, 솔버 링크 없음. C geometry binding 통과와 R4 설명/명명 잔여 결함을 동시에 기록. |
+| rebuild/artifacts/rebuild-r5-{a,b,c}/ | 재개용으로 명시 수록한 실패 형상·배열·실행 코드 사본·입력 원장. accepted CFD 모델 아님. executed-code.py는 당시 runner의 바이트 동결본이며 출처/라이선스는 각 원 runner와 동일. |
+| execution-gallery/*.mjs | 독립 Ego Lite task-space/public-app API 조작 기록. 최신 화면 검사 성공으로 소급 해석하지 않음. |
+| HANDOFF*.md / 실행상태 / HTML / handoff evidence | 전달된 요청·로컬 Git·보존된 원시 영수증의 인계 정리. 새 CFD/GPU/mesher 실행 아님. |
+
+A의 생성 전 계약/입력 동결과 생성 후 코드 snapshot·안전 보강 시점은 구분한다. 모든 raw receipts는 보존하며 최종 상태는 별도 follow-up 영수증으로 연결한다. 기존 R3/R4·대형 CPU mesh에는 쓰지 않았다.

@@ -107,3 +107,7 @@ R3 원본 고정 [완료]
 [NASA CFD V&V tutorial](https://www.grc.nasa.gov/www/wind/valid/tutorial/tutorial.html)의 과정·오차·격자수렴·validation 구분을 유지한다. 70°/1e-10은 이 연구가 유지한 프로젝트 기준이며 NASA의 A321 합격 기준으로 인용하지 않는다. 외부 hex/layer 방식의 공개 개요는 [OpenFOAM meshing guide](https://doc.cfd.direct/openfoam/user-guide-v13/snappyhexmesh)를 참고했으며 실제 설치 버전·사전 설정·실행 로그를 우선 증거로 삼았다.
 
 재현·보관은 [RUNBOOK_KO.md](RUNBOOK_KO.md), 검토는 [REVIEW_KO.md](REVIEW_KO.md), 정확한 입력·출력 해시는 [artifact-manifest.json](evidence/artifact-manifest.json)을 참고한다.
+
+## 중단 후 현재 상태
+
+2026-11-09 재개 기준은 [상세 핸드오프](HANDOFF_20261109_KO.md)와 [현재 실행 상태](EXECUTION_STATUS_KO.md)다. 아래의 snappy-03 기록은 당시 실험으로 보존한다. 이후 R4/06~11 비교와 R5-A/C 생성·실패, B 생성 전 거부까지 별도 원장으로 이어졌으며 현재 C 자기교차15위치로 M3 FAIL, 항공기 GPU HOLD다. [핸드오프 HTML](handoff-20261109.html)·[실행상태 HTML](execution-status.html).

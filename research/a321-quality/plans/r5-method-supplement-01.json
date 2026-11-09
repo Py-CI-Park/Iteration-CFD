@@ -1,0 +1,20 @@
+{
+  "status": "METHOD_DISCLOSURE_AFTER_A_BEFORE_B",
+  "contract": "r5-geometry-contract-01.json",
+  "contract_modified": false,
+  "trial_A": {
+    "method": "global source-envelope corresponding ring-point PCHIP along length/span; added PL shoulder controls2%/98%; original polygonal cross-sections andBooleanseams retained",
+    "disclosure_timing": "recorded afterA; does not invent pre-execution methodfreeze",
+    "not_claimed": [
+      "chordwiseC1",
+      "newwingbodyfillet",
+      "globalSTLC1",
+      "independentintersectionpass"
+    ]
+  },
+  "trial_B_proposed": {
+    "source_A_STL_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+    "method": "bounded small-tolerance mesh cleanup via public manifoldAPI, fixedlimits remain; exactmethod/command/codehash to be frozen beforeB"
+  },
+  "GPU_solver_run": false
+}

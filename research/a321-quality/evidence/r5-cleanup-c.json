@@ -1,0 +1,56 @@
+{
+  "captured_utc": "2026-11-08T12:47:15.845883+00:00",
+  "input_sha256": {
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\rebuild\\evidence\\rebuild-r5-a.json": "67baf88f7f7437fa4a7d5fbc3cb4677a5ef49fb83f9cf38f969d56e62daa6856",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\plans\\r5-geometry-contract-01.json": "2c0e9c573f44cd8421f3c0e58f253e5d3e550266ecc540caf6ef3c6b12e1e1be",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\plans\\r5-cleanup-c-contract.json": "72a964bb5f7d31050844b7e82c37918aef0e5774276d616305f106a560dc89bf",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\rebuild\\artifacts\\rebuild-r5-a\\shell.npz": "6f814b10566fffc5910825fd32375357e078c0a0b068abbe971561b9b63513e9",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\rebuild\\artifacts\\rebuild-r5-a\\A321_AIRFRAME_REBUILD_R5_A.stl": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\models\\A321_AIRFRAME_SHELL_R3.stl": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+    "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r5_cleanup_c_trial.py": "9634a72069fd33306f90ef826f11ed0428967c91ba90e7d8710336f72cdc699a"
+  },
+  "requested_tolerance_m": 6e-06,
+  "command": "uv run research/a321-quality/r5_cleanup_c_trial.py",
+  "manifold3d_version": "3.5.4",
+  "status": "CLEANUP_INTERNAL_PASS_M3_OPEN",
+  "effective_tolerance_before_m": 5.306005277816439e-06,
+  "effective_tolerance_after_m": 5.306005277816439e-06,
+  "checks": {
+    "kernel": true,
+    "single_component": true,
+    "closed": true,
+    "winding": true,
+    "positive_volume": true,
+    "bbox_contract": true,
+    "volume_contract": true,
+    "sample_departure": true,
+    "original_vertices_subset": true,
+    "sources_unchanged": true
+  },
+  "input_triangles": 761090,
+  "output_triangles": 305764,
+  "bbox_error_m": 0.0,
+  "relative_R3_volume_change": 3.2680332447930774e-08,
+  "distances": [
+    {
+      "direction": "A_to_B",
+      "samples": 2000,
+      "maximum_m": 5.04674914396084e-06,
+      "p95_m": 1.63785307213359e-06
+    },
+    {
+      "direction": "B_to_A",
+      "samples": 2000,
+      "maximum_m": 5.18985282471964e-06,
+      "p95_m": 1.5030127803078747e-06
+    }
+  ],
+  "stl_sha256": "5466466cfdb9361aea0f20fe5daabbab3bea7835df90887652310ffad7f6cd7b",
+  "npz_sha256": "d44efc66f7c7daec559b3a142c568b6d99549652bf547f2eec07c422dd36038a",
+  "global_Hausdorff_bound": "NOT_INDEPENDENTLY_MEASURED",
+  "self_intersection": "PENDING_INDEPENDENT_CLI",
+  "native": "NOT_YET_SAVED",
+  "engineering_accepted": false,
+  "GPU_solver_run": false,
+  "CFD_solver_run": false
+}

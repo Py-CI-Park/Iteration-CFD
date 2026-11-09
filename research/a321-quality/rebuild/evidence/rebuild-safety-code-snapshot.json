@@ -1,0 +1,47 @@
+{
+  "captured_utc": "2026-11-08T12:04:14.8749642Z",
+  "scope": "POST_A_SAFETY_HARDENING_CURRENT_CODE_SNAPSHOT",
+  "limitation": "A generation and first B tolerance refusal predate these final safety edits; old receipts unchanged. Future B execution is parent-owned.",
+  "files": [
+    {
+      "path": "curves.py",
+      "sha256": "8ee12ece28118909cc021da668d462e73f6014fb7c6420da2dc87f942b20b668"
+    },
+    {
+      "path": "geometry.py",
+      "sha256": "843e5a1a66ce463ef5854285942e44deb6f647c048093481dbe4f00da5b9f7d3"
+    },
+    {
+      "path": "generate.py",
+      "sha256": "30e21f1668d56dbd2dd63a07f021356cfc999c775fa868d01768bc790f353ba7"
+    },
+    {
+      "path": "binding.py",
+      "sha256": "48ee2f2fcc92775d1deb958bf4ae3f005a7ea42336517a217f75db9ad6a9648c"
+    },
+    {
+      "path": "custody.py",
+      "sha256": "e42c9e9e090532e20324460788c7b953129e1c8c1a4cad7832b05a3320cf6958"
+    },
+    {
+      "path": "blender_adapter.py",
+      "sha256": "554d5da9951b85837ce964b303ad9511eb54fb8ba1999d92e09bc733b022334a"
+    },
+    {
+      "path": "surface_check.sh",
+      "sha256": "90b586e759e1c630d27b4b32c1bbf8ea7cd0a6891879fc0f88f9a55bb42a24ab"
+    },
+    {
+      "path": "test_custody.py",
+      "sha256": "73ed17889904a95a9f7b42d1cfb7dbed09d1d2c956b819310ff98bb6b4c0ab1b"
+    },
+    {
+      "path": "test_hardened_curves.py",
+      "sha256": "2c9fd89397cbf1b3345debf6bca58681648c7fcef1528b95b842ab9bf4d189b8"
+    },
+    {
+      "path": "test_blender_guards.py",
+      "sha256": "76a587913c6596bd430ab039a13b0c2d61f72bae17c3425c81d44c0263ad2f41"
+    }
+  ]
+}

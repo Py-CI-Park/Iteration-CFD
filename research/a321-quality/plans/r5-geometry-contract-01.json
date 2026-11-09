@@ -1,0 +1,30 @@
+{
+  "status": "PRE_GENERATION_RESEARCH_CONTRACT",
+  "baseline": "e3b809de24f0a40ee689831406a9a5931fd49b21",
+  "source_R3_sha256": "2c0111c3bafd34b49b506325e52d13045f997aeaced11236f45b744f08abe745",
+  "source_ledger_sha256": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "scope": "separate parameterized airframe research shell; fuse/wing/tails, no engines/pylons/gear/devicegaps; notOEM",
+  "limits": {
+    "station_point_max_m": 0.00001,
+    "bounds_max_m": 0.00001,
+    "between_station_sample_max_m": {
+      "fuselage": 0.025,
+      "wing": 0.01,
+      "horizontal": 0.01,
+      "vertical": 0.01
+    },
+    "relative_volume_change_max": 0.01
+  },
+  "rationale": "conservative per-feature working assumptions for an initial derivative, not engineering/OEM tolerances; freeze beforegeneration and preserve failures without retrospective relaxation",
+  "required_checks": [
+    "positive actual coordinate change",
+    "specified curve smoothness measured separately fromshading",
+    "LE/TE feature intent explicit",
+    "closedoriented singlecomponent, novertexlinkfailures/degenerate/duplicatefaces",
+    "independentselfintersection check",
+    "native/STL binding",
+    "source identity unchanged"
+  ],
+  "gate_policy": "M2generation is notM3acceptance; no CPUvolume mesh before geometryacceptance; no aircraftGPU beforeallgates",
+  "CFD_solver_authorized_before_gates": false
+}

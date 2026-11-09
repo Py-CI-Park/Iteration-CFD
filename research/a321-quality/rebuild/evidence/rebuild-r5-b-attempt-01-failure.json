@@ -1,0 +1,12 @@
+{
+  "status": "BLOCKED_BEFORE_GENERATION_INTERNAL_TOLERANCE",
+  "sourceA_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+  "error": "INTERNAL_TOLERANCE_EXCEEDS_CEILING:5.306005277816439e-06",
+  "GPU_solver_run": false,
+  "artifact_generated": false,
+  "contract_sha256": "2c0e9c573f44cd8421f3c0e58f253e5d3e550266ecc540caf6ef3c6b12e1e1be",
+  "declared_ceiling_m": 1E-06,
+  "captured_utc": "2026-11-08T11:53:04.4806972Z",
+  "actual_tolerance_m": 5.306005277816439E-06,
+  "code_freeze_sha256": "2adc658c76cc6a07e905bde436ed3114bff689f6e648182f7f109d5c6167d8ee"
+}

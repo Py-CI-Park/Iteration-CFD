@@ -1,0 +1,11 @@
+{
+  "status": "BASELINE_PLANNING_MEASUREMENT_NOT_R5_REFERENCE_APPROVAL",
+  "source_sha256": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "method": "twice trapezoidal integral of maxX-minX at original wing Y stations; gross planform includes root portion inside fuselage",
+  "gross_projected_area_m2": 126.47650505852299,
+  "span_m": 32.58000183105469,
+  "mean_geometric_chord_m": 3.8820287891441367,
+  "not": "not wetted area, not mean aerodynamic chord, not currentR5coefficientreference",
+  "R5_reference_accepted": false,
+  "CFD_solver_run": false
+}

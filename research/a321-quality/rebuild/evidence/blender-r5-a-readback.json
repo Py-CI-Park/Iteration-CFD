@@ -1,0 +1,14 @@
+{
+  "status": "PASS_EXACT_READBACK",
+  "blender": "5.2.2 LTS",
+  "native_sha256": "494f3e67a88cba539cd6719303a9dd8891366c8a8301b93fee09604816f5dd6c",
+  "stl_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+  "npz_sha256": "6f814b10566fffc5910825fd32375357e078c0a0b068abbe971561b9b63513e9",
+  "generation_receipt_sha256": "67baf88f7f7437fa4a7d5fbc3cb4677a5ef49fb83f9cf38f969d56e62daa6856",
+  "triangles": 761090,
+  "not_oem": true,
+  "engineering_accepted": false,
+  "native_STL_exact": true,
+  "render_run": false,
+  "GPU_solver_run": false
+}

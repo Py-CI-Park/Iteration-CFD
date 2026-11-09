@@ -1,0 +1,30 @@
+{
+  "passed": 5,
+  "results": [
+    {
+      "case": "transform",
+      "status": "PASS_REJECTED_REAL_NATIVE",
+      "reason": "NATIVE_WORLD_TRANSFORM_PARENT_OR_MODIFIER"
+    },
+    {
+      "case": "parent",
+      "status": "PASS_REJECTED_REAL_NATIVE",
+      "reason": "NATIVE_WORLD_TRANSFORM_PARENT_OR_MODIFIER"
+    },
+    {
+      "case": "modifier",
+      "status": "PASS_REJECTED_REAL_NATIVE",
+      "reason": "NATIVE_WORLD_TRANSFORM_PARENT_OR_MODIFIER"
+    },
+    {
+      "case": "changed_hash",
+      "status": "PASS_REJECTED_REAL_NATIVE",
+      "reason": "NATIVE_CHANGED_SINCE_SAVE"
+    },
+    {
+      "case": "exclusive_lock",
+      "status": "PASS_REJECTED_REAL_LOCK"
+    }
+  ],
+  "scope": "real isolated mini triangle Blender fixtures, no aircraft solve"
+}

@@ -1,0 +1,51 @@
+{
+  "limitation": "No pre-generation implementation code freeze existed for A. This snapshot does not reconstruct original execution bytes; formatting and typed-error edits occurred after generation.",
+  "captured_utc": "2026-11-08T11:17:44.1600499Z",
+  "scope": "POST_GENERATION_CURRENT_CODE_SNAPSHOT_BEFORE_B_REVIEW_FIXES",
+  "files": [
+    {
+      "path": "binding.py",
+      "sha256": "48ee2f2fcc92775d1deb958bf4ae3f005a7ea42336517a217f75db9ad6a9648c"
+    },
+    {
+      "path": "blender_adapter.py",
+      "sha256": "e46072e643cc6d65a210a71818fac8be6b21d745f06686811f56bc562659155e"
+    },
+    {
+      "path": "cleanup.py",
+      "sha256": "30160272339afa069aec7c7823a0d48084f15e464aed5108133f2f963566db36"
+    },
+    {
+      "path": "curves.py",
+      "sha256": "587fecd3b98e016049294ee5c246f97e2ca01ccdc1340cc59aaa56c5023bb8ea"
+    },
+    {
+      "path": "generate.py",
+      "sha256": "f2919d769eba64bc4c1d275920bf75bfa158c9948c91d358ad405409931033c4"
+    },
+    {
+      "path": "geometry.py",
+      "sha256": "843e5a1a66ce463ef5854285942e44deb6f647c048093481dbe4f00da5b9f7d3"
+    },
+    {
+      "path": "test_binding.py",
+      "sha256": "3150acbf9563c4f5d2a3d1d1e5f28057b31f01c80eae3e1373f3e77c069ea54a"
+    },
+    {
+      "path": "test_cleanup.py",
+      "sha256": "6d99bd118dd6b774311425b1d6b6b4c290849f756c8189474aa4eb3333dc20e5"
+    },
+    {
+      "path": "test_rebuild.py",
+      "sha256": "37459bcec73c076fb23a70624fcb03b77748345a4c19f9a92ed1f5911d07f3df"
+    },
+    {
+      "path": "test_topology.py",
+      "sha256": "a5645ebfb55f209e02175482784b08a7e9334cbb0089b647d3fb612f59ea7b05"
+    },
+    {
+      "path": "surface_check.sh",
+      "sha256": "fbd96b44f4349b2f8b606922ad3852adf9dce99c8abf82ae5f73e042f8162273"
+    }
+  ]
+}

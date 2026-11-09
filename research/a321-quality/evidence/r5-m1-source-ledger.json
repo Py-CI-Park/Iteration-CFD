@@ -1,0 +1,44 @@
+{
+  "status": "SOURCE_LEDGER_MEASURED_NOT_OEM",
+  "source_path": "research/a321-integration/evidence/reconstruction-r3.json",
+  "source_sha256": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "parts": [
+    {
+      "name": "fuselage",
+      "axis": 0,
+      "station_count": 182,
+      "station_first_m": 0.0,
+      "station_last_m": 44.5099983215332,
+      "ring_count": 182,
+      "points_per_ring": 128
+    },
+    {
+      "name": "wing",
+      "axis": 1,
+      "station_count": 100,
+      "station_first_m": 0.0,
+      "station_last_m": 16.290000915527344,
+      "ring_count": 100,
+      "points_per_ring": 128
+    },
+    {
+      "name": "horizontal",
+      "axis": 1,
+      "station_count": 67,
+      "station_first_m": 0.0,
+      "station_last_m": 6.224999904632568,
+      "ring_count": 67,
+      "points_per_ring": 96
+    },
+    {
+      "name": "vertical",
+      "axis": 2,
+      "station_count": 76,
+      "station_first_m": 5.5,
+      "station_last_m": 11.960000038146973,
+      "ring_count": 76,
+      "points_per_ring": 96
+    }
+  ],
+  "scope": "original station ledger dimensions only; not new geometry or CFD"
+}

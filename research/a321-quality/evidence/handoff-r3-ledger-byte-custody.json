@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "date_kst": "2026-11-09",
+  "scope": "restore portable frozen input bytes in Git without editing local source data",
+  "path": "research/a321-integration/evidence/reconstruction-r3.json",
+  "original_HEAD_blob": "b68fc16bb08ceb840b7f18389be540484450e80b",
+  "local_raw_blob": "1362bc9c865f0603aff0ac64560b5c557e216d42",
+  "raw_sha256": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "LF_normalized_sha256": "840a332bdbb8fe5411befe7bf5c12f330baba966a5864601bd06e396c5ffa516",
+  "normalized_local_blob_equals_original_HEAD_blob": true,
+  "local_raw_bytes_modified": false,
+  "model_geometry_modified": false,
+  "history_rewritten": false,
+  "reason": "Existing Git text normalization changed the captured CRLF ledger on fresh clones; now narrowly pinned -text for byte-identical M1 freeze inputs"
+}

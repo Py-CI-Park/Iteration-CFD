@@ -1,0 +1,15 @@
+c3b4a9bc516eb0e2cef279a912819eb1ae1b299e 2026-11-04T23:28:11+09:00 research: record A321 CPU surface preflight and aerodynamic roadmap
+1769b06e0b7a9ec46eaa5823d74532ca87a9de1f 2026-11-04T23:28:55+09:00 research: normalize generated section SVG whitespace
+6d4bfed29618a5755898dbb9cd8fcd4d4e62656a 2026-11-05T22:16:20+09:00 research: add A321 aerodynamic shell R2 and CPU mesh preparation
+ab176ae27e5368c58900162ef4435e0c0a7957c0 2026-11-06T21:25:15+09:00 research: verify Studio loading, repair wing notch, audit hybrid polyMesh and SUPER VRAM
+c5295b03bb71d13a3435846df769fb942322043b 2026-11-06T22:16:42+09:00 research(a321): preserve R3 and constrain eight-layer mesh; retain GPU hold
+f8b186b541325c997134dd9ef8b10d92ab033c6e 2026-11-06T23:51:17+09:00 research(a321): pass named CPU mesh gates with hex-poly control; retain GPU hold
+cfd592b4414e117807f8b841e900d97ab13b3543 2026-11-06T23:51:58+09:00 research(a321): preserve hashed native input dictionary bytes
+5ec807f1b376ad654e7f9a8b4f2a65d3bc4d529b 2026-11-06T23:52:39+09:00 research(a321): exempt preserved dictionary EOF from whitespace normalization
+a39d5906404cc11fb1d5c63cd77b984e7edd2cbe 2026-11-07T06:24:04+09:00 상위 저장소 최신 main을 A321 연구 브랜치에 병합
+1e08cbd02a9cc7af5800259d949aa68ebe9b7371 2026-11-07T06:34:24+09:00 A321 통합 연구 보고서에 실물 격자 화면과 GPU 전 준비표를 추가
+3a67a103408e5fba2a4e123565b57e8e9bba0348 2026-11-07T07:23:12+09:00 A321 실패 위치 지도화와 국소 격자 개선·GPU 메모리 및 API 검증을 기록
+376e9f2f90e68b0c217b662f0015a037cf03d737 2026-11-08T07:32:45+09:00 A321 경계층 조건 연구를 복구하고 30m/s 저속 시험 준비·실제 층수 지도를 기록
+b2de36457114af0cdf41e51a37cd7f0d8b201795 2026-11-08T07:56:17+09:00 A321 복구 보고서의 Ego PC·모바일 최종 검증 완료
+9b132e6377d9fbff8490d3a47c770b0fb37ffa6f 2026-11-08T09:22:58+09:00 A321 R3를 보존하고 R4 국소 표면·CPU 격자 비교와 GPU 보류를 기록
+e3b809de24f0a40ee689831406a9a5931fd49b21 2026-11-08T18:57:38+09:00 A321 Blender 외형 재구성부터 첫 공력 시험까지의 실행 계획을 기록

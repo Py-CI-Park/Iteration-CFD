@@ -1,0 +1,28 @@
+{
+  "contract_sha256": "2c0e9c573f44cd8421f3c0e58f253e5d3e550266ecc540caf6ef3c6b12e1e1be",
+  "safety_snapshot_sha256": "f8d70dde4f9e1457728cdff2c67335f1d1206e51f7050761d61c30f18fe849c9",
+  "captured_utc": "2026-11-08T12:13:24.4869910Z",
+  "code_snapshot_mismatches": 0,
+  "B_execution_owner": "PARENT; own trial stopped at tolerance refusal before artifact generation",
+  "commit_push_performed": false,
+  "A_hardened_native_readback": "PASS",
+  "git_diff_check": "PASS",
+  "GPU_solver_run": false,
+  "real_blender_guard_cases": 5,
+  "integrated_python_tests": {
+    "seconds": 278.95,
+    "passed": 22,
+    "command": "python -B -m pytest -p no:cacheprovider test_rebuild.py test_binding.py test_topology.py test_cleanup.py test_hardened_curves.py test_custody.py -q"
+  },
+  "no_excuse_audit": "no violations in 15 files",
+  "A_generation_receipt_sha256": "67baf88f7f7437fa4a7d5fbc3cb4677a5ef49fb83f9cf38f969d56e62daa6856",
+  "A_engineering_status": "FAIL_SELF_INTERSECTION_4184_UNCHANGED",
+  "separate_custody_tests": {
+    "passed": 3,
+    "seconds": 319.73
+  },
+  "sourceA_sha256": "ed6292f60bd5fe0099bb2b2cb991f05cbd763e47d1f61a805d3a90bb23b5df88",
+  "status": "PASS_SCOPED_P2_SAFETY_HARDENING_ONLY",
+  "CFD_solver_run": false,
+  "M1_frozen_input_mismatches": 0
+}
