@@ -1,0 +1,59 @@
+{
+  "contract_id": "r6-geometry-contract-02",
+  "status": "PRE_GENERATION_STRUCTURE_FROZEN; NUMERIC_ADDENDUM_PENDING_FROM_BASELINES",
+  "authored": "2026-11-16 KST, orchestrator (Opus); committed before any R6 candidate is generated",
+  "baseline_commit": "dcf99cf",
+  "relation_to_previous": {
+    "r5_c": "R5-C remains M3 FAIL under r5-cleanup-c-contract. This contract does not re-grade R5-C or any earlier candidate.",
+    "contract_01": "Fidelity limits of r5-geometry-contract-01 are carried over unchanged (station/bounds 1e-5 m, between-station 25 mm fuselage / 10 mm wing and tails, relative volume 1 %).",
+    "why_new_contract": "R6 is a new candidate built by a different method (smooth surfaces first, no boolean union in the CFD input). A new pre-registered contract is required; it adds checks and relaxes none."
+  },
+  "scope": {
+    "configuration": "simplified A321neo-family airframe: fuselage, wing (without sharklet), horizontal tail, vertical tail",
+    "excluded_with_consequence": {
+      "sharklet": "lateral extent 1.61 m and height 2.43 m per Airbus AC p.73/74 omitted; induced drag at the same CL is overpredicted and span loading near the tip differs",
+      "engines_pylons": "nacelle/pylon interference and wing lower-surface pressure change not represented; drag and lift differ from the real aircraft",
+      "flaps_slats_gaps": "clean cruise-like wing only; no high-lift effects",
+      "landing_gear_fairings": "belly fairing/gear pod drag not represented"
+    },
+    "not_oem": "derived research geometry; Airbus drawing dimensions are a reference band, not engineering tolerances"
+  },
+  "inputs": {
+    "geometry_source": "research/a321-integration/evidence/reconstruction-r3.json (station ledger, sha256 405aec92...) via research/a321-quality/evidence/r5-m1-source-ledger.json: fuselage 182x128, wing 100x128, horizontal 67x96, vertical 76x96",
+    "reference_source": "Airbus A321 Aircraft Characteristics - Airport and Maintenance Planning, Jul 01/26, A321neo-ACF/XLR, sha256 50ae7a11...; dimensions recorded by worker sonnet-r6-ref in research/a321-quality/r6/reference/reference-dimensions.json"
+  },
+  "method": {
+    "tool": "Blender 5.2.2 LTS headless (bpy) as the scripted construction, assembly, export and inspection environment; numpy only inside Blender (no scipy). Spline evaluation may alternatively be precomputed under uv and only assembled in Blender.",
+    "forbidden_operations": ["boolean union/difference for the CFD input", "remesh/decimate/voxel", "merge-by-distance other than exact-coordinate weld", "manual vertex editing without a recorded script", "cleanup with a geometric tolerance"],
+    "fuselage": "one closed surface, rings sampled as periodic curves (no left/right mirror join); circumferential C2 periodic cubic spline per ring; longitudinal interpolation through every station: C2 cubic where it does not create overshoot beyond the station extremes, otherwise C1 shape-preserving (Fritsch-Carlson); choice recorded per grid line. Nose and tail closures as quad-dominant caps, no full-valence pole fan.",
+    "wing_and_tails": "full-span closed surfaces generated as one continuous grid across y=0 (wing, horizontal) so there is no mirror seam; chordwise resampling by arc length with cosine-type clustering at LE and TE; spanwise interpolation split into segments at declared planform kink stations (C0 at a kink, C2 or C1 shape-preserving inside a segment). Tip closed by a cap meshed for quality. TE treatment follows the ledger (sharp or blunt) and is a declared feature line.",
+    "planform_kink_rule": "a station is a declared kink if the slope of LE x(y) or TE x(y) changes by more than 2.0 degrees between adjacent station intervals; the detected list is written to the feature manifest before surface generation",
+    "tessellation": "structured quads split along the diagonal that maximises the minimum interior angle; graded spacing; no triangle fan with vertex valence above 8",
+    "assembly_for_cfd": "four separate closed component STLs (named solids fuselage, wing, horizontal, vertical); roots overlap inside the host body; junction feature edges from OpenFOAM v1912 surfaceBooleanFeatures; no union STL in the CFD input",
+    "display_union": "optional union by manifold3d outside Blender for display and OpenVSP comparison only; surfaceCheck is run on it and reported, it is not a gate",
+    "half_model": "components stay full and closed; the volume mesher domain is y >= 0 with a symmetryPlane patch at y = 0 (geometry is cut by the domain, not by the modeller). Valid assumption: steady flow at alpha = 0 deg, beta = 0 deg. Avoid snappy mergeAcrossPatches on the symmetry plane. Executed in M5, not in this contract."
+  },
+  "gates_per_component": {
+    "G1_closure": "after exact-coordinate weld: watertight, every edge used by exactly two faces, one connected component, genus 0",
+    "G2_orientation": "consistent winding, outward normals (signed volume > 0)",
+    "G3_self_intersection": "0 by ALL three: existing independent locator (m3/c15-map), second independent checker (r6/checks), OpenFOAM v1912 surfaceCheck run on a copy in a new attempt directory; End reached, no FATAL",
+    "G4_fidelity": "station points reproduced <= 1e-5 m; bounds <= 1e-5 m vs R3 component; between-station sampled deviation vs R3 component <= 25 mm fuselage, <= 10 mm wing/horizontal/vertical; relative volume change vs R3 component <= 1 %",
+    "G5_triangle_quality": "min OpenFOAM-style triangle quality >= Q_MIN; min interior angle >= ANGLE_MIN; max adjacent area ratio <= GRADE_MAX; max vertex valence <= 8 (Q_MIN, ANGLE_MIN, GRADE_MAX locked in addendum 02a)",
+    "G6_smoothness": "on non-feature edges max dihedral <= DIHEDRAL_MAX; station-kink ratio <= KINK_MAX (locked in addendum 02a); feature edges = TE lines, tip cap boundary, declared planform kinks, closure cap boundaries",
+    "G7_native_binding": "fresh Blender process reopens the saved .blend; per-object world coordinates and triangles equal the exported STL"
+  },
+  "gates_assembly": {
+    "A1_junctions": "surfaceBooleanFeatures between fuselage and each of wing, horizontal, vertical yields closed intersection loops (expected: wing 2, horizontal 2, vertical 1); count and closure reported",
+    "A2_no_grazing": "minimum angle between the two surface normals along every junction loop >= 5 deg (grazing intersections are rejected)",
+    "A3_reference_band": "length, wing half-span to tip without sharklet, horizontal tail span, vertical tail tip height compared with reference-dimensions.json; deviation > 0.1 m must be explained in a signed finding before M3 can pass",
+    "A4_visual": "Blender orthographic renders (top/side/front, wireframe close-ups of nose, wing root, tip, tail) and an Iteration CFD Studio screenshot of each component taken through Ego Lite"
+  },
+  "decision_rule": "M3 PASS for R6 only if every component passes G1-G7 and the assembly passes A1-A4. Any failure is preserved with receipts; thresholds are not changed after generation.",
+  "references": [
+    "AIAA CFD Drag Prediction Workshop IV gridding guidelines (aiaa-dpw.larc.nasa.gov/Workshop4/gridding_guidelines_4.html): viscous growth rate < 1.25, spanwise spacing ~0.1 % semispan at root/tip",
+    "Vassberg, DeHaan, Rivers, Wahls, AIAA 2008-6919, Development of a Common Research Model for Applied CFD Validation Studies",
+    "Celik, Ghia, Roache, Freitas, J. Fluids Eng. 130(7) 078001, 2008 (GCI procedure, refinement ratio > 1.3)",
+    "OpenVSP forum guidance (R. McDonald): let the volume mesher create the symmetry plane and farfield; CompGeom gives watertight triangulations",
+    "OpenFOAM 2.2.0 release notes: snappyHexMesh feature snapping at intersections between boundary patches"
+  ]
+}
