@@ -1,0 +1,685 @@
+{
+ "schema": "r6-reference-dimensions-v1",
+ "status": "OWN_MEASUREMENTS_NOT_OEM_ENGINEERING_DATA",
+ "source": {
+  "title": "Airbus A321 Aircraft Characteristics - Airport and Maintenance Planning, Jul 01/26, A321neo-ACF / A321neo-XLR",
+  "sha256": "50ae7a11b9834cbb1b0f8b862fcb6e85aa7817e77596cd12903033e81456d40d",
+  "pages_1based": [
+   73,
+   74,
+   94
+  ],
+  "figure": "FIGURE-2-2-0-991-012-A01 General Aircraft Dimensions sheets 1 and 2",
+  "note": "Both sheets state: RELATED TO AIRCRAFT ATTITUDE AND WEIGHT. Page 94 is the leading-edge-slat ground-clearance table; it carries no outline geometry and is not used.",
+  "pdf_copied_to_repo": false,
+  "page_renders_in_repo": false
+ },
+ "scale": {
+  "top_view_page74": {
+   "method_vector": "arrowhead tips of the 44.51 m dimension line (nose and tail-cone extension rules)",
+   "pt_per_m": 7.949388581590689,
+   "px_per_m_at_400dpi": 44.16326989772605,
+   "raster_cross_check_pt": 353.88000000000005,
+   "raster_rules_found_pt": [
+    136.26,
+    325.35,
+    328.41,
+    336.06,
+    341.01,
+    490.14
+   ],
+   "raster_pt_per_m": 7.950572904965178,
+   "centreline_y_pt": 368.677001953125,
+   "nose_x_pt": 136.3058624267578
+  },
+  "side_view_page73": {
+   "method": "outline nose to tail extent divided by 44.51 m",
+   "scale_pt_per_m": 7.946107821956267,
+   "length_pt": 353.68125915527344
+  },
+  "front_view_page73": {
+   "method": "outline wingtip-to-wingtip extent divided by 35.80 m",
+   "pt_per_m": 8.035920212388705,
+   "span_pt": 287.6859436035156,
+   "raster_rules_found_pt": [
+    142.38,
+    274.14,
+    278.37,
+    285.93,
+    289.8,
+    429.84
+   ]
+  },
+  "note": "page 73 holds the side view (to the 44.51 m scale) and the front view (35.80 m); 44.51 m itself is printed on page 74"
+ },
+ "dimensions": [
+  {
+   "label_m": "44.51",
+   "value_m": 44.51,
+   "value_ft_computed": 146.03,
+   "page": 74,
+   "axis_on_page": "H",
+   "measures": "overall length, nose to tail-cone tip (top view)",
+   "confidence": "high",
+   "tips_pt": [
+    136.31,
+    490.13
+   ],
+   "drawn_length_pt": 353.83,
+   "implied_pt_per_m": 7.949,
+   "ratio_to_view_scale": 1.0,
+   "label_assignment_distance_pt": 4.1
+  },
+  {
+   "label_m": "27.72",
+   "value_m": 27.72,
+   "value_ft_computed": 90.94,
+   "page": 74,
+   "axis_on_page": "H",
+   "measures": "nose to the sharklet trailing tip, x (top view)",
+   "confidence": "medium",
+   "tips_pt": [
+    136.31,
+    356.5
+   ],
+   "drawn_length_pt": 220.2,
+   "implied_pt_per_m": 7.944,
+   "ratio_to_view_scale": 0.999,
+   "label_assignment_distance_pt": 3.6
+  },
+  {
+   "label_m": "16.29",
+   "value_m": 16.29,
+   "value_ft_computed": 53.44,
+   "page": 74,
+   "axis_on_page": "V",
+   "measures": "half-span to the wing/sharklet break line, y (top view)",
+   "confidence": "high",
+   "tips_pt": [
+    368.68,
+    502.03
+   ],
+   "drawn_length_pt": 133.35,
+   "implied_pt_per_m": 8.186,
+   "ratio_to_view_scale": 1.03,
+   "label_assignment_distance_pt": 4.1
+  },
+  {
+   "label_m": "15.40",
+   "value_m": 15.4,
+   "value_ft_computed": 50.52,
+   "page": 74,
+   "axis_on_page": "H",
+   "measures": "nose to the nacelle front, x (top view)",
+   "confidence": "high",
+   "tips_pt": [
+    136.31,
+    258.79
+   ],
+   "drawn_length_pt": 122.48,
+   "implied_pt_per_m": 7.954,
+   "ratio_to_view_scale": 1.001,
+   "label_assignment_distance_pt": 3.3
+  },
+  {
+   "label_m": "11.91",
+   "value_m": 11.91,
+   "value_ft_computed": 39.07,
+   "page": 74,
+   "axis_on_page": "V",
+   "measures": "spanwise station of an outboard trailing-edge flap-track fairing, y (top view)",
+   "confidence": "low",
+   "tips_pt": [
+    368.68,
+    457.96
+   ],
+   "drawn_length_pt": 89.29,
+   "implied_pt_per_m": 7.497,
+   "ratio_to_view_scale": 0.943,
+   "label_assignment_distance_pt": 3.0
+  },
+  {
+   "label_m": "8.30",
+   "value_m": 8.3,
+   "value_ft_computed": 27.23,
+   "page": 74,
+   "axis_on_page": "V",
+   "measures": "spanwise station of a mid trailing-edge flap-track fairing, y (top view)",
+   "confidence": "low",
+   "tips_pt": [
+    368.68,
+    431.42
+   ],
+   "drawn_length_pt": 62.74,
+   "implied_pt_per_m": 7.559,
+   "ratio_to_view_scale": 0.951,
+   "label_assignment_distance_pt": 3.9
+  },
+  {
+   "label_m": "6.07",
+   "value_m": 6.07,
+   "value_ft_computed": 19.91,
+   "page": 74,
+   "axis_on_page": "H",
+   "measures": "wing root chord at the fuselage side, x (top view)",
+   "confidence": "medium",
+   "tips_pt": [
+    271.36,
+    321.36
+   ],
+   "drawn_length_pt": 50.0,
+   "implied_pt_per_m": 8.237,
+   "ratio_to_view_scale": 1.036,
+   "label_assignment_distance_pt": 58.6
+  },
+  {
+   "label_m": "5.75",
+   "value_m": 5.75,
+   "value_ft_computed": 18.86,
+   "page": 74,
+   "axis_on_page": "V",
+   "measures": "engine axis lateral offset from centreline, y (top view)",
+   "confidence": "high",
+   "tips_pt": [
+    323.18,
+    368.68
+   ],
+   "drawn_length_pt": 45.49,
+   "implied_pt_per_m": 7.912,
+   "ratio_to_view_scale": 0.995,
+   "label_assignment_distance_pt": 53.3
+  },
+  {
+   "label_m": "4.87",
+   "value_m": 4.87,
+   "value_ft_computed": 15.98,
+   "page": 74,
+   "axis_on_page": "V",
+   "measures": "spanwise station of an inboard trailing-edge flap-track fairing, y (top view)",
+   "confidence": "low",
+   "tips_pt": [
+    368.68,
+    410.54
+   ],
+   "drawn_length_pt": 41.86,
+   "implied_pt_per_m": 8.596,
+   "ratio_to_view_scale": 1.081,
+   "label_assignment_distance_pt": 50.8
+  },
+  {
+   "label_m": "3.95",
+   "value_m": 3.95,
+   "value_ft_computed": 12.96,
+   "page": 74,
+   "axis_on_page": "V",
+   "measures": "fuselage max width (top view)",
+   "confidence": "high",
+   "tips_pt": [
+    352.92,
+    384.35
+   ],
+   "drawn_length_pt": 31.43,
+   "implied_pt_per_m": 7.957,
+   "ratio_to_view_scale": 1.001,
+   "label_assignment_distance_pt": 44.2
+  },
+  {
+   "label_m": "3.31",
+   "value_m": 3.31,
+   "value_ft_computed": 10.86,
+   "page": 74,
+   "axis_on_page": "H",
+   "measures": "horizontal tail root chord at the fuselage side, x (top view); both extension rules end at the fuselage side, not at the tip",
+   "confidence": "medium",
+   "tips_pt": [
+    446.82,
+    473.72
+   ],
+   "drawn_length_pt": 26.9,
+   "implied_pt_per_m": 8.126,
+   "ratio_to_view_scale": 1.022,
+   "label_assignment_distance_pt": -1.0
+  },
+  {
+   "label_m": "3.22",
+   "value_m": 3.22,
+   "value_ft_computed": 10.56,
+   "page": 74,
+   "axis_on_page": "H",
+   "measures": "junction leading edge to sharklet aft tip, x (top view); extension rules at the break-line LE and the aft tip",
+   "confidence": "medium",
+   "tips_pt": [
+    333.04,
+    356.5
+   ],
+   "drawn_length_pt": 23.46,
+   "implied_pt_per_m": 7.286,
+   "ratio_to_view_scale": 0.917,
+   "label_assignment_distance_pt": 45.0
+  },
+  {
+   "label_m": "1.64",
+   "value_m": 1.64,
+   "value_ft_computed": 5.38,
+   "page": 74,
+   "axis_on_page": "H",
+   "measures": "wing chord at the wing/sharklet junction (tip chord), x (top view); extension rules coincide with the break-line ends",
+   "confidence": "high",
+   "tips_pt": [
+    333.04,
+    345.32
+   ],
+   "drawn_length_pt": 12.28,
+   "implied_pt_per_m": 7.489,
+   "ratio_to_view_scale": 0.942,
+   "label_assignment_distance_pt": 37.7
+  },
+  {
+   "label_m": "1.61",
+   "value_m": 1.61,
+   "value_ft_computed": 5.28,
+   "page": 74,
+   "axis_on_page": "V",
+   "measures": "lateral extent of the sharklet beyond the break line, y (top view)",
+   "confidence": "medium",
+   "tips_pt": [
+    502.03,
+    512.1
+   ],
+   "drawn_length_pt": 10.07,
+   "implied_pt_per_m": 6.257,
+   "ratio_to_view_scale": 0.787,
+   "label_assignment_distance_pt": 26.4
+  },
+  {
+   "label_m": "1.24",
+   "value_m": 1.24,
+   "value_ft_computed": 4.07,
+   "page": 74,
+   "axis_on_page": "H",
+   "measures": "horizontal tail tip chord, x (top view)",
+   "confidence": "medium",
+   "tips_pt": [
+    474.4,
+    483.73
+   ],
+   "drawn_length_pt": 9.33,
+   "implied_pt_per_m": 7.523,
+   "ratio_to_view_scale": 0.946,
+   "label_assignment_distance_pt": -1.0
+  },
+  {
+   "label_m": "35.80",
+   "value_m": 35.8,
+   "value_ft_computed": 117.45,
+   "page": 73,
+   "axis_on_page": "H",
+   "measures": "overall span including sharklets (front view)",
+   "confidence": "high",
+   "tips_pt": [
+    142.41,
+    429.78
+   ],
+   "drawn_length_pt": 287.38,
+   "implied_pt_per_m": 8.027,
+   "ratio_to_view_scale": 0.999,
+   "label_assignment_distance_pt": 5.1
+  },
+  {
+   "label_m": "16.90",
+   "value_m": 16.9,
+   "value_ft_computed": 55.45,
+   "page": 73,
+   "axis_on_page": "H",
+   "measures": "nose-gear axis to main-gear axis, x (side view)",
+   "confidence": "medium",
+   "tips_pt": [
+    165.57,
+    298.85
+   ],
+   "drawn_length_pt": 133.27,
+   "implied_pt_per_m": 7.886,
+   "ratio_to_view_scale": 0.981,
+   "label_assignment_distance_pt": 4.4
+  },
+  {
+   "label_m": "12.45",
+   "value_m": 12.45,
+   "value_ft_computed": 40.85,
+   "page": 73,
+   "axis_on_page": "H",
+   "measures": "horizontal tail span tip to tip (front view)",
+   "confidence": "high",
+   "tips_pt": [
+    235.62,
+    336.58
+   ],
+   "drawn_length_pt": 100.96,
+   "implied_pt_per_m": 8.109,
+   "ratio_to_view_scale": 1.009,
+   "label_assignment_distance_pt": 5.0
+  },
+  {
+   "label_m": "8.97",
+   "value_m": 8.97,
+   "value_ft_computed": 29.43,
+   "page": 73,
+   "axis_on_page": "H",
+   "measures": "main-gear overall width over outer wheels (front view)",
+   "confidence": "medium",
+   "tips_pt": [
+    249.44,
+    322.58
+   ],
+   "drawn_length_pt": 73.14,
+   "implied_pt_per_m": 8.153,
+   "ratio_to_view_scale": 1.015,
+   "label_assignment_distance_pt": 5.5
+  },
+  {
+   "label_m": "7.59",
+   "value_m": 7.59,
+   "value_ft_computed": 24.9,
+   "page": 73,
+   "axis_on_page": "H",
+   "measures": "main-gear leg spacing, between gear axes (front view)",
+   "confidence": "medium",
+   "tips_pt": [
+    255.03,
+    316.98
+   ],
+   "drawn_length_pt": 61.96,
+   "implied_pt_per_m": 8.163,
+   "ratio_to_view_scale": 1.016,
+   "label_assignment_distance_pt": 5.5
+  },
+  {
+   "label_m": "5.87",
+   "value_m": 5.87,
+   "value_ft_computed": 19.26,
+   "page": 73,
+   "axis_on_page": "V",
+   "measures": "fin tip above the fuselage crown line (side view)",
+   "confidence": "high",
+   "tips_pt": [
+    171.51,
+    217.66
+   ],
+   "drawn_length_pt": 46.15,
+   "implied_pt_per_m": 7.861,
+   "ratio_to_view_scale": 0.978,
+   "label_assignment_distance_pt": 56.1
+  },
+  {
+   "label_m": "5.07",
+   "value_m": 5.07,
+   "value_ft_computed": 16.63,
+   "page": 73,
+   "axis_on_page": "H",
+   "measures": "nose to nose-gear axis, x (side view)",
+   "confidence": "medium",
+   "tips_pt": [
+    124.07,
+    165.57
+   ],
+   "drawn_length_pt": 41.5,
+   "implied_pt_per_m": 8.185,
+   "ratio_to_view_scale": 1.019,
+   "label_assignment_distance_pt": 62.3
+  },
+  {
+   "label_m": "4.14",
+   "value_m": 4.14,
+   "value_ft_computed": 13.58,
+   "page": 73,
+   "axis_on_page": "V",
+   "measures": "fuselage max height, crown line to belly line (side view)",
+   "confidence": "high",
+   "tips_pt": [
+    218.06,
+    251.26
+   ],
+   "drawn_length_pt": 33.2,
+   "implied_pt_per_m": 8.018,
+   "ratio_to_view_scale": 0.998,
+   "label_assignment_distance_pt": 54.2
+  },
+  {
+   "label_m": "3.79",
+   "value_m": 3.79,
+   "value_ft_computed": 12.43,
+   "page": 73,
+   "axis_on_page": "V",
+   "measures": "sharklet top above the lower wing-root reference line (front view)",
+   "confidence": "medium",
+   "tips_pt": [
+    462.57,
+    494.36
+   ],
+   "drawn_length_pt": 31.79,
+   "implied_pt_per_m": 8.387,
+   "ratio_to_view_scale": 1.044,
+   "label_assignment_distance_pt": 45.6
+  },
+  {
+   "label_m": "2.43",
+   "value_m": 2.43,
+   "value_ft_computed": 7.97,
+   "page": 73,
+   "axis_on_page": "V",
+   "measures": "sharklet height above the wing-tip base line (front view)",
+   "confidence": "medium",
+   "tips_pt": [
+    462.57,
+    483.26
+   ],
+   "drawn_length_pt": 20.69,
+   "implied_pt_per_m": 8.513,
+   "ratio_to_view_scale": 1.059,
+   "label_assignment_distance_pt": 49.0
+  },
+  {
+   "label_m": "0.93",
+   "value_m": 0.93,
+   "value_ft_computed": 3.05,
+   "page": 73,
+   "axis_on_page": "H",
+   "measures": "main-gear dual-wheel spacing (front view)",
+   "confidence": "low",
+   "tips_pt": [
+    312.8,
+    321.0
+   ],
+   "drawn_length_pt": 8.21,
+   "implied_pt_per_m": 8.826,
+   "ratio_to_view_scale": 1.098,
+   "label_assignment_distance_pt": 37.0
+  },
+  {
+   "label_m": "0.50",
+   "value_m": 0.5,
+   "value_ft_computed": 1.64,
+   "page": 73,
+   "axis_on_page": "H",
+   "measures": "nose-gear wheel spacing (front view)",
+   "confidence": "low",
+   "tips_pt": [
+    283.87,
+    288.1
+   ],
+   "drawn_length_pt": 4.23,
+   "implied_pt_per_m": 8.466,
+   "ratio_to_view_scale": 1.054,
+   "label_assignment_distance_pt": 71.2
+  }
+ ],
+ "drawn_planform_and_profile": {
+  "unit": "m, uniform page-74 scale, origin at nose and centreline",
+  "top": {
+   "outline_extent_x_m": [
+    0.010081172826528753,
+    44.51391960299158
+   ],
+   "outline_half_span_incl_sharklet_m_uniform_scale": {
+    "lower": 18.044685121995133,
+    "upper": 18.078850162958457
+   },
+   "fuselage_width_at_x8_m": 3.953222246125507,
+   "wing_outboard_LE_line": {
+    "x_at_y_m": {
+     "y8.6": 20.512439271073553,
+     "y17.4": 25.07441507346701
+    },
+    "sweep_deg": 27.402509807837394,
+    "fit_y_range_m": [
+     8.6,
+     17.4
+    ]
+   },
+   "wing_outboard_TE_line": {
+    "x_at_y_m": {
+     "y8.6": 23.923724339571677,
+     "y17.4": 26.463546820221723
+    },
+    "sweep_deg": 16.098996269003724,
+    "fit_y_range_m": [
+     8.6,
+     17.4
+    ]
+   },
+   "wing_at_y2.2m": {
+    "LE_x_m": 17.16041970475067,
+    "TE_x_m": 23.277272577589894,
+    "chord_m": 6.116852872839225
+   },
+   "wing_root_TE_inboard_straight_x_m": 23.277782394707707,
+   "wing_sharklet_break_line": {
+    "y_pt": 502.03,
+    "x_le_m": 24.748762945736935,
+    "x_te_m": 26.291493345925822,
+    "chord_m": 1.5427304001888873,
+    "y_m_uniform_scale": 16.775252169166293,
+    "segments_found": 1,
+    "outline_le_te_at_break_y_m": [
+     24.74886390376495,
+     26.292595706660737
+    ],
+    "line_ends_minus_outline_m": [
+     -0.00010095802801401987,
+     -0.0011023607349152087
+    ]
+   },
+   "wing_LE_TE_fit_at_y16.29_m": {
+    "le": 24.498984034756017,
+    "te": 26.143182848230637
+   },
+   "wing_LE_TE_fit_at_y16.24_m": {
+    "le": 24.473063717696963,
+    "te": 26.128752038681487
+   },
+   "wing_LE_TE_fit_at_break_y_m": {
+    "y": 16.775252169166293,
+    "le": 24.7505418363237,
+    "te": 26.28323448096163
+   },
+   "horizontal_tail": {
+    "half_span_outline_m_uniform_scale": 6.2295275353975095,
+    "LE_x_at_y": {
+     "y2.2": 39.91355312774689,
+     "y6.1": 42.38564847008841
+    },
+    "LE_sweep_deg": 32.36940868909884,
+    "tip_TE_x_m": 43.69791661270655,
+    "chord_at_y2.2_m": 2.859873362999423,
+    "chord_at_tip_m": 1.135960725670202
+   }
+  },
+  "side": {
+   "scale_pt_per_m": 7.946107821956267,
+   "length_pt": 353.68125915527344,
+   "nose_x_pt": 124.12135314941406,
+   "ground_y_pt": 265.5877990722656,
+   "crown_z_m": 5.982525921578094,
+   "belly_z_m": 1.802931021245964,
+   "fuselage_height_m": 4.1795949003321295,
+   "fin_tip_z_m": 11.838973632649239,
+   "fin_tip_above_crown_m": 5.856447711071146,
+   "fin_tip_x_m": [
+    41.823306670238885,
+    43.679204198395475
+   ],
+   "fin_LE_root_x_m_at_crown_extrapolated": 36.6110184313322,
+   "fin_LE_x_at_height_above_crown_m": {
+    "h2": 38.40718879640009,
+    "h5": 41.10144434400194
+   },
+   "fin_LE_sweep_from_vertical_deg": 41.92654096224924,
+   "fin_LE_fit_z_range_m": [
+    7.2,
+    11.6
+   ],
+   "fin_LE_fit_points": 2,
+   "tail_tip_x_m": 44.51
+  },
+  "front": {
+   "sharklet_top_half_span_m_front_scale": 17.8796142376921,
+   "ht_tip_half_span_m_front_scale": 6.277805756361086,
+   "ht_tip_z_m": 5.288852312815505,
+   "ht_tip_points_found": 35,
+   "scale_pt_per_m": 8.035920212388705,
+   "span_pt": 287.6859436035156,
+   "centre_x_pt": 286.1520538330078,
+   "ground_y_pt": 518.466064453125,
+   "outline_top_z_m": 11.971064209596948,
+   "outline_min_x_pt": 142.30908203125,
+   "outline_max_x_pt": 429.9950256347656,
+   "sharklet_top_z_m": 6.955776435777939,
+   "wing_tip_base_line_z_m": 4.381086860326091,
+   "wing_root_lower_ref_line_z_m": 2.999788924728432,
+   "wing_dihedral_rise_root_to_tip_m_from_labels": 1.3599999999999999
+  }
+ },
+ "sharklet_16_29_evidence": {
+  "printed_16.29_m": 16.29,
+  "printed_1.61_m": 1.61,
+  "printed_35.80_m_half": 17.9,
+  "sum_16.29_plus_1.61": 17.9,
+  "drawn_16.29_dim_pt": 133.35,
+  "drawn_1.61_dim_pt": 10.07,
+  "drawn_16.29_at_page74_scale_m": 16.774875027346617,
+  "drawn_1.61_at_page74_scale_m": 1.2667640909289872,
+  "break_line": {
+   "y_pt": 502.03,
+   "x_le_m": 24.748762945736935,
+   "x_te_m": 26.291493345925822,
+   "chord_m": 1.5427304001888873,
+   "y_m_uniform_scale": 16.775252169166293,
+   "segments_found": 1,
+   "outline_le_te_at_break_y_m": [
+    24.74886390376495,
+    26.292595706660737
+   ],
+   "line_ends_minus_outline_m": [
+    -0.00010095802801401987,
+    -0.0011023607349152087
+   ]
+  },
+  "closure_checks_printed_set": {
+   "half_span_16.29_plus_1.61": 17.9,
+   "half_of_35.80": 17.9,
+   "junction_LE_x_from_27.72_minus_3.22_m": 24.5,
+   "planform_fit_LE_x_at_y16.29_m": 24.498984034756017,
+   "planform_fit_TE_x_at_y16.29_m": 26.143182848230637,
+   "planform_fit_chord_at_y16.29_m": 1.6441988134746204,
+   "printed_tip_chord_1.64_m": 1.64,
+   "drawn_break_line_LE_x_m": 24.748762945736935,
+   "drawn_break_line_chord_m": 1.5427304001888873
+  },
+  "reading": "The printed set closes at a junction at y=16.29 m: 16.29+1.61=17.90=35.80/2, and the page planform LE/TE lines evaluated at y=16.29 m give chord ~1.64 m and LE x ~24.50 m = 27.72-3.22. The drawn break line itself is artwork at y=16.78 m (page scale) and the sharklet is drawn 1.27 m long (printed 1.61): the tip artwork is not to scale by ~0.5 m, while 3.95 and 5.75 scale at 1.00.",
+  "outline_half_span_incl_sharklet_m": {
+   "lower": 18.044685121995133,
+   "upper": 18.078850162958457
+  }
+ },
+ "wall_time_s": 0.5
+}
