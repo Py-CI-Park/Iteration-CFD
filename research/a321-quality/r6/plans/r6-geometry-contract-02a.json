@@ -1,0 +1,28 @@
+{
+  "contract_id": "r6-geometry-contract-02a",
+  "amends": "r6-geometry-contract-02 (numeric thresholds only; method and gate list unchanged)",
+  "status": "PRE_GENERATION_NUMERIC_LOCK",
+  "authored": "2026-11-16 KST, orchestrator (Opus), after r6/checks baselines and before any R6 candidate exists",
+  "baseline_source": "research/a321-quality/r6/checks/baselines.json, BASELINES_KO.md (worker sonnet-r6-checks)",
+  "quality_metric_definition": "Q_OF = 4A / (3*sqrt(3)*R^2), R = circumradius; matches surfaceCheck per-triangle quality within 6e-8 relative on the R3 fuselage",
+  "thresholds_per_component": {
+    "Q_MIN": {"value": 0.001, "rationale": "excludes slivers; every baseline union (R3 1.6e-12, R5-C 9.7e-13) and every R3 component (8e-4 to 1.6e-6) is below it, so R6 must be better than all of them"},
+    "Q_P1_MIN": {"value": 0.01, "rationale": "~aspect 150 for a right triangle; allows LE-clustered anisotropy but not sliver populations (R5-C median is 0.081)"},
+    "ANGLE_MIN_DEG": {"value": 1.0, "rationale": "R3 components p1 0.56-1.98 deg; a floor of 1 deg removes needle triangles"},
+    "ANGLE_P5_MIN_DEG": {"value": 5.0, "rationale": "keeps the bulk of the surface well shaped"},
+    "ASPECT_MAX": {"value": 100.0, "rationale": "longest edge / shortest altitude; forces LE chordwise spacing to be coupled to spanwise spacing"},
+    "ASPECT_P99_MAX": {"value": 30.0, "rationale": "suggested from baselines"},
+    "GRADE_AREA_MAX": {"value": 30.0, "rationale": "R3 components 16-81, R5-C 2.9e5; adjacent area ratio cap"},
+    "GRADE_AREA_P99_MAX": {"value": 10.0, "rationale": "suggested from baselines"},
+    "GRADE_EDGE_P99_MAX": {"value": 3.0, "rationale": "suggested from baselines"},
+    "VALENCE_MAX": {"value": 8, "rationale": "contract 02: no pole/tip triangle fans"},
+    "DIHEDRAL_MAX_DEG_NONFEATURE": {"value": 30.0, "rationale": "zero non-feature edges above 30 deg"},
+    "DIHEDRAL_P99_MAX_DEG_NONFEATURE": {"value": 10.0, "rationale": "suggested from baselines"},
+    "KINK_MAX": {"value": 1.5, "rationale": "mean turning at station lines / mean turning elsewhere along the same longitudinal or spanwise grid lines; R5-A fuselage 2.6, wing 64"}
+  },
+  "self_intersection": "0 from all three checkers (m3 locator, PyMeshLab via r6_selfint subprocess, surfaceCheck v1912). Unchanged from contract 02.",
+  "not_adopted": {
+    "Q_MEDIAN_MIN_0.4": "suggested by the checks worker; not adopted because a median target is not tied to an aerodynamic or meshing failure mode and would push the wing toward isotropic triangles without benefit for snappyHexMesh projection. Recorded here before generation."
+  },
+  "known_risk": "surfaceCheck reports 255 self-intersection records on the R3 fuselage alone while the locator reports 0 and PyMeshLab flags 6 faces at different places; the trigger is not understood. If R6 fuselage shows surfaceCheck records while the other checkers show 0, M3 still FAILS; the next step is a synthetic calibration study of surfaceCheck, not a gate change."
+}

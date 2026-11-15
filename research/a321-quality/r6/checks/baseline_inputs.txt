@@ -1,0 +1,9 @@
+r3_union=research/a321-integration/models/A321_AIRFRAME_SHELL_R3.stl
+r3_union_artifact_copy=research/a321-integration/artifacts/shell-r3/A321_AIRFRAME_SHELL_R3.stl
+r3_fuselage=research/a321-integration/artifacts/shell-r3/fuselage.stl
+r3_wing=research/a321-integration/artifacts/shell-r3/wing.stl
+r3_horizontal=research/a321-integration/artifacts/shell-r3/horizontal.stl
+r3_vertical=research/a321-integration/artifacts/shell-r3/vertical.stl
+r4=research/a321-quality/models/A321_AIRFRAME_SHELL_R4.stl
+r5_c=research/a321-quality/models/A321_AIRFRAME_REBUILD_R5_C.stl
+r5_a=research/a321-quality/rebuild/artifacts/rebuild-r5-a/A321_AIRFRAME_REBUILD_R5_A.stl

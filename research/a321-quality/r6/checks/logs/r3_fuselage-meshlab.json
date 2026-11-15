@@ -1,0 +1,1 @@
+{"checker": "pymeshlab compute_selection_by_self_intersections_per_face", "pymeshlab_version": "2025.7.post1", "faces": 46592, "selected_faces": 6, "selected_face_ids": [6083, 6084, 6333, 6334, 6335, 6336], "wall_seconds": 0.42198760001338087}

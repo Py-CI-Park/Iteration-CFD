@@ -1,0 +1,103 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:                                        |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : OPENFOAM=1912 patch=200626
+Arch   : "LSB;label=32;scalar=64"
+Exec   : surfaceCheck -checkSelfIntersection -outputThreshold 100 input.stl
+Date   : Nov 16 2026
+Time   : 08:46:20
+Host   : WORKSTATION
+PID    : 11204
+I/O    : uncollated
+Case   : /mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/r6/checks/attempts/sc-r5_a-obj-uGL2Rm
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Reading surface from "input.stl" ...
+
+Statistics:
+Triangles    : 761090 in 1 region(s)
+Vertices     : 380547
+Bounding Box : (0 -16.29 1.95) (44.51 16.29 11.96)
+
+Region	Size
+------	----
+patch0	761090
+
+
+Surface has no illegal triangles.
+
+Triangle quality (equilateral=1, collapsed=0):
+    0 .. 0.05  : 0.481293
+    0.05 .. 0.1  : 0.115349
+    0.1 .. 0.15  : 0.0398862
+    0.15 .. 0.2  : 0.0249484
+    0.2 .. 0.25  : 0.0229789
+    0.25 .. 0.3  : 0.021301
+    0.3 .. 0.35  : 0.0220276
+    0.35 .. 0.4  : 0.0225453
+    0.4 .. 0.45  : 0.0222983
+    0.45 .. 0.5  : 0.0217018
+    0.5 .. 0.55  : 0.0175617
+    0.55 .. 0.6  : 0.0155488
+    0.6 .. 0.65  : 0.0199122
+    0.65 .. 0.7  : 0.0215428
+    0.7 .. 0.75  : 0.0240878
+    0.75 .. 0.8  : 0.0316126
+    0.8 .. 0.85  : 0.0243545
+    0.85 .. 0.9  : 0.0214561
+    0.9 .. 0.95  : 0.0148222
+    0.95 .. 1  : 0.0147722
+
+    min 1.19287e-11 for triangle 572528
+    max 0.999998 for triangle 550666
+
+Edges:
+    min 5.74188e-06 for edge 78759 points (20.3852 -1.89667 3.4437)(20.3852 -1.89667 3.4437)
+    max 0.820381 for edge 617877 points (24.498 16.29 4.48264)(25.3184 16.29 4.48264)
+
+Checking for points less than 1e-6 of bounding box ((44.51 32.58 10.01) metre) apart.
+    small edge between points 4089 (2e-05 -2.74765e-05 3.45772) and 4219 (2e-05 -9.71352e-19 3.45772) distance:2.75023e-05
+    close unconnected points 38910 (2e-05 2.74765e-05 3.45772) and 4089 (2e-05 -2.74765e-05 3.45772) distance:5.49529e-05
+    close unconnected points 39027 (1e-05 2.20813e-05 3.45783) and 4347 (1e-05 -2.20813e-05 3.45783) distance:4.41626e-05
+    small edge between points 4346 (0 -1.66861e-05 3.45794) and 4348 (0 -9.43819e-19 3.45794) distance:1.67133e-05
+    close unconnected points 39026 (0 1.66861e-05 3.45794) and 4346 (0 -1.66861e-05 3.45794) distance:3.33722e-05
+    close unconnected points 4220 (0 -1.66859e-05 3.45862) and 39022 (0 3.31789e-05 3.45861) distance:4.99468e-05
+    close unconnected points 39024 (0 1.66859e-05 3.45862) and 4220 (0 -1.66859e-05 3.45862) distance:3.33718e-05
+    small edge between points 4222 (0 -8.60421e-19 3.45862) and 39024 (0 1.66859e-05 3.45862) distance:1.67012e-05
+    close unconnected points 39025 (1e-05 2.2081e-05 3.45873) and 4221 (1e-05 -2.2081e-05 3.45873) distance:4.41621e-05
+    close unconnected points 39119 (2e-05 2.74762e-05 3.45884) and 4350 (2e-05 -2.74762e-05 3.45884) distance:5.49523e-05
+    small edge between points 4351 (2e-05 -8.34022e-19 3.45884) and 39119 (2e-05 2.74762e-05 3.45884) distance:2.75134e-05
+    small edge between points 58799 (17.0624 1.71724 2.99959) and 58800 (17.0623 1.71725 2.99961) distance:3.77884e-05
+    small edge between points 24345 (17.0628 -1.71723 2.99938) and 24346 (17.0627 -1.71724 2.9994) distance:3.51196e-05
+    small edge between points 24321 (17.1552 -1.69264 2.95549) and 24322 (17.1552 -1.69265 2.95551) distance:5.56701e-05
+    small edge between points 25964 (17.4569 -1.88039 3.39026) and 25963 (17.4568 -1.88039 3.39025) distance:5.08912e-05
+    small edge between points 24255 (17.6575 -1.62214 2.83997) and 24256 (17.6574 -1.62214 2.83998) distance:5.41252e-05
+    small edge between points 58716 (17.6576 1.62213 2.83997) and 58715 (17.6575 1.62214 2.83997) distance:5.41148e-05
+    small edge between points 142423 (22.1164 1.71896 3.00347) and 60247 (22.1164 1.71892 3.00347) distance:3.18304e-05
+    small edge between points 100114 (42.2761 -0.755652 4.74349) and 100111 (42.2761 -0.755665 4.7435) distance:5.57757e-05
+Found 19 nearby points.
+
+Surface is closed. All edges connected to two faces.
+
+Number of unconnected parts : 1
+
+Number of zones (connected area with consistent normal) : 1
+
+Checking self-intersection.
+Surface is self-intersecting at 4184 locations.
+Writing intersection points to "selfInterPoints.obj"
+
+
+End
+
+real 6.78
+user 5.03
+sys 0.63

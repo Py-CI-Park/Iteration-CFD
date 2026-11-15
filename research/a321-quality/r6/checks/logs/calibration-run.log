@@ -1,0 +1,6 @@
+Installed 1 package in 3.20s
+4A/(3 sqrt3 R^2)  [adopted]    ratio min 0.999999940 max 1.000000059
+4 sqrt3 A / sum(e^2)           ratio min 0.090129668 max 0.946853527
+2r/R                           ratio min 0.256969659 max 0.947759608
+A / (sqrt3/4 emax^2)           ratio min 0.147812621 max 1.333333407
+triangles 46592 surfaceCheck quality min 0.0008016113424673676 max 0.7752586007118225

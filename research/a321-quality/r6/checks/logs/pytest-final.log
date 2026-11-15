@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.2.0, pluggy-1.7.0 -- C:\Users\parkc\AppData\Local\uv\cache\builds-v0\.tmpcxbbAB\Scripts\python.exe
+rootdir: D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r6\checks
+collecting ... collected 15 items
+
+test_r6_gate.py::test_tetra_and_icosphere_pass_closure_and_orientation PASSED [  6%]
+test_r6_gate.py::test_sphere_with_one_face_removed_fails_closure PASSED  [ 13%]
+test_r6_gate.py::test_inverted_sphere_fails_orientation_but_stays_consistent PASSED [ 20%]
+test_r6_gate.py::test_one_flipped_face_breaks_winding_consistency PASSED [ 26%]
+test_r6_gate.py::test_two_disjoint_components_and_signed_negative_zero_weld PASSED [ 33%]
+test_r6_gate.py::test_crossing_triangles_detected_by_both_checkers PASSED [ 40%]
+test_r6_gate.py::test_edge_sharing_triangles_not_detected_by_either_checker PASSED [ 46%]
+test_r6_gate.py::test_clean_icosphere_has_no_self_intersection_in_either_checker PASSED [ 53%]
+test_r6_gate.py::test_sliver_triangle_is_flagged_by_quality PASSED       [ 60%]
+test_r6_gate.py::test_quality_formula_equilateral_is_one_and_right_isoceles_known_value PASSED [ 66%]
+test_r6_gate.py::test_grading_ratio_on_graded_fan PASSED                 [ 73%]
+test_r6_gate.py::test_feature_edge_exclusion_removes_only_the_listed_edge PASSED [ 80%]
+test_r6_gate.py::test_station_kink_metric_separates_slope_break_from_smooth_cylinder PASSED [ 86%]
+test_r6_gate.py::test_parse_surfacecheck_log_from_calibration_run PASSED [ 93%]
+test_r6_gate.py::test_station_region_and_exclusion_boxes_drop_edges PASSED [100%]
+
+============================= 15 passed in 29.26s =============================

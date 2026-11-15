@@ -1,0 +1,1 @@
+{'name': 'r5_a', 'surfacecheck_locations': 4184, 'obj_points': 4184, 'unique_obj_points_6sig': 2940, 'attempt_dir': 'sc-r5_a-obj-uGL2Rm', 'points_near_locator_faces': 0, 'points_near_meshlab_faces': 6, 'points_near_faces_with_q_of_below_0.01': 0, 'faces_q_of_below_0.01': 28062, 'locator_faces': 0, 'radius_m': 0.0001, 'sha256_unchanged': True}
