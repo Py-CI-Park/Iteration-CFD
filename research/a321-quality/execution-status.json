@@ -119,7 +119,11 @@
       },
       "g4_random_max_m": 0.02683,
       "g4_dense_surface_max_m_r6_c": 0.02828,
-      "g4_limit_m": 0.025
+      "g4_limit_m": 0.025,
+      "g4_dense_by_interval_m_r6_c": {
+        "x_0.001_0.25": 0.0209,
+        "x_0.25_0.498": 0.02828
+      }
     },
     "wing_tails_dense_surface_max_m_r6_c": {
       "wing": 0.00093,
@@ -127,8 +131,9 @@
       "vertical": 0.00136,
       "limit_m": 0.01
     },
-    "root_cause_judgement": "R3 ledger fuselage (nose stations x = 0, 0.001, 0.25 m; flat belly/crown clips) conflicts with a smooth surface within 25 mm; judgement, not proof",
+    "root_cause_judgement": "judgement, not proof: the R3 ledger fuselage has exactly flat belly/crown clips (35 flips refused for fold + 8 crown-centreline records remain in surfaceCheck) and a single planar facet between nose stations x = 0.2496 and 0.4983 m where the smooth surface departs 28.28 mm (limit 25 mm; x 0.001-0.25 m is 20.9 mm). R3 belly z = 1.95 m vs 1.80 m on the official drawing.",
     "decision_pending": "owner: contract 03 changing the fuselage fidelity reference from R3 to official drawing outlines with parametric sections (R7 fuselage), or keep R3",
-    "solver_mesher_gpu_run": false
+    "solver_mesher_gpu_run": false,
+    "dense_check_scope": "R6-c only"
   }
 }
