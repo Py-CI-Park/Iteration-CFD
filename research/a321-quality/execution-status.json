@@ -131,7 +131,7 @@
       "vertical": 0.00136,
       "limit_m": 0.01
     },
-    "root_cause_judgement": "judgement, not proof: the R3 ledger fuselage has exactly flat belly/crown clips (35 flips refused for fold + 8 crown-centreline records remain in surfaceCheck) and a single planar facet between nose stations x = 0.2496 and 0.4983 m where the smooth surface departs 28.28 mm (limit 25 mm; x 0.001-0.25 m is 20.9 mm). R3 belly z = 1.95 m vs 1.80 m on the official drawing.",
+    "root_cause_judgement": "judgement, not proof: the R3 ledger fuselage has exactly flat belly/crown clips (35 flips refused for fold + 8 crown-centreline records remain in surfaceCheck) and a single planar facet between nose stations x = 0.2496 and 0.4983 m where the smooth surface departs 28.28 mm (limit 25 mm; x 0.001-0.25 m is 20.9 mm). (The drawing side-sheet belly height 1.80 m vs R3 1.95 m is ground-referenced and attitude/weight dependent; it is not evidence of a shape defect.)",
     "decision_pending": "owner: contract 03 changing the fuselage fidelity reference from R3 to official drawing outlines with parametric sections (R7 fuselage), or keep R3",
     "solver_mesher_gpu_run": false,
     "dense_check_scope": "R6-c only"
