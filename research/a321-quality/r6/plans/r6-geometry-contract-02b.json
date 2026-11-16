@@ -1,0 +1,13 @@
+{
+  "contract_id": "r6-geometry-contract-02b",
+  "amends": "r6-geometry-contract-02 method section only; gates and every threshold in 02 and 02a are unchanged",
+  "status": "PRE_CANDIDATE_METHOD_CLARIFICATION",
+  "authored": "2026-11-16 KST, orchestrator (Opus), before any R6 candidate STL exists",
+  "trigger": "feasibility measurement by worker sonnet-r6-gen (no candidate generated): a C2 periodic spline through the R3 ring points exceeds the ledger polygon extent (fuselage belly z -1.33 mm, wing z -0.121/+0.027 mm, horizontal z -0.053/+0.016 mm, vertical |y| +0.064 mm), which would fail the carried-over G4 bounds limit of 1e-5 m by construction; a C2 longitudinal spline across the 0.001 m nose/tail closure intervals overshoots by metres",
+  "clarifications": {
+    "ring_and_section_curves": "the 'C2 unless it overshoots, otherwise C1 Fritsch-Carlson shape-preserving' rule already required for the longitudinal direction is also applied to fuselage rings and wing/tail section curves; the choice is recorded per ring/section. Every ledger point remains a vertex, so station points are reproduced exactly.",
+    "closure_cap_band": "fuselage stations 0-1 and 180-181 (1 mm intervals) form the declared nose and tail closure-cap bands, lofted linearly as in R3; the band boundary rings are declared feature lines. Longitudinal splines start at station 1 and end at station 180. If the adjacent intervals (1-2, 179-180) still deviate more than 25 mm from the R3 component, that is reported as a G4 failure, not linearised further.",
+    "planform_kinks": "kink stations follow the pre-registered 2.0 deg rule exactly as detected (wing y=0, +-6.0018, +-6.6877; horizontal y=0; vertical 11 stations), with the per-station slope change recorded in feature-manifest.json"
+  },
+  "unchanged": "bounds 1e-5 m, station 1e-5 m, between-station 25 mm / 10 mm, volume 1 %, all 02a quality/smoothness thresholds, three-checker self-intersection 0"
+}
