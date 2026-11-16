@@ -1,0 +1,2138 @@
+{
+ "stl_sha256": {
+  "openvsp_fuselage.stl": "d426b853dec8766991502d7b51826830b2419560abd88c94aaddc01e303dd383",
+  "openvsp_horizontal.stl": "564914f7005637c290a1d700cad6a44c4f18cc12a6d585d8e60f2f98ed834f67",
+  "openvsp_union.stl": "6d3e0a088069b34fb531ff797cb06b38686afd1cda0558057182b1a03f1c39f0",
+  "openvsp_union_half.stl": "948f5a186783567ac29385a1a3cb4effeeb80c5970b0372eed6b92eb56fda946",
+  "openvsp_union_t0.5.stl": "5495b89e0d1af4de107d14bef8a42093c4ff20f625c8be6fd39fdd38ce7c6bfb",
+  "openvsp_union_t2.0.stl": "95d4d7d10e8f5d777bb85035375feb70936168511fa49a70861c14da20497903",
+  "openvsp_vertical.stl": "59005e165b1a4f529e9ec6041caeaabd4105b7dc9fba2b3fd8d5a0c078d29394",
+  "openvsp_wing.stl": "716911b06e18825a06ae708c583f1d505b3b5c2cb732313ce8b131bace98f260"
+ },
+ "surfacecheck": {
+  "fuselage": {
+   "locations": 858,
+   "end_reached": true,
+   "fatal": false,
+   "closed": true,
+   "illegal_triangles": false,
+   "unconnected_parts": 1,
+   "sc_min_quality": 0.104852,
+   "attempt_dir": "sc-fuselage-P7HEjp",
+   "sha256_input": "d426b853dec8766991502d7b51826830b2419560abd88c94aaddc01e303dd383",
+   "wrapper_wall_seconds": 0.191095322
+  },
+  "fuselage_obj": {
+   "locations": 858,
+   "end_reached": true,
+   "fatal": false,
+   "closed": true,
+   "illegal_triangles": false,
+   "unconnected_parts": 1,
+   "sc_min_quality": 0.104852,
+   "attempt_dir": "sc-fuselage_obj-OqpWBE",
+   "sha256_input": "d426b853dec8766991502d7b51826830b2419560abd88c94aaddc01e303dd383",
+   "wrapper_wall_seconds": 0.22248858
+  },
+  "horizontal": {
+   "locations": 0,
+   "end_reached": true,
+   "fatal": false,
+   "closed": true,
+   "illegal_triangles": false,
+   "unconnected_parts": 1,
+   "sc_min_quality": 0.0313181,
+   "attempt_dir": "sc-horizontal-MhTtmw",
+   "sha256_input": "564914f7005637c290a1d700cad6a44c4f18cc12a6d585d8e60f2f98ed834f67",
+   "wrapper_wall_seconds": 0.161774437
+  },
+  "union": {
+   "locations": 465,
+   "end_reached": true,
+   "fatal": false,
+   "closed": true,
+   "illegal_triangles": false,
+   "unconnected_parts": 1,
+   "sc_min_quality": 5.75467e-06,
+   "attempt_dir": "sc-union-jKkS5i",
+   "sha256_input": "6d3e0a088069b34fb531ff797cb06b38686afd1cda0558057182b1a03f1c39f0",
+   "wrapper_wall_seconds": 0.639118531
+  },
+  "union_obj": {
+   "locations": 465,
+   "end_reached": true,
+   "fatal": false,
+   "closed": true,
+   "illegal_triangles": false,
+   "unconnected_parts": 1,
+   "sc_min_quality": 5.75467e-06,
+   "attempt_dir": "sc-union_obj-lDLS1K",
+   "sha256_input": "6d3e0a088069b34fb531ff797cb06b38686afd1cda0558057182b1a03f1c39f0",
+   "wrapper_wall_seconds": 0.623015696
+  },
+  "union_t0.5": {
+   "locations": 125,
+   "end_reached": true,
+   "fatal": false,
+   "closed": true,
+   "illegal_triangles": false,
+   "unconnected_parts": 1,
+   "sc_min_quality": 2.24179e-06,
+   "attempt_dir": "sc-union_t0.5-nfAJbJ",
+   "sha256_input": "5495b89e0d1af4de107d14bef8a42093c4ff20f625c8be6fd39fdd38ce7c6bfb",
+   "wrapper_wall_seconds": 0.284152203
+  },
+  "union_t2.0": {
+   "locations": 2646,
+   "end_reached": true,
+   "fatal": false,
+   "closed": true,
+   "illegal_triangles": false,
+   "unconnected_parts": 1,
+   "sc_min_quality": 6.68777e-07,
+   "attempt_dir": "sc-union_t2.0-RzgAWd",
+   "sha256_input": "95d4d7d10e8f5d777bb85035375feb70936168511fa49a70861c14da20497903",
+   "wrapper_wall_seconds": 1.569225705
+  },
+  "vertical": {
+   "locations": 0,
+   "end_reached": true,
+   "fatal": false,
+   "closed": true,
+   "illegal_triangles": false,
+   "unconnected_parts": 1,
+   "sc_min_quality": 0.00960327,
+   "attempt_dir": "sc-vertical-7luW6O",
+   "sha256_input": "59005e165b1a4f529e9ec6041caeaabd4105b7dc9fba2b3fd8d5a0c078d29394",
+   "wrapper_wall_seconds": 0.166690659
+  },
+  "wing": {
+   "locations": 0,
+   "end_reached": true,
+   "fatal": false,
+   "closed": true,
+   "illegal_triangles": false,
+   "unconnected_parts": 1,
+   "sc_min_quality": 0.0248806,
+   "attempt_dir": "sc-wing-IJeRXg",
+   "sha256_input": "716911b06e18825a06ae708c583f1d505b3b5c2cb732313ce8b131bace98f260",
+   "wrapper_wall_seconds": 0.261469818
+  }
+ },
+ "gate_union": [
+  {
+   "metric": "G1 watertight [boundary, nonmanifold, components, Euler]",
+   "value": [
+    0,
+    0,
+    1,
+    2
+   ],
+   "limit": "[0,0,1,2]",
+   "pass": true
+  },
+  {
+   "metric": "G2 winding consistent / outward / volume m3",
+   "value": [
+    true,
+    true,
+    514.3664537220196
+   ],
+   "limit": "consistent, outward, V>0",
+   "pass": true
+  },
+  {
+   "metric": "G3 locator pairs",
+   "value": 0,
+   "limit": 0,
+   "pass": true
+  },
+  {
+   "metric": "G3 PyMeshLab selected faces",
+   "value": 0,
+   "limit": 0,
+   "pass": true
+  },
+  {
+   "metric": "G3 surfaceCheck locations",
+   "value": 465,
+   "limit": 0,
+   "pass": false
+  },
+  {
+   "metric": "G5 Q_OF min",
+   "value": 5.754666693019866e-06,
+   "limit": ">= 0.001",
+   "pass": false
+  },
+  {
+   "metric": "G5 Q_OF p1",
+   "value": 0.015917497505401033,
+   "limit": ">= 0.01",
+   "pass": true
+  },
+  {
+   "metric": "G5 min angle min (deg)",
+   "value": 0.001601017731231084,
+   "limit": ">= 1.0",
+   "pass": false
+  },
+  {
+   "metric": "G5 min angle p5 (deg)",
+   "value": 3.884168768702186,
+   "limit": ">= 5.0",
+   "pass": false
+  },
+  {
+   "metric": "G5 aspect max",
+   "value": 35787.18048566239,
+   "limit": "<= 100.0",
+   "pass": false
+  },
+  {
+   "metric": "G5 aspect p99",
+   "value": 32.31558569998603,
+   "limit": "<= 30.0",
+   "pass": false
+  },
+  {
+   "metric": "G5 adjacent area ratio max",
+   "value": 2531.4290586640486,
+   "limit": "<= 30.0",
+   "pass": false
+  },
+  {
+   "metric": "G5 adjacent area ratio p99",
+   "value": 13.867592152374716,
+   "limit": "<= 10.0",
+   "pass": false
+  },
+  {
+   "metric": "G5 adjacent longest-edge ratio p99",
+   "value": 4.123945781472804,
+   "limit": "<= 3.0",
+   "pass": false
+  }
+ ],
+ "gate_union_valence_max": 64,
+ "gate_components": {
+  "fuselage": [
+   {
+    "metric": "G1 watertight [boundary, nonmanifold, components, Euler]",
+    "value": [
+     0,
+     0,
+     1,
+     2
+    ],
+    "limit": "[0,0,1,2]",
+    "pass": true
+   },
+   {
+    "metric": "G2 winding consistent / outward / volume m3",
+    "value": [
+     true,
+     true,
+     476.35157136527533
+    ],
+    "limit": "consistent, outward, V>0",
+    "pass": true
+   },
+   {
+    "metric": "G3 locator pairs",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G3 PyMeshLab selected faces",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G3 surfaceCheck locations",
+    "value": 858,
+    "limit": 0,
+    "pass": false
+   },
+   {
+    "metric": "G5 Q_OF min",
+    "value": 0.10485189313636452,
+    "limit": ">= 0.001",
+    "pass": true
+   },
+   {
+    "metric": "G5 Q_OF p1",
+    "value": 0.15160588876853812,
+    "limit": ">= 0.01",
+    "pass": true
+   },
+   {
+    "metric": "G5 min angle min (deg)",
+    "value": 3.9270153215506673,
+    "limit": ">= 1.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 min angle p5 (deg)",
+    "value": 14.162515015009324,
+    "limit": ">= 5.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 aspect max",
+    "value": 14.66837139806899,
+    "limit": "<= 100.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 aspect p99",
+    "value": 10.155123537761108,
+    "limit": "<= 30.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 adjacent area ratio max",
+    "value": 2.6191549616245813,
+    "limit": "<= 30.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 adjacent area ratio p99",
+    "value": 1.5089704922034624,
+    "limit": "<= 10.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 adjacent longest-edge ratio p99",
+    "value": 1.338930237613187,
+    "limit": "<= 3.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 max vertex valence",
+    "value": 64,
+    "limit": "<= 8",
+    "pass": false
+   }
+  ],
+  "wing": [
+   {
+    "metric": "G1 watertight [boundary, nonmanifold, components, Euler]",
+    "value": [
+     0,
+     0,
+     1,
+     2
+    ],
+    "limit": "[0,0,1,2]",
+    "pass": true
+   },
+   {
+    "metric": "G2 winding consistent / outward / volume m3",
+    "value": [
+     true,
+     true,
+     21.313576293758263
+    ],
+    "limit": "consistent, outward, V>0",
+    "pass": true
+   },
+   {
+    "metric": "G3 locator pairs",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G3 PyMeshLab selected faces",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G3 surfaceCheck locations",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G5 Q_OF min",
+    "value": 0.024880597503895336,
+    "limit": ">= 0.001",
+    "pass": true
+   },
+   {
+    "metric": "G5 Q_OF p1",
+    "value": 0.05604860449093808,
+    "limit": ">= 0.01",
+    "pass": true
+   },
+   {
+    "metric": "G5 min angle min (deg)",
+    "value": 1.4892876075016694,
+    "limit": ">= 1.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 min angle p5 (deg)",
+    "value": 4.089275776903584,
+    "limit": ">= 5.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 aspect max",
+    "value": 38.63271339647011,
+    "limit": "<= 100.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 aspect p99",
+    "value": 25.123139480349618,
+    "limit": "<= 30.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 adjacent area ratio max",
+    "value": 351.2217012668376,
+    "limit": "<= 30.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 adjacent area ratio p99",
+    "value": 3.9997787276749097,
+    "limit": "<= 10.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 adjacent longest-edge ratio p99",
+    "value": 3.243015402459754,
+    "limit": "<= 3.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 max vertex valence",
+    "value": 8,
+    "limit": "<= 8",
+    "pass": true
+   }
+  ],
+  "horizontal": [
+   {
+    "metric": "G1 watertight [boundary, nonmanifold, components, Euler]",
+    "value": [
+     0,
+     0,
+     1,
+     2
+    ],
+    "limit": "[0,0,1,2]",
+    "pass": true
+   },
+   {
+    "metric": "G2 winding consistent / outward / volume m3",
+    "value": [
+     true,
+     true,
+     2.922913380722966
+    ],
+    "limit": "consistent, outward, V>0",
+    "pass": true
+   },
+   {
+    "metric": "G3 locator pairs",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G3 PyMeshLab selected faces",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G3 surfaceCheck locations",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G5 Q_OF min",
+    "value": 0.03131807932318908,
+    "limit": ">= 0.001",
+    "pass": true
+   },
+   {
+    "metric": "G5 Q_OF p1",
+    "value": 0.046978139790807456,
+    "limit": ">= 0.01",
+    "pass": true
+   },
+   {
+    "metric": "G5 min angle min (deg)",
+    "value": 1.4107612607141293,
+    "limit": ">= 1.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 min angle p5 (deg)",
+    "value": 3.3846798266696356,
+    "limit": ">= 5.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 aspect max",
+    "value": 40.94774151677008,
+    "limit": "<= 100.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 aspect p99",
+    "value": 27.722269194941017,
+    "limit": "<= 30.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 adjacent area ratio max",
+    "value": 43.9182135891057,
+    "limit": "<= 30.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 adjacent area ratio p99",
+    "value": 12.100532683410577,
+    "limit": "<= 10.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 adjacent longest-edge ratio p99",
+    "value": 5.468078208480735,
+    "limit": "<= 3.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 max vertex valence",
+    "value": 8,
+    "limit": "<= 8",
+    "pass": true
+   }
+  ],
+  "vertical": [
+   {
+    "metric": "G1 watertight [boundary, nonmanifold, components, Euler]",
+    "value": [
+     0,
+     0,
+     1,
+     2
+    ],
+    "limit": "[0,0,1,2]",
+    "pass": true
+   },
+   {
+    "metric": "G2 winding consistent / outward / volume m3",
+    "value": [
+     true,
+     true,
+     5.184428403707971
+    ],
+    "limit": "consistent, outward, V>0",
+    "pass": true
+   },
+   {
+    "metric": "G3 locator pairs",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G3 PyMeshLab selected faces",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G3 surfaceCheck locations",
+    "value": 0,
+    "limit": 0,
+    "pass": true
+   },
+   {
+    "metric": "G5 Q_OF min",
+    "value": 0.009603272862836786,
+    "limit": ">= 0.001",
+    "pass": true
+   },
+   {
+    "metric": "G5 Q_OF p1",
+    "value": 0.011507966022165042,
+    "limit": ">= 0.01",
+    "pass": true
+   },
+   {
+    "metric": "G5 min angle min (deg)",
+    "value": 0.6326243157680249,
+    "limit": ">= 1.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 min angle p5 (deg)",
+    "value": 3.503672147147539,
+    "limit": ">= 5.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 aspect max",
+    "value": 90.96954466624985,
+    "limit": "<= 100.0",
+    "pass": true
+   },
+   {
+    "metric": "G5 aspect p99",
+    "value": 38.55898991819434,
+    "limit": "<= 30.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 adjacent area ratio max",
+    "value": 48.99703865107185,
+    "limit": "<= 30.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 adjacent area ratio p99",
+    "value": 19.75487642842011,
+    "limit": "<= 10.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 adjacent longest-edge ratio p99",
+    "value": 4.7557344850857355,
+    "limit": "<= 3.0",
+    "pass": false
+   },
+   {
+    "metric": "G5 max vertex valence",
+    "value": 8,
+    "limit": "<= 8",
+    "pass": true
+   }
+  ]
+ },
+ "smoothness_raw": {
+  "union": {
+   "edges": 110916,
+   "edges_with_a_zero_area_face_excluded": 0,
+   "distribution_deg": {
+    "count": 110916,
+    "nonfinite": 0,
+    "min": 0.0,
+    "p0.1": 0.0,
+    "p1": 0.0,
+    "p5": 0.0,
+    "p50": 0.004342070267637041,
+    "p95": 6.064761169949523,
+    "p99": 84.64074599413401,
+    "p99.9": 166.15745829376488,
+    "max": 171.01300546187392
+   },
+   "count_above_deg": {
+    "10": 3686,
+    "20": 2588,
+    "30": 2110
+   },
+   "largest": [
+    {
+     "edge_midpoint_m": [
+      42.37929344177246,
+      0.0,
+      6.001267433166504
+     ],
+     "angle_deg": 171.01300546187392
+    },
+    {
+     "edge_midpoint_m": [
+      42.373247146606445,
+      0.0,
+      5.924140214920044
+     ],
+     "angle_deg": 171.00826173872147
+    },
+    {
+     "edge_midpoint_m": [
+      42.3841609954834,
+      0.0,
+      6.055842161178589
+     ],
+     "angle_deg": 170.94933018300154
+    },
+    {
+     "edge_midpoint_m": [
+      42.38936996459961,
+      0.0,
+      6.0922253131866455
+     ],
+     "angle_deg": 170.94928949454507
+    },
+    {
+     "edge_midpoint_m": [
+      42.38676643371582,
+      0.0,
+      6.074033737182617
+     ],
+     "angle_deg": 170.9487889616963
+    },
+    {
+     "edge_midpoint_m": [
+      42.3919734954834,
+      0.0,
+      6.110416889190674
+     ],
+     "angle_deg": 170.9484744417948
+    },
+    {
+     "edge_midpoint_m": [
+      42.39457893371582,
+      0.0,
+      6.128608465194702
+     ],
+     "angle_deg": 170.94792693110423
+    },
+    {
+     "edge_midpoint_m": [
+      43.67297172546387,
+      0.0,
+      11.93241262435913
+     ],
+     "angle_deg": 170.83369217049886
+    },
+    {
+     "edge_midpoint_m": [
+      43.66896057128906,
+      0.0,
+      11.914021015167236
+     ],
+     "angle_deg": 170.83234294826173
+    },
+    {
+     "edge_midpoint_m": [
+      43.66494941711426,
+      0.0,
+      11.895629405975342
+     ],
+     "angle_deg": 170.83185607856464
+    },
+    {
+     "edge_midpoint_m": [
+      43.67698097229004,
+      0.0,
+      11.950804233551025
+     ],
+     "angle_deg": 170.83110944344287
+    },
+    {
+     "edge_midpoint_m": [
+      43.660940170288086,
+      0.0,
+      11.877237796783447
+     ],
+     "angle_deg": 170.8310415899191
+    },
+    {
+     "edge_midpoint_m": [
+      43.502559661865234,
+      0.0,
+      11.158571720123291
+     ],
+     "angle_deg": 170.8300496797508
+    },
+    {
+     "edge_midpoint_m": [
+      43.60079765319824,
+      0.0,
+      11.604264736175537
+     ],
+     "angle_deg": 170.82926724477264
+    },
+    {
+     "edge_midpoint_m": [
+      43.656930923461914,
+      0.0,
+      11.858946323394775
+     ],
+     "angle_deg": 170.82867008279584
+    },
+    {
+     "edge_midpoint_m": [
+      43.604806900024414,
+      0.0,
+      11.622456073760986
+     ],
+     "angle_deg": 170.82842852206463
+    },
+    {
+     "edge_midpoint_m": [
+      43.608816146850586,
+      0.0,
+      11.640647888183594
+     ],
+     "angle_deg": 170.82760119091336
+    },
+    {
+     "edge_midpoint_m": [
+      43.31009292602539,
+      0.0,
+      10.285377502441406
+     ],
+     "angle_deg": 170.82741477564943
+    },
+    {
+     "edge_midpoint_m": [
+      43.65292167663574,
+      0.0,
+      11.840754985809326
+     ],
+     "angle_deg": 170.82715321177847
+    },
+    {
+     "edge_midpoint_m": [
+      43.61282539367676,
+      0.0,
+      11.658839702606201
+     ],
+     "angle_deg": 170.82671749320505
+    }
+   ]
+  },
+  "fuselage": {
+   "edges": 28608,
+   "edges_with_a_zero_area_face_excluded": 0,
+   "distribution_deg": {
+    "count": 28608,
+    "nonfinite": 0,
+    "min": 0.0,
+    "p0.1": 0.0,
+    "p1": 0.0,
+    "p5": 0.0,
+    "p50": 0.0001538207845796249,
+    "p95": 6.002282931161646,
+    "p99": 9.499925717306109,
+    "p99.9": 28.99692708023565,
+    "max": 30.354623161218207
+   },
+   "count_above_deg": {
+    "10": 266,
+    "20": 128,
+    "30": 10
+   },
+   "largest": [
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      -0.022474361583590508,
+      3.0260276794433594
+     ],
+     "angle_deg": 30.354623161218207
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      0.022474361583590508,
+      3.0260276794433594
+     ],
+     "angle_deg": 30.354623161218207
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      0.0667769405990839,
+      3.0307146310806274
+     ],
+     "angle_deg": 30.318425909647235
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      -0.0667769405990839,
+      3.0307146310806274
+     ],
+     "angle_deg": 30.318425909647235
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      0.10967632010579109,
+      3.0398945808410645
+     ],
+     "angle_deg": 30.24894135134521
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      -0.10967632010579109,
+      3.0398945808410645
+     ],
+     "angle_deg": 30.24894135134521
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      0.15095067024230957,
+      3.053335189819336
+     ],
+     "angle_deg": 30.148469632664256
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      -0.15095067024230957,
+      3.053335189819336
+     ],
+     "angle_deg": 30.148469632664256
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      -0.19037817418575287,
+      3.070803999900818
+     ],
+     "angle_deg": 30.01926519880119
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      0.19037817418575287,
+      3.070803999900818
+     ],
+     "angle_deg": 30.01926519880119
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      0.22773700952529907,
+      3.092068314552307
+     ],
+     "angle_deg": 29.86307172554557
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      -0.22773700952529907,
+      3.092068314552307
+     ],
+     "angle_deg": 29.86307172554557
+    },
+    {
+     "edge_midpoint_m": [
+      44.1405029296875,
+      0.022474361583590508,
+      5.517680644989014
+     ],
+     "angle_deg": 29.698520893844684
+    },
+    {
+     "edge_midpoint_m": [
+      44.1405029296875,
+      -0.022474361583590508,
+      5.517680644989014
+     ],
+     "angle_deg": 29.698520893844684
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      -0.2628053352236748,
+      3.1168957948684692
+     ],
+     "angle_deg": 29.681435131200956
+    },
+    {
+     "edge_midpoint_m": [
+      0.18085582554340363,
+      0.2628053352236748,
+      3.1168957948684692
+     ],
+     "angle_deg": 29.681435131200956
+    },
+    {
+     "edge_midpoint_m": [
+      44.1405029296875,
+      0.0667769405990839,
+      5.512993812561035
+     ],
+     "angle_deg": 29.64595066619624
+    },
+    {
+     "edge_midpoint_m": [
+      44.1405029296875,
+      -0.0667769405990839,
+      5.512993812561035
+     ],
+     "angle_deg": 29.64595066619624
+    },
+    {
+     "edge_midpoint_m": [
+      44.1405029296875,
+      -0.10967632010579109,
+      5.503813743591309
+     ],
+     "angle_deg": 29.54196363999911
+    },
+    {
+     "edge_midpoint_m": [
+      44.1405029296875,
+      0.10967632010579109,
+      5.503813743591309
+     ],
+     "angle_deg": 29.54196363999911
+    }
+   ]
+  },
+  "wing": {
+   "edges": 26676,
+   "edges_with_a_zero_area_face_excluded": 0,
+   "distribution_deg": {
+    "count": 26676,
+    "nonfinite": 0,
+    "min": 0.0,
+    "p0.1": 0.0,
+    "p1": 0.0,
+    "p5": 8.484187363167896e-06,
+    "p50": 0.00359418761609558,
+    "p95": 3.643517240770915,
+    "p99": 81.5649787263961,
+    "p99.9": 164.64662811693393,
+    "max": 164.97931781944493
+   },
+   "count_above_deg": {
+    "10": 710,
+    "20": 370,
+    "30": 285
+   },
+   "largest": [
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      4.921690940856934,
+      3.4105446338653564
+     ],
+     "angle_deg": 164.97931781944493
+    },
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      4.613076210021973,
+      3.383469820022583
+     ],
+     "angle_deg": 164.97868241304593
+    },
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      5.2303056716918945,
+      3.4376195669174194
+     ],
+     "angle_deg": 164.97830557511838
+    },
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      5.847535133361816,
+      3.4917694330215454
+     ],
+     "angle_deg": 164.97787120387713
+    },
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      5.5389204025268555,
+      3.4646944999694824
+     ],
+     "angle_deg": 164.97778080824892
+    },
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      4.012891888618469,
+      3.332726836204529
+     ],
+     "angle_deg": 164.97374498812022
+    },
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      2.2293843626976013,
+      3.183904528617859
+     ],
+     "angle_deg": 164.97364250972777
+    },
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      1.3376305997371674,
+      3.109493374824524
+     ],
+     "angle_deg": 164.97362347946972
+    },
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      3.121138095855713,
+      3.258315682411194
+     ],
+     "angle_deg": 164.97326265038157
+    },
+    {
+     "edge_midpoint_m": [
+      23.2773494720459,
+      0.4458768665790558,
+      3.035082221031189
+     ],
+     "angle_deg": 164.97322185930804
+    },
+    {
+     "edge_midpoint_m": [
+      23.366930961608887,
+      6.619071960449219,
+      3.5659337043762207
+     ],
+     "angle_deg": 164.83767832050796
+    },
+    {
+     "edge_midpoint_m": [
+      23.307209968566895,
+      6.207585573196411,
+      3.5255157947540283
+     ],
+     "angle_deg": 164.83766609108835
+    },
+    {
+     "edge_midpoint_m": [
+      23.28730297088623,
+      6.070423603057861,
+      3.5120432376861572
+     ],
+     "angle_deg": 164.83702481345657
+    },
+    {
+     "edge_midpoint_m": [
+      23.347023963928223,
+      6.48190975189209,
+      3.5524611473083496
+     ],
+     "angle_deg": 164.83701136404895
+    },
+    {
+     "edge_midpoint_m": [
+      23.32711696624756,
+      6.344747543334961,
+      3.538988471031189
+     ],
+     "angle_deg": 164.83636863534278
+    },
+    {
+     "edge_midpoint_m": [
+      26.12891674041748,
+      16.255610466003418,
+      4.479498863220215
+     ],
+     "angle_deg": 164.7815661209095
+    },
+    {
+     "edge_midpoint_m": [
+      26.1091890335083,
+      16.186829566955566,
+      4.473211288452148
+     ],
+     "angle_deg": 164.77981996297092
+    },
+    {
+     "edge_midpoint_m": [
+      26.08946132659912,
+      16.118048667907715,
+      4.466923713684082
+     ],
+     "angle_deg": 164.77802793600304
+    },
+    {
+     "edge_midpoint_m": [
+      26.06973361968994,
+      16.049267768859863,
+      4.4606359004974365
+     ],
+     "angle_deg": 164.77635838002146
+    },
+    {
+     "edge_midpoint_m": [
+      26.000685691833496,
+      15.80893325805664,
+      4.438361167907715
+     ],
+     "angle_deg": 164.77295599352928
+    }
+   ]
+  },
+  "horizontal": {
+   "edges": 10536,
+   "edges_with_a_zero_area_face_excluded": 0,
+   "distribution_deg": {
+    "count": 10536,
+    "nonfinite": 0,
+    "min": 0.0,
+    "p0.1": 0.0,
+    "p1": 0.0,
+    "p5": 0.0,
+    "p50": 0.00696194290184313,
+    "p95": 5.431683968441829,
+    "p99": 96.50249635752033,
+    "p99.9": 166.62045489489503,
+    "max": 167.2207055838519
+   },
+   "count_above_deg": {
+    "10": 400,
+    "20": 320,
+    "30": 240
+   },
+   "largest": [
+    {
+     "edge_midpoint_m": [
+      43.6973934173584,
+      6.215022087097168,
+      5.43442702293396
+     ],
+     "angle_deg": 167.2207055838519
+    },
+    {
+     "edge_midpoint_m": [
+      43.69266128540039,
+      6.195066452026367,
+      5.431988000869751
+     ],
+     "angle_deg": 167.21912822442383
+    },
+    {
+     "edge_midpoint_m": [
+      43.68792915344238,
+      6.1751110553741455,
+      5.429548978805542
+     ],
+     "angle_deg": 167.21895774178373
+    },
+    {
+     "edge_midpoint_m": [
+      43.68319511413574,
+      6.155155658721924,
+      5.427109718322754
+     ],
+     "angle_deg": 167.2145264400365
+    },
+    {
+     "edge_midpoint_m": [
+      43.6784610748291,
+      6.135200023651123,
+      5.424670457839966
+     ],
+     "angle_deg": 167.2093334248698
+    },
+    {
+     "edge_midpoint_m": [
+      43.642961502075195,
+      5.98693323135376,
+      5.406369209289551
+     ],
+     "angle_deg": 167.19721836182688
+    },
+    {
+     "edge_midpoint_m": [
+      43.57669448852539,
+      5.710355520248413,
+      5.37220573425293
+     ],
+     "angle_deg": 167.05800799114357
+    },
+    {
+     "edge_midpoint_m": [
+      43.510427474975586,
+      5.433777809143066,
+      5.338042259216309
+     ],
+     "angle_deg": 166.93343041724017
+    },
+    {
+     "edge_midpoint_m": [
+      43.444162368774414,
+      5.157199859619141,
+      5.303878545761108
+     ],
+     "angle_deg": 166.83554344033016
+    },
+    {
+     "edge_midpoint_m": [
+      43.37789535522461,
+      4.880622148513794,
+      5.269714832305908
+     ],
+     "angle_deg": 166.74652527988553
+    },
+    {
+     "edge_midpoint_m": [
+      43.306894302368164,
+      4.584288835525513,
+      5.233108997344971
+     ],
+     "angle_deg": 166.66869308133266
+    },
+    {
+     "edge_midpoint_m": [
+      43.23116111755371,
+      4.268199920654297,
+      5.194061040878296
+     ],
+     "angle_deg": 166.5785282468695
+    },
+    {
+     "edge_midpoint_m": [
+      43.15542984008789,
+      3.9521111249923706,
+      5.155013084411621
+     ],
+     "angle_deg": 166.5012696767438
+    },
+    {
+     "edge_midpoint_m": [
+      43.07969856262207,
+      3.636022210121155,
+      5.115964889526367
+     ],
+     "angle_deg": 166.43304664719065
+    },
+    {
+     "edge_midpoint_m": [
+      43.00396537780762,
+      3.319933295249939,
+      5.076916694641113
+     ],
+     "angle_deg": 166.37415039674093
+    },
+    {
+     "edge_midpoint_m": [
+      42.94006538391113,
+      3.05323326587677,
+      5.043975114822388
+     ],
+     "angle_deg": 166.31836390337617
+    },
+    {
+     "edge_midpoint_m": [
+      42.88799858093262,
+      2.835922122001648,
+      5.01714015007019
+     ],
+     "angle_deg": 166.283928933645
+    },
+    {
+     "edge_midpoint_m": [
+      42.488033294677734,
+      1.1665777564048767,
+      4.803856611251831
+     ],
+     "angle_deg": 166.26466305129514
+    },
+    {
+     "edge_midpoint_m": [
+      42.43123245239258,
+      0.9295111000537872,
+      4.761367082595825
+     ],
+     "angle_deg": 166.26376711533294
+    },
+    {
+     "edge_midpoint_m": [
+      42.21113395690918,
+      0.009977777488529682,
+      4.596719741821289
+     ],
+     "angle_deg": 166.2630133449935
+    }
+   ]
+  },
+  "vertical": {
+   "edges": 16536,
+   "edges_with_a_zero_area_face_excluded": 0,
+   "distribution_deg": {
+    "count": 16536,
+    "nonfinite": 0,
+    "min": 0.0,
+    "p0.1": 0.0,
+    "p1": 0.0,
+    "p5": 0.0,
+    "p50": 0.0005944052200307533,
+    "p95": 5.851127113346049,
+    "p99": 89.68085988757281,
+    "p99.9": 170.83208247297378,
+    "max": 171.01541142167218
+   },
+   "count_above_deg": {
+    "10": 614,
+    "20": 384,
+    "30": 266
+   },
+   "largest": [
+    {
+     "edge_midpoint_m": [
+      42.34079170227051,
+      0.0,
+      5.509195804595947
+     ],
+     "angle_deg": 171.01541142167218
+    },
+    {
+     "edge_midpoint_m": [
+      42.345069885253906,
+      0.0,
+      5.564370393753052
+     ],
+     "angle_deg": 171.01525159780297
+    },
+    {
+     "edge_midpoint_m": [
+      42.34364318847656,
+      0.0,
+      5.545979022979736
+     ],
+     "angle_deg": 171.01502002655513
+    },
+    {
+     "edge_midpoint_m": [
+      42.34221649169922,
+      0.0,
+      5.527587413787842
+     ],
+     "angle_deg": 171.01478831016078
+    },
+    {
+     "edge_midpoint_m": [
+      42.34649658203125,
+      0.0,
+      5.582761764526367
+     ],
+     "angle_deg": 171.01476999922622
+    },
+    {
+     "edge_midpoint_m": [
+      42.3579044342041,
+      0.0,
+      5.728394508361816
+     ],
+     "angle_deg": 171.01445636791513
+    },
+    {
+     "edge_midpoint_m": [
+      42.35077476501465,
+      0.0,
+      5.637436628341675
+     ],
+     "angle_deg": 171.0144407667163
+    },
+    {
+     "edge_midpoint_m": [
+      42.37216377258301,
+      0.0,
+      5.910309791564941
+     ],
+     "angle_deg": 171.0137469163056
+    },
+    {
+     "edge_midpoint_m": [
+      42.365034103393555,
+      0.0,
+      5.819352149963379
+     ],
+     "angle_deg": 171.01373859784903
+    },
+    {
+     "edge_midpoint_m": [
+      42.37929344177246,
+      0.0,
+      6.001267433166504
+     ],
+     "angle_deg": 171.01300546187392
+    },
+    {
+     "edge_midpoint_m": [
+      42.3841609954834,
+      0.0,
+      6.055842161178589
+     ],
+     "angle_deg": 170.94933018300154
+    },
+    {
+     "edge_midpoint_m": [
+      42.38936996459961,
+      0.0,
+      6.0922253131866455
+     ],
+     "angle_deg": 170.94928949454507
+    },
+    {
+     "edge_midpoint_m": [
+      42.38676643371582,
+      0.0,
+      6.074033737182617
+     ],
+     "angle_deg": 170.9487889616963
+    },
+    {
+     "edge_midpoint_m": [
+      42.3919734954834,
+      0.0,
+      6.110416889190674
+     ],
+     "angle_deg": 170.9484744417948
+    },
+    {
+     "edge_midpoint_m": [
+      42.39457893371582,
+      0.0,
+      6.128608465194702
+     ],
+     "angle_deg": 170.94792693110423
+    },
+    {
+     "edge_midpoint_m": [
+      43.67297172546387,
+      0.0,
+      11.93241262435913
+     ],
+     "angle_deg": 170.83369217049886
+    },
+    {
+     "edge_midpoint_m": [
+      43.66896057128906,
+      0.0,
+      11.914021015167236
+     ],
+     "angle_deg": 170.83234294826173
+    },
+    {
+     "edge_midpoint_m": [
+      43.66494941711426,
+      0.0,
+      11.895629405975342
+     ],
+     "angle_deg": 170.83185607856464
+    },
+    {
+     "edge_midpoint_m": [
+      43.67698097229004,
+      0.0,
+      11.950804233551025
+     ],
+     "angle_deg": 170.83110944344287
+    },
+    {
+     "edge_midpoint_m": [
+      43.660940170288086,
+      0.0,
+      11.877237796783447
+     ],
+     "angle_deg": 170.8310415899191
+    }
+   ]
+  }
+ },
+ "sensitivity_tessellation": {
+  "tess x0.5": {
+   "triangles": 32734,
+   "boundary_edges": 0,
+   "nonmanifold_edges": 0,
+   "q_of_min": 2.241794301226748e-06,
+   "q_of_p1": 0.009993531623707863,
+   "count_q_below_1e-3": 114,
+   "count_q_below_1e-2": 328,
+   "surfacecheck_locations": 125
+  },
+  "tess x1 (production)": {
+   "triangles": 73944,
+   "boundary_edges": 0,
+   "nonmanifold_edges": 0,
+   "q_of_min": 5.754666693019866e-06,
+   "q_of_p1": 0.015917497505401033,
+   "count_q_below_1e-3": 124,
+   "count_q_below_1e-2": 414,
+   "surfacecheck_locations": 465
+  },
+  "tess x2": {
+   "triangles": 192704,
+   "boundary_edges": 0,
+   "nonmanifold_edges": 0,
+   "q_of_min": 6.68776878785892e-07,
+   "q_of_p1": 0.016907310503479846,
+   "count_q_below_1e-3": 240,
+   "count_q_below_1e-2": 1216,
+   "surfacecheck_locations": 2646
+  }
+ },
+ "surfacecheck_record_locations": {
+  "fuselage_obj": {
+   "records": 858,
+   "x_min": 7.2,
+   "x_max": 29.8,
+   "in_constant_barrel_x_7.2_29.8": 858,
+   "z_within_5mm_of_belly_or_crown": 9
+  },
+  "union_obj": {
+   "records": 465,
+   "x_min": 7.27209,
+   "x_max": 29.0323,
+   "in_constant_barrel_x_7.2_29.8": 465,
+   "z_within_5mm_of_belly_or_crown": 2
+  }
+ },
+ "dimensions": {
+  "openvsp": {
+   "length_m": 44.5099983215332,
+   "max_width_m": 3.950000047683716,
+   "max_height_m": 4.140000104904175,
+   "wing_half_span_m": 16.290000915527344,
+   "horizontal_half_span_m": 6.224999904632568,
+   "fin_tip_minus_fuselage_top_m": 5.869999885559082,
+   "fin_tip_minus_fuselage_lowest_m": 10.009999990463257,
+   "wing_root_chord_y2.2_m": 6.099146495167528,
+   "wing_tip_chord_m": 1.6407853678414739,
+   "horizontal_root_chord_y1.475_m": 3.2364494755804856,
+   "horizontal_tip_chord_m": 1.2404628913428368,
+   "fuselage_bbox_z_extent_m_informational": 4.142935037612915,
+   "fuselage_bbox_zmax_m_informational": 6.092935085296631,
+   "volumes_m3": {
+    "fuselage": 476.3515713652858,
+    "wing": 21.313576293758068,
+    "horizontal": 2.922913380722956,
+    "vertical": 5.184428403708002
+   },
+   "areas_m2": {
+    "fuselage": 508.9772092796561,
+    "wing": 133.64343989562755,
+    "horizontal": 33.69999611482994,
+    "vertical": 54.86050580891146
+   }
+  },
+  "r3": {
+   "length_m": 44.5099983215332,
+   "max_width_m": 3.950000047683716,
+   "max_height_m": 4.140000104904175,
+   "wing_half_span_m": 16.290000915527344,
+   "horizontal_half_span_m": 6.224999904632568,
+   "fin_tip_minus_fuselage_top_m": 5.869999885559082,
+   "fin_tip_minus_fuselage_lowest_m": 10.009999990463257,
+   "wing_root_chord_y2.2_m": 6.099116316163997,
+   "wing_tip_chord_m": 1.6407853020595908,
+   "horizontal_root_chord_y1.475_m": 3.236448979522308,
+   "horizontal_tip_chord_m": 1.2404629030112133,
+   "fuselage_bbox_z_extent_m_informational": 4.182356119155884,
+   "fuselage_bbox_zmax_m_informational": 6.1323561668396,
+   "volumes_m3": {
+    "fuselage": 466.3133556455775,
+    "wing": 21.318902380912395,
+    "horizontal": 2.92341163994366,
+    "vertical": 5.1862230417030375
+   },
+   "areas_m2": {
+    "fuselage": 500.6513415144392,
+    "wing": 133.64887379310528,
+    "horizontal": 33.70206523742787,
+    "vertical": 54.867845284351134
+   }
+  },
+  "r6c": {
+   "length_m": 44.5099983215332,
+   "max_width_m": 3.950000047683716,
+   "max_height_m": 4.140000104904175,
+   "wing_half_span_m": 16.290000915527344,
+   "horizontal_half_span_m": 6.224999904632568,
+   "fin_tip_minus_fuselage_top_m": 5.869999885559082,
+   "fin_tip_minus_fuselage_lowest_m": 10.009999990463257,
+   "wing_root_chord_y2.2_m": 6.099116089608891,
+   "wing_tip_chord_m": 1.640785163747232,
+   "horizontal_root_chord_y1.475_m": 3.2364472439500247,
+   "horizontal_tip_chord_m": 1.240462638835261,
+   "fuselage_bbox_z_extent_m_informational": 4.182356119155884,
+   "fuselage_bbox_zmax_m_informational": 6.1323561668396,
+   "volumes_m3": {
+    "fuselage": 466.45714724513937,
+    "wing": 42.639201460270286,
+    "horizontal": 5.847282590500264,
+    "vertical": 5.186563584244469
+   },
+   "areas_m2": {
+    "fuselage": 500.5035515634073,
+    "wing": 259.4616488345797,
+    "horizontal": 65.41080518801543,
+    "vertical": 54.87130106702513
+   }
+  }
+ },
+ "symmetry": {
+  "vertices": 36974,
+  "vertex_mirror_max_m": 3.8526864476698015e-06,
+  "vertex_mirror_p99_m": 2.2774562239646315e-07,
+  "vertex_mirror_fraction_within_1e-6": 0.9977822253475415,
+  "surface_mirror": {
+   "samples": 517608,
+   "max_m": 4.0089401163444506e-05,
+   "p99_m": 2.173614946294515e-07,
+   "p50_m": 0.0,
+   "worst_xyz_m": [
+    23.1624,
+    1.7821,
+    3.1315
+   ],
+   "over_limit_samples": 480
+  },
+  "surface_symmetric_within_1e-6": false,
+  "half_mesh_triangles": 36982,
+  "full_mesh_triangles": 73944,
+  "half_area_times_2_minus_full_area_m2": 5.378360583563335e-07,
+  "half_min_y_m": -1.4381720259137865e-09
+ },
+ "junctions": {
+  "label_counts": {
+   "fuselage": 19964,
+   "wing": 34568,
+   "horizontal": 10084,
+   "vertical": 9328
+  },
+  "max_nearest_distance_m": 1.1904509087652552e-05,
+  "ambiguous_triangles_second_distance_below_1e-5": 0,
+  "pairs": {
+   "fuselage|wing": {
+    "edges": 596,
+    "loop_count": 2,
+    "all_closed": true,
+    "loops": [
+     {
+      "vertices": 298,
+      "all_degree_2": true,
+      "max_degree": 2,
+      "bbox_min": [
+       16.962,
+       1.576,
+       2.777
+      ],
+      "bbox_max": [
+       23.277,
+       1.909,
+       3.5
+      ]
+     },
+     {
+      "vertices": 298,
+      "all_degree_2": true,
+      "max_degree": 2,
+      "bbox_min": [
+       16.962,
+       -1.909,
+       2.777
+      ],
+      "bbox_max": [
+       23.277,
+       -1.576,
+       3.5
+      ]
+     }
+    ]
+   },
+   "fuselage|vertical": {
+    "edges": 260,
+    "loop_count": 1,
+    "all_closed": true,
+    "loops": [
+     {
+      "vertices": 260,
+      "all_degree_2": true,
+      "max_degree": 2,
+      "bbox_min": [
+       35.845,
+       -0.214,
+       5.892
+      ],
+      "bbox_max": [
+       42.371,
+       0.214,
+       6.091
+      ]
+     }
+    ]
+   },
+   "fuselage|horizontal": {
+    "edges": 440,
+    "loop_count": 2,
+    "all_closed": true,
+    "loops": [
+     {
+      "vertices": 220,
+      "all_degree_2": true,
+      "max_degree": 2,
+      "bbox_min": [
+       39.309,
+       -1.456,
+       4.674
+      ],
+      "bbox_max": [
+       42.45,
+       -1.008,
+       4.995
+      ]
+     },
+     {
+      "vertices": 220,
+      "all_degree_2": true,
+      "max_degree": 2,
+      "bbox_min": [
+       39.309,
+       1.008,
+       4.674
+      ],
+      "bbox_max": [
+       42.45,
+       1.456,
+       4.995
+      ]
+     }
+    ]
+   }
+  },
+  "bad_triangles_q_below_0.01": {
+   "total": 414,
+   "within_0.05m_of_junction": 290,
+   "within_0.20m_of_junction": 348
+  },
+  "worst_10_q": [
+   {
+    "q": 5.754666693019866e-06,
+    "centroid": [
+     36.262,
+     0.142,
+     6.083
+    ],
+    "dist_to_junction_m": 0.001712920057911689,
+    "label": "vertical"
+   },
+   {
+    "q": 5.754798923457728e-06,
+    "centroid": [
+     36.262,
+     -0.142,
+     6.083
+    ],
+    "dist_to_junction_m": 0.0017129209753195052,
+    "label": "vertical"
+   },
+   {
+    "q": 9.146130893519985e-06,
+    "centroid": [
+     37.372,
+     0.21,
+     6.071
+    ],
+    "dist_to_junction_m": 0.011008947826869555,
+    "label": "vertical"
+   },
+   {
+    "q": 9.146130893519985e-06,
+    "centroid": [
+     37.372,
+     -0.21,
+     6.071
+    ],
+    "dist_to_junction_m": 0.011008947826869555,
+    "label": "vertical"
+   },
+   {
+    "q": 4.275506068913615e-05,
+    "centroid": [
+     23.207,
+     2.081,
+     3.162
+    ],
+    "dist_to_junction_m": 0.2880247236323194,
+    "label": "wing"
+   },
+   {
+    "q": 4.275506068913615e-05,
+    "centroid": [
+     23.207,
+     -2.081,
+     3.162
+    ],
+    "dist_to_junction_m": 0.2880247236323194,
+    "label": "wing"
+   },
+   {
+    "q": 5.516475098056668e-05,
+    "centroid": [
+     17.463,
+     -1.638,
+     2.863
+    ],
+    "dist_to_junction_m": 0.039890856443372154,
+    "label": "fuselage"
+   },
+   {
+    "q": 5.516475098056668e-05,
+    "centroid": [
+     17.463,
+     1.638,
+     2.863
+    ],
+    "dist_to_junction_m": 0.039890856443372154,
+    "label": "fuselage"
+   },
+   {
+    "q": 5.5843528520268634e-05,
+    "centroid": [
+     40.183,
+     -0.143,
+     6.023
+    ],
+    "dist_to_junction_m": 0.010128015237438252,
+    "label": "fuselage"
+   },
+   {
+    "q": 5.584487288498379e-05,
+    "centroid": [
+     40.183,
+     0.143,
+     6.023
+    ],
+    "dist_to_junction_m": 0.010128016278599578,
+    "label": "fuselage"
+   }
+  ]
+ },
+ "dense_deviation": {
+  "fuselage": {
+   "reference": "r3_fuselage",
+   "limit_m": 0.025,
+   "openvsp_to_reference": {
+    "samples": 133504,
+    "max_m": 0.49172748553238194,
+    "p99_m": 0.45490776837126584,
+    "p50_m": 0.0019478913177842611,
+    "worst_xyz_m": [
+     41.4408,
+     -0.0626,
+     3.4087
+    ],
+    "over_limit_samples": 47034
+   },
+   "reference_to_openvsp": {
+    "samples": 326144,
+    "max_m": 0.4881861731134606,
+    "p99_m": 0.44760893064951296,
+    "p50_m": 0.0021528983317063797,
+    "worst_xyz_m": [
+     41.2766,
+     0.074,
+     3.8757
+    ],
+    "over_limit_samples": 121509
+   },
+   "dense_max_m": 0.49172748553238194,
+   "note": ""
+  },
+  "wing": {
+   "reference": "r6c_wing",
+   "limit_m": 0.01,
+   "openvsp_to_reference": {
+    "samples": 121744,
+    "max_m": 0.0016119352342726073,
+    "p99_m": 0.0006531710931338309,
+    "p50_m": 6.268574095275901e-05,
+    "worst_xyz_m": [
+     16.0478,
+     0.0,
+     3.0547
+    ],
+    "over_limit_samples": 0
+   },
+   "reference_to_openvsp": {
+    "samples": 1347892,
+    "max_m": 0.0017345562962577206,
+    "p99_m": 0.0009375405898021657,
+    "p50_m": 7.329301500456709e-05,
+    "worst_xyz_m": [
+     16.0298,
+     0.0,
+     2.9807
+    ],
+    "over_limit_samples": 0
+   },
+   "dense_max_m": 0.0017345562962577206,
+   "note": "openvsp samples exclude the flat root cap (y = 0 or fin root z = 5.5); reference samples are the y >= 0 half"
+  },
+  "horizontal": {
+   "reference": "r6c_horizontal",
+   "limit_m": 0.01,
+   "openvsp_to_reference": {
+    "samples": 46984,
+    "max_m": 0.001498826898663816,
+    "p99_m": 0.0009540597431489166,
+    "p50_m": 3.928389005190834e-05,
+    "worst_xyz_m": [
+     38.3832,
+     0.0399,
+     4.6143
+    ],
+    "over_limit_samples": 0
+   },
+   "reference_to_openvsp": {
+    "samples": 508340,
+    "max_m": 0.0015820443258421188,
+    "p99_m": 0.0010496661495301147,
+    "p50_m": 4.641700379488159e-05,
+    "worst_xyz_m": [
+     38.3547,
+     0.0,
+     4.6051
+    ],
+    "over_limit_samples": 0
+   },
+   "dense_max_m": 0.0015820443258421188,
+   "note": "openvsp samples exclude the flat root cap (y = 0 or fin root z = 5.5); reference samples are the y >= 0 half"
+  },
+  "vertical": {
+   "reference": "r6c_vertical",
+   "limit_m": 0.01,
+   "openvsp_to_reference": {
+    "samples": 74984,
+    "max_m": 0.003832514874141171,
+    "p99_m": 0.0015423531151326903,
+    "p50_m": 2.4908721856984942e-05,
+    "worst_xyz_m": [
+     35.2966,
+     0.0194,
+     5.5368
+    ],
+    "over_limit_samples": 0
+   },
+   "reference_to_openvsp": {
+    "samples": 821562,
+    "max_m": 0.00456981561460988,
+    "p99_m": 0.0022204681161764037,
+    "p50_m": 3.019178453497646e-05,
+    "worst_xyz_m": [
+     35.2608,
+     -0.0227,
+     5.5
+    ],
+    "over_limit_samples": 0
+   },
+   "dense_max_m": 0.00456981561460988,
+   "note": "openvsp samples exclude the flat root cap (y = 0 or fin root z = 5.5); reference samples are the y >= 0 half"
+  },
+  "union_vs_r3_union": {
+   "openvsp_to_r3": {
+    "samples": 517608,
+    "max_m": 0.49172748553238194,
+    "p99_m": 0.35392657519201703,
+    "p50_m": 8.130798156569084e-05,
+    "worst_xyz_m": [
+     41.4408,
+     -0.0626,
+     3.4087
+    ]
+   },
+   "r3_to_openvsp": {
+    "samples": 906654,
+    "max_m": 0.4881861731134606,
+    "p99_m": 0.3917957454637288,
+    "p50_m": 0.00012679916250741072,
+    "worst_xyz_m": [
+     41.2766,
+     0.074,
+     3.8757
+    ]
+   }
+  }
+ },
+ "wall_seconds_total": 678.8081522000002,
+ "meta": {
+  "worker": "sonnet-r7-openvsp",
+  "date": "2026-11-16",
+  "openvsp": "3.56.0 (Python API, venv interpreter, -I, script files; no GUI, no VSPAERO)",
+  "branch": "feat/a321-r7-fuselage",
+  "commits_made": 0,
+  "independence": "nothing under research/a321-quality/r7/measure and no R7 fuselage output read; fuselage rules (CHOICE) set after viewing R3 fuselage half-width/height summaries at ~25 stations",
+  "production_settings": {
+   "CorrectAirfoilthicknessFlag": 0,
+   "RotateAirfoilMatchDideralFlag": 0,
+   "fuselage_xsec_continuity": "C1",
+   "tess_scale": 1.0,
+   "sections": {
+    "wing": 18,
+    "horizontal": 9,
+    "vertical": 14,
+    "fuselage_xsecs": 29
+   }
+  },
+  "superseded_first_run": "first full run used OpenVSP default CorrectAirfoilthicknessFlag=1 (root +2.67 mm wing, +5.59 mm horizontal); discarded; every number in this file is flag 0",
+  "wall_times_s": {
+   "build_four_commands_17:20:42-17:21:53": 71,
+   "gate_union": 66.2,
+   "gate_components": [
+    28.5,
+    34.8,
+    22.1,
+    28.0
+   ],
+   "compare_script": 678.8,
+   "surfaceCheck_runs_9": "17:22:13-17:22:32",
+   "render": 14
+  },
+  "vsp3_sha256": {
+   "a321_openvsp_components.vsp3": "821677ab139c4c7dde34183067cbcdf845564f30ca7f110d05dfced37f2595ed",
+   "a321_openvsp_union.vsp3": "77429a685100a5b9777ff51a1d8a0601f7322d5ad582d8451cd860cf6be0d3d0",
+   "a321_openvsp_union_t0.5.vsp3": "dbfa518604314cd1b7263cebdc0fc1b0833019d97bea604212fc6f5ea152ddf3",
+   "a321_openvsp_union_t2.0.vsp3": "3415fdc041894ed7377fe86b19dd2b7ef9b29140a54b7330adbb03a1a478fb93"
+  },
+  "af_files": 41,
+  "verdict": {
+   "union": {
+    "G1": true,
+    "G2": true,
+    "G3_locator": 0,
+    "G3_meshlab": 0,
+    "G3_surfacecheck": 465,
+    "G3_pass": false,
+    "G5_quality_rows_failed": "8 of 9",
+    "valence_max": 64,
+    "overall_pass": false
+   },
+   "fuselage": {
+    "G3_surfacecheck": 858,
+    "valence_max": 64,
+    "G5_quality_rows_failed": "0 of 9"
+   },
+   "wing_horizontal_vertical": {
+    "G3_all_checkers": 0,
+    "G5_quality_rows_failed": {
+     "wing": "3 of 9",
+     "horizontal": "4 of 9",
+     "vertical": "6 of 9"
+    }
+   }
+  },
+  "not_done": [
+   "G4R fuselage fidelity",
+   "G6 feature-excluded smoothness and station kink",
+   "VSPAERO",
+   "junction loops by surfaceBooleanFeatures (label-based count instead, not like-for-like with R6-c)",
+   "full-span closed wing/horizontal components (+y halves with root caps used)",
+   "surfaceCheck cause analysis"
+  ],
+  "note_junction_counts_not_like_for_like": true
+ }
+}

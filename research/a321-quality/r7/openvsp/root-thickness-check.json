@@ -1,0 +1,114 @@
+{
+ "production_flag0": [
+  {
+   "component": "wing",
+   "station_m": 0.0,
+   "thickness_diff_mm": -0.09169168002509664,
+   "chord_extent_diff_mm": -0.2622678412862456
+  },
+  {
+   "component": "wing",
+   "station_m": 4.4588,
+   "thickness_diff_mm": -0.04445206325343065,
+   "chord_extent_diff_mm": -0.016561360439482087
+  },
+  {
+   "component": "wing",
+   "station_m": 10.8025,
+   "thickness_diff_mm": -0.022453065376293324,
+   "chord_extent_diff_mm": 0.0026116353595284636
+  },
+  {
+   "component": "horizontal",
+   "station_m": 0.0,
+   "thickness_diff_mm": -0.3195251132064314,
+   "chord_extent_diff_mm": -0.20729415173548205
+  },
+  {
+   "component": "horizontal",
+   "station_m": 1.285,
+   "thickness_diff_mm": -0.2525113718228056,
+   "chord_extent_diff_mm": 0.04881373970988534
+  },
+  {
+   "component": "horizontal",
+   "station_m": 3.162,
+   "thickness_diff_mm": -0.19402431200177261,
+   "chord_extent_diff_mm": -0.04794126942897492
+  },
+  {
+   "component": "vertical",
+   "station_m": 5.5,
+   "thickness_diff_mm": -0.20039975479896333,
+   "chord_extent_diff_mm": -0.4011353499464576
+  },
+  {
+   "component": "vertical",
+   "station_m": 6.502,
+   "thickness_diff_mm": -0.16932198939556553,
+   "chord_extent_diff_mm": -0.5001814304819163
+  },
+  {
+   "component": "vertical",
+   "station_m": 9.139,
+   "thickness_diff_mm": -0.0758185799492328,
+   "chord_extent_diff_mm": 0.19475625918374817
+  }
+ ],
+ "openvsp_default_flag1": [
+  {
+   "component": "wing",
+   "station_m": 0.0,
+   "thickness_diff_mm": 2.6691241488983053,
+   "chord_extent_diff_mm": -0.2622678412862456
+  },
+  {
+   "component": "wing",
+   "station_m": 4.4588,
+   "thickness_diff_mm": -0.04445206325343065,
+   "chord_extent_diff_mm": -0.016561360439482087
+  },
+  {
+   "component": "wing",
+   "station_m": 10.8025,
+   "thickness_diff_mm": -0.022453065376293324,
+   "chord_extent_diff_mm": 0.0026116353595284636
+  },
+  {
+   "component": "horizontal",
+   "station_m": 0.0,
+   "thickness_diff_mm": 5.5901854110693705,
+   "chord_extent_diff_mm": -0.20729415173548205
+  },
+  {
+   "component": "horizontal",
+   "station_m": 1.285,
+   "thickness_diff_mm": -0.2525113718228056,
+   "chord_extent_diff_mm": 0.04881373970988534
+  },
+  {
+   "component": "horizontal",
+   "station_m": 3.162,
+   "thickness_diff_mm": -0.19402431200177261,
+   "chord_extent_diff_mm": -0.04794126942897492
+  },
+  {
+   "component": "vertical",
+   "station_m": 5.5,
+   "thickness_diff_mm": -0.20039975479896333,
+   "chord_extent_diff_mm": -0.4011353499464576
+  },
+  {
+   "component": "vertical",
+   "station_m": 6.502,
+   "thickness_diff_mm": -0.16932198939556553,
+   "chord_extent_diff_mm": -0.5001814304819163
+  },
+  {
+   "component": "vertical",
+   "station_m": 9.139,
+   "thickness_diff_mm": -0.0758185799492328,
+   "chord_extent_diff_mm": 0.19475625918374817
+  }
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "C0": {
+  "barrel_half_width_min_m": 1.975,
+  "barrel_half_width_max_m": 1.975,
+  "x_monotone_along_u": true
+ },
+ "C1": {
+  "barrel_half_width_min_m": 1.975,
+  "barrel_half_width_max_m": 1.975,
+  "x_monotone_along_u": true
+ },
+ "C2": {
+  "barrel_half_width_min_m": 1.3365189652877882,
+  "barrel_half_width_max_m": 1.975,
+  "x_monotone_along_u": false
+ }
+}

@@ -1,0 +1,4 @@
+openvsp_fuselage triangles 19072 wall 28.5 s
+openvsp_wing triangles 17784 wall 34.8 s
+openvsp_horizontal triangles 7024 wall 22.1 s
+openvsp_vertical triangles 11024 wall 28.0 s
