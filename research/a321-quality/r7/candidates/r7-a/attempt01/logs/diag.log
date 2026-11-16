@@ -1,0 +1,2 @@
+Installed 4 packages in 5.86s
+{"G5_fail": {"total": 256, "in_closure_bands": 256, "elsewhere": 0}, "G5_without_bands": {"q_of_min": 0.17113695613374866, "min_angle_deg_min": 15.25590889451933, "aspect_max": 4.767095599156468, "aspect_p99": 3.4487826834160273}, "L6_lean": 0.0026140198757356034, "L6_ord": 0.0017162647015977806}

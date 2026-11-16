@@ -1,0 +1,143 @@
+{
+ "end_reached": true,
+ "fatal": false,
+ "nonzero_exit_marker": false,
+ "locations": 24,
+ "triangles": 11488,
+ "vertices": 5746,
+ "unconnected_parts": 1,
+ "zones": 1,
+ "quality_min": 0.00228227,
+ "closed": true,
+ "illegal_triangles": false,
+ "valid": true,
+ "obj_points_m": [
+  [
+   12.7561,
+   -1.00391,
+   2.23803
+  ],
+  [
+   14.2383,
+   -1.00391,
+   2.23803
+  ],
+  [
+   14.5348,
+   1.82127,
+   4.81948
+  ],
+  [
+   14.5348,
+   -1.80231,
+   4.86536
+  ],
+  [
+   17.2028,
+   -1.65382,
+   2.88846
+  ],
+  [
+   17.2028,
+   -0.96946,
+   5.8229
+  ],
+  [
+   17.4993,
+   -1.00391,
+   2.23803
+  ],
+  [
+   16.6564,
+   -0.961526,
+   2.21226
+  ],
+  [
+   17.7957,
+   -1.50982,
+   2.68649
+  ],
+  [
+   18.0921,
+   -1.00391,
+   2.23803
+  ],
+  [
+   18.9815,
+   -1.00391,
+   2.23803
+  ],
+  [
+   19.5744,
+   -1.00391,
+   2.23803
+  ],
+  [
+   19.5744,
+   -1.34337,
+   2.5026
+  ],
+  [
+   20.1673,
+   1.853,
+   4.73468
+  ],
+  [
+   20.1673,
+   -1.8421,
+   4.76497
+  ],
+  [
+   20.7602,
+   1.41282,
+   2.57354
+  ],
+  [
+   20.7602,
+   -0.96946,
+   5.8229
+  ],
+  [
+   21.353,
+   1.67906,
+   5.10873
+  ],
+  [
+   21.0566,
+   -1.00391,
+   2.23803
+  ],
+  [
+   21.353,
+   -1.67906,
+   5.10873
+  ],
+  [
+   21.9459,
+   -0.185845,
+   1.95947
+  ],
+  [
+   22.2424,
+   0.538342,
+   2.02906
+  ],
+  [
+   22.5388,
+   -1.00391,
+   2.23803
+  ],
+  [
+   23.1317,
+   -1.00391,
+   2.23803
+  ]
+ ],
+ "obj_point_count_matches": true,
+ "checker": "OpenFOAM v1912 surfaceCheck -checkSelfIntersection -outputThreshold 100000 (WSL, copy of the STL)",
+ "attempt_dir": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sc\\sc-B0a-quad-info-4Jprx7",
+ "copy_sha256_equals_original": true,
+ "original_unchanged": true,
+ "wrapper_wall_seconds_date_measured": 0.133724222,
+ "python_wall_seconds": 0.62
+}

@@ -1,0 +1,113 @@
+{
+ "stl": "fuselage.stl",
+ "limit_L6_m": 0.0025,
+ "L6_surface_to_analytic": {
+  "samples": 508704,
+  "max_m": 0.0026140198757356034,
+  "p99_m": 0.0011246531715558262,
+  "worst_xyz_m": [
+   11.7145,
+   0.0,
+   1.9542
+  ],
+  "samples_in_domain": 500224,
+  "samples_closure_bands": 3072,
+  "samples_caps": 5408,
+  "max_in_domain_m": 0.0026140198757356034,
+  "max_closure_bands_m": 0.0013721449894961895,
+  "max_caps_m": 0.0,
+  "over_limit_samples": 184
+ },
+ "L6_analytic_to_surface": {
+  "samples": 573184,
+  "max_m": 0.0026126833629408056,
+  "p99_m": 0.0010351785562185247,
+  "worst_xyz_m": [
+   11.7145,
+   0.0,
+   1.9516
+  ],
+  "x_samples": 1117,
+  "theta_samples": 512,
+  "over_limit_samples": 12
+ },
+ "L6_max_m": 0.0026140198757356034,
+ "L6_pass": false,
+ "L7": {
+  "top_view": {
+   "band_m": 0.0244,
+   "best_fit_centre_shift_m": 0.006846084606431131,
+   "samples": 5585,
+   "vs_upper_edge_max_m": 0.01382320244742452,
+   "vs_lower_edge_max_m": 0.013032642178419707,
+   "x_of_max_upper_m": 4.404580793547067,
+   "x_of_max_lower_m": 4.29,
+   "max_m": 0.01382320244742452,
+   "reported_not_gated_vs_drawn_centreline_max_m": 0.020669287053855623
+  },
+  "side_view": {
+   "band_m": 0.0445,
+   "crown": {
+    "samples": 5525,
+    "max_m": 0.010441068210781168,
+    "x_of_max_m": 1.3945504624884308,
+    "signed_at_max_m": 0.010441068210781168
+   },
+   "belly": {
+    "samples": 4677,
+    "max_m": 0.0028263419357821284,
+    "x_of_max_m": 39.07621479958833,
+    "signed_at_max_m": 0.0028263419357821284
+   },
+   "crown_bridge_reported_separately": {
+    "x_range_m": [
+     26.563,
+     27.162
+    ],
+    "max_deviation_to_straight_bridge_m": 1.5045984831374426e-05
+   },
+   "belly_bridge_reported_separately": {
+    "x_range_m": [
+     15.703,
+     24.782
+    ],
+    "max_deviation_to_straight_bridge_m": 0.0016323980421180107
+   },
+   "max_m": 0.010441068210781168
+  }
+ },
+ "L7_pass": true,
+ "info_vs_r3": {
+  "r7_to_r3": {
+   "samples": 508704,
+   "max_m": 0.189007782694394,
+   "p99_m": 0.07323317178282947,
+   "worst_xyz_m": [
+    23.2987,
+    0.948,
+    2.2031
+   ]
+  },
+  "r3_to_r7": {
+   "samples": 326144,
+   "max_m": 0.18885814266452045,
+   "p99_m": 0.0748719001593522,
+   "worst_xyz_m": [
+    23.2496,
+    -0.8578,
+    2.3693
+   ]
+  },
+  "dense_two_sided_max_m": 0.189007782694394,
+  "volume_r7_m3": 465.87542353733943,
+  "volume_r3_m3": 466.3133556455775,
+  "volume_relative_difference": -0.0009391369621651917,
+  "note": "information only (not gated for the R7 fuselage); the R6 limits were 25 mm and 1 % volume"
+ },
+ "wall_s": {
+  "L6a": 29.0,
+  "L6b": 23.9,
+  "L7": 4.8,
+  "total": 112.7
+ }
+}

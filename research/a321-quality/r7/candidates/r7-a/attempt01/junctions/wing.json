@@ -1,0 +1,120 @@
+{
+ "effectively_closed_after_endpoint_merge_1e-6": false,
+ "arc_endpoints": 4,
+ "open_arc_endpoint_gaps": [
+  {
+   "a_m": [
+    21.6947,
+    -1.86284,
+    3.33356
+   ],
+   "b_m": [
+    21.6947,
+    1.86284,
+    3.33356
+   ],
+   "gap_m": 3.72568
+  },
+  {
+   "a_m": [
+    21.6684,
+    1.86377,
+    3.33618
+   ],
+   "b_m": [
+    21.6947,
+    -1.86284,
+    3.33356
+   ],
+   "gap_m": 3.726703724003291
+  },
+  {
+   "a_m": [
+    21.6684,
+    -1.86377,
+    3.33618
+   ],
+   "b_m": [
+    21.6947,
+    1.86284,
+    3.33356
+   ],
+   "gap_m": 3.726703724003291
+  },
+  {
+   "a_m": [
+    21.6684,
+    1.86377,
+    3.33618
+   ],
+   "b_m": [
+    21.6684,
+    -1.86377,
+    3.33618
+   ],
+   "gap_m": 3.72754
+  }
+ ],
+ "edge_mesh_obj": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sbf\\sbf-r7-a-attempt01-wing-1X1Goe\\constant\\extendedFeatureEdgeMesh\\fuselage_other_intersection_edgeMesh.obj",
+ "loops": [
+  {
+   "vertices": 400,
+   "edges": 399,
+   "closed": false,
+   "min_surface_angle_deg": 45.579110269540855,
+   "p5_angle_deg": 46.876135878040266,
+   "centroid_m": [
+    19.88359800000001,
+    1.7704184750000003,
+    3.1420784250000002
+   ],
+   "bbox_min_m": [
+    16.9609,
+    1.57782,
+    2.77745
+   ],
+   "bbox_max_m": [
+    23.2773,
+    1.91045,
+    3.49979
+   ],
+   "worst_edge_midpoint_m": [
+    17.014850000000003,
+    1.73431,
+    3.033115
+   ]
+  },
+  {
+   "vertices": 402,
+   "edges": 401,
+   "closed": false,
+   "min_surface_angle_deg": 44.9878541587707,
+   "p5_angle_deg": 46.929352130319536,
+   "centroid_m": [
+    19.86999825870648,
+    -1.7692654228855709,
+    3.1395160696517417
+   ],
+   "bbox_min_m": [
+    16.9609,
+    -1.91045,
+    2.77745
+   ],
+   "bbox_max_m": [
+    23.2773,
+    -1.57782,
+    3.49979
+   ],
+   "worst_edge_midpoint_m": [
+    17.15265,
+    -1.692515,
+    2.9564
+   ]
+  }
+ ],
+ "loop_count": 2,
+ "all_closed": false,
+ "min_surface_angle_deg": 44.9878541587707,
+ "edges": 800,
+ "points_unique": 802
+}

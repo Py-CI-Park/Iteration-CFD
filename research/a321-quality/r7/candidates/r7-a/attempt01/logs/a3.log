@@ -1,0 +1,8 @@
+Installed 1 package in 2.73s
+{'item': 'overall length (m)', 'r6_m': 44.5099983215332, 'reference_printed_m': 44.51, 'delta_m': -1.6784667948854803e-06, 'within_band_0.1': True}
+{'item': 'wing half-span to tip, no sharklet (m)', 'r6_m': 16.290000915527344, 'reference_printed_m': 16.29, 'delta_m': 9.155273446026513e-07, 'within_band_0.1': True}
+{'item': 'wing span tip to tip without sharklets (m)', 'r6_m': 32.58000183105469, 'reference_printed_m': None, 'delta_m': None, 'within_band_0.1': None}
+{'item': 'horizontal tail span tip to tip (m)', 'r6_m': 12.449999809265137, 'reference_printed_m': 12.45, 'delta_m': -1.9073486257070726e-07, 'within_band_0.1': True}
+{'item': 'vertical tail tip above fuselage crown line at x=30 (m)', 'r6_m': 5.871605396270752, 'reference_printed_m': 5.87, 'delta_m': 0.0016053962707518465, 'within_band_0.1': True}
+{'item': 'fuselage max width (m)', 'r6_m': 3.950000047683716, 'reference_printed_m': 3.95, 'delta_m': 4.7683715642676816e-08, 'within_band_0.1': True}
+{'item': 'fuselage max height (m)', 'r6_m': 4.1825573444366455, 'reference_printed_m': 4.14, 'delta_m': 0.04255734443664583, 'within_band_0.1': True}

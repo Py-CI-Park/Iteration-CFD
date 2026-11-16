@@ -1,0 +1,1122 @@
+{
+ "curves": {
+  "raw_trace_sha256": "59e0026b6b8a6b875c376e961fb33b15b07457c34a5d584075d35b57d7c50109",
+  "L2_scales": {
+   "top_x": {
+    "reproduced": 7.948650753490043,
+    "locked": 7.948651,
+    "relative_diff": 3.101280422749232e-08
+   },
+   "top_y": {
+    "reproduced": 7.9557036734684345,
+    "locked": 7.955704,
+    "relative_diff": 4.104370466048464e-08
+   },
+   "side_x": {
+    "reproduced": 7.9458958771106145,
+    "locked": 7.945896,
+    "relative_diff": 1.546576821273965e-08
+   },
+   "side_z": {
+    "reproduced": 8.025724659374912,
+    "locked": 8.025725,
+    "relative_diff": 4.244165944476092e-08
+   }
+  },
+  "L2_ok": true,
+  "z_offset_m": 4.020000100135802,
+  "r7_measure_sha256": "6e1bf6d3bd7a21131a5d0aac420347de90d0448a6bb245c2d4a03e564f00df62",
+  "curves": {
+   "w": {
+    "n_samples": 5585,
+    "locked_knot_count": 64,
+    "populated_knot_count": 63,
+    "residual_max_m": 0.004624247783172386,
+    "locked_residual_max_m": 0.004624653408028423,
+    "residual_diff_m": 4.0562485603690135e-07,
+    "identical_to_r7_fit_lsq_max_abs_diff_m": 0.0,
+    "ok_1e-6": true,
+    "fc_iterations": [
+     {
+      "iteration": 0,
+      "replaced_intervals": [],
+      "unmatched_after": 0
+     }
+    ],
+    "fc_run_end_mismatch_trace_minus_spline": [],
+    "fc_jumps_at_replaced_run_ends": [],
+    "after_replacement": {
+     "extrema_relief_ge_floor": [
+      {
+       "x_m": 5.913618871698758,
+       "kind": "max",
+       "value": 3.9499422177119916,
+       "relief_m": 0.001411972859747479,
+       "matched_trace_extremum": true
+      }
+     ],
+     "unmatched": []
+    },
+    "literal_reading_information_only": {
+     "floor_m": 1e-06,
+     "fit_extrema": 7,
+     "replaced_intervals": [
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+     ],
+     "replaced_x_ranges_m": [
+      [
+       11.1458,
+       13.5855
+      ],
+      [
+       13.5855,
+       16.1178
+      ],
+      [
+       16.1178,
+       18.6501
+      ],
+      [
+       18.6501,
+       21.1823
+      ],
+      [
+       21.1823,
+       23.7146
+      ],
+      [
+       23.7146,
+       26.1421
+      ],
+      [
+       26.1421,
+       28.4159
+      ]
+     ],
+     "iterations": [
+      {
+       "iteration": 0,
+       "replaced_intervals": [
+        25,
+        28,
+        29
+       ],
+       "unmatched_after": 4
+      },
+      {
+       "iteration": 1,
+       "replaced_intervals": [
+        26,
+        27,
+        30,
+        31
+       ],
+       "unmatched_after": 1
+      }
+     ],
+     "jumps_at_run_ends_mm": [
+      {
+       "knot_x_m": 11.1458,
+       "jump_mm": 2.0453837290546062e-05
+      },
+      {
+       "knot_x_m": 28.4159,
+       "jump_mm": 0.0050231137604939136
+      }
+     ],
+     "max_abs_jump_mm": 0.0050231137604939136,
+     "unmatched_after": [
+      {
+       "x_m": 13.57661887169876,
+       "kind": "min",
+       "relief_m": 0.00034992748013840114,
+       "matched_trace_extremum": false,
+       "trace_has_subthreshold_extremum": true,
+       "trace_subthreshold_prominence_m": 0.00032085856529606716,
+       "trace_subthreshold_x_m": [
+        11.552016977912071
+       ]
+      }
+     ],
+     "note": "FC pieces interpolate the trace at the knots; where a replaced run meets a spline interval the curve jumps by this amount (not used)"
+    },
+    "extrema_check": {
+     "applied_fit_floor_m": 0.0005,
+     "trace_prominence_m": 0.0005,
+     "fit_extrema_count": 1,
+     "unmatched_fit_extrema": [],
+     "trace_extrema_count": 3,
+     "fc_replaced_intervals": []
+    },
+    "worker_overshoot_intervals_over_0.5mm": [
+     {
+      "x0_m": 0.013430088809307251,
+      "x1_m": 0.04303164986858814,
+      "overshoot_m": 0.0058821072509013805
+     },
+     {
+      "x0_m": 0.04303164986858814,
+      "x1_m": 0.09363519383211089,
+      "overshoot_m": 0.01438069796770547
+     },
+     {
+      "x0_m": 0.09363519383211089,
+      "x1_m": 0.16741952360900314,
+      "overshoot_m": 0.0037786686486731558
+     },
+     {
+      "x0_m": 0.16741952360900314,
+      "x1_m": 0.23646062745777316,
+      "overshoot_m": 0.003275113661118989
+     },
+     {
+      "x0_m": 0.23646062745777316,
+      "x1_m": 0.4059358450499108,
+      "overshoot_m": 0.006743417484350367
+     },
+     {
+      "x0_m": 0.4059358450499108,
+      "x1_m": 0.5645465747072731,
+      "overshoot_m": 0.006373949103811283
+     },
+     {
+      "x0_m": 0.5645465747072731,
+      "x1_m": 0.8387440088915354,
+      "overshoot_m": 0.009794448335302075
+     },
+     {
+      "x0_m": 0.8387440088915354,
+      "x1_m": 1.0992462023410658,
+      "overshoot_m": 0.008131005641613953
+     },
+     {
+      "x0_m": 1.0992462023410658,
+      "x1_m": 1.4118328530426933,
+      "overshoot_m": 0.0013595736474916187
+     },
+     {
+      "x0_m": 1.4118328530426933,
+      "x1_m": 1.7665898233079624,
+      "overshoot_m": 0.006067094275064022
+     },
+     {
+      "x0_m": 1.7665898233079624,
+      "x1_m": 2.1582502144326257,
+      "overshoot_m": 0.004930222773701143
+     },
+     {
+      "x0_m": 2.1582502144326257,
+      "x1_m": 2.5790539780381536,
+      "overshoot_m": 0.004729621588398736
+     }
+    ],
+    "worker_overshoot_reexamined": [
+     {
+      "x0_m": 0.013430088809307251,
+      "x1_m": 0.04303164986858814,
+      "overshoot_m": 0.0058821072509013805,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.04303164986858814,
+      "x1_m": 0.09363519383211089,
+      "overshoot_m": 0.01438069796770547,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.09363519383211089,
+      "x1_m": 0.16741952360900314,
+      "overshoot_m": 0.0037786686486731558,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.16741952360900314,
+      "x1_m": 0.23646062745777316,
+      "overshoot_m": 0.003275113661118989,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.23646062745777316,
+      "x1_m": 0.4059358450499108,
+      "overshoot_m": 0.006743417484350367,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.4059358450499108,
+      "x1_m": 0.5645465747072731,
+      "overshoot_m": 0.006373949103811283,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.5645465747072731,
+      "x1_m": 0.8387440088915354,
+      "overshoot_m": 0.009794448335302075,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.8387440088915354,
+      "x1_m": 1.0992462023410658,
+      "overshoot_m": 0.008131005641613953,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 1.0992462023410658,
+      "x1_m": 1.4118328530426933,
+      "overshoot_m": 0.0013595736474916187,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 1.4118328530426933,
+      "x1_m": 1.7665898233079624,
+      "overshoot_m": 0.006067094275064022,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 1.7665898233079624,
+      "x1_m": 2.1582502144326257,
+      "overshoot_m": 0.004930222773701143,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 2.1582502144326257,
+      "x1_m": 2.5790539780381536,
+      "overshoot_m": 0.004729621588398736,
+      "contains_unmatched_fit_extremum": false
+     }
+    ],
+    "fit_extrema_all": [
+     {
+      "x_m": 5.913694877694864,
+      "value": 3.9499422177195656,
+      "kind": "max",
+      "relief_m": 0.0014119728725221492,
+      "interval": 22,
+      "knot_interval_m": [
+       5.5448,
+       6.2309
+      ],
+      "matched_trace_extremum": true
+     }
+    ],
+    "trace_extrema": [
+     {
+      "x_m": 5.53522495859107,
+      "kind": "max",
+      "prominence_m": 3.5442517612167452
+     },
+     {
+      "x_m": 27.449448200013087,
+      "kind": "min",
+      "prominence_m": 0.0013260647476456278
+     },
+     {
+      "x_m": 29.55377546494617,
+      "kind": "max",
+      "prominence_m": 0.0013260647476456278
+     }
+    ]
+   },
+   "zc": {
+    "n_samples": 5525,
+    "locked_knot_count": 64,
+    "populated_knot_count": 64,
+    "residual_max_m": 0.009636215731883446,
+    "locked_residual_max_m": 0.009636093865988293,
+    "residual_diff_m": 1.2186589515295054e-07,
+    "identical_to_r7_fit_lsq_max_abs_diff_m": 0.0,
+    "ok_1e-6": true,
+    "fc_iterations": [
+     {
+      "iteration": 0,
+      "replaced_intervals": [
+       42,
+       43
+      ],
+      "unmatched_after": 0
+     }
+    ],
+    "fc_run_end_mismatch_trace_minus_spline": [
+     {
+      "knot_x_m": 30.919,
+      "trace_minus_spline_m": 0.00011944028117838457
+     },
+     {
+      "knot_x_m": 33.6004,
+      "trace_minus_spline_m": -0.0018682375111209737
+     }
+    ],
+    "fc_jumps_at_replaced_run_ends": [],
+    "after_replacement": {
+     "extrema_relief_ge_floor": [
+      {
+       "x_m": 35.87561887169876,
+       "kind": "max",
+       "value": 6.131098554307917,
+       "relief_m": 0.04283936018903045,
+       "matched_trace_extremum": true
+      }
+     ],
+     "unmatched": []
+    },
+    "literal_reading_information_only": {
+     "floor_m": 1e-06,
+     "fit_extrema": 17,
+     "replaced_intervals": [
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43
+     ],
+     "replaced_x_ranges_m": [
+      [
+       6.82,
+       7.4251
+      ],
+      [
+       7.4251,
+       9.3646
+      ],
+      [
+       9.3646,
+       11.3241
+      ],
+      [
+       11.3241,
+       13.2836
+      ],
+      [
+       13.2836,
+       15.2431
+      ],
+      [
+       15.2431,
+       17.2026
+      ],
+      [
+       17.2026,
+       19.162
+      ],
+      [
+       19.162,
+       21.1215
+      ],
+      [
+       21.1215,
+       23.081
+      ],
+      [
+       23.081,
+       25.0405
+      ],
+      [
+       25.0405,
+       27.0
+      ],
+      [
+       27.0,
+       28.9595
+      ],
+      [
+       28.9595,
+       30.919
+      ],
+      [
+       30.919,
+       32.8314
+      ],
+      [
+       32.8314,
+       33.6004
+      ]
+     ],
+     "iterations": [
+      {
+       "iteration": 0,
+       "replaced_intervals": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43
+       ],
+       "unmatched_after": 0
+      }
+     ],
+     "jumps_at_run_ends_mm": [
+      {
+       "knot_x_m": 6.82,
+       "jump_mm": 0.1273053507047095
+      },
+      {
+       "knot_x_m": 33.6004,
+       "jump_mm": -1.8682375111209737
+      }
+     ],
+     "max_abs_jump_mm": 1.8682375111209737,
+     "unmatched_after": [],
+     "note": "FC pieces interpolate the trace at the knots; where a replaced run meets a spline interval the curve jumps by this amount (not used)"
+    },
+    "extrema_check": {
+     "applied_fit_floor_m": 0.0005,
+     "trace_prominence_m": 0.0005,
+     "fit_extrema_count": 3,
+     "unmatched_fit_extrema": [
+      {
+       "x_m": 32.00079689632882,
+       "value": 6.088906446347518,
+       "kind": "max",
+       "relief_m": 0.0006472522780285317,
+       "interval": 42,
+       "knot_interval_m": [
+        30.919,
+        32.8314
+       ],
+       "matched_trace_extremum": false
+      },
+      {
+       "x_m": 33.15913787973359,
+       "value": 6.087317229189243,
+       "kind": "min",
+       "relief_m": 0.0015892171582745362,
+       "interval": 43,
+       "knot_interval_m": [
+        32.8314,
+        33.6004
+       ],
+       "matched_trace_extremum": false
+      }
+     ],
+     "trace_extrema_count": 1,
+     "fc_replaced_intervals": [
+      {
+       "interval": 42,
+       "x_m": [
+        30.919,
+        32.8314
+       ]
+      },
+      {
+       "interval": 43,
+       "x_m": [
+        32.8314,
+        33.6004
+       ]
+      }
+     ]
+    },
+    "worker_overshoot_intervals_over_0.5mm": [
+     {
+      "x0_m": 0.010006378691552945,
+      "x1_m": 0.03727384641917047,
+      "overshoot_m": 0.004483960089209926
+     },
+     {
+      "x0_m": 0.03727384641917047,
+      "x1_m": 0.08642246444960582,
+      "overshoot_m": 0.004762273872535694
+     },
+     {
+      "x0_m": 0.08642246444960582,
+      "x1_m": 0.16021940965774845,
+      "overshoot_m": 0.0053166675746258996
+     },
+     {
+      "x0_m": 0.16021940965774845,
+      "x1_m": 0.2597138234959422,
+      "overshoot_m": 0.001911724733965503
+     },
+     {
+      "x0_m": 0.2597138234959422,
+      "x1_m": 0.38470913502099435,
+      "overshoot_m": 0.001248860530815854
+     },
+     {
+      "x0_m": 0.38470913502099435,
+      "x1_m": 0.5307751254271379,
+      "overshoot_m": 0.000867017133154846
+     },
+     {
+      "x0_m": 0.5307751254271379,
+      "x1_m": 0.728165184135396,
+      "overshoot_m": 0.005246601176153831
+     },
+     {
+      "x0_m": 0.728165184135396,
+      "x1_m": 0.9551452347137671,
+      "overshoot_m": 0.0011066049913983633
+     },
+     {
+      "x0_m": 0.9551452347137671,
+      "x1_m": 1.2063837889054405,
+      "overshoot_m": 0.002970351789489456
+     },
+     {
+      "x0_m": 1.2063837889054405,
+      "x1_m": 1.3553113375353754,
+      "overshoot_m": 0.0019141621351934646
+     },
+     {
+      "x0_m": 1.3553113375353754,
+      "x1_m": 1.425406952983585,
+      "overshoot_m": 0.00751406828374801
+     },
+     {
+      "x0_m": 1.425406952983585,
+      "x1_m": 1.6414901716393626,
+      "overshoot_m": 0.0030692730526364898
+     }
+    ],
+    "worker_overshoot_reexamined": [
+     {
+      "x0_m": 0.010006378691552945,
+      "x1_m": 0.03727384641917047,
+      "overshoot_m": 0.004483960089209926,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.03727384641917047,
+      "x1_m": 0.08642246444960582,
+      "overshoot_m": 0.004762273872535694,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.08642246444960582,
+      "x1_m": 0.16021940965774845,
+      "overshoot_m": 0.0053166675746258996,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.16021940965774845,
+      "x1_m": 0.2597138234959422,
+      "overshoot_m": 0.001911724733965503,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.2597138234959422,
+      "x1_m": 0.38470913502099435,
+      "overshoot_m": 0.001248860530815854,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.38470913502099435,
+      "x1_m": 0.5307751254271379,
+      "overshoot_m": 0.000867017133154846,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.5307751254271379,
+      "x1_m": 0.728165184135396,
+      "overshoot_m": 0.005246601176153831,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.728165184135396,
+      "x1_m": 0.9551452347137671,
+      "overshoot_m": 0.0011066049913983633,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.9551452347137671,
+      "x1_m": 1.2063837889054405,
+      "overshoot_m": 0.002970351789489456,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 1.2063837889054405,
+      "x1_m": 1.3553113375353754,
+      "overshoot_m": 0.0019141621351934646,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 1.3553113375353754,
+      "x1_m": 1.425406952983585,
+      "overshoot_m": 0.00751406828374801,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 1.425406952983585,
+      "x1_m": 1.6414901716393626,
+      "overshoot_m": 0.0030692730526364898,
+      "contains_unmatched_fit_extremum": false
+     }
+    ],
+    "fit_extrema_all": [
+     {
+      "x_m": 32.00079689632882,
+      "value": 6.088906446347518,
+      "kind": "max",
+      "relief_m": 0.0006472522780285317,
+      "interval": 42,
+      "knot_interval_m": [
+       30.919,
+       32.8314
+      ],
+      "matched_trace_extremum": false
+     },
+     {
+      "x_m": 33.15913787973359,
+      "value": 6.087317229189243,
+      "kind": "min",
+      "relief_m": 0.0015892171582745362,
+      "interval": 43,
+      "knot_interval_m": [
+       32.8314,
+       33.6004
+      ],
+      "matched_trace_extremum": false
+     },
+     {
+      "x_m": 35.87534745907875,
+      "value": 6.13109855481493,
+      "kind": "max",
+      "relief_m": 0.043781325625686485,
+      "interval": 47,
+      "knot_interval_m": [
+       35.6544,
+       36.3781
+      ],
+      "matched_trace_extremum": true
+     }
+    ],
+    "trace_extrema": [
+     {
+      "x_m": 35.89,
+      "kind": "max",
+      "prominence_m": 0.8186813772805968
+     }
+    ]
+   },
+   "zb": {
+    "n_samples": 4677,
+    "locked_knot_count": 64,
+    "populated_knot_count": 59,
+    "residual_max_m": 0.002716693174239726,
+    "locked_residual_max_m": 0.002716681279761879,
+    "residual_diff_m": 1.189447784710751e-08,
+    "identical_to_r7_fit_lsq_max_abs_diff_m": 0.0,
+    "ok_1e-6": true,
+    "fc_iterations": [
+     {
+      "iteration": 0,
+      "replaced_intervals": [],
+      "unmatched_after": 0
+     }
+    ],
+    "fc_run_end_mismatch_trace_minus_spline": [],
+    "fc_jumps_at_replaced_run_ends": [],
+    "after_replacement": {
+     "extrema_relief_ge_floor": [
+      {
+       "x_m": 5.508618871698758,
+       "kind": "min",
+       "value": 1.9499884719554015,
+       "relief_m": 0.0012984877095212344,
+       "matched_trace_extremum": true
+      },
+      {
+       "x_m": 16.11161887169876,
+       "kind": "max",
+       "value": 1.952354424814706,
+       "relief_m": 0.0007821533826075644,
+       "matched_trace_extremum": true
+      },
+      {
+       "x_m": 24.99361887169876,
+       "kind": "min",
+       "value": 1.9486802210384593,
+       "relief_m": 0.0036742037762467206,
+       "matched_trace_extremum": true
+      }
+     ],
+     "unmatched": []
+    },
+    "literal_reading_information_only": {
+     "floor_m": 1e-06,
+     "fit_extrema": 5,
+     "replaced_intervals": [
+      20,
+      21,
+      22,
+      23,
+      24
+     ],
+     "replaced_x_ranges_m": [
+      [
+       3.6996,
+       4.3125
+      ],
+      [
+       4.3125,
+       4.8524
+      ],
+      [
+       4.8524,
+       6.2145
+      ],
+      [
+       6.2145,
+       7.8828
+      ],
+      [
+       7.8828,
+       9.5511
+      ]
+     ],
+     "iterations": [
+      {
+       "iteration": 0,
+       "replaced_intervals": [
+        23,
+        24
+       ],
+       "unmatched_after": 2
+      },
+      {
+       "iteration": 1,
+       "replaced_intervals": [
+        21,
+        22
+       ],
+       "unmatched_after": 1
+      },
+      {
+       "iteration": 2,
+       "replaced_intervals": [
+        20
+       ],
+       "unmatched_after": 0
+      }
+     ],
+     "jumps_at_run_ends_mm": [
+      {
+       "knot_x_m": 3.6996,
+       "jump_mm": -0.29299151157879955
+      },
+      {
+       "knot_x_m": 9.5511,
+       "jump_mm": -0.09236228329445595
+      }
+     ],
+     "max_abs_jump_mm": 0.29299151157879955,
+     "unmatched_after": [],
+     "note": "FC pieces interpolate the trace at the knots; where a replaced run meets a spline interval the curve jumps by this amount (not used)"
+    },
+    "extrema_check": {
+     "applied_fit_floor_m": 0.0005,
+     "trace_prominence_m": 0.0005,
+     "fit_extrema_count": 3,
+     "unmatched_fit_extrema": [],
+     "trace_extrema_count": 3,
+     "fc_replaced_intervals": []
+    },
+    "worker_overshoot_intervals_over_0.5mm": [
+     {
+      "x0_m": 0.001618871698758273,
+      "x1_m": 0.011000061970956298,
+      "overshoot_m": 0.0005702312788464781
+     },
+     {
+      "x0_m": 0.011000061970956298,
+      "x1_m": 0.027316540615904467,
+      "overshoot_m": 0.005298739007006059
+     },
+     {
+      "x0_m": 0.027316540615904467,
+      "x1_m": 0.0630773917908091,
+      "overshoot_m": 0.003702291850801398
+     },
+     {
+      "x0_m": 0.0630773917908091,
+      "x1_m": 0.11582674087900705,
+      "overshoot_m": 0.0013848199602910505
+     },
+     {
+      "x0_m": 0.11582674087900705,
+      "x1_m": 0.18475742823923558,
+      "overshoot_m": 0.0018731062508474672
+     },
+     {
+      "x0_m": 0.18475742823923558,
+      "x1_m": 0.27974436203786307,
+      "overshoot_m": 0.002390560434391009
+     },
+     {
+      "x0_m": 0.39170108024804956,
+      "x1_m": 0.5479005250179423,
+      "overshoot_m": 0.003612501803984536
+     },
+     {
+      "x0_m": 0.5479005250179423,
+      "x1_m": 0.743551577285369,
+      "overshoot_m": 0.0015726006840690587
+     },
+     {
+      "x0_m": 0.743551577285369,
+      "x1_m": 0.9912654897491969,
+      "overshoot_m": 0.0024635556729539765
+     },
+     {
+      "x0_m": 0.9912654897491969,
+      "x1_m": 1.2522264557884049,
+      "overshoot_m": 0.0030717108136730786
+     },
+     {
+      "x0_m": 1.2522264557884049,
+      "x1_m": 1.4840712630975503,
+      "overshoot_m": 0.0013359128090359995
+     },
+     {
+      "x0_m": 1.4840712630975503,
+      "x1_m": 1.741666337275291,
+      "overshoot_m": 0.001373461674685661
+     }
+    ],
+    "worker_overshoot_reexamined": [
+     {
+      "x0_m": 0.001618871698758273,
+      "x1_m": 0.011000061970956298,
+      "overshoot_m": 0.0005702312788464781,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.011000061970956298,
+      "x1_m": 0.027316540615904467,
+      "overshoot_m": 0.005298739007006059,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.027316540615904467,
+      "x1_m": 0.0630773917908091,
+      "overshoot_m": 0.003702291850801398,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.0630773917908091,
+      "x1_m": 0.11582674087900705,
+      "overshoot_m": 0.0013848199602910505,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.11582674087900705,
+      "x1_m": 0.18475742823923558,
+      "overshoot_m": 0.0018731062508474672,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.18475742823923558,
+      "x1_m": 0.27974436203786307,
+      "overshoot_m": 0.002390560434391009,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.39170108024804956,
+      "x1_m": 0.5479005250179423,
+      "overshoot_m": 0.003612501803984536,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.5479005250179423,
+      "x1_m": 0.743551577285369,
+      "overshoot_m": 0.0015726006840690587,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.743551577285369,
+      "x1_m": 0.9912654897491969,
+      "overshoot_m": 0.0024635556729539765,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 0.9912654897491969,
+      "x1_m": 1.2522264557884049,
+      "overshoot_m": 0.0030717108136730786,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 1.2522264557884049,
+      "x1_m": 1.4840712630975503,
+      "overshoot_m": 0.0013359128090359995,
+      "contains_unmatched_fit_extremum": false
+     },
+     {
+      "x0_m": 1.4840712630975503,
+      "x1_m": 1.741666337275291,
+      "overshoot_m": 0.001373461674685661,
+      "contains_unmatched_fit_extremum": false
+     }
+    ],
+    "fit_extrema_all": [
+     {
+      "x_m": 5.508311127634606,
+      "value": 1.9499884716207492,
+      "kind": "min",
+      "relief_m": 0.0012984880503064122,
+      "interval": 22,
+      "knot_interval_m": [
+       4.8524,
+       6.2145
+      ],
+      "matched_trace_extremum": true
+     },
+     {
+      "x_m": 16.111513273979114,
+      "value": 1.9523544248161522,
+      "kind": "max",
+      "relief_m": 0.0007821533894292187,
+      "interval": 28,
+      "knot_interval_m": [
+       14.5562,
+       16.1855
+      ],
+      "matched_trace_extremum": true
+     },
+     {
+      "x_m": 24.99362057097013,
+      "value": 1.948680221038459,
+      "kind": "min",
+      "relief_m": 0.003674203777693119,
+      "interval": 29,
+      "knot_interval_m": [
+       16.1855,
+       25.8274
+      ],
+      "matched_trace_extremum": true
+     }
+    ],
+    "trace_extrema": [
+     {
+      "x_m": 4.810263439093963,
+      "kind": "min",
+      "prominence_m": 0.0017738523061194833
+     },
+     {
+      "x_m": 15.702873350932636,
+      "kind": "max",
+      "prominence_m": 0.0017738523061194833
+     },
+     {
+      "x_m": 24.78245573856393,
+      "kind": "min",
+      "prominence_m": 1.3897175788065632
+     }
+    ]
+   }
+  },
+  "L3_ok": true,
+  "renormalisation": {
+   "w_fit_max_m": 3.949942217719566,
+   "w_fit_argmax_x_m": 5.9136948803593175,
+   "factor_w": 1.0000146286394203,
+   "height_fit_max_m": 4.139837800188292,
+   "height_fit_argmax_x_m": 24.89168308248756,
+   "factor_z": 1.0000391802335107,
+   "mid_z_m": 4.02,
+   "factors_ok": true
+  },
+  "rho_L1": 0.499988,
+  "after_renormalisation": {
+   "w_max_m": 3.9499999999999997,
+   "w_argmax_x_m": 5.9136948803593175,
+   "height_max_m": 4.140000000000001,
+   "height_argmax_x_m": 24.89168455405047
+  }
+ },
+ "rings": {
+  "base_stations": 280,
+  "final_stations": 280,
+  "forced": [
+   {
+    "forced_x_m": 5.9136948803593175,
+    "nearest_base_station_m": 5.918602845903043,
+    "distance_m": -0.00490796554372519,
+    "window_stations_m": [
+     5.454301277750044,
+     7.099366682049152
+    ],
+    "window_meridian_gap_ratio_max": 1.2184779152950336,
+    "max_station_shift_m": 0.00490796554372519
+   },
+   {
+    "forced_x_m": 24.89168455405047,
+    "nearest_base_station_m": 24.936534197515826,
+    "distance_m": -0.044849643465354916,
+    "window_stations_m": [
+     23.153906651670923,
+     26.71916174336073
+    ],
+    "window_meridian_gap_ratio_max": 1.051617231718697,
+    "max_station_shift_m": 0.044849643465354916
+   }
+  ],
+  "base_spacing": {
+   "n_rings": 280,
+   "x_first_m": 0.001,
+   "x_last_m": 44.509,
+   "dx_min_m": 0.00042576793746506724,
+   "dx_max_m": 0.2977998391762071,
+   "x_at_dx_min_m": 0.001,
+   "meridian_edge_min_m": 0.005496194911844505,
+   "meridian_edge_max_m": 0.29779986347471876,
+   "meridian_growth_ratio_max": 1.2193004794182896,
+   "meridian_growth_ratio_p99": 1.2182842392481776,
+   "meridian_growth_gt_1.25": 0,
+   "x_of_max_meridian_ratio_m": 31.008278976884974,
+   "dx_growth_ratio_max": 1.5975075236294674,
+   "dx_growth_note": "dx ratio is larger than the meridian ratio at the nose because the radius grows like sqrt(x); the 1.25 limit is applied to the meridian edge length"
+  },
+  "final_spacing": {
+   "n_rings": 280,
+   "x_first_m": 0.001,
+   "x_last_m": 44.509,
+   "dx_min_m": 0.00042576793746506724,
+   "dx_max_m": 0.30457953178074604,
+   "x_at_dx_min_m": 0.001,
+   "meridian_edge_min_m": 0.005496194911844505,
+   "meridian_edge_max_m": 0.3045795600284202,
+   "meridian_growth_ratio_max": 1.231381731899388,
+   "meridian_growth_ratio_p99": 1.2183073786086531,
+   "meridian_growth_gt_1.25": 0,
+   "x_of_max_meridian_ratio_m": 5.454301277750044,
+   "dx_growth_ratio_max": 1.5975075236294674,
+   "dx_growth_note": "dx ratio is larger than the meridian ratio at the nose because the radius grows like sqrt(x); the 1.25 limit is applied to the meridian edge length"
+  },
+  "rule": {
+   "n_points": 128,
+   "delta_long_m": 0.001,
+   "shape_factor": 3.0,
+   "d_max_m": 0.6,
+   "growth_gradient": 0.18
+  }
+ },
+ "closure": {
+  "scale": 0.03,
+  "band_m": 0.001
+ }
+}

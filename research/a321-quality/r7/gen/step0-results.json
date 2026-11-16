@@ -1,0 +1,159 @@
+{
+ "contract": "r7-geometry-contract-03a L9",
+ "frozen_parameters": {
+  "frozen_at": "2026-11-16T18:21:03+09:00",
+  "params": {
+   "crown_z_m": 6.09,
+   "belly_z_m": 1.9499999999999997,
+   "width_m": 3.95,
+   "height_m": 4.14,
+   "rho": 0.499988,
+   "n_points": 128,
+   "closure_band_m": 0.001,
+   "closure_end_ring_scale": 0.03,
+   "closure_scale_basis": "R3 ledger rings: station 0 / 1 and last-1 / last differ by 0.028-0.031 in half-size (measured, printed in the step-0 log)",
+   "cap": "r6_tess.round_cap(final_max=8, inner_radius=0.3) on the closure end ring, orient_cap against the grid",
+   "plateau_stations": "committed r7-measure.json stations (proposed_N128_delta1mm.stations_m): the first station >= 12.0 m and the following ones",
+   "b0a_length_m": 12.0,
+   "b0b_plateau_length_m": 10.0,
+   "b0b_taper_length_m": 3.0,
+   "tail_width_m": 0.405,
+   "tail_height_m": 0.391,
+   "tail_centre_z_m": 5.1125,
+   "tail_centre_basis": "R3 ledger tail ring z 4.9242..5.3007 -> centre 5.11245 (rounded to 5.1125)",
+   "taper": "crown, belly and width linear in x between the last plateau station and the tail ring; slope break at the joint is a declared C0 knot",
+   "taper_ring_spacing": "L4 rule: h = min(sqrt(8 delta/kappa), 3P/128, 0.6), |dh/dx| <= 0.18, marched from the joint; last gap shorter than h/2 absorbed",
+   "feature_edges_for_flip": "rings 0, 1, R-2, R-1 (closure end rings and band boundary rings) as closed polylines",
+   "tessellation": "r6_tess.lean_triangles over all rows, then r7_flip.flip_axis_parallel"
+  },
+  "contract": [
+   "r7-geometry-contract-03",
+   "r7-geometry-contract-03a L9"
+  ]
+ },
+ "positive_control": {
+  "stl": "r6-c attempt01 fuselage.stl",
+  "surfaceCheck_locations": 48,
+  "expected": 48,
+  "valid": true,
+  "wall_s": 8.759341379
+ },
+ "barrels": {
+  "B0a": {
+   "stl_sha256": "4653c2b7b1b7870e61b8d33221e305b9564fc799ceba11515cf4f229395ed34e",
+   "rings": 43,
+   "triangles": 11488,
+   "vertices": 5746,
+   "leaning_strips": 40,
+   "strips_total": 42,
+   "length_between_full_rings_m": 11.857819999999998,
+   "plateau_stations": 41,
+   "taper_stations": 0,
+   "flip": {
+    "rule": "contract 03 M5: 02d flip, quad-scope fold refusal + quality margin (new min Q_OF >= old min Q_OF)",
+    "axis_parallel_edges_found": 12,
+    "flipped": 0,
+    "refused": 12,
+    "axis_parallel_edges_after": 12,
+    "fold_margin_deg": 1.0,
+    "flips_failing_pair_scope_info_only": 0,
+    "limits_used": {
+     "Q_MIN": 0.001,
+     "ANGLE_MIN_DEG": 1.0,
+     "ASPECT_MAX": 100.0,
+     "GRADE_AREA_MAX": 30.0,
+     "VALENCE_MAX": 8
+    }
+   },
+   "closure": {
+    "watertight_manifold": true,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "connected_components": 1,
+    "euler_characteristic": 2,
+    "winding_consistent": true,
+    "outward_normals": true
+   },
+   "surfaceCheck_locations": 0,
+   "surfaceCheck_valid": true,
+   "surfaceCheck_wall_s": 0.137923508,
+   "locator_pairs": 0,
+   "locator_wall_s": 16.04617810000127,
+   "pymeshlab_selected_faces": 0,
+   "pymeshlab_wall_s": 0.28478739999991376,
+   "gate_wall_s": 22.102827599999728,
+   "quality_q_of_min": 0.002282274914544205,
+   "all_zero": true
+  },
+  "B0b": {
+   "stl_sha256": "925ff7b3e0d6622c4c1e6cff394085c10d3a174c62dd9ab03371e75dc2c6ca98",
+   "rings": 71,
+   "triangles": 18656,
+   "vertices": 9330,
+   "leaning_strips": 33,
+   "strips_total": 70,
+   "length_between_full_rings_m": 12.7827,
+   "plateau_stations": 34,
+   "taper_stations": 35,
+   "flip": {
+    "rule": "contract 03 M5: 02d flip, quad-scope fold refusal + quality margin (new min Q_OF >= old min Q_OF)",
+    "axis_parallel_edges_found": 16,
+    "flipped": 0,
+    "refused": 16,
+    "axis_parallel_edges_after": 16,
+    "fold_margin_deg": 1.0,
+    "flips_failing_pair_scope_info_only": 0,
+    "limits_used": {
+     "Q_MIN": 0.001,
+     "ANGLE_MIN_DEG": 1.0,
+     "ASPECT_MAX": 100.0,
+     "GRADE_AREA_MAX": 30.0,
+     "VALENCE_MAX": 8
+    }
+   },
+   "closure": {
+    "watertight_manifold": true,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "connected_components": 1,
+    "euler_characteristic": 2,
+    "winding_consistent": true,
+    "outward_normals": true
+   },
+   "surfaceCheck_locations": 0,
+   "surfaceCheck_valid": true,
+   "surfaceCheck_wall_s": 0.181367809,
+   "locator_pairs": 0,
+   "locator_wall_s": 15.18647939999937,
+   "pymeshlab_selected_faces": 0,
+   "pymeshlab_wall_s": 0.2965653999999631,
+   "gate_wall_s": 22.004994900000383,
+   "quality_q_of_min": 0.0022822749150838125,
+   "all_zero": true
+  }
+ },
+ "step0_pass": true,
+ "information_only": {
+  "sc-B0a-quad-info": {
+   "end_reached": true,
+   "fatal": false,
+   "nonzero_exit_marker": false,
+   "locations": 24,
+   "triangles": 11488,
+   "vertices": 5746,
+   "unconnected_parts": 1,
+   "zones": 1,
+   "quality_min": 0.00228227,
+   "closed": true,
+   "illegal_triangles": false,
+   "valid": true,
+   "obj_point_count_matches": true,
+   "checker": "OpenFOAM v1912 surfaceCheck -checkSelfIntersection -outputThreshold 100000 (WSL, copy of the STL)",
+   "attempt_dir": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sc\\sc-B0a-quad-info-4Jprx7",
+   "copy_sha256_equals_original": true,
+   "original_unchanged": true,
+   "wrapper_wall_seconds_date_measured": 0.133724222,
+   "python_wall_seconds": 0.62
+  }
+ }
+}

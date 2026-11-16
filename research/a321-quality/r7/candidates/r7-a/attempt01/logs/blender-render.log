@@ -1,0 +1,22 @@
+00:02.656  blend            | Read blend: "D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\r7-a.blend"
+D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\gen\blender_r7.py:176: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\gen\blender_r7.py:159: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  world.use_nodes = True
+00:03.390  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\ortho-top.png'
+00:03.828  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\ortho-side.png'
+00:04.125  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\ortho-front.png'
+00:04.672  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-nose-side.png'
+00:05.031  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-nose-top.png'
+00:05.484  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-tail-side.png'
+00:05.906  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-tail-top.png'
+00:06.359  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-wing-root-side.png'
+00:06.703  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-wing-root-top.png'
+00:07.484  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-wing-tip-side.png'
+00:07.969  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-wing-tip-top.png'
+00:08.594  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-tail-vertical-side.png'
+00:09.000  render           | Saved: 'D:\Chanil_Park\Project\Programming\Iteration-CFD-a321-preflight\research\a321-quality\r7\candidates\r7-a\attempt01\figures\wire-tail-vertical-top.png'
+RENDER_OK
+Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:37:04)
+
+Blender quit

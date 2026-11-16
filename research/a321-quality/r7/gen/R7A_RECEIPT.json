@@ -1,0 +1,301 @@
+{
+ "tag": "r7-a",
+ "attempt": "attempt01",
+ "contract": [
+  "r7-geometry-contract-03",
+  "r7-geometry-contract-03a"
+ ],
+ "date_local": "2026-11-16 19:11:53",
+ "note_two_phase_run": "attempt01/receipt.json is the first full pipeline run (build, Blender, gate, surfaceCheck, junctions, A3, dense G4R, evaluator, render; 2026-11-16 18:52:10-18:57:26). Afterwards r7_check.py was patched (A1 loop-end gap computed from the edge mesh), run_r7.py --only eval regenerated gate-table.json (receipt-partial-*.json), and r7_diag.py / r7_wing_gap.py were run. No geometry file changed after the first run: fuselage.stl SHA below equals the first receipt's.",
+ "fuselage_stl_equal_to_first_receipt": true,
+ "step0": {
+  "pass": true,
+  "positive_control_locations": 48,
+  "commands": [
+   "uv run --no-project r7_barrel.py --out-dir .worktmp/r7-gen/barrels-01",
+   "uv run --no-project r7_sc.py --name control-r6c-fuselage|B0a|B0b --stl <stl> --out step0/sc-*.json",
+   "uv run --no-project r6_gate.py --surface B0a|B0b=<stl> --checkers locator,meshlab --log-dir --out step0/gate-*.json (cwd r6/checks)",
+   "uv run --no-project r7_step0_summary.py --barrels barrels-01 --step0 step0 --out step0-results.json --extra sc-B0a-quad-info.json"
+  ],
+  "wall_times_s": {
+   "barrel_build_both_date_measured": "2026-11-16 18:20:26 -> 18:21:05",
+   "surfaceCheck_control": 8.759341379,
+   "surfaceCheck_B0a": 0.137923508,
+   "surfaceCheck_B0b": 0.181367809,
+   "r6_gate_B0a_B0b": [
+    22.102827599999728,
+    22.004994900000383
+   ],
+   "step0_checkers_total_date_measured": "18:23:03 -> 18:24:32"
+  },
+  "barrel_stl_sha256": {
+   "B0a": "4653c2b7b1b7870e61b8d33221e305b9564fc799ceba11515cf4f229395ed34e",
+   "B0b": "925ff7b3e0d6622c4c1e6cff394085c10d3a174c62dd9ab03371e75dc2c6ca98"
+  }
+ },
+ "attempt01_first_run_steps": [
+  {
+   "step": "prep",
+   "note": ".gitignore and R6-c copies",
+   "reused_sha_equal": {
+    "wing": true,
+    "horizontal": true,
+    "vertical": true
+   }
+  },
+  {
+   "step": "build_fuselage",
+   "start_local": "2026-11-16 18:52:10",
+   "end_local": "2026-11-16 18:52:58",
+   "wall_s": 48.07,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\gen\\r7_fuselage.py --out-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01",
+   "log": "logs\\build.log"
+  },
+  {
+   "step": "blender_build_export",
+   "start_local": "2026-11-16 18:52:58",
+   "end_local": "2026-11-16 18:53:07",
+   "wall_s": 8.5,
+   "returncode": 0,
+   "cmd": "D:\\Chanil_Park\\Project\\Programming\\Aircraft-Workbench\\.workstation\\tools\\blender-5.2.2-portable\\blender.exe -b --factory-startup --disable-autoexec --python D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\gen\\blender_r7.py --python-exit-code 1 -- --build --tag r7-a --npz-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01 --out-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-pref",
+   "log": "logs\\blender-build.log"
+  },
+  {
+   "step": "blender_verify_fresh_process",
+   "start_local": "2026-11-16 18:53:07",
+   "end_local": "2026-11-16 18:53:10",
+   "wall_s": 2.89,
+   "returncode": 0,
+   "cmd": "D:\\Chanil_Park\\Project\\Programming\\Aircraft-Workbench\\.workstation\\tools\\blender-5.2.2-portable\\blender.exe -b --factory-startup --disable-autoexec --python D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\gen\\blender_r7.py --python-exit-code 1 -- --verify --tag r7-a --npz-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01 --out-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-pre",
+   "log": "logs\\blender-verify.log"
+  },
+  {
+   "step": "reused_stl_after_blender",
+   "sha_equal_to_r6c": {
+    "wing": true,
+    "horizontal": true,
+    "vertical": true
+   }
+  },
+  {
+   "step": "r6_gate_fuselage",
+   "start_local": "2026-11-16 18:53:10",
+   "end_local": "2026-11-16 18:53:38",
+   "wall_s": 28.0,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\checks\\r6_gate.py --surface fuselage=D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\fuselage.stl --features D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\features-fuselage.json --stations D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\re",
+   "log": "logs\\gate-fuselage.log"
+  },
+  {
+   "step": "surfaceCheck_fuselage",
+   "start_local": "2026-11-16 18:53:38",
+   "end_local": "2026-11-16 18:53:40",
+   "wall_s": 2.8,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\gen\\r7_sc.py --name r7-a-attempt01-fuselage --stl D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\fuselage.stl --out D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\sc\\fuselage-surfacecheck.json",
+   "log": "logs\\surfacecheck.log"
+  },
+  {
+   "step": "surfaceBooleanFeatures_wing",
+   "wall_s": 4.92,
+   "sbf_dir": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sbf\\sbf-r7-a-attempt01-wing-1X1Goe",
+   "wall_date_s": "wall_seconds 3"
+  },
+  {
+   "step": "junction_analysis_wing",
+   "start_local": "2026-11-16 18:53:45",
+   "end_local": "2026-11-16 18:54:00",
+   "wall_s": 14.72,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\junction_analysis.py --sbf-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sbf\\sbf-r7-a-attempt01-wing-1X1Goe --fuselage D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\fuselage.stl --other D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candi",
+   "log": "logs\\junction-wing.log"
+  },
+  {
+   "step": "surfaceBooleanFeatures_horizontal",
+   "wall_s": 2.95,
+   "sbf_dir": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sbf\\sbf-r7-a-attempt01-horizontal-y6ATTI",
+   "wall_date_s": "wall_seconds 1"
+  },
+  {
+   "step": "junction_analysis_horizontal",
+   "start_local": "2026-11-16 18:54:03",
+   "end_local": "2026-11-16 18:54:17",
+   "wall_s": 14.38,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\junction_analysis.py --sbf-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sbf\\sbf-r7-a-attempt01-horizontal-y6ATTI --fuselage D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\fuselage.stl --other D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7",
+   "log": "logs\\junction-horizontal.log"
+  },
+  {
+   "step": "surfaceBooleanFeatures_vertical",
+   "wall_s": 2.83,
+   "sbf_dir": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sbf\\sbf-r7-a-attempt01-vertical-lTPHQL",
+   "wall_date_s": "wall_seconds 1"
+  },
+  {
+   "step": "junction_analysis_vertical",
+   "start_local": "2026-11-16 18:54:20",
+   "end_local": "2026-11-16 18:54:31",
+   "wall_s": 10.74,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\junction_analysis.py --sbf-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sbf\\sbf-r7-a-attempt01-vertical-lTPHQL --fuselage D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\fuselage.stl --other D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\c",
+   "log": "logs\\junction-vertical.log"
+  },
+  {
+   "step": "a3_reference",
+   "start_local": "2026-11-16 18:54:31",
+   "end_local": "2026-11-16 18:54:37",
+   "wall_s": 5.77,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\a3_reference.py --attempt D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01 --out D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\a3.json",
+   "log": "logs\\a3.log"
+  },
+  {
+   "step": "dense_G4R",
+   "start_local": "2026-11-16 18:54:37",
+   "end_local": "2026-11-16 18:56:52",
+   "wall_s": 135.61,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\gen\\r7_dense.py --attempt D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01 --out D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\dense\\dense.json",
+   "log": "logs\\dense.log"
+  },
+  {
+   "step": "r7_check",
+   "start_local": "2026-11-16 18:56:52",
+   "end_local": "2026-11-16 18:57:16",
+   "wall_s": 23.66,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\gen\\r7_check.py --attempt D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01 --out D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\gate-table.json",
+   "log": "logs\\check.log"
+  },
+  {
+   "step": "blender_render",
+   "start_local": "2026-11-16 18:57:16",
+   "end_local": "2026-11-16 18:57:26",
+   "wall_s": 9.55,
+   "returncode": 0,
+   "cmd": "D:\\Chanil_Park\\Project\\Programming\\Aircraft-Workbench\\.workstation\\tools\\blender-5.2.2-portable\\blender.exe -b --factory-startup --disable-autoexec --python D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\gen\\blender_r7.py --python-exit-code 1 -- --render --tag r7-a --npz-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01 --out-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-pre",
+   "log": "logs\\blender-render.log"
+  }
+ ],
+ "attempt01_commands": [
+  "uv run --no-project run_r7.py",
+  "uv run --no-project run_r7.py --only eval",
+  "uv run --no-project r7_diag.py --attempt <dir> --out diag/diag.json",
+  "uv run --no-project r7_wing_gap.py --attempt <dir> --out diag/wing-gap.json"
+ ],
+ "inputs_sha256_before_after_first_run": {
+  "unchanged": true,
+  "before": {
+   "research\\a321-quality\\r6\\plans\\r7-geometry-contract-03.json": "b1dcf1507f8d6ec2556f10d445e2553a82f9a1039b76de07acb9899dba197538",
+   "research\\a321-quality\\r6\\plans\\r7-geometry-contract-03a.json": "84b0059d512c05706ab50dae59d0227cce09f35ab9a469b969dee4f29574da86",
+   "research\\a321-quality\\r7\\measure\\r7-measure.json": "6e1bf6d3bd7a21131a5d0aac420347de90d0448a6bb245c2d4a03e564f00df62",
+   "research\\a321-quality\\r7\\measure\\trace-meta.json": "d059ef88e2b969e9254b35c77200a5c352e21225e280b90f41568621f05c6a65",
+   ".worktmp\\r7-trace\\raw-trace.json": "59e0026b6b8a6b875c376e961fb33b15b07457c34a5d584075d35b57d7c50109",
+   "research\\a321-integration\\artifacts\\shell-r3\\fuselage.stl": "9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80",
+   "research\\a321-integration\\evidence\\reconstruction-r3.json": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+   "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\wing.stl": "7577e3ad35c73ca6b86d2f8450e6fa56961fdb38542668333c62fea176f0c252",
+   "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\horizontal.stl": "21a5a1ee2e0a28c915c21f41d51dff20ae6e3d926d83479d7d6d1f359e4808a1",
+   "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\vertical.stl": "e6fe6f0f81e34b01c4e28052eda4ec8950ee1f2e57ad6d0d3712edb72a93c890",
+   "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\wing.npz": "e2ed1c6554025849dd6c0ec2dd7117f3f1bac393d6c1a847278adea71e6a9f7b",
+   "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\horizontal.npz": "07c2e6807a059f57e616408ba08551eb63b2293495b8dd25c9d1dc995c5dbd19",
+   "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\vertical.npz": "91732a6e07dcbf5c56d7c32ecbf86c798061642bf5dbfd8628161ee9f464d818"
+  }
+ },
+ "deliverables_sha256": {
+  "candidates/r7-a/attempt01/a3.json": "23e05460929bb75137ae74a77ba611e5d13951983c7856031a5f1dfb298d5104",
+  "candidates/r7-a/attempt01/dense/dense.json": "8374fa6e783479c61e8d48ede8e4d4b61aa414f3eebee5ae8e6002c37ee3d5b4",
+  "candidates/r7-a/attempt01/diag/diag.json": "6077e408c1179eab85b4e33ac255b7403a6de63205a44007ba03eade531e6da2",
+  "candidates/r7-a/attempt01/diag/wing-gap.json": "d4feddc21fad6dc1c88851a85611db0370b8180a9755f8b1af3ea78fa2a364c4",
+  "candidates/r7-a/attempt01/feature-manifest.json": "91e8e60755a8121f2a3a50a9ccfe739f7c3c4c68aae948a0123d89e0680f1f6e",
+  "candidates/r7-a/attempt01/features-fuselage.json": "e453bc9e6c80002e8bf7c0636c5c92da87fcf8ea6d88e2ff973add5f1ce6a7fd",
+  "candidates/r7-a/attempt01/figures/ortho-front.png": "a00cee80b3e2c8b9b8b6535c997893949e91fcc32e5990ed74ae7929de258cde",
+  "candidates/r7-a/attempt01/figures/ortho-side.png": "9ed4c77fe0922ae0975f0ac729e5eb1a96eb55de58a3225c5a47bb4a08eb1ed0",
+  "candidates/r7-a/attempt01/figures/ortho-top.png": "35b7f43d1c77b20eca8d8e87a7086e669253e3d78f33379e982d5879c0498c43",
+  "candidates/r7-a/attempt01/figures/wire-nose-side.png": "67ea7d2f41e91e7e12ee447ee3f380a3a4a52abdcc9636c666bdcc1e13596def",
+  "candidates/r7-a/attempt01/figures/wire-nose-top.png": "d158af79e7ecdf2bc446047e2a41f3e6a8ee4157e79cbca33ce8701a116c2465",
+  "candidates/r7-a/attempt01/figures/wire-tail-side.png": "713757fb0bcc25541ca0ca29f07eefbfeeb9cb298f6819b335ab5f50c771278e",
+  "candidates/r7-a/attempt01/figures/wire-tail-top.png": "52a12d439484438880897ccf94ccdd5a22caa977069e8a9c027d478f76140533",
+  "candidates/r7-a/attempt01/figures/wire-tail-vertical-side.png": "d8db21351d46d9c777c139903ee4c6c523dc9767faadc4869fe232a41eb308cb",
+  "candidates/r7-a/attempt01/figures/wire-tail-vertical-top.png": "f036eaf29a78bf97ec01dfdda2ff6ca9b7cfb16faf3faaadc0511b55cf4ecf94",
+  "candidates/r7-a/attempt01/figures/wire-wing-root-side.png": "352347c198a2b0f8cb4dd544c5fb7966bcc3531ddeb27ee2206ca2af56740723",
+  "candidates/r7-a/attempt01/figures/wire-wing-root-top.png": "cf97719a059d4b466244de1d99316e16b18f4ffd548eec4287c16073dcc5c4af",
+  "candidates/r7-a/attempt01/figures/wire-wing-tip-side.png": "2f136319c18bb34548c8e64dbe0cca68f10ddd4f0ed6d6637a96d49d4d9b391e",
+  "candidates/r7-a/attempt01/figures/wire-wing-tip-top.png": "5d41b753d1f80bb54ad2f5b15483cbdd7eb9ca00d998c5e37aa7a23308cf21f4",
+  "candidates/r7-a/attempt01/fuselage.npz": "085a6dcad8060012f8457f01b96f46f0caa7209adc82975a3cba54feeaa9412c",
+  "candidates/r7-a/attempt01/fuselage.stl": "d0ecd25f74442f53c3e6ca640dbc4ea1399b3266a7fb3dbd146c54a668a21fc5",
+  "candidates/r7-a/attempt01/g7-readback.json": "5a2bd70371955a0d18607885889f955efedbd65712921ca13354f5e67811868c",
+  "candidates/r7-a/attempt01/gate/fuselage-report.json": "d6ad6aca12e301363034756ac45a611061f8b7a770d3a922e84e40ed1439686e",
+  "candidates/r7-a/attempt01/gate/logs-fuselage/fuselage-full-report.json": "9b1a606f740f07d201c8ac149d00e95bc704a417d22c7c4f6737b294dd310ef6",
+  "candidates/r7-a/attempt01/gate/logs-fuselage/fuselage-meshlab.json": "1e2725b4ffe60515a474aeb7057fa8b26c18cd122e6c298c96ebc85569aff4b8",
+  "candidates/r7-a/attempt01/gate-table.json": "447ef26407f1a3af251a3e6d8d8656ba4aa7f1fc449f671add19a2fc81306379",
+  "candidates/r7-a/attempt01/horizontal.npz": "07c2e6807a059f57e616408ba08551eb63b2293495b8dd25c9d1dc995c5dbd19",
+  "candidates/r7-a/attempt01/horizontal.stl": "21a5a1ee2e0a28c915c21f41d51dff20ae6e3d926d83479d7d6d1f359e4808a1",
+  "candidates/r7-a/attempt01/junctions/horizontal-edgeMesh.obj": "7b6379bbf57de93562b8ea22a5bbbff26bba0d8027a2a106c080b0826d48292b",
+  "candidates/r7-a/attempt01/junctions/horizontal-sbf.log": "bf8eeba9b4609d0df8bd93025fa403cc9482a4aee2efdb816a2d047c9b07d980",
+  "candidates/r7-a/attempt01/junctions/horizontal.json": "a4d7aeca984c7c099fa0f5a08237d300b04fd16bbd2345249a27b195b2b484a4",
+  "candidates/r7-a/attempt01/junctions/vertical-edgeMesh.obj": "ff6c8bc59904e64a79f322290ad6986e3a67d45813c0bc9a8e2c22d1ba647652",
+  "candidates/r7-a/attempt01/junctions/vertical-sbf.log": "61101861f43dd700f36797063cf63c583a4f07e8294d6b553541ee1a90dc8626",
+  "candidates/r7-a/attempt01/junctions/vertical.json": "edf06d22f2f67a156440e3015dd3c6c0eb885f75230fdf1d91021f2b477e4a75",
+  "candidates/r7-a/attempt01/junctions/wing-edgeMesh.obj": "8f9f4a315e5e208e651e0383b2d7957ada20c77d3a00b1494879b02982095953",
+  "candidates/r7-a/attempt01/junctions/wing-sbf.log": "ca3e7a887d73005935c9dac6d1b6e1bbb4fcb8fe00c08f072eae94978eb52dcb",
+  "candidates/r7-a/attempt01/junctions/wing.json": "fc5b8277f2180da6536f94185d274da5b8743c7cf3037532927a43b5309d202a",
+  "candidates/r7-a/attempt01/logs/a3.log": "cc60682b5d7bb94185547d6ff9f0ff776c9b98b5de1ff4db5052849d2be17551",
+  "candidates/r7-a/attempt01/logs/blender-build.log": "d615a59aea9ffb0252ef31ada91670aa7368395717d6d58269107933b909a9b5",
+  "candidates/r7-a/attempt01/logs/blender-render.log": "d57cdeee816df97ad643d3eab1ea5b8b589eda1986573bfa86e782a9c4e735b5",
+  "candidates/r7-a/attempt01/logs/blender-verify.log": "3ef2f22a2ab70e6681a5f3cf14efb10ddfb70a01016458c78fab8b8cd018afd8",
+  "candidates/r7-a/attempt01/logs/build.log": "ff2281ee2c539b5a19f3f1024d3df9070cc0bf6cc947d4f6d73f8e1bc6966b8d",
+  "candidates/r7-a/attempt01/logs/check.log": "5147c137460642ec6fe72567a403e20a8d8d0a0759a1a07d2ec7542548ac6b38",
+  "candidates/r7-a/attempt01/logs/dense.log": "5069773dead44da9c395d5c287d4ef85f91d01bb30a7157c90f4c95d2647330a",
+  "candidates/r7-a/attempt01/logs/diag.log": "477a4cc9a97ba4ee5dde2903905adf59ebf15889c2b7b9637b133f8108d29c5d",
+  "candidates/r7-a/attempt01/logs/gate-fuselage.log": "898eca1f3da2b4deb0230fc8ca6cc298590c57f72e1eb5ff244e090c55e146c4",
+  "candidates/r7-a/attempt01/logs/junction-horizontal.log": "a8c64395ca5eda3d1c9307133573655f8e52bfc0089c33a308a177bba2bf5d29",
+  "candidates/r7-a/attempt01/logs/junction-vertical.log": "5a8819436f0b0f0b59981d97c1fea98434cc91663712fb0d07e94b61a126215b",
+  "candidates/r7-a/attempt01/logs/junction-wing.log": "b749b27c7b6f3d2056ceed75b04f759b5cf30a45e9fd281a0016924fd8e1f418",
+  "candidates/r7-a/attempt01/logs/surfacecheck.log": "6cb138936cc2e6edf250bad4913b5ef225d63fe08f5e9e762a171921ab05a0d8",
+  "candidates/r7-a/attempt01/r7-a.blend": "0725f134605cfb38783182931c852498b7ef0387917e4bcaddc741c11cb6b02d",
+  "candidates/r7-a/attempt01/sc/fuselage-result.log": "65a63b27a1c1892020dd0678b3a29ccd81ce071305671cdcd5eaacb29296de41",
+  "candidates/r7-a/attempt01/sc/fuselage-surfacecheck.json": "84c5985b398c642c9d70e30f29d6229ef40fcd5f9f377c9d9947e90f007d0de8",
+  "candidates/r7-a/attempt01/stations-fuselage.json": "7fd5e669b34a15940b7aa17fe3f3a8f58669894731be80c06650c838151f1b03",
+  "candidates/r7-a/attempt01/vertical.npz": "91732a6e07dcbf5c56d7c32ecbf86c798061642bf5dbfd8628161ee9f464d818",
+  "candidates/r7-a/attempt01/vertical.stl": "e6fe6f0f81e34b01c4e28052eda4ec8950ee1f2e57ad6d0d3712edb72a93c890",
+  "candidates/r7-a/attempt01/wing.npz": "e2ed1c6554025849dd6c0ec2dd7117f3f1bac393d6c1a847278adea71e6a9f7b",
+  "candidates/r7-a/attempt01/wing.stl": "7577e3ad35c73ca6b86d2f8450e6fa56961fdb38542668333c62fea176f0c252",
+  "gen/R7A_REPORT_KO.md": "d7fcfa0747df5474f6f09604ccde81625f58e445cb44cd0fb673655ed0d4fd9f",
+  "gen/R7A_GATE_TABLE.json": "a3853976c809e75523536a23e82830c296ca9acbd6f22557938063a8de8cf173",
+  "gen/step0-results.json": "45305fb5cc523d769bed637d9a33db2682c3c45862a52c275b5249de020d7903",
+  "gen/r7a-curves-rings-record.json": "b60cdc3f2a1a5ef4fb4c926e5b831572f9e870ba25056d708bf04b48ca09e0fc",
+  "gen/step0-logs/barrel-manifest.json": "c09dd6c0d7a99a2c38a9fe0d14a7c9c80afcf603279a40b5e9f17249e1d7edd4",
+  "gen/step0-logs/barrel-params.json": "e4cda83d866751ac172c6723590a610506bfe7f6a95ccb013e8654eeb8f5e914",
+  "gen/step0-logs/gate-B0a.json": "c7768decdc525d54eb4e789ec36dc7e19541accb826a7da525f5a0f618617f08",
+  "gen/step0-logs/gate-B0b.json": "e46acf2fe539f8311ee2124cfe95c481c7d8b3bbdbe750c90fbf88b8b9523891",
+  "gen/step0-logs/sc-B0a-quad-info.json": "f5a53d5285cdc84685adc015632c2c35da5f738a55993394b248e79bb9d79c56",
+  "gen/step0-logs/sc-B0a.json": "4160879906932715407307001649ab5519184f50b3f47c567a83e4d64b2e6846",
+  "gen/step0-logs/sc-B0b.json": "9b80350495a05e60fff77a615084301c3847234bdda89d5c1d3967b659efcf8c",
+  "gen/step0-logs/sc-control.json": "9d21146fab73ddf0ee2d31da8358ab39eac05cf782c341a1925343eb4772129d",
+  "gen/step0-logs/surfacecheck-B0a-quad-info.log": "a82651ad49062d052004e4d1e096fdb9d84ebba4c3d64bc4fc2a1902132c6933",
+  "gen/step0-logs/surfacecheck-B0a.log": "eab84f4cd1328e8d2887666cdc26001e98a21b92b2eb7a849fcdb5d7970906f0",
+  "gen/step0-logs/surfacecheck-B0b.log": "b1443463ae31ebe0f9502693ccee067e2b191665cab054ec96bcdbedf52f3375",
+  "gen/step0-logs/surfacecheck-control.log": "61d0b6f5a9a2c6a66a8d4e74f384d95eb4daaf75c349e28616231cbc5042e948"
+ },
+ "r7_gen_sources_sha256": {
+  "blender_r7.py": "3b6c6b8969303956d99b8cc6d0c4aa8f27298c5f8ce950fd9ebaaa2bf3165557",
+  "r7_barrel.py": "b7d9df01d2cc1133c3569c537b9e80958090f80ee3a226f19f3d99c27fe92316",
+  "r7_barrel_quad.py": "9b65e641fda005832e4e1da7fd17098c3d76758e559f92e196b5b03bd01c7f7e",
+  "r7_check.py": "351eacf1e0b4d8dc2f8baf3d9cf6ff586a3bf31be2d74adabea4d8ee50bb80a2",
+  "r7_common.py": "e36891434ab8587f9d69573333e2c58d136e6556063ba7e11c0f3de7a05c33e6",
+  "r7_curves.py": "b9608380a608636399eb6d47a077f379ca2830adc55a2825b917c837a0179598",
+  "r7_dense.py": "43908ea6bab599c822e973a89dcdd6c94473348b03e844f398727dce2212e956",
+  "r7_diag.py": "81cbdd30e85c79fbbdc7b5fdf49e5da81e0cad3df5a817150114b8f412c2f24e",
+  "r7_final_receipt.py": "c7cf53c9b4be9a61611a4af85638e054027ca526a170acde9dd116b916bc0759",
+  "r7_flip.py": "15a8a9f8e070b813172b6d8ba4a87fdbbe0bcd6e23fe0d28ce67b68c28d7fc1c",
+  "r7_fuselage.py": "135bdc3be46a0e89c67ec947c7fa4c26ff4ad5854b9e0a61b3efd17ec8dcc2b9",
+  "r7_sc.py": "8e524ceb65d14419355cefc5579a5857d58da1267887b93f6b3cd38540aa405f",
+  "r7_step0_summary.py": "e3aea1d68ed6dc96bec668ca5809377e1ae9d651e1ac26a81ade367d4d04daf8",
+  "r7_surface.py": "be8106de9fdffa310ef7449ac9939ea2cff71c07219ac26bdc4299bf69dd3ac8",
+  "r7_wing_gap.py": "e689b5110809c907ab8681bb9e7c5bf9c05e005f732c4a6ce644582b244e9216",
+  "run_junction_r7.sh": "a67415bf5f3708171349d52ab6676dd9b73f4fd958910c56f23571191270fe94",
+  "run_r7.py": "17abbfe5b3f736a03b5af56d9dee1170df84022fd7ffba9498723a3e04e80e50",
+  "run_surfacecheck_r7.sh": "a545c1ca26ceae9a85d606d97fc0e7b13aaa85663bea04a5f718339bdb473997"
+ }
+}

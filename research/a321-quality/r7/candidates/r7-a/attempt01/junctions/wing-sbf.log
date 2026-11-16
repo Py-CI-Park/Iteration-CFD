@@ -1,0 +1,69 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:                                        |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : OPENFOAM=1912 patch=200626
+Arch   : "LSB;label=32;scalar=64"
+Exec   : surfaceBooleanFeatures intersection fuselage.stl other.stl
+Date   : Nov 16 2026
+Time   : 18:53:42
+Host   : WORKSTATION
+PID    : 2973
+I/O    : uncollated
+Case   : /mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Reading surface fuselage.stl
+fuselage.stl statistics:
+Triangles    : 72672 in 1 region(s)
+Vertices     : 36338
+Bounding Box : (0 -1.975 1.9486) (44.51 1.975 6.13116)
+
+Reading surface other.stl
+other.stl statistics:
+Triangles    : 385112 in 1 region(s)
+Vertices     : 192558
+Bounding Box : (16.0279 -16.29 2.60063) (26.1388 16.29 4.57029)
+
+Determining intersections of surf1 edges with surf2 faces
+Determining intersections of surf2 edges with surf1 faces
+points      : 802
+edges       : 800
+boundingBox : (16.9609 -1.91045 2.77745) (23.2773 1.91045 3.49979)
+point classification :
+    convex feature points          :        0
+    concave feature points         :        0
+    mixed feature points           :        0
+    other (non-feature) points     :      802
+edge classification :
+    external (convex angle) edges  :      800
+    internal (concave angle) edges :        0
+    flat region edges              :        0
+    open edges                     :        0
+    multiply connected edges       :        0
+
+Writing extendedEdgeMesh components to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection"
+Writing 0 convex feature points to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_convexFeaturePts.obj"
+Writing 0 concave feature points to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_concaveFeaturePts.obj"
+Writing 0 mixed feature points to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_mixedFeaturePts.obj"
+Writing 0 mixed feature point structure to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_mixedFeaturePtsStructure.obj"
+Writing 800 external edges to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_externalEdges.obj"
+Writing 0 internal edges to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_internalEdges.obj"
+Writing 0 flat edges to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_flatEdges.obj"
+Writing 0 open edges to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_openEdges.obj"
+Writing 0 multiple edges to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_multipleEdges.obj"
+Writing 0 region edges to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_regionEdges.obj"
+Writing 800 edge directions to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/extendedFeatureEdgeMesh/fuselage_other_intersection_edgeDirections.obj"
+
+Writing featureEdgeMesh to "/mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/.worktmp/r7-gen/sbf/sbf-r7-a-attempt01-wing-1X1Goe/constant/triSurface/fuselage_other_intersection.eMesh"
+End
+

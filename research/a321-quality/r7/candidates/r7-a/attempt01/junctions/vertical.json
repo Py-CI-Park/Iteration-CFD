@@ -1,0 +1,40 @@
+{
+ "effectively_closed_after_endpoint_merge_1e-6": false,
+ "arc_endpoints": 2,
+ "open_arc_endpoint_gaps": [],
+ "edge_mesh_obj": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sbf\\sbf-r7-a-attempt01-vertical-lTPHQL\\constant\\extendedFeatureEdgeMesh\\fuselage_other_intersection_edgeMesh.obj",
+ "loops": [
+  {
+   "vertices": 379,
+   "edges": 378,
+   "closed": false,
+   "min_surface_angle_deg": 22.6193721581885,
+   "p5_angle_deg": 26.13835089916288,
+   "centroid_m": [
+    39.12677546174144,
+    -2.6770448549726783e-08,
+    5.992299287598953
+   ],
+   "bbox_min_m": [
+    35.9426,
+    -0.213123,
+    5.78687
+   ],
+   "bbox_max_m": [
+    42.3625,
+    0.213123,
+    6.13113
+   ],
+   "worst_edge_midpoint_m": [
+    35.9427,
+    -0.001001494999999993,
+    6.131105
+   ]
+  }
+ ],
+ "loop_count": 1,
+ "all_closed": false,
+ "min_surface_angle_deg": 22.6193721581885,
+ "edges": 378,
+ "points_unique": 379
+}

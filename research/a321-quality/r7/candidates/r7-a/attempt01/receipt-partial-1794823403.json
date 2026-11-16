@@ -1,0 +1,77 @@
+{
+ "tag": "r7-a",
+ "attempt": "attempt01",
+ "contract": [
+  "r7-geometry-contract-03",
+  "r7-geometry-contract-03a"
+ ],
+ "steps": [
+  {
+   "step": "r7_check",
+   "start_local": "2026-11-16 19:03:09",
+   "end_local": "2026-11-16 19:03:22",
+   "wall_s": 13.54,
+   "returncode": 0,
+   "cmd": "uv run --no-project D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\gen\\r7_check.py --attempt D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01 --out D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r7\\candidates\\r7-a\\attempt01\\gate-table.json",
+   "log": "logs\\check.log"
+  }
+ ],
+ "inputs_sha256_before": {
+  "research\\a321-quality\\r6\\plans\\r7-geometry-contract-03.json": "b1dcf1507f8d6ec2556f10d445e2553a82f9a1039b76de07acb9899dba197538",
+  "research\\a321-quality\\r6\\plans\\r7-geometry-contract-03a.json": "84b0059d512c05706ab50dae59d0227cce09f35ab9a469b969dee4f29574da86",
+  "research\\a321-quality\\r7\\measure\\r7-measure.json": "6e1bf6d3bd7a21131a5d0aac420347de90d0448a6bb245c2d4a03e564f00df62",
+  "research\\a321-quality\\r7\\measure\\trace-meta.json": "d059ef88e2b969e9254b35c77200a5c352e21225e280b90f41568621f05c6a65",
+  ".worktmp\\r7-trace\\raw-trace.json": "59e0026b6b8a6b875c376e961fb33b15b07457c34a5d584075d35b57d7c50109",
+  "research\\a321-integration\\artifacts\\shell-r3\\fuselage.stl": "9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80",
+  "research\\a321-integration\\evidence\\reconstruction-r3.json": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\wing.stl": "7577e3ad35c73ca6b86d2f8450e6fa56961fdb38542668333c62fea176f0c252",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\horizontal.stl": "21a5a1ee2e0a28c915c21f41d51dff20ae6e3d926d83479d7d6d1f359e4808a1",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\vertical.stl": "e6fe6f0f81e34b01c4e28052eda4ec8950ee1f2e57ad6d0d3712edb72a93c890",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\wing.npz": "e2ed1c6554025849dd6c0ec2dd7117f3f1bac393d6c1a847278adea71e6a9f7b",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\horizontal.npz": "07c2e6807a059f57e616408ba08551eb63b2293495b8dd25c9d1dc995c5dbd19",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\vertical.npz": "91732a6e07dcbf5c56d7c32ecbf86c798061642bf5dbfd8628161ee9f464d818"
+ },
+ "inputs_sha256_after": {
+  "research\\a321-quality\\r6\\plans\\r7-geometry-contract-03.json": "b1dcf1507f8d6ec2556f10d445e2553a82f9a1039b76de07acb9899dba197538",
+  "research\\a321-quality\\r6\\plans\\r7-geometry-contract-03a.json": "84b0059d512c05706ab50dae59d0227cce09f35ab9a469b969dee4f29574da86",
+  "research\\a321-quality\\r7\\measure\\r7-measure.json": "6e1bf6d3bd7a21131a5d0aac420347de90d0448a6bb245c2d4a03e564f00df62",
+  "research\\a321-quality\\r7\\measure\\trace-meta.json": "d059ef88e2b969e9254b35c77200a5c352e21225e280b90f41568621f05c6a65",
+  ".worktmp\\r7-trace\\raw-trace.json": "59e0026b6b8a6b875c376e961fb33b15b07457c34a5d584075d35b57d7c50109",
+  "research\\a321-integration\\artifacts\\shell-r3\\fuselage.stl": "9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80",
+  "research\\a321-integration\\evidence\\reconstruction-r3.json": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\wing.stl": "7577e3ad35c73ca6b86d2f8450e6fa56961fdb38542668333c62fea176f0c252",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\horizontal.stl": "21a5a1ee2e0a28c915c21f41d51dff20ae6e3d926d83479d7d6d1f359e4808a1",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\vertical.stl": "e6fe6f0f81e34b01c4e28052eda4ec8950ee1f2e57ad6d0d3712edb72a93c890",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\wing.npz": "e2ed1c6554025849dd6c0ec2dd7117f3f1bac393d6c1a847278adea71e6a9f7b",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\horizontal.npz": "07c2e6807a059f57e616408ba08551eb63b2293495b8dd25c9d1dc995c5dbd19",
+  "research\\a321-quality\\r6\\candidates\\r6-c\\attempt01\\vertical.npz": "91732a6e07dcbf5c56d7c32ecbf86c798061642bf5dbfd8628161ee9f464d818"
+ },
+ "inputs_unchanged": true,
+ "r6c_receipt_artifact_sha256": {
+  "horizontal.npz": "07c2e6807a059f57e616408ba08551eb63b2293495b8dd25c9d1dc995c5dbd19",
+  "horizontal.stl": "21a5a1ee2e0a28c915c21f41d51dff20ae6e3d926d83479d7d6d1f359e4808a1",
+  "vertical.npz": "91732a6e07dcbf5c56d7c32ecbf86c798061642bf5dbfd8628161ee9f464d818",
+  "vertical.stl": "e6fe6f0f81e34b01c4e28052eda4ec8950ee1f2e57ad6d0d3712edb72a93c890",
+  "wing.npz": "e2ed1c6554025849dd6c0ec2dd7117f3f1bac393d6c1a847278adea71e6a9f7b",
+  "wing.stl": "7577e3ad35c73ca6b86d2f8450e6fa56961fdb38542668333c62fea176f0c252"
+ },
+ "artifact_sha256": {
+  "a3.json": "23e05460929bb75137ae74a77ba611e5d13951983c7856031a5f1dfb298d5104",
+  "feature-manifest.json": "91e8e60755a8121f2a3a50a9ccfe739f7c3c4c68aae948a0123d89e0680f1f6e",
+  "features-fuselage.json": "e453bc9e6c80002e8bf7c0636c5c92da87fcf8ea6d88e2ff973add5f1ce6a7fd",
+  "fuselage.npz": "085a6dcad8060012f8457f01b96f46f0caa7209adc82975a3cba54feeaa9412c",
+  "fuselage.stl": "d0ecd25f74442f53c3e6ca640dbc4ea1399b3266a7fb3dbd146c54a668a21fc5",
+  "g7-readback.json": "5a2bd70371955a0d18607885889f955efedbd65712921ca13354f5e67811868c",
+  "gate-table.json": "447ef26407f1a3af251a3e6d8d8656ba4aa7f1fc449f671add19a2fc81306379",
+  "horizontal.npz": "07c2e6807a059f57e616408ba08551eb63b2293495b8dd25c9d1dc995c5dbd19",
+  "horizontal.stl": "21a5a1ee2e0a28c915c21f41d51dff20ae6e3d926d83479d7d6d1f359e4808a1",
+  "r7-a.blend": "0725f134605cfb38783182931c852498b7ef0387917e4bcaddc741c11cb6b02d",
+  "receipt.json": "1d906f52debb4e74bf745efd77e3aa4b186270589757c79c024f82903246f953",
+  "stations-fuselage.json": "7fd5e669b34a15940b7aa17fe3f3a8f58669894731be80c06650c838151f1b03",
+  "vertical.npz": "91732a6e07dcbf5c56d7c32ecbf86c798061642bf5dbfd8628161ee9f464d818",
+  "vertical.stl": "e6fe6f0f81e34b01c4e28052eda4ec8950ee1f2e57ad6d0d3712edb72a93c890",
+  "wing.npz": "e2ed1c6554025849dd6c0ec2dd7117f3f1bac393d6c1a847278adea71e6a9f7b",
+  "wing.stl": "7577e3ad35c73ca6b86d2f8450e6fa56961fdb38542668333c62fea176f0c252"
+ },
+ "date_local": "2026-11-16 19:03:23"
+}

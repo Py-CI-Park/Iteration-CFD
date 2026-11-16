@@ -1,0 +1,22 @@
+{
+ "end_reached": true,
+ "fatal": false,
+ "nonzero_exit_marker": false,
+ "locations": 0,
+ "triangles": 11488,
+ "vertices": 5746,
+ "unconnected_parts": 1,
+ "zones": 1,
+ "quality_min": 0.00228227,
+ "closed": true,
+ "illegal_triangles": false,
+ "valid": true,
+ "obj_points_m": [],
+ "obj_point_count_matches": null,
+ "checker": "OpenFOAM v1912 surfaceCheck -checkSelfIntersection -outputThreshold 100000 (WSL, copy of the STL)",
+ "attempt_dir": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sc\\sc-B0a-u5hBgX",
+ "copy_sha256_equals_original": true,
+ "original_unchanged": true,
+ "wrapper_wall_seconds_date_measured": 0.137923508,
+ "python_wall_seconds": 0.54
+}

@@ -1,0 +1,240 @@
+{
+ "note": "information only",
+ "G5": {
+  "triangles": 72672,
+  "closure_band_triangles": 512,
+  "cap_triangles": 736,
+  "all": {
+   "q_of_min": 0.0023193213096132123,
+   "min_angle_deg_min": 0.08636330773358983,
+   "aspect_max": 663.4517507603878,
+   "aspect_p99": 4.332233183823882
+  },
+  "without_closure_bands": {
+   "q_of_min": 0.17113695613374866,
+   "min_angle_deg_min": 15.25590889451933,
+   "aspect_max": 4.767095599156468,
+   "aspect_p99": 3.4487826834160273
+  },
+  "closure_bands_only": {
+   "q_of_min": 0.0023193213096132123,
+   "min_angle_deg_min": 0.08636330773358983,
+   "aspect_max": 663.4517507603878,
+   "aspect_p99": 662.222633053594
+  },
+  "g5_per_triangle_failures": {
+   "total": 256,
+   "in_closure_bands": 256,
+   "elsewhere": 0
+  },
+  "adjacent_area_ratio_max": {
+   "all": 693.3866410948556,
+   "without_closure_bands": 3.6056915862103636,
+   "closure_bands": 693.3866410948556
+  }
+ },
+ "L6_split": {
+  "leaning_strip_rows": [
+   113,
+   131
+  ],
+  "leaning_triangles": 512,
+  "max_in_leaning_strips_m": 0.0026140198757356034,
+  "max_in_ordinary_strips_m": 0.0017162647015977806,
+  "worst_5": [
+   {
+    "triangle": 29119,
+    "dev_m": 0.0026140198757356034,
+    "centroid_m": [
+     11.6648,
+     0.0,
+     1.9533
+    ],
+    "rows": [
+     113,
+     114,
+     113
+    ],
+    "leaning": true
+   },
+   {
+    "triangle": 28991,
+    "dev_m": 0.0026140198757356034,
+    "centroid_m": [
+     11.7641,
+     0.0,
+     1.9533
+    ],
+    "rows": [
+     113,
+     114,
+     114
+    ],
+    "leaning": true
+   },
+   {
+    "triangle": 28990,
+    "dev_m": 0.002613112026028387,
+    "centroid_m": [
+     11.7641,
+     0.0991,
+     1.9559
+    ],
+    "rows": [
+     113,
+     114,
+     114
+    ],
+    "leaning": true
+   },
+   {
+    "triangle": 29118,
+    "dev_m": 0.002613112026028387,
+    "centroid_m": [
+     11.6648,
+     0.0991,
+     1.9559
+    ],
+    "rows": [
+     113,
+     114,
+     113
+    ],
+    "leaning": true
+   },
+   {
+    "triangle": 29120,
+    "dev_m": 0.0026130431740485063,
+    "centroid_m": [
+     11.6648,
+     -0.0991,
+     1.9559
+    ],
+    "rows": [
+     113,
+     114,
+     113
+    ],
+    "leaning": true
+   }
+  ],
+  "ring_sagitta_note": "a leaning triangle joins b_j to t_{j+2}: its chord spans two ring segments, so its sagitta is 4x that of an ordinary strip"
+ },
+ "G6_by_x": {
+  "x_0.0_0.01": {
+   "ring_like_edges": 2536,
+   "mean_deg": 0.5534396924524654,
+   "p99_deg": 3.425605918396362
+  },
+  "x_0.01_2.0": {
+   "ring_like_edges": 6656,
+   "mean_deg": 1.428627166931173,
+   "p99_deg": 5.0178514137421475
+  },
+  "x_2.0_6.0": {
+   "ring_like_edges": 3456,
+   "mean_deg": 0.7924165768730802,
+   "p99_deg": 3.538014437010905
+  },
+  "x_6.0_12.0": {
+   "ring_like_edges": 2816,
+   "mean_deg": 0.1429784744340139,
+   "p99_deg": 1.0056729190143439
+  },
+  "x_12.0_28.0": {
+   "ring_like_edges": 6912,
+   "mean_deg": 0.0356780350368441,
+   "p99_deg": 0.9799670061528432
+  },
+  "x_28.0_44.0": {
+   "ring_like_edges": 12288,
+   "mean_deg": 0.3930460570042645,
+   "p99_deg": 1.9009623781494098
+  },
+  "x_44.0_44.51": {
+   "ring_like_edges": 2920,
+   "mean_deg": 3.220252282361275,
+   "p99_deg": 52.803706780510694
+  }
+ },
+ "junction_open_gaps": {
+  "wing": {
+   "loops": [
+    {
+     "loop": 0,
+     "open_ends": 2,
+     "end_gap_m": 0.026446536635259844,
+     "end_xyz_m": [
+      [
+       21.6684,
+       1.86377,
+       3.33618
+      ],
+      [
+       21.6947,
+       1.86284,
+       3.33356
+      ]
+     ]
+    },
+    {
+     "loop": 1,
+     "open_ends": 2,
+     "end_gap_m": 0.026446536635259844,
+     "end_xyz_m": [
+      [
+       21.6684,
+       -1.86377,
+       3.33618
+      ],
+      [
+       21.6947,
+       -1.86284,
+       3.33356
+      ]
+     ]
+    }
+   ],
+   "closed_by_geometry_1e-6": false
+  },
+  "horizontal": {
+   "loops": [
+    {
+     "loop": 0,
+     "open_ends": 0,
+     "end_gap_m": null,
+     "end_xyz_m": []
+    },
+    {
+     "loop": 1,
+     "open_ends": 0,
+     "end_gap_m": null,
+     "end_xyz_m": []
+    }
+   ],
+   "closed_by_geometry_1e-6": true
+  },
+  "vertical": {
+   "loops": [
+    {
+     "loop": 0,
+     "open_ends": 2,
+     "end_gap_m": 5.42101e-20,
+     "end_xyz_m": [
+      [
+       42.3625,
+       0.0,
+       5.78687
+      ],
+      [
+       42.3625,
+       0.0,
+       5.78687
+      ]
+     ]
+    }
+   ],
+   "closed_by_geometry_1e-6": true
+  }
+ }
+}

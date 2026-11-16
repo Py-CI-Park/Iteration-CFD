@@ -1,0 +1,54 @@
+{
+ "blender": "5.2.2 LTS",
+ "objects": {
+  "fuselage": {
+   "custom_property": "r7-geometry-contract-03",
+   "modifiers": 0,
+   "parent": false,
+   "matrix_world_identity": true,
+   "vertices": 36338,
+   "triangles": 72672,
+   "stl_triangles": 72672,
+   "world_equals_npz": true,
+   "triangles_equal_npz": true,
+   "triangles_equal_stl_in_order": true
+  },
+  "wing": {
+   "custom_property": "r7-geometry-contract-03",
+   "modifiers": 0,
+   "parent": false,
+   "matrix_world_identity": true,
+   "vertices": 192558,
+   "triangles": 385112,
+   "stl_triangles": 385112,
+   "world_equals_npz": true,
+   "triangles_equal_npz": true,
+   "triangles_equal_stl_in_order": true
+  },
+  "horizontal": {
+   "custom_property": "r7-geometry-contract-03",
+   "modifiers": 0,
+   "parent": false,
+   "matrix_world_identity": true,
+   "vertices": 72622,
+   "triangles": 145240,
+   "stl_triangles": 145240,
+   "world_equals_npz": true,
+   "triangles_equal_npz": true,
+   "triangles_equal_stl_in_order": true
+  },
+  "vertical": {
+   "custom_property": "r7-geometry-contract-03",
+   "modifiers": 0,
+   "parent": false,
+   "matrix_world_identity": true,
+   "vertices": 58958,
+   "triangles": 117912,
+   "stl_triangles": 117912,
+   "world_equals_npz": true,
+   "triangles_equal_npz": true,
+   "triangles_equal_stl_in_order": true
+  }
+ },
+ "status": "PASS_G7_NATIVE_BINDING"
+}

@@ -1,0 +1,839 @@
+{
+ "schema": "r7a-gate-table-v1",
+ "contract": [
+  "r7-geometry-contract-03",
+  "r7-geometry-contract-03a"
+ ],
+ "step0": {
+  "contract": "r7-geometry-contract-03a L9",
+  "frozen_parameters": {
+   "frozen_at": "2026-11-16T18:21:03+09:00",
+   "params": {
+    "crown_z_m": 6.09,
+    "belly_z_m": 1.9499999999999997,
+    "width_m": 3.95,
+    "height_m": 4.14,
+    "rho": 0.499988,
+    "n_points": 128,
+    "closure_band_m": 0.001,
+    "closure_end_ring_scale": 0.03,
+    "closure_scale_basis": "R3 ledger rings: station 0 / 1 and last-1 / last differ by 0.028-0.031 in half-size (measured, printed in the step-0 log)",
+    "cap": "r6_tess.round_cap(final_max=8, inner_radius=0.3) on the closure end ring, orient_cap against the grid",
+    "plateau_stations": "committed r7-measure.json stations (proposed_N128_delta1mm.stations_m): the first station >= 12.0 m and the following ones",
+    "b0a_length_m": 12.0,
+    "b0b_plateau_length_m": 10.0,
+    "b0b_taper_length_m": 3.0,
+    "tail_width_m": 0.405,
+    "tail_height_m": 0.391,
+    "tail_centre_z_m": 5.1125,
+    "tail_centre_basis": "R3 ledger tail ring z 4.9242..5.3007 -> centre 5.11245 (rounded to 5.1125)",
+    "taper": "crown, belly and width linear in x between the last plateau station and the tail ring; slope break at the joint is a declared C0 knot",
+    "taper_ring_spacing": "L4 rule: h = min(sqrt(8 delta/kappa), 3P/128, 0.6), |dh/dx| <= 0.18, marched from the joint; last gap shorter than h/2 absorbed",
+    "feature_edges_for_flip": "rings 0, 1, R-2, R-1 (closure end rings and band boundary rings) as closed polylines",
+    "tessellation": "r6_tess.lean_triangles over all rows, then r7_flip.flip_axis_parallel"
+   },
+   "contract": [
+    "r7-geometry-contract-03",
+    "r7-geometry-contract-03a L9"
+   ]
+  },
+  "positive_control": {
+   "stl": "r6-c attempt01 fuselage.stl",
+   "surfaceCheck_locations": 48,
+   "expected": 48,
+   "valid": true,
+   "wall_s": 8.759341379
+  },
+  "barrels": {
+   "B0a": {
+    "stl_sha256": "4653c2b7b1b7870e61b8d33221e305b9564fc799ceba11515cf4f229395ed34e",
+    "rings": 43,
+    "triangles": 11488,
+    "vertices": 5746,
+    "leaning_strips": 40,
+    "strips_total": 42,
+    "length_between_full_rings_m": 11.857819999999998,
+    "plateau_stations": 41,
+    "taper_stations": 0,
+    "flip": {
+     "rule": "contract 03 M5: 02d flip, quad-scope fold refusal + quality margin (new min Q_OF >= old min Q_OF)",
+     "axis_parallel_edges_found": 12,
+     "flipped": 0,
+     "refused": 12,
+     "axis_parallel_edges_after": 12,
+     "fold_margin_deg": 1.0,
+     "flips_failing_pair_scope_info_only": 0,
+     "limits_used": {
+      "Q_MIN": 0.001,
+      "ANGLE_MIN_DEG": 1.0,
+      "ASPECT_MAX": 100.0,
+      "GRADE_AREA_MAX": 30.0,
+      "VALENCE_MAX": 8
+     }
+    },
+    "closure": {
+     "watertight_manifold": true,
+     "boundary_edges": 0,
+     "nonmanifold_edges": 0,
+     "connected_components": 1,
+     "euler_characteristic": 2,
+     "winding_consistent": true,
+     "outward_normals": true
+    },
+    "surfaceCheck_locations": 0,
+    "surfaceCheck_valid": true,
+    "surfaceCheck_wall_s": 0.137923508,
+    "locator_pairs": 0,
+    "locator_wall_s": 16.04617810000127,
+    "pymeshlab_selected_faces": 0,
+    "pymeshlab_wall_s": 0.28478739999991376,
+    "gate_wall_s": 22.102827599999728,
+    "quality_q_of_min": 0.002282274914544205,
+    "all_zero": true
+   },
+   "B0b": {
+    "stl_sha256": "925ff7b3e0d6622c4c1e6cff394085c10d3a174c62dd9ab03371e75dc2c6ca98",
+    "rings": 71,
+    "triangles": 18656,
+    "vertices": 9330,
+    "leaning_strips": 33,
+    "strips_total": 70,
+    "length_between_full_rings_m": 12.7827,
+    "plateau_stations": 34,
+    "taper_stations": 35,
+    "flip": {
+     "rule": "contract 03 M5: 02d flip, quad-scope fold refusal + quality margin (new min Q_OF >= old min Q_OF)",
+     "axis_parallel_edges_found": 16,
+     "flipped": 0,
+     "refused": 16,
+     "axis_parallel_edges_after": 16,
+     "fold_margin_deg": 1.0,
+     "flips_failing_pair_scope_info_only": 0,
+     "limits_used": {
+      "Q_MIN": 0.001,
+      "ANGLE_MIN_DEG": 1.0,
+      "ASPECT_MAX": 100.0,
+      "GRADE_AREA_MAX": 30.0,
+      "VALENCE_MAX": 8
+     }
+    },
+    "closure": {
+     "watertight_manifold": true,
+     "boundary_edges": 0,
+     "nonmanifold_edges": 0,
+     "connected_components": 1,
+     "euler_characteristic": 2,
+     "winding_consistent": true,
+     "outward_normals": true
+    },
+    "surfaceCheck_locations": 0,
+    "surfaceCheck_valid": true,
+    "surfaceCheck_wall_s": 0.181367809,
+    "locator_pairs": 0,
+    "locator_wall_s": 15.18647939999937,
+    "pymeshlab_selected_faces": 0,
+    "pymeshlab_wall_s": 0.2965653999999631,
+    "gate_wall_s": 22.004994900000383,
+    "quality_q_of_min": 0.0022822749150838125,
+    "all_zero": true
+   }
+  },
+  "step0_pass": true,
+  "information_only": {
+   "sc-B0a-quad-info": {
+    "end_reached": true,
+    "fatal": false,
+    "nonzero_exit_marker": false,
+    "locations": 24,
+    "triangles": 11488,
+    "vertices": 5746,
+    "unconnected_parts": 1,
+    "zones": 1,
+    "quality_min": 0.00228227,
+    "closed": true,
+    "illegal_triangles": false,
+    "valid": true,
+    "obj_point_count_matches": true,
+    "checker": "OpenFOAM v1912 surfaceCheck -checkSelfIntersection -outputThreshold 100000 (WSL, copy of the STL)",
+    "attempt_dir": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\.worktmp\\r7-gen\\sc\\sc-B0a-quad-info-4Jprx7",
+    "copy_sha256_equals_original": true,
+    "original_unchanged": true,
+    "wrapper_wall_seconds_date_measured": 0.133724222,
+    "python_wall_seconds": 0.62
+   }
+  }
+ },
+ "attempt01": {
+  "fuselage_pass_all": false,
+  "failed": [
+   "G4R (L6) dense two-sided own-curve deviation, max (m)",
+   "G5 min angle min (deg)",
+   "G5 aspect max",
+   "G5 adjacent area ratio max",
+   "G6 station-edge turning (02d fallback: ratio denominator < 0.01 deg): mean / p99 (deg)"
+  ],
+  "fuselage_rows": [
+   {
+    "metric": "G1 watertight, boundary/nonmanifold edges, components, Euler",
+    "value": [
+     0,
+     0,
+     1,
+     2
+    ],
+    "limit": "[0,0,1,2] (genus 0)",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G2 winding consistent / outward / volume m3",
+    "value": [
+     true,
+     true,
+     465.8754235373344
+    ],
+    "limit": "consistent, outward, V>0",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G3 locator pairs",
+    "value": 0,
+    "limit": 0,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G3 PyMeshLab selected faces",
+    "value": 0,
+    "limit": 0,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G3 surfaceCheck v1912 locations (valid parse: End reached, no FATAL, no non-zero exit)",
+    "value": 0,
+    "limit": 0,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G4R printed length (m)",
+    "value": 44.5099983215332,
+    "limit": "44.51 +- 1e-05",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G4R printed max width (m)",
+    "value": 3.950000047683716,
+    "limit": "3.95 +- 1e-05",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G4R printed max ring height (m)",
+    "value": 4.140000104904175,
+    "limit": "4.14 +- 1e-05",
+    "pass": true,
+    "note": "bbox height 4.182557 (crown bulge at the fin root); bounds lo [0.0, -1.975000023841858, 1.9486005306243896] hi [44.5099983215332, 1.975000023841858, 6.131157875061035]"
+   },
+   {
+    "metric": "G4R (L6) dense two-sided own-curve deviation, max (m)",
+    "value": 0.0026140198757356034,
+    "limit": 0.0025,
+    "pass": false,
+    "note": "surface->analytic 0.002614 at [11.7145, 0.0, 1.9542]; analytic->surface 0.002613 at [11.7145, 0.0, 1.9516]"
+   },
+   {
+    "metric": "G4R (L7) top-view outline band, max over both edges (m)",
+    "value": 0.01382320244742452,
+    "limit": 0.0244,
+    "pass": true,
+    "note": "upper 0.01382 lower 0.01303; vs drawn centreline (not gated) 0.02067"
+   },
+   {
+    "metric": "G4R (L7) side-view outline band, crown/belly max (m)",
+    "value": 0.010441068210781168,
+    "limit": 0.0445,
+    "pass": true,
+    "note": "crown 0.01044 at x 1.395; belly 0.00283 at x 39.076; bridges reported separately: crown 0.00002, belly 0.00163"
+   },
+   {
+    "metric": "G5 Q_OF min",
+    "value": 0.0023193213096132123,
+    "limit": ">= 0.001",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G5 Q_OF p1",
+    "value": 0.31987704252568366,
+    "limit": ">= 0.01",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G5 min angle min (deg)",
+    "value": 0.08636330773358983,
+    "limit": ">= 1.0",
+    "pass": false,
+    "note": ""
+   },
+   {
+    "metric": "G5 min angle p5 (deg)",
+    "value": 18.433038253484938,
+    "limit": ">= 5.0",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G5 aspect max",
+    "value": 663.4517507603878,
+    "limit": "<= 100.0",
+    "pass": false,
+    "note": ""
+   },
+   {
+    "metric": "G5 aspect p99",
+    "value": 4.332233183823882,
+    "limit": "<= 30.0",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G5 adjacent area ratio max",
+    "value": 694.9408239161385,
+    "limit": "<= 30.0",
+    "pass": false,
+    "note": ""
+   },
+   {
+    "metric": "G5 adjacent area ratio p99",
+    "value": 2.17795135266631,
+    "limit": "<= 10.0",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G5 adjacent longest-edge ratio p99",
+    "value": 1.4395592606125114,
+    "limit": "<= 3.0",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G5 max vertex valence",
+    "value": 8,
+    "limit": "<= 8",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G6 non-feature dihedral max (deg)",
+    "value": 19.33435774690544,
+    "limit": "<= 30.0",
+    "pass": true,
+    "note": "feature edges excluded: 1280; edges >30 deg: 0"
+   },
+   {
+    "metric": "G6 non-feature dihedral p99 (deg)",
+    "value": 3.750411837507618,
+    "limit": "<= 10.0",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "G6 station-edge turning (02d fallback: ratio denominator < 0.01 deg): mean / p99 (deg)",
+    "value": [
+     0.6394934780791796,
+     4.887264130089207
+    ],
+    "limit": "mean <= 0.05, p99 <= 0.5",
+    "pass": false,
+    "note": "ratio undefined, 02d fallback applied; raw None, A=37072 B=0 meanA 0.7693472824824871 meanB None; stations 282"
+   },
+   {
+    "metric": "G7 fresh-process .blend reopen equals exported STL",
+    "value": true,
+    "limit": "equal",
+    "pass": true,
+    "note": ""
+   }
+  ],
+  "assembly_rows": [
+   {
+    "metric": "A1 junction wing: closed loops",
+    "value": {
+     "loops": 2,
+     "loop_end_gaps_m": [
+      0.026446536635259844,
+      0.026446536635259844
+     ]
+    },
+    "limit": "2 closed loops (end gap < 1e-6 m)",
+    "pass": false,
+    "note": "edges 800; r6 junction_analysis all_closed=False (it merges only ends of DIFFERENT arcs; here the end gap inside each loop is evaluated from the edge mesh)"
+   },
+   {
+    "metric": "A2 junction wing: min surface angle (deg)",
+    "value": 44.9878541587707,
+    "limit": ">= 5.0",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "A1 junction horizontal: closed loops",
+    "value": {
+     "loops": 2,
+     "loop_end_gaps_m": [
+      null,
+      null
+     ]
+    },
+    "limit": "2 closed loops (end gap < 1e-6 m)",
+    "pass": true,
+    "note": "edges 640; r6 junction_analysis all_closed=True (it merges only ends of DIFFERENT arcs; here the end gap inside each loop is evaluated from the edge mesh)"
+   },
+   {
+    "metric": "A2 junction horizontal: min surface angle (deg)",
+    "value": 63.45982280026708,
+    "limit": ">= 5.0",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "A1 junction vertical: closed loops",
+    "value": {
+     "loops": 1,
+     "loop_end_gaps_m": [
+      5.42101e-20
+     ]
+    },
+    "limit": "1 closed loops (end gap < 1e-6 m)",
+    "pass": true,
+    "note": "edges 378; r6 junction_analysis all_closed=False (it merges only ends of DIFFERENT arcs; here the end gap inside each loop is evaluated from the edge mesh)"
+   },
+   {
+    "metric": "A2 junction vertical: min surface angle (deg)",
+    "value": 22.6193721581885,
+    "limit": ">= 5.0",
+    "pass": true,
+    "note": ""
+   },
+   {
+    "metric": "A3 overall length (m)",
+    "value": 44.5099983215332,
+    "limit": "printed +- 0.1 m",
+    "pass": true,
+    "note": "printed 44.51, delta -1.6784667948854803e-06"
+   },
+   {
+    "metric": "A3 wing half-span to tip, no sharklet (m)",
+    "value": 16.290000915527344,
+    "limit": "printed +- 0.1 m",
+    "pass": true,
+    "note": "printed 16.29, delta 9.155273446026513e-07"
+   },
+   {
+    "metric": "A3 wing span tip to tip without sharklets (m)",
+    "value": 32.58000183105469,
+    "limit": "printed +- 0.1 m",
+    "pass": null,
+    "note": "printed None, delta None"
+   },
+   {
+    "metric": "A3 horizontal tail span tip to tip (m)",
+    "value": 12.449999809265137,
+    "limit": "printed +- 0.1 m",
+    "pass": true,
+    "note": "printed 12.45, delta -1.9073486257070726e-07"
+   },
+   {
+    "metric": "A3 vertical tail tip above fuselage crown line at x=30 (m)",
+    "value": 5.871605396270752,
+    "limit": "printed +- 0.1 m",
+    "pass": true,
+    "note": "printed 5.87, delta 0.0016053962707518465"
+   },
+   {
+    "metric": "A3 fuselage max width (m)",
+    "value": 3.950000047683716,
+    "limit": "printed +- 0.1 m",
+    "pass": true,
+    "note": "printed 3.95, delta 4.7683715642676816e-08"
+   },
+   {
+    "metric": "A3 fuselage max height (m)",
+    "value": 4.1825573444366455,
+    "limit": "printed +- 0.1 m",
+    "pass": true,
+    "note": "printed 4.14, delta 0.04255734443664583"
+   },
+   {
+    "metric": "A5 root embedment wing: min depth on the tessellated R7 surface (m)",
+    "value": 0.6486718607086613,
+    "limit": ">= 0.075",
+    "pass": true,
+    "note": "at [18.265490670672666, 0.0, 2.6006260760162068], outside vertices 0/128"
+   },
+   {
+    "metric": "A5 root embedment horizontal: min depth on the tessellated R7 surface (m)",
+    "value": 0.45214740227218725,
+    "limit": ">= 0.075",
+    "pass": true,
+    "note": "at [42.20876620373232, 0.0, 4.594949187084446], outside vertices 0/96"
+   },
+   {
+    "metric": "A5 root embedment vertical: min depth on the tessellated R7 surface (m)",
+    "value": 0.28735469219741794,
+    "limit": ">= 0.075",
+    "pass": true,
+    "note": "at [42.340078542798416, 0.0, 5.5], outside vertices 0/96"
+   }
+  ],
+  "A5_detail": {
+   "wing": {
+    "min_depth_m": 0.6486718607086613,
+    "location_xyz_m": [
+     18.265490670672666,
+     0.0,
+     2.6006260760162068
+    ],
+    "n_outside": 0,
+    "n_vertices": 128,
+    "margin_m": 0.075,
+    "pass": true
+   },
+   "horizontal": {
+    "min_depth_m": 0.45214740227218725,
+    "location_xyz_m": [
+     42.20876620373232,
+     0.0,
+     4.594949187084446
+    ],
+    "n_outside": 0,
+    "n_vertices": 96,
+    "margin_m": 0.075,
+    "pass": true
+   },
+   "vertical": {
+    "min_depth_m": 0.28735469219741794,
+    "location_xyz_m": [
+     42.340078542798416,
+     0.0,
+     5.5
+    ],
+    "n_outside": 0,
+    "n_vertices": 96,
+    "margin_m": 0.075,
+    "pass": true
+   }
+  },
+  "info_vs_r3": {
+   "r7_to_r3": {
+    "samples": 508704,
+    "max_m": 0.189007782694394,
+    "p99_m": 0.07323317178282947,
+    "worst_xyz_m": [
+     23.2987,
+     0.948,
+     2.2031
+    ]
+   },
+   "r3_to_r7": {
+    "samples": 326144,
+    "max_m": 0.18885814266452045,
+    "p99_m": 0.0748719001593522,
+    "worst_xyz_m": [
+     23.2496,
+     -0.8578,
+     2.3693
+    ]
+   },
+   "dense_two_sided_max_m": 0.189007782694394,
+   "volume_r7_m3": 465.87542353733943,
+   "volume_r3_m3": 466.3133556455775,
+   "volume_relative_difference": -0.0009391369621651917,
+   "note": "information only (not gated for the R7 fuselage); the R6 limits were 25 mm and 1 % volume"
+  },
+  "kink_detail": {
+   "A_count": 37072,
+   "B_count": 0,
+   "mean_A": 0.7693472824824871,
+   "mean_B": null,
+   "A_excl_count": 36304,
+   "mean_A_excl": 0.6394934780791796,
+   "p99_A_excl": 4.887264130089207,
+   "A_feature_edges_removed": 768,
+   "ratio_raw": null,
+   "ratio_without_features": null
+  },
+  "edge_flip": {
+   "rule": "contract 03 M5: 02d flip, quad-scope fold refusal + quality margin (new min Q_OF >= old min Q_OF)",
+   "axis_parallel_edges_found": 20,
+   "flipped": 0,
+   "refused": 20,
+   "axis_parallel_edges_after": 20,
+   "fold_margin_deg": 1.0,
+   "flips_failing_pair_scope_info_only": 0,
+   "limits_used": {
+    "Q_MIN": 0.001,
+    "ANGLE_MIN_DEG": 1.0,
+    "ASPECT_MAX": 100.0,
+    "GRADE_AREA_MAX": 30.0,
+    "VALENCE_MAX": 8
+   }
+  }
+ },
+ "diagnostics_information_only": {
+  "note": "information only",
+  "G5": {
+   "triangles": 72672,
+   "closure_band_triangles": 512,
+   "cap_triangles": 736,
+   "all": {
+    "q_of_min": 0.0023193213096132123,
+    "min_angle_deg_min": 0.08636330773358983,
+    "aspect_max": 663.4517507603878,
+    "aspect_p99": 4.332233183823882
+   },
+   "without_closure_bands": {
+    "q_of_min": 0.17113695613374866,
+    "min_angle_deg_min": 15.25590889451933,
+    "aspect_max": 4.767095599156468,
+    "aspect_p99": 3.4487826834160273
+   },
+   "closure_bands_only": {
+    "q_of_min": 0.0023193213096132123,
+    "min_angle_deg_min": 0.08636330773358983,
+    "aspect_max": 663.4517507603878,
+    "aspect_p99": 662.222633053594
+   },
+   "g5_per_triangle_failures": {
+    "total": 256,
+    "in_closure_bands": 256,
+    "elsewhere": 0
+   },
+   "adjacent_area_ratio_max": {
+    "all": 693.3866410948556,
+    "without_closure_bands": 3.6056915862103636,
+    "closure_bands": 693.3866410948556
+   }
+  },
+  "L6_split": {
+   "leaning_strip_rows": [
+    113,
+    131
+   ],
+   "leaning_triangles": 512,
+   "max_in_leaning_strips_m": 0.0026140198757356034,
+   "max_in_ordinary_strips_m": 0.0017162647015977806,
+   "worst_5": [
+    {
+     "triangle": 29119,
+     "dev_m": 0.0026140198757356034,
+     "centroid_m": [
+      11.6648,
+      0.0,
+      1.9533
+     ],
+     "rows": [
+      113,
+      114,
+      113
+     ],
+     "leaning": true
+    },
+    {
+     "triangle": 28991,
+     "dev_m": 0.0026140198757356034,
+     "centroid_m": [
+      11.7641,
+      0.0,
+      1.9533
+     ],
+     "rows": [
+      113,
+      114,
+      114
+     ],
+     "leaning": true
+    },
+    {
+     "triangle": 28990,
+     "dev_m": 0.002613112026028387,
+     "centroid_m": [
+      11.7641,
+      0.0991,
+      1.9559
+     ],
+     "rows": [
+      113,
+      114,
+      114
+     ],
+     "leaning": true
+    },
+    {
+     "triangle": 29118,
+     "dev_m": 0.002613112026028387,
+     "centroid_m": [
+      11.6648,
+      0.0991,
+      1.9559
+     ],
+     "rows": [
+      113,
+      114,
+      113
+     ],
+     "leaning": true
+    },
+    {
+     "triangle": 29120,
+     "dev_m": 0.0026130431740485063,
+     "centroid_m": [
+      11.6648,
+      -0.0991,
+      1.9559
+     ],
+     "rows": [
+      113,
+      114,
+      113
+     ],
+     "leaning": true
+    }
+   ],
+   "ring_sagitta_note": "a leaning triangle joins b_j to t_{j+2}: its chord spans two ring segments, so its sagitta is 4x that of an ordinary strip"
+  },
+  "G6_by_x": {
+   "x_0.0_0.01": {
+    "ring_like_edges": 2536,
+    "mean_deg": 0.5534396924524654,
+    "p99_deg": 3.425605918396362
+   },
+   "x_0.01_2.0": {
+    "ring_like_edges": 6656,
+    "mean_deg": 1.428627166931173,
+    "p99_deg": 5.0178514137421475
+   },
+   "x_2.0_6.0": {
+    "ring_like_edges": 3456,
+    "mean_deg": 0.7924165768730802,
+    "p99_deg": 3.538014437010905
+   },
+   "x_6.0_12.0": {
+    "ring_like_edges": 2816,
+    "mean_deg": 0.1429784744340139,
+    "p99_deg": 1.0056729190143439
+   },
+   "x_12.0_28.0": {
+    "ring_like_edges": 6912,
+    "mean_deg": 0.0356780350368441,
+    "p99_deg": 0.9799670061528432
+   },
+   "x_28.0_44.0": {
+    "ring_like_edges": 12288,
+    "mean_deg": 0.3930460570042645,
+    "p99_deg": 1.9009623781494098
+   },
+   "x_44.0_44.51": {
+    "ring_like_edges": 2920,
+    "mean_deg": 3.220252282361275,
+    "p99_deg": 52.803706780510694
+   }
+  },
+  "junction_open_gaps": {
+   "wing": {
+    "loops": [
+     {
+      "loop": 0,
+      "open_ends": 2,
+      "end_gap_m": 0.026446536635259844,
+      "end_xyz_m": [
+       [
+        21.6684,
+        1.86377,
+        3.33618
+       ],
+       [
+        21.6947,
+        1.86284,
+        3.33356
+       ]
+      ]
+     },
+     {
+      "loop": 1,
+      "open_ends": 2,
+      "end_gap_m": 0.026446536635259844,
+      "end_xyz_m": [
+       [
+        21.6684,
+        -1.86377,
+        3.33618
+       ],
+       [
+        21.6947,
+        -1.86284,
+        3.33356
+       ]
+      ]
+     }
+    ],
+    "closed_by_geometry_1e-6": false
+   },
+   "horizontal": {
+    "loops": [
+     {
+      "loop": 0,
+      "open_ends": 0,
+      "end_gap_m": null,
+      "end_xyz_m": []
+     },
+     {
+      "loop": 1,
+      "open_ends": 0,
+      "end_gap_m": null,
+      "end_xyz_m": []
+     }
+    ],
+    "closed_by_geometry_1e-6": true
+   },
+   "vertical": {
+    "loops": [
+     {
+      "loop": 0,
+      "open_ends": 2,
+      "end_gap_m": 5.42101e-20,
+      "end_xyz_m": [
+       [
+        42.3625,
+        0.0,
+        5.78687
+       ],
+       [
+        42.3625,
+        0.0,
+        5.78687
+       ]
+      ]
+     }
+    ],
+    "closed_by_geometry_1e-6": true
+   }
+  }
+ },
+ "artifact_sha256": {
+  "candidates/r7-a/attempt01/feature-manifest.json": "91e8e60755a8121f2a3a50a9ccfe739f7c3c4c68aae948a0123d89e0680f1f6e",
+  "candidates/r7-a/attempt01/fuselage.stl": "d0ecd25f74442f53c3e6ca640dbc4ea1399b3266a7fb3dbd146c54a668a21fc5",
+  "candidates/r7-a/attempt01/gate-table.json": "447ef26407f1a3af251a3e6d8d8656ba4aa7f1fc449f671add19a2fc81306379",
+  "candidates/r7-a/attempt01/horizontal.stl": "21a5a1ee2e0a28c915c21f41d51dff20ae6e3d926d83479d7d6d1f359e4808a1",
+  "candidates/r7-a/attempt01/r7-a.blend": "0725f134605cfb38783182931c852498b7ef0387917e4bcaddc741c11cb6b02d",
+  "candidates/r7-a/attempt01/vertical.stl": "e6fe6f0f81e34b01c4e28052eda4ec8950ee1f2e57ad6d0d3712edb72a93c890",
+  "candidates/r7-a/attempt01/wing.stl": "7577e3ad35c73ca6b86d2f8450e6fa56961fdb38542668333c62fea176f0c252"
+ },
+ "artifact_sha256_note": "current values; full list in R7A_RECEIPT.json"
+}

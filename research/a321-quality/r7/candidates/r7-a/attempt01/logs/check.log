@@ -1,0 +1,17 @@
+fuselage FAIL ['G4R (L6) dense two-sided own-curve deviation, max (m)', 'G5 min angle min (deg)', 'G5 aspect max', 'G5 adjacent area ratio max', 'G6 station-edge turning (02d fallback: ratio denominator < 0.01 deg): mean / p99 (deg)']
+  A1 junction wing: closed loops {'loops': 2, 'loop_end_gaps_m': [0.026446536635259844, 0.026446536635259844]} FAIL
+  A2 junction wing: min surface angle (deg) 44.9878541587707 PASS
+  A1 junction horizontal: closed loops {'loops': 2, 'loop_end_gaps_m': [None, None]} PASS
+  A2 junction horizontal: min surface angle (deg) 63.45982280026708 PASS
+  A1 junction vertical: closed loops {'loops': 1, 'loop_end_gaps_m': [5.42101e-20]} PASS
+  A2 junction vertical: min surface angle (deg) 22.6193721581885 PASS
+  A3 overall length (m) 44.5099983215332 PASS
+  A3 wing half-span to tip, no sharklet (m) 16.290000915527344 PASS
+  A3 wing span tip to tip without sharklets (m) 32.58000183105469 n/a
+  A3 horizontal tail span tip to tip (m) 12.449999809265137 PASS
+  A3 vertical tail tip above fuselage crown line at x=30 (m) 5.871605396270752 PASS
+  A3 fuselage max width (m) 3.950000047683716 PASS
+  A3 fuselage max height (m) 4.1825573444366455 PASS
+  A5 root embedment wing: min depth on the tessellated R7 surface (m) 0.6486718607086613 PASS
+  A5 root embedment horizontal: min depth on the tessellated R7 surface  0.45214740227218725 PASS
+  A5 root embedment vertical: min depth on the tessellated R7 surface (m 0.28735469219741794 PASS
