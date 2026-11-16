@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "baseline_commit": "e3b809de24f0a40ee689831406a9a5931fd49b21",
-  "updated_date_kst": "2026-11-09",
+  "updated_date_kst": "2026-11-16",
   "canonical_plan": "REBUILD_ROADMAP_KO.md",
   "handoff": "HANDOFF_20261109_KO.md",
   "human_status": "EXECUTION_STATUS_KO.md",
@@ -68,7 +68,7 @@
   "CFD_solver_run": false,
   "GPU_solver_run": false,
   "browser_state": "SPACE15_CREATED_WITH_PERMISSION_R5_DISPLAY_QA_PENDING_CURRENT_LIVENESS_UNVERIFIED",
-  "next_action": "M3-b: controlled experiments (diagonal choice, centerline single-topology seam, shoulder fan repatch) plus a second independent self-intersection checker, under a new pre-registered R6 contract; M3 stays FAIL until surfaceCheck reports 0",
+  "next_action": "owner decision on contract 03 (R7 fuselage from official drawing) before any new candidate",
   "known_defects": [
     "C native scope and mesh labels inherited R4 wording",
     "C frozen artifact STL basename says B; directory/receipt/hash identify C",
@@ -94,5 +94,41 @@
     "tests": "5 passed (re-run by orchestrator 2026-11-09)",
     "scope_exception": "first surfaceCheck wrote triangle-quality.vtp beside source; relocated into attempt dir; contained rerun identical",
     "worker": "gpt-6.1-sol effort high service_tier default (rollout-verified)"
+  },
+  "r6_blender_rebuild": {
+    "branch": "feat/a321-r6-blender",
+    "commits": {
+      "contracts": [
+        "b7bfe2f",
+        "82595fd",
+        "377532d",
+        "57ab99f",
+        "15abe18"
+      ],
+      "checks": "82595fd",
+      "reference": "7e7eed6",
+      "r6_a_b": "3fbe20d",
+      "r6_c": "4fc8a64"
+    },
+    "verdict": "M3 FAIL retained: wing/horizontal/vertical pass every gate in R6-a/b/c; fuselage fails in all three",
+    "fuselage": {
+      "surfacecheck_locations": {
+        "r6_a": 1568,
+        "r6_b": 104,
+        "r6_c": 48
+      },
+      "g4_random_max_m": 0.02683,
+      "g4_dense_surface_max_m_r6_c": 0.02828,
+      "g4_limit_m": 0.025
+    },
+    "wing_tails_dense_surface_max_m_r6_c": {
+      "wing": 0.00093,
+      "horizontal": 0.00093,
+      "vertical": 0.00136,
+      "limit_m": 0.01
+    },
+    "root_cause_judgement": "R3 ledger fuselage (nose stations x = 0, 0.001, 0.25 m; flat belly/crown clips) conflicts with a smooth surface within 25 mm; judgement, not proof",
+    "decision_pending": "owner: contract 03 changing the fuselage fidelity reference from R3 to official drawing outlines with parametric sections (R7 fuselage), or keep R3",
+    "solver_mesher_gpu_run": false
   }
 }

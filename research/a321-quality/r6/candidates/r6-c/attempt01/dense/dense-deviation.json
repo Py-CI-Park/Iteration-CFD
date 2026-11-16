@@ -1,0 +1,114 @@
+{
+ "fuselage": {
+  "limit_m": 0.025,
+  "reference": "fuselage.stl",
+  "candidate_to_r3": {
+   "samples": 2450336,
+   "max_m": 0.028283011594137538,
+   "p99_m": 0.017462015732296957,
+   "worst_xyz_m": [
+    0.3357,
+    -0.0114,
+    2.7691
+   ],
+   "over_limit_samples": 1123
+  },
+  "r3_to_candidate": {
+   "samples": 326144,
+   "max_m": 0.0262183645262541,
+   "p99_m": 0.009047549742498284,
+   "worst_xyz_m": [
+    0.3325,
+    -0.0087,
+    2.8047
+   ],
+   "over_limit_samples": 115
+  },
+  "dense_max_m": 0.028283011594137538,
+  "pass": false
+ },
+ "wing": {
+  "limit_m": 0.01,
+  "reference": "ref-wing-fullspan.stl",
+  "candidate_to_r3": {
+   "samples": 2695784,
+   "max_m": 0.0009295447176337636,
+   "p99_m": 0.00046844047508168627,
+   "worst_xyz_m": [
+    16.0529,
+    -0.0289,
+    3.0423
+   ],
+   "over_limit_samples": 0
+  },
+  "r3_to_candidate": {
+   "samples": 356608,
+   "max_m": 0.0009248311047907072,
+   "p99_m": 0.00046973924236493205,
+   "worst_xyz_m": [
+    16.0388,
+    0.0,
+    3.0396
+   ],
+   "over_limit_samples": 0
+  },
+  "dense_max_m": 0.0009295447176337636,
+  "pass": true
+ },
+ "horizontal": {
+  "limit_m": 0.01,
+  "reference": "ref-horizontal-fullspan.stl",
+  "candidate_to_r3": {
+   "samples": 1016680,
+   "max_m": 0.0009345927331391018,
+   "p99_m": 0.0005029464045883684,
+   "worst_xyz_m": [
+    39.2471,
+    1.3222,
+    4.868
+   ],
+   "over_limit_samples": 0
+  },
+  "r3_to_candidate": {
+   "samples": 178752,
+   "max_m": 0.0009206743896611116,
+   "p99_m": 0.0005032881934315834,
+   "worst_xyz_m": [
+    39.2556,
+    1.3345,
+    4.8687
+   ],
+   "over_limit_samples": 0
+  },
+  "dense_max_m": 0.0009345927331391018,
+  "pass": true
+ },
+ "vertical": {
+  "limit_m": 0.01,
+  "reference": "vertical.stl",
+  "candidate_to_r3": {
+   "samples": 825384,
+   "max_m": 0.0013590087962634082,
+   "p99_m": 0.0006727746089491941,
+   "worst_xyz_m": [
+    35.2659,
+    -0.0288,
+    5.5
+   ],
+   "over_limit_samples": 0
+  },
+  "r3_to_candidate": {
+   "samples": 102144,
+   "max_m": 0.0013205159457024484,
+   "p99_m": 0.0006222301864417506,
+   "worst_xyz_m": [
+    35.3104,
+    -0.0306,
+    5.546
+   ],
+   "over_limit_samples": 0
+  },
+  "dense_max_m": 0.0013590087962634082,
+  "pass": true
+ }
+}
