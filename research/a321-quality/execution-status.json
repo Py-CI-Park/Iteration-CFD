@@ -68,7 +68,7 @@
   "CFD_solver_run": false,
   "GPU_solver_run": false,
   "browser_state": "SPACE15_CREATED_WITH_PERMISSION_R5_DISPLAY_QA_PENDING_CURRENT_LIVENESS_UNVERIFIED",
-  "next_action": "owner decision on contract 03 (R7 fuselage from official drawing) before any new candidate",
+  "next_action": "owner decision on R7-a attempt02 fixes: strict fit-extremum reading with C1 jump-free Fritsch-Carlson, N=256 ring points for L6 (limit kept), G6 station set redefined as rings nearest knots/FC bounds (ratio 1.5 kept), graded closure-band rows per contract 02; step-0 barrels re-run before attempt02",
   "known_defects": [
     "C native scope and mesh labels inherited R4 wording",
     "C frozen artifact STL basename says B; directory/receipt/hash identify C",
@@ -135,5 +135,70 @@
     "decision_pending": "owner: contract 03 changing the fuselage fidelity reference from R3 to official drawing outlines with parametric sections (R7 fuselage), or keep R3",
     "solver_mesher_gpu_run": false,
     "dense_check_scope": "R6-c only"
+  },
+  "r7_drawing_fuselage": {
+    "branch": "feat/a321-r7-fuselage",
+    "commits": {
+      "contract_03": "5ab4c62",
+      "measure": "2e71e63",
+      "contract_03a": "26627de",
+      "openvsp_compare": "4ca54bc",
+      "r7_a_attempt01": "e8f66bc"
+    },
+    "step0_barrels": {
+      "B0a": {
+        "surfacecheck": 0,
+        "locator": 0,
+        "pymeshlab": 0
+      },
+      "B0b": {
+        "surfacecheck": 0,
+        "locator": 0,
+        "pymeshlab": 0
+      },
+      "positive_control_r6c_surfacecheck": 48,
+      "info_B0a_without_02c_leaning_surfacecheck": 24
+    },
+    "r7_a_attempt01": {
+      "verdict": "FAIL (4 gates)",
+      "pass": [
+        "G1",
+        "G2",
+        "G3 0/0/0",
+        "G4R printed dims",
+        "L7 13.8/10.4 mm",
+        "G7",
+        "A2",
+        "A3",
+        "A5 0.649/0.452/0.287 m"
+      ],
+      "fail": {
+        "L6_m": 0.002614,
+        "G5": "256 closure-band triangles, min angle 0.086 deg",
+        "G6_02d_fallback": "mean 0.639 deg / p99 4.89 deg (station set undefined: every ring is a station)",
+        "A1_wing": "26.4 mm open; one fuselage x wing triangle-pair intersection segment dropped by surfaceBooleanFeatures (orchestrator-confirmed), gate kept FAIL"
+      },
+      "orchestrator_classification": {
+        "non_conformance_fix_without_amendment": [
+          "single-strip closure band (contract 02 graded spacing, 03a L4 growth 1.25)",
+          "C0-joined FC pieces at zc 30.919 / 33.600 m (contract 03 M3 requires C1)"
+        ],
+        "owner_decisions": [
+          "fit-extremum floor (0.5 mm reading vs strict)",
+          "L6 remedy with limit kept (recommend N=256)",
+          "G6 station-set definition (recommend knots/FC bounds, ratio 1.5)"
+        ],
+        "info_crown_turning_deg_at_33p6": 0.465
+      },
+      "ego_lite_studio": "orchestrator opened fuselage.stl: 72,672 triangles, 1 solid, V 465.88 m3",
+      "fuselage_stl_sha256": "d0ecd25f74442f53c3e6ca640dbc4ea1399b3266a7fb3dbd146c54a668a21fc5"
+    },
+    "openvsp": {
+      "version": "3.56.0",
+      "location": ".worktmp/tools (git-excluded)",
+      "verdict": "comparison baseline only; union surfaceCheck 465, G5 8/9 rows fail",
+      "vspaero_run": false
+    },
+    "solver_mesher_gpu_run": false
   }
 }
