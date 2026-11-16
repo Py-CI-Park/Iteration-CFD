@@ -1,0 +1,16 @@
+{
+  "contract_id": "r6-geometry-contract-02c",
+  "amends": "r6-geometry-contract-02 tessellation rule, for a NEW candidate R6-b only; R6-a is completed and judged under 02/02a/02b unchanged",
+  "status": "PRE_CANDIDATE_METHOD_CHANGE_FOR_R6_B",
+  "authored": "2026-11-16 KST, orchestrator (Opus), before the R6-b STL exists",
+  "trigger": "worker sonnet-r6-gen calibration: on a development R6 fuselage, surfaceCheck v1912 reports 1290 locations while the locator reports 0 and no non-adjacent triangle lies within one cell of any hit; 99.9 % of hits sit at vertices with an exactly axis-parallel edge (x-parallel longitudinal edges in the prismatic mid-body, y-parallel ring edges on flat belly/crown clips). Synthetic open cylinder 32x100: 2497 locations; half-cell ring stagger -> 0; 1e-5 y or z jitter -> 0 (x-only jitter does not help); a 'leaning' strip triangulation with no ring-to-ring edge parallel to an axis -> 0. Interpretation: a checker response to exactly axis-parallel edges, not a geometric intersection.",
+  "change": {
+    "tessellation": "between adjacent rings/sections use a leaning strip triangulation in which no ring-to-ring (longitudinal or spanwise) edge is exactly parallel to a coordinate axis; every ledger point stays a vertex; no jitter or coordinate perturbation of any vertex is allowed",
+    "unchanged": "all gates G1-G7 and A1-A4, every 02a threshold (including min angle, aspect, grading, valence, dihedral, kink), three-checker self-intersection 0 with surfaceCheck still a gate, 02b clarifications"
+  },
+  "reporting": {
+    "r6_a": "R6-a (literal 02 tessellation) is kept and reported with its G3 surfaceCheck result and the calibration evidence; it is not regraded",
+    "r6_b": "if R6-b still shows surfaceCheck records (for example on y-parallel ring edges of the flat belly/crown clips that come from fixed ledger points), M3 stays FAIL and the records are reported with their edge-orientation analysis"
+  },
+  "side_finding": "the R3 ledger fuselage has exactly flat crown and belly clips (C15 records at z = 6.09 m and 1.95 m); the real A321 cross-section is not flat there. This is recorded as a geometry-source defect to address in a later candidate, not in R6-b."
+}
