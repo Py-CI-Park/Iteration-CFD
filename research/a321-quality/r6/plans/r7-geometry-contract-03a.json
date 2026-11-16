@@ -1,0 +1,91 @@
+{
+  "contract_id": "r7-geometry-contract-03a",
+  "parent": "r7-geometry-contract-03 (commit 5ab4c62); method, gate list and nature of change unchanged",
+  "status": "NUMBERS_LOCKED_BEFORE_BARREL_TEST_AND_BEFORE_ANY_R7_FUSELAGE",
+  "authored": "2026-11-16 KST, orchestrator (Opus), after phase A measurements by worker sonnet-r7-fuselage; no R7 surface exists at lock time",
+  "basis": {
+    "measurement_report": "research/a321-quality/r7/measure/R7_MEASURE_KO.md",
+    "measurement_json_sha256_lf": "6e1bf6d3bd7a21131a5d0aac420347de90d0448a6bb245c2d4a03e564f00df62",
+    "trace_meta_sha256": "d059ef88e2b969e9254b35c77200a5c352e21225e280b90f41568621f05c6a65",
+    "raw_trace_sha256": "59e0026b6b8a6b875c376e961fb33b15b07457c34a5d584075d35b57d7c50109",
+    "raw_trace_location": "<worktree>/.worktmp/r7-trace/raw-trace.json (git-excluded, Airbus copyright, never committed)",
+    "pdf_sha256": "50ae7a11b9834cbb1b0f8b862fcb6e85aa7817e77596cd12903033e81456d40d",
+    "orchestrator_independent_checks": [
+      "R3 fuselage.stl sliced at x = 7, 10, 15, 20, 25, 28 m by a separate script: crown 6.0900, belly 1.9500, half-width 1.9741-1.9748, rho 0.497-0.505 (band-mean estimate, resolution about +-0.005), consistent with the worker's parabola-fit rho 0.499988",
+      "worker invariant tests re-run by the orchestrator: 4/4 pass",
+      "r7-measure.json scanned: holds knot vectors and ring stations, no raw trace polylines"
+    ]
+  },
+  "locked": {
+    "L1_r3_frame": {
+      "crown_z_m": 6.0900,
+      "belly_z_m": 1.9500,
+      "rho": 0.499988,
+      "rho_measured_range": [0.499724, 0.500281],
+      "constant_section_x_range_m": [6.2172, 30.3361],
+      "note": "measured values only; no claim is made here about the R3 section shape between the side and crown/belly points (R6 found flat crown/belly clips in R3)"
+    },
+    "L2_normalisation": {
+      "top_view_pt_per_m": {"x": 7.948651, "y": 7.955704},
+      "side_view_pt_per_m": {"x": 7.945896, "z": 8.025725},
+      "side_profile_z_offset_m": 4.0200,
+      "rule": "per contract 03 M2; reproduce from the raw trace (SHA above) with r7_profiles.py; the reproduced scales must match these to 1e-6 relative, else STOP"
+    },
+    "L3_knot_rule_and_fit": {
+      "interior_knots_per_curve": 64,
+      "knot_vectors": "exactly r7-measure.json fits.curves.{w,zc,zb}.candidates.64.knots_m (SHA above)",
+      "rule_text": "feature knots at the ends of straight stretches >= 1 m, remaining knots by equidistribution of (|y''| + 2e-3)^(2/5)",
+      "fit_domain_m": [0.001, 44.509],
+      "continuity": "C2 everywhere inside the fit domain. NO C0/multiple knot at the windshield corner (contract 03 M3 requires C2; the 9.6 mm crown residual there is inside the side band)",
+      "reproduction_check": "phase B refits from the raw trace with the locked knots; residual max per curve must match r7-measure.json to 1e-6 m (w 4.6247 mm, zc 9.6361 mm, zb 2.7167 mm), else STOP",
+      "no_spurious_extrema": "the fit must not create a local extremum that the trace does not have (evaluated at 1 mm spacing; trace extrema of prominence < 0.5 mm ignored). Any knot interval that does is replaced by Fritsch-Carlson C1 on the same knots (contract 03 M3 / 02b); every replaced interval is recorded. The worker's 'overshoot_intervals_over_0.5mm' list (data-envelope test per knot interval, nose x < 2.6 m) must be re-examined under this definition and reported",
+      "printed_extremes_renormalisation": "after fitting, w(x) is multiplied by 3.95 / max(w_fit) and z_c, z_b are scaled about z = 4.0200 by 4.14 / max(z_c - z_b)_fit, so the printed maxima are reproduced exactly; each factor must lie in [0.9995, 1.0005], else STOP. No plateau/constant pinning (it would add exactly axis-parallel lines). Measured fit maxima before correction: w 3.949942 m"
+    },
+    "L4_ring_rule": {
+      "points_per_ring": 128,
+      "vertex_placement": "vertices exactly at crown (y = 0), belly (y = 0) and both max-width points; equal arc length per quadrant (32 segments)",
+      "spacing": "meridian edge length h(x) = min(sqrt(8 * 0.001 / kappa), 3 * P / 128, 0.6 m), |dh/dx| <= 0.18, marching from both ends, equal steps on the plateau 12-28 m (as r7_rings.py, measured 268 rings, growth ratio max 1.2185)",
+      "forced_stations": "a ring at argmax w(x) and a ring at argmax (z_c - z_b)(x) after L3 renormalisation, inserted with the same growth limit (<= 1.25); the station list is written to the attempt receipt",
+      "growth_ratio_max": 1.25
+    },
+    "L5_closures": "nose and tail per 02b: 1 mm linear closure bands; the tail is blunt (traced 0.405 x 0.391 m, R3 0.401 x 0.377 m), closed with the 02b cap, whose rim is a declared feature line for the dihedral gate (as in R3/R6)",
+    "L6_own_curve_deviation": {
+      "limit_m": 0.0025,
+      "method": "two-sided and dense: (a) surface -> analytic: every triangle sampled at the same 7 barycentric points as dense_component_deviation.py, exact point-to-implicit-surface distance by local minimisation (not the first-order F/|grad F|); (b) analytic -> surface: analytic surface sampled at >= 4x the ring density in x and >= 4x the 128 ring points in angle, exact trimesh closest_point. Closure bands included.",
+      "basis": "phase A point-sample estimate 1.742 mm (x 3.44 m), ring sagitta 0.654 mm",
+      "on_exceedance": "FAIL, reported to the orchestrator; the limit is not re-locked"
+    },
+    "L7_outline_band": {
+      "top_view_m": 0.0244,
+      "side_view_m": 0.0445,
+      "basis": "root-sum-square of the measured drawing-consistency components (top: L/R asymmetry per edge about the best-fit centreline 0.0131, tip-to-centreline 0.0081, y-scale spread 0.0111, top-vs-side length 0.0154; side: z-scale spread 0.0410, tip 0.0081, length 0.0154). The linear sums 0.048 / 0.064 m are NOT used (the tighter RSS values are locked)",
+      "top_view_comparison": "candidate half-width silhouette (max |y| per x slice of the tessellated surface) vs EACH traced edge (upper and lower) measured about the best-fit centreline (shift 0.0068 m), per edge, every trace sample; also reported (not gated): vs the drawn centreline",
+      "side_view_comparison": "candidate crown and belly silhouette (max/min z per x slice) vs the normalised, z-offset traced crown and belly, every trace sample",
+      "excluded_from_gate": "the hidden-line bridges with no drawn line (crown x 26.563-27.162 m, belly x 15.703-24.782 m) and the closure bands (x < 0.001, x > 44.509); the bridges are a declared straight-line ASSUMPTION and their deviation is reported separately"
+    },
+    "L8_A5_root_embedment_margin_m": {
+      "margin_m": 0.075,
+      "basis": "side band linear sum 0.0644 + aft fit residual 0.0027 + z offset 0.0023 + tessellation estimate 0.0017 = 0.0711, rounded up",
+      "phase_A_measured_min_depth_m": {"vertical": 0.2874, "horizontal": 0.4523, "wing": 0.6488},
+      "phase_A_locations": {"vertical": [42.340, 0.0, 5.500], "horizontal": [42.209, 0.0, 4.595], "wing": [18.266, 0.0, 2.601]},
+      "verdict_before_surface": "PASS for all three (contract 03 A5 pre-surface condition met)",
+      "phase_B": "re-measured on the tessellated R7 fuselage and reported; same margin",
+      "labels": "the wing depth is measured to the bridged (assumed) belly line; the crown bulge where the fin leading edge meets the crown (x 33.6-41.3 m, +0.042 m) may be a fillet line in the drawing (R3 has the same bulge)"
+    },
+    "L9_step0_barrel": {
+      "rule": "contract 03 step 0, mirroring the production choices: section = two half-ellipses with L1 rho, w = 3.95 m, height 4.14 m, crown and belly exactly constant (so crown/belly/max-width ring edges are exactly x-parallel, as on the R7 plateau), N = 128 with L4 vertex placement, plateau ring spacing of L4, length >= 10 m, L5-style 1 mm closure caps",
+      "variant_B0b": "the same barrel plus, at one end, a >= 3 m linear taper of w and height to the traced blunt tail size (0.405 x 0.391 m) closed with the L5 cap; added by the orchestrator as a stricter test of the tail closure",
+      "pass": "surfaceCheck v1912 0 AND locator 0 AND PyMeshLab 0 on both variants; otherwise STOP and report, no R7 fuselage under 03/03a"
+    },
+    "L10_unchanged": "G1, G2, G3, G5 (every 02a threshold), G6 (kink 1.5 with the R7 ring stations, 02d fallback), G7, A1-A4 exactly as contract 03"
+  },
+  "worker_questions_answered": {
+    "a_C0_windshield_knot": "not allowed (L3)",
+    "b_pin_max_width_height_as_constants": "not adopted; printed maxima reproduced by renormalising the fitted curves and forcing rings at the maxima (L3, L4)",
+    "c_blunt_tail_closure": "02b 1 mm closure band and cap, as R3 (L5)"
+  },
+  "process_notes": [
+    "the R7 measure worker and the OpenVSP worker shared one session scratchpad and two exploration files were overwritten; deliverables are separate. This is recorded as a caveat on the independence of the OpenVSP comparison; phase B uses its own scratch subdirectory",
+    "figures/fig_fit_residuals.svg plots fit-minus-trace at every trace sample and would let the raw trace be reconstructed; it is kept out of the repository (moved to .worktmp/r7-trace/), the residual statistics stay in r7-measure.json"
+  ]
+}
