@@ -1,0 +1,18 @@
+{
+  "contract_id": "r6-geometry-contract-02d",
+  "amends": "r6-geometry-contract-02 method (tessellation, longitudinal interpolation choice) and defines the G6 kink evaluation when its ratio is undefined; for a NEW candidate R6-c only. R6-a and R6-b stay judged as recorded in 3fbe20d.",
+  "status": "PRE_CANDIDATE_METHOD_CHANGE_FOR_R6_C",
+  "authored": "2026-11-16 KST, orchestrator (Opus), before the R6-c STL exists",
+  "trigger": {
+    "r6_b_fuselage_G3": "surfaceCheck 104 records; 96 at vertices with an exactly y-parallel ring edge (94 at x 4-7 m on the flat belly clip, 3 at the nose-cap centre), 8 unexplained; a copy with 500 of 504 y-parallel ring edges flipped (no vertex moved) gave 8",
+    "r6_b_fuselage_G4": "between-station deviation 26.83 mm > 25 mm at x = 0.33 m, z = 2.77 m (nose underside, ledger interval 2-3)",
+    "g6_undefined": "wing and vertical kink ratio undefined: mean non-station turning 0.0088 deg / 0.0016 deg is below the 0.01 deg float32 floor; station-edge mean 0.0087 deg / 0.0014 deg"
+  },
+  "changes": {
+    "edge_flip": "after the 02c leaning-strip tessellation, every edge that is exactly parallel to a coordinate axis is flipped to the other diagonal of its two adjacent triangles when the flip keeps every 02a threshold for both new triangles and does not fold the surface (new dihedral <= the old maximum of the pair + 1 deg). No vertex is moved or added. Edges whose flip is refused are listed.",
+    "longitudinal_choice": "per fuselage longitudinal grid line: C2 unless it overshoots the station extremes OR its sampled deviation from the R3 component exceeds 20 mm (80 % of the 25 mm limit) in any interval; then Fritsch-Carlson C1. If Fritsch-Carlson also exceeds 25 mm, it is reported as a G4 failure; no further linearisation and no extra rows inserted to chase the limit.",
+    "g6_fallback": "when the kink ratio denominator is below 0.01 deg, G6 is evaluated as: mean station-edge turning <= 0.05 deg and p99 station-edge turning <= 0.5 deg (station lines carry no turning above noise; snappyHexMesh feature angles are tens of degrees). This applies to R6-c onward; R6-a/R6-b remain recorded as UNDEFINED."
+  },
+  "unchanged": "all other gates and every 02a threshold; three-checker self-intersection 0 with surfaceCheck as a gate; 02b and 02c rules; ledger points as vertices; no jitter",
+  "investigate": "the 8 R6-b surfaceCheck records that do not sit on an axis-parallel edge are to be located and characterised for R6-c"
+}
