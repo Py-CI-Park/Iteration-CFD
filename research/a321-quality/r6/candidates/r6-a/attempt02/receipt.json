@@ -1,0 +1,170 @@
+{
+ "tag": "r6-a",
+ "attempt": "attempt02",
+ "tessellation": "quad",
+ "params": {
+  "build_args": "--end-match --cap-density 3.0 --end-bias 1.5 --long-turn 20",
+  "aspect_fuselage": "3.0",
+  "aspect_wing_horizontal": "1.8",
+  "aspect_vertical": "1.0"
+ },
+ "steps": [
+  {
+   "step": "build_r6",
+   "wall_s": 47.86,
+   "returncode": 0,
+   "cmd": "C:\\Python\\64\\Python31313\\python.exe D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\build_r6.py --out-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\candidates\\r6-a\\attempt02\\_build --aspect-fuselage 3.0 --aspect-wing 1.8 --aspect-vertical 1.0 --tess quad --end-match --cap-density 3.0 --end-bias 1.5 --long-t",
+   "log": "build.log"
+  },
+  {
+   "step": "blender_build_export",
+   "wall_s": 8.83,
+   "returncode": 0,
+   "cmd": "D:\\Chanil_Park\\Project\\Programming\\Aircraft-Workbench\\.workstation\\tools\\blender-5.2.2-portable\\blender.exe -b --factory-startup --disable-autoexec --python D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\blender_r6.py --python-exit-code 1 -- --build --tag r6-a --npz-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quali",
+   "log": "blender-build.log"
+  },
+  {
+   "step": "blender_verify_fresh_process",
+   "wall_s": 3.27,
+   "returncode": 0,
+   "cmd": "D:\\Chanil_Park\\Project\\Programming\\Aircraft-Workbench\\.workstation\\tools\\blender-5.2.2-portable\\blender.exe -b --factory-startup --disable-autoexec --python D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\blender_r6.py --python-exit-code 1 -- --verify --tag r6-a --npz-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-qual",
+   "log": "blender-verify.log"
+  },
+  {
+   "step": "make_refs",
+   "wall_s": 0.63,
+   "returncode": 0,
+   "cmd": "C:\\Python\\64\\Python31313\\python.exe D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\make_refs.py --out-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\candidates\\r6-a\\attempt02\\refs",
+   "log": "refs.log"
+  },
+  {
+   "step": "r6_gate_fuselage",
+   "returncode": 0,
+   "log": "gate-fuselage.log"
+  },
+  {
+   "step": "r6_gate_wing",
+   "returncode": 0,
+   "log": "gate-wing.log"
+  },
+  {
+   "step": "r6_gate_horizontal",
+   "returncode": 0,
+   "log": "gate-horizontal.log"
+  },
+  {
+   "step": "r6_gate_vertical",
+   "returncode": 0,
+   "log": "gate-vertical.log"
+  },
+  {
+   "step": "r6_gate_all_parallel",
+   "wall_s": 103.8
+  },
+  {
+   "step": "surfaceCheck_fuselage",
+   "wall_s": 10.87,
+   "locations": 1568
+  },
+  {
+   "step": "surfaceCheck_wing",
+   "wall_s": 4.76,
+   "locations": 0
+  },
+  {
+   "step": "surfaceCheck_horizontal",
+   "wall_s": 2.12,
+   "locations": 0
+  },
+  {
+   "step": "surfaceCheck_vertical",
+   "wall_s": 1.78,
+   "locations": 0
+  },
+  {
+   "step": "surfaceBooleanFeatures_wing",
+   "wall_s": 7.61,
+   "attempt_dir": "sbf-r6-a-attempt02-wing-UVwwxX"
+  },
+  {
+   "step": "junction_analysis_wing",
+   "wall_s": 17.25,
+   "returncode": 0,
+   "cmd": "uv run D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\junction_analysis.py --sbf-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\attempts\\sbf-r6-a-attempt02-wing-UVwwxX --fuselage D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\candidates\\r6-a\\attempt02\\fuselage.s",
+   "log": "junction-wing.log"
+  },
+  {
+   "step": "surfaceBooleanFeatures_horizontal",
+   "wall_s": 4.97,
+   "attempt_dir": "sbf-r6-a-attempt02-horizontal-glUFrH"
+  },
+  {
+   "step": "junction_analysis_horizontal",
+   "wall_s": 16.18,
+   "returncode": 0,
+   "cmd": "uv run D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\junction_analysis.py --sbf-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\attempts\\sbf-r6-a-attempt02-horizontal-glUFrH --fuselage D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\candidates\\r6-a\\attempt02\\fuse",
+   "log": "junction-horizontal.log"
+  },
+  {
+   "step": "surfaceBooleanFeatures_vertical",
+   "wall_s": 4.71,
+   "attempt_dir": "sbf-r6-a-attempt02-vertical-i3sSMZ"
+  },
+  {
+   "step": "junction_analysis_vertical",
+   "wall_s": 13.37,
+   "returncode": 0,
+   "cmd": "uv run D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\junction_analysis.py --sbf-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\attempts\\sbf-r6-a-attempt02-vertical-i3sSMZ --fuselage D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\candidates\\r6-a\\attempt02\\fusela",
+   "log": "junction-vertical.log"
+  },
+  {
+   "step": "check_r6",
+   "wall_s": 18.62,
+   "returncode": 0,
+   "cmd": "uv run D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\check_r6.py --attempt D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\candidates\\r6-a\\attempt02 --out D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\candidates\\r6-a\\attempt02\\gate-table.json",
+   "log": "check.log"
+  }
+ ],
+ "inputs_sha256_before": {
+  "research\\a321-integration\\evidence\\reconstruction-r3.json": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "research\\a321-integration\\artifacts\\shell-r3\\fuselage.stl": "9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80",
+  "research\\a321-integration\\artifacts\\shell-r3\\wing.stl": "b23c8eab3652f581df5a4e058485a9c62085eab38b2c7cea90169e19a0ed3317",
+  "research\\a321-integration\\artifacts\\shell-r3\\horizontal.stl": "94b34576f4f994acf27c7255d0c1af2029d6de9c4ebc66d2353fae9430240a3e",
+  "research\\a321-integration\\artifacts\\shell-r3\\vertical.stl": "6cfc20121dbcc4772bb04b8cb10934494660e9803a003313844cda8ac022bc18",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02.json": "20914b475e8bf9bce8923df55780ce4a7d2b7173ed97f8f0b422b801f0b1bbb5",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02a.json": "d945d55a8cd661b355cb994616e9dc16722b71922fba6e7aaf84c9e4253cda38",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02b.json": "ea92b154723f95ec2235186992c6279646fb4d37dfe633629c598ac69efbd024",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02c.json": "f3f891365582bafd942636744ae2327d4acbe9d6529d8bebcc4a3b30fc06ba14"
+ },
+ "inputs_sha256_after": {
+  "research\\a321-integration\\evidence\\reconstruction-r3.json": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "research\\a321-integration\\artifacts\\shell-r3\\fuselage.stl": "9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80",
+  "research\\a321-integration\\artifacts\\shell-r3\\wing.stl": "b23c8eab3652f581df5a4e058485a9c62085eab38b2c7cea90169e19a0ed3317",
+  "research\\a321-integration\\artifacts\\shell-r3\\horizontal.stl": "94b34576f4f994acf27c7255d0c1af2029d6de9c4ebc66d2353fae9430240a3e",
+  "research\\a321-integration\\artifacts\\shell-r3\\vertical.stl": "6cfc20121dbcc4772bb04b8cb10934494660e9803a003313844cda8ac022bc18",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02.json": "20914b475e8bf9bce8923df55780ce4a7d2b7173ed97f8f0b422b801f0b1bbb5",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02a.json": "d945d55a8cd661b355cb994616e9dc16722b71922fba6e7aaf84c9e4253cda38",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02b.json": "ea92b154723f95ec2235186992c6279646fb4d37dfe633629c598ac69efbd024",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02c.json": "f3f891365582bafd942636744ae2327d4acbe9d6529d8bebcc4a3b30fc06ba14"
+ },
+ "inputs_unchanged": true,
+ "artifact_sha256": {
+  "feature-manifest.json": "e007415242fc7617ebc10055f00c3e296627983ecdf696cdd2a9d2b75b703ba6",
+  "features-fuselage.json": "53f1f3f0161a1ae9243820fd0490fa3b412a1a4da2a84384c15d68a39163b222",
+  "features-horizontal.json": "79f6616c6e93e25c3ff700638307695a7fd987a11e5ca9addd4807ca82d07678",
+  "features-vertical.json": "62ceb38b9bf79ef32a81150a18948bc37b06f8e9f7c03516e95948a97bfbb694",
+  "features-wing.json": "3fd8a38bdbab7dbe621f322925a457c430ea035bd689e5cfe990cbbea4e74a3c",
+  "fuselage.npz": "09f015292ba9e6ea18c532f182bbee91f05fbbfa005349cde9a044c8623d8049",
+  "fuselage.stl": "e7012a020b213df918c65614d7c2790cabb94c9923cd3117f1aad592e544c7ed",
+  "g7-readback.json": "77b6f253d85ee35cb635dc39af3425347cb3b9c2ce901e2c9a95ecaee2dff714",
+  "gate-table.json": "79657fac7b6b9123645465f4e79fbd8a760234946c4eff883e6ba70935d67119",
+  "horizontal.npz": "a471b9798c3cfa895f1516ec5e52621ef342a39bc2a4f50b6afe30914190751b",
+  "horizontal.stl": "29b7986d92bdfde4413ca14886e977caff569d3db8d057294efea2d254d3c053",
+  "r6-a.blend": "601240693f86722c9dccb20a26f31318ef9b9ebbae5bf31e0e3cc47ffc66536d",
+  "vertical.npz": "4e55cff808d68330d21ea9d7bcb0b315d56493c311d05304484d46a1d9a5415c",
+  "vertical.stl": "f56c54c9e869f15bf41aa4a0aaeb86ed43b334c80cdde3b2c7e76d19789e89a0",
+  "wing.npz": "80ccab683165107987a67d379033cfb755253f7ea527a7492861185dbc981394",
+  "wing.stl": "2afcb289d742d06e495f15069ff78da5f0c4241dca3d86a2646a4fca895aa749"
+ },
+ "date_local": "2026-11-16 10:28:50"
+}

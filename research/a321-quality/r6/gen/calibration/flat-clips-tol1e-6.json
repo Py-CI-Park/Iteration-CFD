@@ -1,0 +1,3333 @@
+{
+ "tolerance_m": 1e-06,
+ "crown_flat_ranges": [
+  {
+   "z_extreme_m": 3.458617803136537,
+   "station_first": 0,
+   "station_last": 0,
+   "x_first_m": 0.0,
+   "x_last_m": 0.0,
+   "y_extent_max_m": 3.337184355961519e-05,
+   "y_extent_min_m": 3.337184355961519e-05
+  },
+  {
+   "z_extreme_m": 4.441367376902468,
+   "station_first": 6,
+   "station_last": 6,
+   "x_first_m": 1.2442401765791398,
+   "x_last_m": 1.2442401765791398,
+   "y_extent_max_m": 0.12399814787682895,
+   "y_extent_min_m": 0.12399814787682895
+  }
+ ],
+ "belly_flat_ranges": [
+  {
+   "z_extreme_m": 3.4579368045642545,
+   "station_first": 0,
+   "station_last": 0,
+   "x_first_m": 0.0,
+   "x_last_m": 0.0,
+   "y_extent_max_m": 3.337222855979715e-05,
+   "y_extent_min_m": 3.337222855979715e-05
+  },
+  {
+   "z_extreme_m": 2.023662831500647,
+   "station_first": 18,
+   "station_last": 18,
+   "x_first_m": 4.228016600369076,
+   "x_last_m": 4.228016600369076,
+   "y_extent_max_m": 0.6221708471382846,
+   "y_extent_min_m": 0.6221708471382846
+  },
+  {
+   "z_extreme_m": 2.0112185253312087,
+   "station_first": 19,
+   "station_last": 25,
+   "x_first_m": 4.476664635684903,
+   "x_last_m": 5.968552847579871,
+   "y_extent_max_m": 0.6632190277010019,
+   "y_extent_min_m": 0.6348326195731612
+  }
+ ],
+ "stations_with_flat_crown": 2,
+ "stations_with_flat_belly": 9,
+ "stations": 182,
+ "per_station": [
+  {
+   "station": 0,
+   "x_m": 0.0,
+   "top": {
+    "z_extreme_m": 3.458617803136537,
+    "points_at_extreme": 3,
+    "y_extent_m": 3.337184355961519e-05,
+    "y_min_m": -1.6685921779808455e-05,
+    "y_max_m": 1.668592177980673e-05
+   },
+   "bottom": {
+    "z_extreme_m": 3.4579368045642545,
+    "points_at_extreme": 3,
+    "y_extent_m": 3.337222855979715e-05,
+    "y_min_m": -1.668611427989952e-05,
+    "y_max_m": 1.6686114279897634e-05
+   }
+  },
+  {
+   "station": 1,
+   "x_m": 0.001,
+   "top": {
+    "z_extreme_m": 3.4696272016605874,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.5950551877230365e-19,
+    "y_max_m": 4.5950551877230365e-19
+   },
+   "bottom": {
+    "z_extreme_m": 3.4469272492511727,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.3204467338577926e-18,
+    "y_max_m": -2.3204467338577926e-18
+   }
+  },
+  {
+   "station": 2,
+   "x_m": 0.24964803531582797,
+   "top": {
+    "z_extreme_m": 3.927790728319608,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 3.6232136342213467e-17,
+    "y_max_m": 3.6232136342213467e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.8576802133091954,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -9.48185974184809e-17,
+    "y_max_m": -9.48185974184809e-17
+   }
+  },
+  {
+   "station": 3,
+   "x_m": 0.49829607063165593,
+   "top": {
+    "z_extreme_m": 4.080166145423263,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.752603766291638e-17,
+    "y_max_m": 4.752603766291638e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.6978291624327992,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.2176141210145374e-16,
+    "y_max_m": -1.2176141210145374e-16
+   }
+  },
+  {
+   "station": 4,
+   "x_m": 0.7469441059474838,
+   "top": {
+    "z_extreme_m": 4.2243024355025796,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 8.114606414136428e-17,
+    "y_max_m": 8.114606414136428e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.580559220818174,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.1539999831433994e-16,
+    "y_max_m": -1.1539999831433994e-16
+   }
+  },
+  {
+   "station": 5,
+   "x_m": 0.9955921412633119,
+   "top": {
+    "z_extreme_m": 4.333319294794802,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 6.273298898799658e-17,
+    "y_max_m": 6.273298898799658e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.4685783846172145,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.5201597975698828e-16,
+    "y_max_m": -1.5201597975698828e-16
+   }
+  },
+  {
+   "station": 6,
+   "x_m": 1.2442401765791398,
+   "top": {
+    "z_extreme_m": 4.441367376902468,
+    "points_at_extreme": 3,
+    "y_extent_m": 0.12399814787682895,
+    "y_min_m": -0.06199907393841438,
+    "y_max_m": 0.061999073938414556
+   },
+   "bottom": {
+    "z_extreme_m": 2.384296367667302,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.339835512620152e-16,
+    "y_max_m": -1.339835512620152e-16
+   }
+  },
+  {
+   "station": 7,
+   "x_m": 1.4928882118949676,
+   "top": {
+    "z_extreme_m": 4.629793281562919,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.306485005034219e-17,
+    "y_max_m": 4.306485005034219e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.3143573565980318,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.0379847551969965e-16,
+    "y_max_m": -2.0379847551969965e-16
+   }
+  },
+  {
+   "station": 8,
+   "x_m": 1.7415362472107956,
+   "top": {
+    "z_extreme_m": 4.867308275626732,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 8.477436117816893e-17,
+    "y_max_m": 8.477436117816893e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.2358834448949603,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.8409778339105382e-16,
+    "y_max_m": -1.8409778339105382e-16
+   }
+  },
+  {
+   "station": 9,
+   "x_m": 1.9901842825266236,
+   "top": {
+    "z_extreme_m": 5.099655890567594,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0643291501051692e-16,
+    "y_max_m": 1.0643291501051692e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.185781490416132,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.8606967328125337e-16,
+    "y_max_m": -1.8606967328125337e-16
+   }
+  },
+  {
+   "station": 10,
+   "x_m": 2.2388323178424514,
+   "top": {
+    "z_extreme_m": 5.26891258752897,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 7.24362374444536e-17,
+    "y_max_m": 7.24362374444536e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.1308591214968784,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.570018393105435e-16,
+    "y_max_m": -2.570018393105435e-16
+   }
+  },
+  {
+   "station": 11,
+   "x_m": 2.4874803531582796,
+   "top": {
+    "z_extreme_m": 5.403048152446892,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1222328498560442e-16,
+    "y_max_m": 1.1222328498560442e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.0782278512534305,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.669598533474859e-16,
+    "y_max_m": -2.669598533474859e-16
+   }
+  },
+  {
+   "station": 12,
+   "x_m": 2.7361283884741074,
+   "top": {
+    "z_extreme_m": 5.511782913955186,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 6.102218217322559e-17,
+    "y_max_m": 6.102218217322559e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.0493469917178686,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.399317241134191e-16,
+    "y_max_m": -3.399317241134191e-16
+   }
+  },
+  {
+   "station": 13,
+   "x_m": 2.9847764237899352,
+   "top": {
+    "z_extreme_m": 5.605489410160553,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.27185765822329e-16,
+    "y_max_m": 1.27185765822329e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.0249569825851026,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.883984778372623e-16,
+    "y_max_m": -2.883984778372623e-16
+   }
+  },
+  {
+   "station": 14,
+   "x_m": 3.2334244591057635,
+   "top": {
+    "z_extreme_m": 5.68331839603292,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1580406915930572e-16,
+    "y_max_m": 1.1580406915930572e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9982165214483996,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.17634778115947e-16,
+    "y_max_m": -3.17634778115947e-16
+   }
+  },
+  {
+   "station": 15,
+   "x_m": 3.4820724944215913,
+   "top": {
+    "z_extreme_m": 5.7472699281992865,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1257845056604387e-16,
+    "y_max_m": 1.1257845056604387e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9733656347536905,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.4649341683812165e-16,
+    "y_max_m": -3.4649341683812165e-16
+   }
+  },
+  {
+   "station": 16,
+   "x_m": 3.7307205297374195,
+   "top": {
+    "z_extreme_m": 5.7993230703143706,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.652741182093055e-17,
+    "y_max_m": 9.652741182093055e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.971189850090889,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.6592236489747028e-16,
+    "y_max_m": -3.6592236489747028e-16
+   }
+  },
+  {
+   "station": 17,
+   "x_m": 3.9793685650532473,
+   "top": {
+    "z_extreme_m": 5.846514380187952,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.085475559264796e-16,
+    "y_max_m": 1.085475559264796e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9728830777386692,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.647847533328319e-16,
+    "y_max_m": -3.647847533328319e-16
+   }
+  },
+  {
+   "station": 18,
+   "x_m": 4.228016600369076,
+   "top": {
+    "z_extreme_m": 5.892524193531704,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1634903590254294e-16,
+    "y_max_m": 1.1634903590254294e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.023662831500647,
+    "points_at_extreme": 7,
+    "y_extent_m": 0.6221708471382846,
+    "y_min_m": -0.3110854235691427,
+    "y_max_m": 0.31108542356914193
+   }
+  },
+  {
+   "station": 19,
+   "x_m": 4.476664635684903,
+   "top": {
+    "z_extreme_m": 5.934001322569786,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.7819287688389383e-18,
+    "y_max_m": -2.7819287688389383e-18
+   },
+   "bottom": {
+    "z_extreme_m": 2.0112185253312087,
+    "points_at_extreme": 7,
+    "y_extent_m": 0.6348326195731612,
+    "y_min_m": -0.3174163097865811,
+    "y_max_m": 0.3174163097865801
+   }
+  },
+  {
+   "station": 20,
+   "x_m": 4.725312671000732,
+   "top": {
+    "z_extreme_m": 5.963582056604051,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 2.1731669467553752e-16,
+    "y_max_m": 2.1731669467553752e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.0091175024886416,
+    "points_at_extreme": 7,
+    "y_extent_m": 0.6400993900639231,
+    "y_min_m": -0.32004969503196184,
+    "y_max_m": 0.3200496950319613
+   }
+  },
+  {
+   "station": 21,
+   "x_m": 4.97396070631656,
+   "top": {
+    "z_extreme_m": 5.990413312488159,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.8568788999955168e-16,
+    "y_max_m": 1.8568788999955168e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.009526221255589,
+    "points_at_extreme": 7,
+    "y_extent_m": 0.647493185794119,
+    "y_min_m": -0.3237465928970598,
+    "y_max_m": 0.32374659289705915
+   }
+  },
+  {
+   "station": 22,
+   "x_m": 5.222608741632388,
+   "top": {
+    "z_extreme_m": 6.025187983469793,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1058245720936867e-16,
+    "y_max_m": 1.1058245720936867e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.0100558796979233,
+    "points_at_extreme": 7,
+    "y_extent_m": 0.6531427335252676,
+    "y_min_m": -0.3265713667626342,
+    "y_max_m": 0.32657136676263343
+   }
+  },
+  {
+   "station": 23,
+   "x_m": 5.471256776948215,
+   "top": {
+    "z_extreme_m": 6.063203780975165,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4331123569158482e-16,
+    "y_max_m": 1.4331123569158482e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.010615733979476,
+    "points_at_extreme": 7,
+    "y_extent_m": 0.6593704964942946,
+    "y_min_m": -0.3296852482471476,
+    "y_max_m": 0.32968524824714696
+   }
+  },
+  {
+   "station": 24,
+   "x_m": 5.719904812264043,
+   "top": {
+    "z_extreme_m": 6.086906859953567,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 5.041760747485629e-17,
+    "y_max_m": 5.041760747485629e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.0109652804473934,
+    "points_at_extreme": 7,
+    "y_extent_m": 0.6632190277010019,
+    "y_min_m": -0.3316095138505014,
+    "y_max_m": 0.33160951385050047
+   }
+  },
+  {
+   "station": 25,
+   "x_m": 5.968552847579871,
+   "top": {
+    "z_extreme_m": 6.09000015258789,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.309404923355255e-16,
+    "y_max_m": 1.309404923355255e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.0110082626342773,
+    "points_at_extreme": 7,
+    "y_extent_m": 0.6557321244415476,
+    "y_min_m": -0.3278660622207742,
+    "y_max_m": 0.3278660622207734
+   }
+  },
+  {
+   "station": 26,
+   "x_m": 6.2172008828957,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 5.727417087774277e-17,
+    "y_max_m": 5.727417087774277e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837154,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.454285850852615e-16,
+    "y_max_m": -4.454285850852615e-16
+   }
+  },
+  {
+   "station": 27,
+   "x_m": 6.4658489182115275,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 28,
+   "x_m": 6.714496953527355,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.179214793211516e-16,
+    "y_max_m": 1.179214793211516e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837154,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.852530560042457e-16,
+    "y_max_m": -3.852530560042457e-16
+   }
+  },
+  {
+   "station": 29,
+   "x_m": 6.963144988843183,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 30,
+   "x_m": 7.211793024159011,
+   "top": {
+    "z_extreme_m": 6.089751177067868,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.5162895515360106e-16,
+    "y_max_m": 1.5162895515360106e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502490046068233,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.4956925248348383e-16,
+    "y_max_m": -3.4956925248348383e-16
+   }
+  },
+  {
+   "station": 31,
+   "x_m": 7.46044105947484,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 32,
+   "x_m": 7.709089094790667,
+   "top": {
+    "z_extreme_m": 6.089752251861646,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 6.814520189565127e-17,
+    "y_max_m": 6.814520189565127e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502479298933246,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.330286835767543e-16,
+    "y_max_m": -4.330286835767543e-16
+   }
+  },
+  {
+   "station": 33,
+   "x_m": 7.957737130106495,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.938067405513277e-16,
+    "y_max_m": 1.938067405513277e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837163,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.143938910132983e-16,
+    "y_max_m": -3.143938910132983e-16
+   }
+  },
+  {
+   "station": 34,
+   "x_m": 8.206385165422322,
+   "top": {
+    "z_extreme_m": 6.089999885067366,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4761118541415297e-16,
+    "y_max_m": 1.4761118541415297e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500003151842575,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.5738732220669926e-16,
+    "y_max_m": -3.5738732220669926e-16
+   }
+  },
+  {
+   "station": 35,
+   "x_m": 8.45503320073815,
+   "top": {
+    "z_extreme_m": 6.089580774872956,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1103610772556283e-16,
+    "y_max_m": 1.1103610772556283e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9504193940737546,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.992691637907015e-16,
+    "y_max_m": -3.992691637907015e-16
+   }
+  },
+  {
+   "station": 36,
+   "x_m": 8.703681236053978,
+   "top": {
+    "z_extreme_m": 6.089770844525573,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.7006384580237404e-16,
+    "y_max_m": 1.7006384580237404e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950229338618152,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.3939741937815e-16,
+    "y_max_m": -3.3939741937815e-16
+   }
+  },
+  {
+   "station": 37,
+   "x_m": 8.952329271369805,
+   "top": {
+    "z_extreme_m": 6.089755707070472,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4337409479173136e-16,
+    "y_max_m": 1.4337409479173136e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950244474942581,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.578197833869823e-16,
+    "y_max_m": -3.578197833869823e-16
+   }
+  },
+  {
+   "station": 38,
+   "x_m": 9.200977306685633,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.6778423021814685e-16,
+    "y_max_m": 1.6778423021814685e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.404197177335368e-16,
+    "y_max_m": -3.404197177335368e-16
+   }
+  },
+  {
+   "station": 39,
+   "x_m": 9.449625342001463,
+   "top": {
+    "z_extreme_m": 6.089752476132258,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1766900711041054e-16,
+    "y_max_m": 1.1766900711041054e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502477056394634,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.8355163682055395e-16,
+    "y_max_m": -3.8355163682055395e-16
+   }
+  },
+  {
+   "station": 40,
+   "x_m": 9.69827337731729,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 41,
+   "x_m": 9.946921412633118,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.2173169494038797e-16,
+    "y_max_m": 1.2173169494038797e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837154,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.809851383376668e-16,
+    "y_max_m": -3.809851383376668e-16
+   }
+  },
+  {
+   "station": 42,
+   "x_m": 10.195569447948946,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 43,
+   "x_m": 10.444217483264774,
+   "top": {
+    "z_extreme_m": 6.090000148257938,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.285968214449885e-16,
+    "y_max_m": 1.285968214449885e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000520133436,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.728801362358403e-16,
+    "y_max_m": -3.728801362358403e-16
+   }
+  },
+  {
+   "station": 44,
+   "x_m": 10.692865518580602,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 45,
+   "x_m": 10.94151355389643,
+   "top": {
+    "z_extreme_m": 6.089982940809534,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.837197440303178e-16,
+    "y_max_m": 1.837197440303178e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500172581764588,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.1760980957471605e-16,
+    "y_max_m": -3.1760980957471605e-16
+   }
+  },
+  {
+   "station": 46,
+   "x_m": 11.190161589212257,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 47,
+   "x_m": 11.438809624528085,
+   "top": {
+    "z_extreme_m": 6.089998830827002,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 8.669955784152339e-17,
+    "y_max_m": 8.669955784152339e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500013693458769,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.173654506670032e-16,
+    "y_max_m": -4.173654506670032e-16
+   }
+  },
+  {
+   "station": 48,
+   "x_m": 11.687457659843913,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 49,
+   "x_m": 11.93610569515974,
+   "top": {
+    "z_extreme_m": 6.089771176358738,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 2.898238266682783e-17,
+    "y_max_m": 2.898238266682783e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.950229006809773,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.811523134265968e-16,
+    "y_max_m": -4.811523134265968e-16
+   }
+  },
+  {
+   "station": 50,
+   "x_m": 12.18475373047557,
+   "top": {
+    "z_extreme_m": 6.089757288728988,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 7.75648767777037e-17,
+    "y_max_m": 7.75648767777037e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.950242893402204,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.266283491410345e-16,
+    "y_max_m": -4.266283491410345e-16
+   }
+  },
+  {
+   "station": 51,
+   "x_m": 12.433401765791398,
+   "top": {
+    "z_extreme_m": 6.089546919243716,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.256193429560171e-16,
+    "y_max_m": 1.256193429560171e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950453247174189,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.834811436626003e-16,
+    "y_max_m": -3.834811436626003e-16
+   }
+  },
+  {
+   "station": 52,
+   "x_m": 12.682049801107226,
+   "top": {
+    "z_extreme_m": 6.09000015258789,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.996940962330313e-17,
+    "y_max_m": -1.996940962330313e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -5.23160648979103e-16,
+    "y_max_m": -5.23160648979103e-16
+   }
+  },
+  {
+   "station": 53,
+   "x_m": 12.930697836423054,
+   "top": {
+    "z_extreme_m": 6.089769251039199,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0538364142619144e-16,
+    "y_max_m": 1.0538364142619144e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950230931985503,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.040571261112263e-16,
+    "y_max_m": -4.040571261112263e-16
+   }
+  },
+  {
+   "station": 54,
+   "x_m": 13.179345871738882,
+   "top": {
+    "z_extreme_m": 6.090000135742868,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 7.561187299069142e-17,
+    "y_max_m": 7.561187299069142e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.95000006452748,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.254003729872896e-16,
+    "y_max_m": -4.254003729872896e-16
+   }
+  },
+  {
+   "station": 55,
+   "x_m": 13.42799390705471,
+   "top": {
+    "z_extreme_m": 6.090000152587889,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4349453560287473e-16,
+    "y_max_m": 1.4349453560287473e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.6471654425200226e-16,
+    "y_max_m": -3.6471654425200226e-16
+   }
+  },
+  {
+   "station": 56,
+   "x_m": 13.676641942370537,
+   "top": {
+    "z_extreme_m": 6.089751851553247,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.222729078352849e-16,
+    "y_max_m": 1.222729078352849e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502483301718225,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.7891510208562344e-16,
+    "y_max_m": -3.7891510208562344e-16
+   }
+  },
+  {
+   "station": 57,
+   "x_m": 13.925289977686365,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 58,
+   "x_m": 14.173938013002193,
+   "top": {
+    "z_extreme_m": 6.0900001525878915,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.3762558886604813e-16,
+    "y_max_m": 1.3762558886604813e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837154,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.6553573792077155e-16,
+    "y_max_m": -3.6553573792077155e-16
+   }
+  },
+  {
+   "station": 59,
+   "x_m": 14.42258604831802,
+   "top": {
+    "z_extreme_m": 6.089761317755171,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.48707478541129e-17,
+    "y_max_m": 9.48707478541129e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.950238864676964,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.146122997037057e-16,
+    "y_max_m": -4.146122997037057e-16
+   }
+  },
+  {
+   "station": 60,
+   "x_m": 14.67123408363385,
+   "top": {
+    "z_extreme_m": 6.0897730184107965,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.6159088211803746e-16,
+    "y_max_m": 1.6159088211803746e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950227164895305,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.411709493909414e-16,
+    "y_max_m": -3.411709493909414e-16
+   }
+  },
+  {
+   "station": 61,
+   "x_m": 14.919882118949678,
+   "top": {
+    "z_extreme_m": 6.089982497669385,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.5590995839781136e-16,
+    "y_max_m": 1.5590995839781136e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500177012835094,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.539627153361483e-16,
+    "y_max_m": -3.539627153361483e-16
+   }
+  },
+  {
+   "station": 62,
+   "x_m": 15.168530154265506,
+   "top": {
+    "z_extreme_m": 6.089982227203362,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 8.335918752116182e-17,
+    "y_max_m": 8.335918752116182e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500179717293298,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.264991631787577e-16,
+    "y_max_m": -4.264991631787577e-16
+   }
+  },
+  {
+   "station": 63,
+   "x_m": 15.417178189581334,
+   "top": {
+    "z_extreme_m": 6.089770011838654,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1996995989818972e-16,
+    "y_max_m": 1.1996995989818972e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502301712428758,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.8231087521184404e-16,
+    "y_max_m": -3.8231087521184404e-16
+   }
+  },
+  {
+   "station": 64,
+   "x_m": 15.665826224897161,
+   "top": {
+    "z_extreme_m": 6.0897624805783135,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.219695815701167e-16,
+    "y_max_m": 1.219695815701167e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502377019406776,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.875160899483299e-16,
+    "y_max_m": -3.875160899483299e-16
+   }
+  },
+  {
+   "station": 65,
+   "x_m": 15.91447426021299,
+   "top": {
+    "z_extreme_m": 6.089770443242873,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0216426580759671e-16,
+    "y_max_m": 1.0216426580759671e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502297398708786,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9887611203954287e-16,
+    "y_max_m": -3.9887611203954287e-16
+   }
+  },
+  {
+   "station": 66,
+   "x_m": 16.16312229552882,
+   "top": {
+    "z_extreme_m": 6.089549081244531,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.9435165804767483e-16,
+    "y_max_m": 1.9435165804767483e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950451085334862,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.1540722722384074e-16,
+    "y_max_m": -3.1540722722384074e-16
+   }
+  },
+  {
+   "station": 67,
+   "x_m": 16.411770330844647,
+   "top": {
+    "z_extreme_m": 6.0900001525878915,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.430149286820219e-17,
+    "y_max_m": 1.430149286820219e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.883938688203228e-16,
+    "y_max_m": -4.883938688203228e-16
+   }
+  },
+  {
+   "station": 68,
+   "x_m": 16.660418366160474,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.461459048918402e-17,
+    "y_max_m": 4.461459048918402e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.635979033317186e-16,
+    "y_max_m": -4.635979033317186e-16
+   }
+  },
+  {
+   "station": 69,
+   "x_m": 16.909066401476302,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 7.137699726301454e-18,
+    "y_max_m": 7.137699726301454e-18
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837167,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.955597898637647e-16,
+    "y_max_m": -4.955597898637647e-16
+   }
+  },
+  {
+   "station": 70,
+   "x_m": 17.15771443679213,
+   "top": {
+    "z_extreme_m": 6.089972371242967,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.296016201301327e-17,
+    "y_max_m": 9.296016201301327e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500278269535456,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.169248286927287e-16,
+    "y_max_m": -4.169248286927287e-16
+   }
+  },
+  {
+   "station": 71,
+   "x_m": 17.406362472107958,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 2.2535309767470226e-16,
+    "y_max_m": 2.2535309767470226e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837154,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.7784007667749505e-16,
+    "y_max_m": -2.7784007667749505e-16
+   }
+  },
+  {
+   "station": 72,
+   "x_m": 17.655010507423786,
+   "top": {
+    "z_extreme_m": 6.089334728809595,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 7.910777029329967e-17,
+    "y_max_m": 7.910777029329967e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9506654217590094,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.3027362311634326e-16,
+    "y_max_m": -4.3027362311634326e-16
+   }
+  },
+  {
+   "station": 73,
+   "x_m": 17.903658542739613,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.3583075802811685e-16,
+    "y_max_m": 1.3583075802811685e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837154,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.6733886583900014e-16,
+    "y_max_m": -3.6733886583900014e-16
+   }
+  },
+  {
+   "station": 74,
+   "x_m": 18.15230657805544,
+   "top": {
+    "z_extreme_m": 6.089770124168311,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.104980104141418e-17,
+    "y_max_m": 9.104980104141418e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502300589216088,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.1908484458088734e-16,
+    "y_max_m": -4.1908484458088734e-16
+   }
+  },
+  {
+   "station": 75,
+   "x_m": 18.40095461337127,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 76,
+   "x_m": 18.6496026486871,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 77,
+   "x_m": 18.898250684002928,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 78,
+   "x_m": 19.146898719318756,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 79,
+   "x_m": 19.395546754634584,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 80,
+   "x_m": 19.64419478995041,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 81,
+   "x_m": 19.89284282526624,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 82,
+   "x_m": 20.141490860582067,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.9873384849351304e-16,
+    "y_max_m": 1.9873384849351304e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950000047683715,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.0397735528758747e-16,
+    "y_max_m": -3.0397735528758747e-16
+   }
+  },
+  {
+   "station": 83,
+   "x_m": 20.390138895897895,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 84,
+   "x_m": 20.638786931213723,
+   "top": {
+    "z_extreme_m": 6.0897523716084585,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.7547702244446687e-16,
+    "y_max_m": 1.7547702244446687e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502478101554552,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.257375533297783e-16,
+    "y_max_m": -3.257375533297783e-16
+   }
+  },
+  {
+   "station": 85,
+   "x_m": 20.88743496652955,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.5737532838587582e-16,
+    "y_max_m": 1.5737532838587582e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837163,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.508297415186281e-16,
+    "y_max_m": -3.508297415186281e-16
+   }
+  },
+  {
+   "station": 86,
+   "x_m": 21.13608300184538,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.79132952024612e-17,
+    "y_max_m": 4.79132952024612e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.55604389133281e-16,
+    "y_max_m": -4.55604389133281e-16
+   }
+  },
+  {
+   "station": 87,
+   "x_m": 21.384731037161206,
+   "top": {
+    "z_extreme_m": 6.089695824080187,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.353375626377823e-16,
+    "y_max_m": 1.353375626377823e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950304353459979,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.664919457318136e-16,
+    "y_max_m": -4.664919457318136e-16
+   }
+  },
+  {
+   "station": 88,
+   "x_m": 21.633379072477034,
+   "top": {
+    "z_extreme_m": 6.090000075345275,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 5.923981396313245e-17,
+    "y_max_m": 5.923981396313245e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.950000124920562,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -5.420025083288624e-16,
+    "y_max_m": -5.420025083288624e-16
+   }
+  },
+  {
+   "station": 89,
+   "x_m": 21.88202710779286,
+   "top": {
+    "z_extreme_m": 6.089722925355434,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -5.361195174515546e-17,
+    "y_max_m": -5.361195174515546e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502772542090288,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -6.556569261940694e-16,
+    "y_max_m": -6.556569261940694e-16
+   }
+  },
+  {
+   "station": 90,
+   "x_m": 22.13067514310869,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.266714827349657e-16,
+    "y_max_m": 1.266714827349657e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837154,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.705659315604987e-16,
+    "y_max_m": -4.705659315604987e-16
+   }
+  },
+  {
+   "station": 91,
+   "x_m": 22.379323178424517,
+   "top": {
+    "z_extreme_m": 6.089999894771486,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1474107081775552e-16,
+    "y_max_m": 1.1474107081775552e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500003054808634,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.856713134102233e-16,
+    "y_max_m": -4.856713134102233e-16
+   }
+  },
+  {
+   "station": 92,
+   "x_m": 22.627971213740345,
+   "top": {
+    "z_extreme_m": 6.09000015258789,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.865842382494691e-16,
+    "y_max_m": 1.865842382494691e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.1022900917478803e-16,
+    "y_max_m": -4.1022900917478803e-16
+   }
+  },
+  {
+   "station": 93,
+   "x_m": 22.876619249056173,
+   "top": {
+    "z_extreme_m": 6.089999705626575,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.6563262052784104e-16,
+    "y_max_m": 1.6563262052784104e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950000494611647,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.3476703871582167e-16,
+    "y_max_m": -4.3476703871582167e-16
+   }
+  },
+  {
+   "station": 94,
+   "x_m": 23.125267284372,
+   "top": {
+    "z_extreme_m": 6.09000015258789,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.865842382494691e-16,
+    "y_max_m": 1.865842382494691e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.1022900917478803e-16,
+    "y_max_m": -4.1022900917478803e-16
+   }
+  },
+  {
+   "station": 95,
+   "x_m": 23.37391531968783,
+   "top": {
+    "z_extreme_m": 6.089671429684042,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 3.243585066475196e-17,
+    "y_max_m": 3.243585066475196e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9503287460340153,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -5.675397503131139e-16,
+    "y_max_m": -5.675397503131139e-16
+   }
+  },
+  {
+   "station": 96,
+   "x_m": 23.622563355003656,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.797783023478635e-17,
+    "y_max_m": 1.797783023478635e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.864791498221741e-16,
+    "y_max_m": -4.864791498221741e-16
+   }
+  },
+  {
+   "station": 97,
+   "x_m": 23.871211390319484,
+   "top": {
+    "z_extreme_m": 6.089751383839456,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.427798009819268e-17,
+    "y_max_m": 4.427798009819268e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502487978506782,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.569179662066728e-16,
+    "y_max_m": -4.569179662066728e-16
+   }
+  },
+  {
+   "station": 98,
+   "x_m": 24.119859425635315,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 99,
+   "x_m": 24.368507460951143,
+   "top": {
+    "z_extreme_m": 6.089982894891858,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.1123801517886792e-16,
+    "y_max_m": 1.1123801517886792e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500173040907067,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9008370827570364e-16,
+    "y_max_m": -3.9008370827570364e-16
+   }
+  },
+  {
+   "station": 100,
+   "x_m": 24.61715549626697,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 101,
+   "x_m": 24.8658035315828,
+   "top": {
+    "z_extreme_m": 6.089985171764705,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.476279950966038e-17,
+    "y_max_m": 9.476279950966038e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500150273879266,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.094178738059588e-16,
+    "y_max_m": -4.094178738059588e-16
+   }
+  },
+  {
+   "station": 102,
+   "x_m": 25.114451566898627,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.5564430192866356e-16,
+    "y_max_m": 1.5564430192866356e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837154,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.5255337393831147e-16,
+    "y_max_m": -3.5255337393831147e-16
+   }
+  },
+  {
+   "station": 103,
+   "x_m": 25.363099602214454,
+   "top": {
+    "z_extreme_m": 6.089769166423359,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 5.029243396808138e-17,
+    "y_max_m": 5.029243396808138e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502310165950218,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.591826062948193e-16,
+    "y_max_m": -4.591826062948193e-16
+   }
+  },
+  {
+   "station": 104,
+   "x_m": 25.611747637530282,
+   "top": {
+    "z_extreme_m": 6.089774688258163,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4249343110320903e-16,
+    "y_max_m": 1.4249343110320903e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502254951726652,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.6182640812130597e-16,
+    "y_max_m": -3.6182640812130597e-16
+   }
+  },
+  {
+   "station": 105,
+   "x_m": 25.86039567284611,
+   "top": {
+    "z_extreme_m": 6.089770202748143,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.6657109233597258e-16,
+    "y_max_m": 1.6657109233597258e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950229980347646,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.4288191313717697e-16,
+    "y_max_m": -3.4288191313717697e-16
+   }
+  },
+  {
+   "station": 106,
+   "x_m": 26.109043708161938,
+   "top": {
+    "z_extreme_m": 6.089751720632286,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.213633941511919e-16,
+    "y_max_m": 1.213633941511919e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9502484610830049,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.7980851566057223e-16,
+    "y_max_m": -3.7980851566057223e-16
+   }
+  },
+  {
+   "station": 107,
+   "x_m": 26.357691743477766,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 108,
+   "x_m": 26.606339778793593,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 109,
+   "x_m": 26.85498781410942,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 110,
+   "x_m": 27.10363584942525,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 111,
+   "x_m": 27.352283884741077,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 112,
+   "x_m": 27.600931920056905,
+   "top": {
+    "z_extreme_m": 6.09000014809499,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.2859926788973712e-16,
+    "y_max_m": 1.2859926788973712e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.95000005217628,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.7287279684173055e-16,
+    "y_max_m": -3.7287279684173055e-16
+   }
+  },
+  {
+   "station": 113,
+   "x_m": 27.849579955372732,
+   "top": {
+    "z_extreme_m": 6.090000152587891,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.12873163956991e-16,
+    "y_max_m": 1.12873163956991e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500000476837158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9413061405448867e-16,
+    "y_max_m": -3.9413061405448867e-16
+   }
+  },
+  {
+   "station": 114,
+   "x_m": 28.09822799068856,
+   "top": {
+    "z_extreme_m": 6.089999237545454,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.7425963160874252e-16,
+    "y_max_m": 1.7425963160874252e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500009626578039,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.29793725759099e-16,
+    "y_max_m": -3.29793725759099e-16
+   }
+  },
+  {
+   "station": 115,
+   "x_m": 28.346876026004388,
+   "top": {
+    "z_extreme_m": 6.089765131619542,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.988887382803975e-16,
+    "y_max_m": 1.988887382803975e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950235051097465,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.1061727276103023e-16,
+    "y_max_m": -3.1061727276103023e-16
+   }
+  },
+  {
+   "station": 116,
+   "x_m": 28.595524061320216,
+   "top": {
+    "z_extreme_m": 6.089983237686139,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.3231406639708305e-16,
+    "y_max_m": 1.3231406639708305e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500169613220288,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.77544329875406e-16,
+    "y_max_m": -3.77544329875406e-16
+   }
+  },
+  {
+   "station": 117,
+   "x_m": 28.844172096636044,
+   "top": {
+    "z_extreme_m": 6.089532380376902,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4449484465634514e-16,
+    "y_max_m": 1.4449484465634514e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950467784955042,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.593436296961451e-16,
+    "y_max_m": -3.593436296961451e-16
+   }
+  },
+  {
+   "station": 118,
+   "x_m": 29.09282013195187,
+   "top": {
+    "z_extreme_m": 6.08955225729411,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.3053244477115283e-16,
+    "y_max_m": 1.3053244477115283e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9504479095225142,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.7923409560751885e-16,
+    "y_max_m": -3.7923409560751885e-16
+   }
+  },
+  {
+   "station": 119,
+   "x_m": 29.341468167267703,
+   "top": {
+    "z_extreme_m": 6.089754491936082,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.3031352090189254e-16,
+    "y_max_m": 1.3031352090189254e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950245689986207,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.7130994732639945e-16,
+    "y_max_m": -3.7130994732639945e-16
+   }
+  },
+  {
+   "station": 120,
+   "x_m": 29.59011620258353,
+   "top": {
+    "z_extreme_m": 6.08912697032267,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.8430633630078322e-16,
+    "y_max_m": 1.8430633630078322e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9508739580803636,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.2265899617569368e-16,
+    "y_max_m": -3.2265899617569368e-16
+   }
+  },
+  {
+   "station": 121,
+   "x_m": 29.83876423789936,
+   "top": {
+    "z_extreme_m": 6.089728970233762,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.8562804972060268e-16,
+    "y_max_m": 1.8562804972060268e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500235494415958,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.110083376530535e-16,
+    "y_max_m": -3.110083376530535e-16
+   }
+  },
+  {
+   "station": 122,
+   "x_m": 30.087412273215186,
+   "top": {
+    "z_extreme_m": 6.089236902111743,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.846106357070871e-16,
+    "y_max_m": 1.846106357070871e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.950775937457816,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.2178429819507204e-16,
+    "y_max_m": -3.2178429819507204e-16
+   }
+  },
+  {
+   "station": 123,
+   "x_m": 30.336060308531014,
+   "top": {
+    "z_extreme_m": 6.089803488754276,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0865270203548295e-16,
+    "y_max_m": 1.0865270203548295e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9500810012698164,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.8899563430979696e-16,
+    "y_max_m": -3.8899563430979696e-16
+   }
+  },
+  {
+   "station": 124,
+   "x_m": 30.58470834384684,
+   "top": {
+    "z_extreme_m": 6.089002700750928,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.7291370793848023e-16,
+    "y_max_m": 1.7291370793848023e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9510494689205884,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.323044544710766e-16,
+    "y_max_m": -3.323044544710766e-16
+   }
+  },
+  {
+   "station": 125,
+   "x_m": 30.83335637916267,
+   "top": {
+    "z_extreme_m": 6.0890163392509535,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.563364597498122e-16,
+    "y_max_m": 1.563364597498122e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9540895745406304,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.433454394305731e-16,
+    "y_max_m": -3.433454394305731e-16
+   }
+  },
+  {
+   "station": 126,
+   "x_m": 31.082004414478497,
+   "top": {
+    "z_extreme_m": 6.089848046574397,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.6409594672985818e-16,
+    "y_max_m": 1.6409594672985818e-16
+   },
+   "bottom": {
+    "z_extreme_m": 1.9628932367984167,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.427502990147003e-16,
+    "y_max_m": -3.427502990147003e-16
+   }
+  },
+  {
+   "station": 127,
+   "x_m": 31.330652449794325,
+   "top": {
+    "z_extreme_m": 6.089518561555874,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 8.511027206414165e-17,
+    "y_max_m": 8.511027206414165e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9731835042132695,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.1346585486269077e-16,
+    "y_max_m": -4.1346585486269077e-16
+   }
+  },
+  {
+   "station": 128,
+   "x_m": 31.579300485110153,
+   "top": {
+    "z_extreme_m": 6.0894115184990225,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 5.3872570925576176e-17,
+    "y_max_m": 5.3872570925576176e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9832503319565453,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.510528603140674e-16,
+    "y_max_m": -4.510528603140674e-16
+   }
+  },
+  {
+   "station": 129,
+   "x_m": 31.82794852042598,
+   "top": {
+    "z_extreme_m": 6.089095445481545,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 6.88178963331867e-17,
+    "y_max_m": 6.88178963331867e-17
+   },
+   "bottom": {
+    "z_extreme_m": 1.9948702161247827,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.337467904979663e-16,
+    "y_max_m": -4.337467904979663e-16
+   }
+  },
+  {
+   "station": 130,
+   "x_m": 32.07659655574181,
+   "top": {
+    "z_extreme_m": 6.089834531713777,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 7.139673040126956e-17,
+    "y_max_m": 7.139673040126956e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.0077255978346447,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -4.2644943457834217e-16,
+    "y_max_m": -4.2644943457834217e-16
+   }
+  },
+  {
+   "station": 131,
+   "x_m": 32.32524459105763,
+   "top": {
+    "z_extreme_m": 6.0891195410068475,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.2600790612992318e-16,
+    "y_max_m": 1.2600790612992318e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.0254826058379223,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.736994245908035e-16,
+    "y_max_m": -3.736994245908035e-16
+   }
+  },
+  {
+   "station": 132,
+   "x_m": 32.573892626373464,
+   "top": {
+    "z_extreme_m": 6.089213558578235,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.151981607348194e-16,
+    "y_max_m": 1.151981607348194e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.045604166297046,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.753640597409959e-16,
+    "y_max_m": -3.753640597409959e-16
+   }
+  },
+  {
+   "station": 133,
+   "x_m": 32.82254066168929,
+   "top": {
+    "z_extreme_m": 6.089992980642416,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 2.8276880009436026e-16,
+    "y_max_m": 2.8276880009436026e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.066817169347244,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.09928126253105e-16,
+    "y_max_m": -2.09928126253105e-16
+   }
+  },
+  {
+   "station": 134,
+   "x_m": 33.07118869700512,
+   "top": {
+    "z_extreme_m": 6.088437805583846,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0225281820715628e-16,
+    "y_max_m": 1.0225281820715628e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.0928101656031455,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.831845302524926e-16,
+    "y_max_m": -3.831845302524926e-16
+   }
+  },
+  {
+   "station": 135,
+   "x_m": 33.319836732320944,
+   "top": {
+    "z_extreme_m": 6.089092430514475,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.030124712804109e-17,
+    "y_max_m": 9.030124712804109e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.119743408003422,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.9580379974823706e-16,
+    "y_max_m": -3.9580379974823706e-16
+   }
+  },
+  {
+   "station": 136,
+   "x_m": 33.568484767636775,
+   "top": {
+    "z_extreme_m": 6.090145125595667,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.2515868681378194e-16,
+    "y_max_m": 1.2515868681378194e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.151169222148468,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.5360731250856617e-16,
+    "y_max_m": -3.5360731250856617e-16
+   }
+  },
+  {
+   "station": 137,
+   "x_m": 33.8171328029526,
+   "top": {
+    "z_extreme_m": 6.096015367848889,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.595831812056332e-17,
+    "y_max_m": 9.595831812056332e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.184316407779949,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.834861539092601e-16,
+    "y_max_m": -3.834861539092601e-16
+   }
+  },
+  {
+   "station": 138,
+   "x_m": 34.06578083826843,
+   "top": {
+    "z_extreme_m": 6.10358327938849,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4675129685017939e-16,
+    "y_max_m": 1.4675129685017939e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.2211007912570544,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.248763588605267e-16,
+    "y_max_m": -3.248763588605267e-16
+   }
+  },
+  {
+   "station": 139,
+   "x_m": 34.314428873584255,
+   "top": {
+    "z_extreme_m": 6.111402576926058,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 8.669035670965389e-17,
+    "y_max_m": 8.669035670965389e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.2599941150817084,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.849711414868803e-16,
+    "y_max_m": -3.849711414868803e-16
+   }
+  },
+  {
+   "station": 140,
+   "x_m": 34.563076908900086,
+   "top": {
+    "z_extreme_m": 6.1171433969343765,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0049847177120206e-16,
+    "y_max_m": 1.0049847177120206e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.3038321670735225,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.6259773855091377e-16,
+    "y_max_m": -3.6259773855091377e-16
+   }
+  },
+  {
+   "station": 141,
+   "x_m": 34.81172494421591,
+   "top": {
+    "z_extreme_m": 6.122788746077168,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.2983860193208088e-16,
+    "y_max_m": 1.2983860193208088e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.3509724633790783,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.330781110115371e-16,
+    "y_max_m": -3.330781110115371e-16
+   }
+  },
+  {
+   "station": 142,
+   "x_m": 35.06037297953174,
+   "top": {
+    "z_extreme_m": 6.1275093617948615,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.508005642635356e-16,
+    "y_max_m": 1.508005642635356e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.400052105839442,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.0394838874035064e-16,
+    "y_max_m": -3.0394838874035064e-16
+   }
+  },
+  {
+   "station": 143,
+   "x_m": 35.309021014847566,
+   "top": {
+    "z_extreme_m": 6.1304880126744505,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0797735536621003e-16,
+    "y_max_m": 1.0797735536621003e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.4514716768545943,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.4366839659577895e-16,
+    "y_max_m": -3.4366839659577895e-16
+   }
+  },
+  {
+   "station": 144,
+   "x_m": 35.5576690501634,
+   "top": {
+    "z_extreme_m": 6.132190867278165,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.873667218834574e-16,
+    "y_max_m": 1.873667218834574e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.5053854067581813,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.56788854988978e-16,
+    "y_max_m": -2.56788854988978e-16
+   }
+  },
+  {
+   "station": 145,
+   "x_m": 35.80631708547922,
+   "top": {
+    "z_extreme_m": 6.131961724054268,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.272460517997367e-16,
+    "y_max_m": 1.272460517997367e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.5611021971821657,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.0824106172697036e-16,
+    "y_max_m": -3.0824106172697036e-16
+   }
+  },
+  {
+   "station": 146,
+   "x_m": 36.05496512079505,
+   "top": {
+    "z_extreme_m": 6.132356232676269,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 6.748207135251112e-17,
+    "y_max_m": 6.748207135251112e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.614775951925737,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.6329719574373877e-16,
+    "y_max_m": -3.6329719574373877e-16
+   }
+  },
+  {
+   "station": 147,
+   "x_m": 36.30361315611088,
+   "top": {
+    "z_extreme_m": 6.131078233103234,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.5978392094490411e-16,
+    "y_max_m": 1.5978392094490411e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.6686106972176624,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.64246060421933e-16,
+    "y_max_m": -2.64246060421933e-16
+   }
+  },
+  {
+   "station": 148,
+   "x_m": 36.55226119142671,
+   "top": {
+    "z_extreme_m": 6.128770371963569,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4592111111734422e-16,
+    "y_max_m": 1.4592111111734422e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.722473932602718,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.7122989820639786e-16,
+    "y_max_m": -2.7122989820639786e-16
+   }
+  },
+  {
+   "station": 149,
+   "x_m": 36.80090922674253,
+   "top": {
+    "z_extreme_m": 6.125431173762451,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4764036120698852e-16,
+    "y_max_m": 1.4764036120698852e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.7763006724902897,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.625098293762869e-16,
+    "y_max_m": -2.625098293762869e-16
+   }
+  },
+  {
+   "station": 150,
+   "x_m": 37.049557262058364,
+   "top": {
+    "z_extreme_m": 6.120881683289813,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 6.952519659865226e-17,
+    "y_max_m": 6.952519659865226e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.8301298607180314,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.3347566801400583e-16,
+    "y_max_m": -3.3347566801400583e-16
+   }
+  },
+  {
+   "station": 151,
+   "x_m": 37.298205297374196,
+   "top": {
+    "z_extreme_m": 6.115363957697365,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 3.474741751820179e-17,
+    "y_max_m": 3.474741751820179e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.8839936090078373,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.609813133804555e-16,
+    "y_max_m": -3.609813133804555e-16
+   }
+  },
+  {
+   "station": 152,
+   "x_m": 37.54685333269002,
+   "top": {
+    "z_extreme_m": 6.10865022633715,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.4565062428896066e-16,
+    "y_max_m": 1.4565062428896066e-16
+   },
+   "bottom": {
+    "z_extreme_m": 2.9378302662874027,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.4266281899993827e-16,
+    "y_max_m": -2.4266281899993827e-16
+   }
+  },
+  {
+   "station": 153,
+   "x_m": 37.79550136800585,
+   "top": {
+    "z_extreme_m": 6.100837819306428,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 6.744102898520439e-17,
+    "y_max_m": 6.744102898520439e-17
+   },
+   "bottom": {
+    "z_extreme_m": 2.9914805853252817,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.1334541941323085e-16,
+    "y_max_m": -3.1334541941323085e-16
+   }
+  },
+  {
+   "station": 154,
+   "x_m": 38.044149403321676,
+   "top": {
+    "z_extreme_m": 6.091830595230774,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.848503637457272e-17,
+    "y_max_m": 9.848503637457272e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.0450461295782176,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.7463845826513487e-16,
+    "y_max_m": -2.7463845826513487e-16
+   }
+  },
+  {
+   "station": 155,
+   "x_m": 38.29279743863751,
+   "top": {
+    "z_extreme_m": 6.081861484195565,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 8.438381709750625e-17,
+    "y_max_m": 8.438381709750625e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.0990353149071614,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.8090703899446765e-16,
+    "y_max_m": -2.8090703899446765e-16
+   }
+  },
+  {
+   "station": 156,
+   "x_m": 38.54144547395333,
+   "top": {
+    "z_extreme_m": 6.070903827291096,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 7.674182367426994e-17,
+    "y_max_m": 7.674182367426994e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.1535378935410243,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.8053246648180943e-16,
+    "y_max_m": -2.8053246648180943e-16
+   }
+  },
+  {
+   "station": 157,
+   "x_m": 38.79009350926916,
+   "top": {
+    "z_extreme_m": 6.058924826350953,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0072884241854714e-16,
+    "y_max_m": 1.0072884241854714e-16
+   },
+   "bottom": {
+    "z_extreme_m": 3.207988920298681,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.4841011641017525e-16,
+    "y_max_m": -2.4841011641017525e-16
+   }
+  },
+  {
+   "station": 158,
+   "x_m": 39.03874154458499,
+   "top": {
+    "z_extreme_m": 6.045911306998119,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 5.697083909758024e-17,
+    "y_max_m": 5.697083909758024e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.2643717694642103,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.836694934394196e-16,
+    "y_max_m": -2.836694934394196e-16
+   }
+  },
+  {
+   "station": 159,
+   "x_m": 39.28738957990082,
+   "top": {
+    "z_extreme_m": 6.031754100636146,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.2546834191056224e-16,
+    "y_max_m": 1.2546834191056224e-16
+   },
+   "bottom": {
+    "z_extreme_m": 3.325367376392525,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.0596844089065005e-16,
+    "y_max_m": -2.0596844089065005e-16
+   }
+  },
+  {
+   "station": 160,
+   "x_m": 39.53603761521664,
+   "top": {
+    "z_extreme_m": 6.016290925735742,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.5650776467602925e-17,
+    "y_max_m": 4.5650776467602925e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.392015930923347,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.757302274300344e-16,
+    "y_max_m": -2.757302274300344e-16
+   }
+  },
+  {
+   "station": 161,
+   "x_m": 39.784685650532474,
+   "top": {
+    "z_extreme_m": 5.999446759244851,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 6.337789421153572e-17,
+    "y_max_m": 6.337789421153572e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.461919689318747,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.473795406019902e-16,
+    "y_max_m": -2.473795406019902e-16
+   }
+  },
+  {
+   "station": 162,
+   "x_m": 40.0333336858483,
+   "top": {
+    "z_extreme_m": 5.981665060242771,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 8.196384442248547e-17,
+    "y_max_m": 8.196384442248547e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.5311642889959103,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.1813594341269626e-16,
+    "y_max_m": -2.1813594341269626e-16
+   }
+  },
+  {
+   "station": 163,
+   "x_m": 40.28198172116413,
+   "top": {
+    "z_extreme_m": 5.962240138901755,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 7.277946272466537e-17,
+    "y_max_m": 7.277946272466537e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.5992475471352776,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.16603670651351e-16,
+    "y_max_m": -2.16603670651351e-16
+   }
+  },
+  {
+   "station": 164,
+   "x_m": 40.530629756479954,
+   "top": {
+    "z_extreme_m": 5.941935584727178,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 2.1283491588733826e-17,
+    "y_max_m": 2.1283491588733826e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.6673560286912075,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.572721773539103e-16,
+    "y_max_m": -2.572721773539103e-16
+   }
+  },
+  {
+   "station": 165,
+   "x_m": 40.779277791795785,
+   "top": {
+    "z_extreme_m": 5.92188103021579,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.829146884350463e-17,
+    "y_max_m": 4.829146884350463e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.735462984900182,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -2.1946751785505056e-16,
+    "y_max_m": -2.1946751785505056e-16
+   }
+  },
+  {
+   "station": 166,
+   "x_m": 41.02792582711161,
+   "top": {
+    "z_extreme_m": 5.903215682886444,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.117110987685939e-17,
+    "y_max_m": 9.117110987685939e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.8035769473562597,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.659604766496283e-16,
+    "y_max_m": -1.659604766496283e-16
+   }
+  },
+  {
+   "station": 167,
+   "x_m": 41.27657386242744,
+   "top": {
+    "z_extreme_m": 5.885015650587581,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0869446473815395e-16,
+    "y_max_m": 1.0869446473815395e-16
+   },
+   "bottom": {
+    "z_extreme_m": 3.871697371733081,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.3786592223688336e-16,
+    "y_max_m": -1.3786592223688336e-16
+   }
+  },
+  {
+   "station": 168,
+   "x_m": 41.525221897743265,
+   "top": {
+    "z_extreme_m": 5.865688247457637,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 8.818338140842609e-17,
+    "y_max_m": 8.818338140842609e-17
+   },
+   "bottom": {
+    "z_extreme_m": 3.9397735670054694,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.4767314019868709e-16,
+    "y_max_m": -1.4767314019868709e-16
+   }
+  },
+  {
+   "station": 169,
+   "x_m": 41.773869933059096,
+   "top": {
+    "z_extreme_m": 5.844922179732323,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.2147408184198714e-17,
+    "y_max_m": 4.2147408184198714e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.007917852025647,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.8282073945465303e-16,
+    "y_max_m": -1.8282073945465303e-16
+   }
+  },
+  {
+   "station": 170,
+   "x_m": 42.02251796837492,
+   "top": {
+    "z_extreme_m": 5.823212505996127,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 5.695443776478936e-17,
+    "y_max_m": 5.695443776478936e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.076260021685145,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.5698554583563326e-16,
+    "y_max_m": -1.5698554583563326e-16
+   }
+  },
+  {
+   "station": 171,
+   "x_m": 42.27116600369075,
+   "top": {
+    "z_extreme_m": 5.798614394490262,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 9.827066848872615e-18,
+    "y_max_m": 9.827066848872615e-18
+   },
+   "bottom": {
+    "z_extreme_m": 4.144348795616633,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.9276203645524926e-16,
+    "y_max_m": -1.9276203645524926e-16
+   }
+  },
+  {
+   "station": 172,
+   "x_m": 42.51981403900658,
+   "top": {
+    "z_extreme_m": 5.7681185317077714,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 3.117261555511527e-17,
+    "y_max_m": 3.117261555511527e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.211670192283583,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.5943732882820187e-16,
+    "y_max_m": -1.5943732882820187e-16
+   }
+  },
+  {
+   "station": 173,
+   "x_m": 42.76846207432241,
+   "top": {
+    "z_extreme_m": 5.733592223436723,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 4.1069062752387656e-17,
+    "y_max_m": 4.1069062752387656e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.278854130431158,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.370849702184782e-16,
+    "y_max_m": -1.370849702184782e-16
+   }
+  },
+  {
+   "station": 174,
+   "x_m": 43.01711010963824,
+   "top": {
+    "z_extreme_m": 5.694797254281756,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 3.432233683823633e-17,
+    "y_max_m": 3.432233683823633e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.347103391685504,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.3072254793633143e-16,
+    "y_max_m": -1.3072254793633143e-16
+   }
+  },
+  {
+   "station": 175,
+   "x_m": 43.26575814495406,
+   "top": {
+    "z_extreme_m": 5.65204755688217,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 3.867980656130052e-17,
+    "y_max_m": 3.867980656130052e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.416999394204527,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.1256997067447457e-16,
+    "y_max_m": -1.1256997067447457e-16
+   }
+  },
+  {
+   "station": 176,
+   "x_m": 43.514406180269894,
+   "top": {
+    "z_extreme_m": 5.6048004326394425,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 2.9017376341457765e-17,
+    "y_max_m": 2.9017376341457765e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.487040088761886,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.0786877422129004e-16,
+    "y_max_m": -1.0786877422129004e-16
+   }
+  },
+  {
+   "station": 177,
+   "x_m": 43.76305421558572,
+   "top": {
+    "z_extreme_m": 5.553047126807306,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.9529412758563467e-17,
+    "y_max_m": 1.9529412758563467e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.561040644014774,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.0195635285739428e-16,
+    "y_max_m": -1.0195635285739428e-16
+   }
+  },
+  {
+   "station": 178,
+   "x_m": 44.01170225090155,
+   "top": {
+    "z_extreme_m": 5.497084550356625,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 3.086910935342755e-17,
+    "y_max_m": 3.086910935342755e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.644638878802679,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -7.352538052492322e-17,
+    "y_max_m": -7.352538052492322e-17
+   }
+  },
+  {
+   "station": 179,
+   "x_m": 44.260350286217374,
+   "top": {
+    "z_extreme_m": 5.435362859829082,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 2.4618703003509232e-17,
+    "y_max_m": 2.4618703003509232e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.748116947229597,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -5.954465139168562e-17,
+    "y_max_m": -5.954465139168562e-17
+   }
+  },
+  {
+   "station": 180,
+   "x_m": 44.508998321533205,
+   "top": {
+    "z_extreme_m": 5.300671026750406,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": 1.0659675096947708e-17,
+    "y_max_m": 1.0659675096947708e-17
+   },
+   "bottom": {
+    "z_extreme_m": 4.924169876379668,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -3.544839053470302e-17,
+    "y_max_m": -3.544839053470302e-17
+   }
+  },
+  {
+   "station": 181,
+   "x_m": 44.5099983215332,
+   "top": {
+    "z_extreme_m": 5.1180677540727695,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.5455351356755657e-17,
+    "y_max_m": -1.5455351356755657e-17
+   },
+   "bottom": {
+    "z_extreme_m": 5.106772719561648,
+    "points_at_extreme": 1,
+    "y_extent_m": 0.0,
+    "y_min_m": -1.683859332570518e-17,
+    "y_max_m": -1.683859332570518e-17
+   }
+  }
+ ]
+}

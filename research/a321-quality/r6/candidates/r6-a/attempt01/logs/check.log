@@ -1,0 +1,5 @@
+Installed 2 packages in 4.43s
+fuselage FAIL ['G3 surfaceCheck locations (E', 'G4 between-station sampled d', 'G6 non-feature dihedral max ']
+wing FAIL ['G5 adjacent area ratio max', 'G6 station-kink ratio (decla']
+horizontal FAIL ['G5 adjacent area ratio max', 'G6 station-kink ratio (decla']
+vertical FAIL ['G5 adjacent area ratio max', 'G6 station-kink ratio (decla']

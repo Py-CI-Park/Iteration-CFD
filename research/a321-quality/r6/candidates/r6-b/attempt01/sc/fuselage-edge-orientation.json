@@ -1,0 +1,1045 @@
+{
+ "summary": {
+  "records": 64,
+  "records_with_axis_parallel_edge_at_nearest_vertex": 63,
+  "records_without": 1,
+  "max_nearest_vertex_distance_m": 0.025378185797770035,
+  "records_by_axial_bin": {
+   "x 0..1": 3,
+   "x 1..2": 1,
+   "x 4..5": 30,
+   "x 5..6": 29,
+   "x 6..7": 1
+  },
+  "mesh_axis_parallel_edge_count": {
+   "x": 0,
+   "y": 338,
+   "z": 4
+  },
+  "mesh_edges": 371226
+ },
+ "records": [
+  {
+   "point_m": [
+    0.0,
+    -9.43819e-19,
+    3.45794
+   ],
+   "nearest_vertex_distance_m": 3.236236572057294e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    0.0,
+    -8.60421e-19,
+    3.45862
+   ],
+   "nearest_vertex_distance_m": 2.3127746580087205e-06,
+   "vertex_valence": 7,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.12952e-06,
+    -4.87267e-06,
+    3.45788
+   ],
+   "nearest_vertex_distance_m": 4.969787599428846e-07,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    1.24424,
+    0.0465052,
+    4.44137
+   ],
+   "nearest_vertex_distance_m": 2.8557880082488553e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.22802,
+    -0.311085,
+    2.02366
+   ],
+   "nearest_vertex_distance_m": 4.603066953859269e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.22802,
+    -0.15479,
+    2.02366
+   ],
+   "nearest_vertex_distance_m": 4.583845139197425e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.22802,
+    -0.15479,
+    2.02366
+   ],
+   "nearest_vertex_distance_m": 4.583845139197425e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.22802,
+    -0.0772704,
+    2.02366
+   ],
+   "nearest_vertex_distance_m": 4.582750908865083e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.22802,
+    0.0515136,
+    2.02366
+   ],
+   "nearest_vertex_distance_m": 4.582720400527583e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.22802,
+    -0.0515136,
+    2.02366
+   ],
+   "nearest_vertex_distance_m": 4.582720400527583e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.35234,
+    -0.183368,
+    2.01823
+   ],
+   "nearest_vertex_distance_m": 1.637795041569401e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.35234,
+    0.0522725,
+    2.01823
+   ],
+   "nearest_vertex_distance_m": 1.6270642428694579e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.22802,
+    0.0515136,
+    2.02366
+   ],
+   "nearest_vertex_distance_m": 4.582720400527583e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.35234,
+    -4.47559e-16,
+    2.01823
+   ],
+   "nearest_vertex_distance_m": 1.626605235982379e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.35234,
+    0.157093,
+    2.01823
+   ],
+   "nearest_vertex_distance_m": 1.6351867031920397e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.47666,
+    0.052562,
+    2.01122
+   ],
+   "nearest_vertex_distance_m": 4.769700269418078e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.60099,
+    -0.318898,
+    2.00938
+   ],
+   "nearest_vertex_distance_m": 1.1967884743999343e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.60099,
+    0.0528073,
+    2.00938
+   ],
+   "nearest_vertex_distance_m": 1.1402565587794993e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.60099,
+    0.0528073,
+    2.00938
+   ],
+   "nearest_vertex_distance_m": 1.1402565587794993e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.60099,
+    -0.0528073,
+    2.00938
+   ],
+   "nearest_vertex_distance_m": 1.1402565587794993e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.60099,
+    -0.0264036,
+    2.00938
+   ],
+   "nearest_vertex_distance_m": 1.1401386481717579e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.60099,
+    0.0528073,
+    2.00938
+   ],
+   "nearest_vertex_distance_m": 1.1402565587794993e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.72531,
+    -0.0794971,
+    2.00912
+   ],
+   "nearest_vertex_distance_m": 3.6178297064415484e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.72531,
+    0.052998,
+    2.00912
+   ],
+   "nearest_vertex_distance_m": 3.617846364271671e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.72531,
+    -0.052998,
+    2.00912
+   ],
+   "nearest_vertex_distance_m": 3.617846364271671e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.72531,
+    0.052998,
+    2.00912
+   ],
+   "nearest_vertex_distance_m": 3.617846364271671e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.60099,
+    0.0528073,
+    2.00938
+   ],
+   "nearest_vertex_distance_m": 1.1402565587794993e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.72531,
+    -0.026499,
+    2.00912
+   ],
+   "nearest_vertex_distance_m": 3.61768158021496e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.84964,
+    -0.213724,
+    2.00926
+   ],
+   "nearest_vertex_distance_m": 4.773364505792438e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.72531,
+    0.052998,
+    2.00912
+   ],
+   "nearest_vertex_distance_m": 3.617846364271671e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.84964,
+    -2.98372e-16,
+    2.00926
+   ],
+   "nearest_vertex_distance_m": 4.754897450381785e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.97396,
+    -0.10722,
+    2.00953
+   ],
+   "nearest_vertex_distance_m": 3.873586276294108e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.97396,
+    -0.0804153,
+    2.00953
+   ],
+   "nearest_vertex_distance_m": 3.848512585146799e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.09828,
+    0.0538501,
+    2.00978
+   ],
+   "nearest_vertex_distance_m": 4.98494415648677e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    4.97396,
+    0.0536102,
+    2.00953
+   ],
+   "nearest_vertex_distance_m": 3.848443992487917e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.22261,
+    -0.135326,
+    2.01006
+   ],
+   "nearest_vertex_distance_m": 4.461480133751415e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.22261,
+    0.054078,
+    2.01006
+   ],
+   "nearest_vertex_distance_m": 4.456542009039415e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.09828,
+    0.0538501,
+    2.00978
+   ],
+   "nearest_vertex_distance_m": 4.98494415648677e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.22261,
+    0.054078,
+    2.01006
+   ],
+   "nearest_vertex_distance_m": 4.456542009039415e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.22261,
+    -0.054078,
+    2.01006
+   ],
+   "nearest_vertex_distance_m": 4.456542009039415e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.09828,
+    0.0538501,
+    2.00978
+   ],
+   "nearest_vertex_distance_m": 4.98494415648677e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.22261,
+    -0.027039,
+    2.01006
+   ],
+   "nearest_vertex_distance_m": 4.45651741112296e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.22261,
+    0.054078,
+    2.01006
+   ],
+   "nearest_vertex_distance_m": 4.456542009039415e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.34693,
+    -0.328185,
+    2.01035
+   ],
+   "nearest_vertex_distance_m": 4.095162702047194e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.34693,
+    -0.217906,
+    2.01035
+   ],
+   "nearest_vertex_distance_m": 4.092682249788241e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.34693,
+    -0.0815177,
+    2.01035
+   ],
+   "nearest_vertex_distance_m": 4.073075205184489e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.34693,
+    0.0543451,
+    2.01035
+   ],
+   "nearest_vertex_distance_m": 4.073100716820738e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.22261,
+    0.054078,
+    2.01006
+   ],
+   "nearest_vertex_distance_m": 4.456542009039415e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.47126,
+    -0.218903,
+    2.01062
+   ],
+   "nearest_vertex_distance_m": 5.304739232914912e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.47126,
+    -0.164045,
+    2.01062
+   ],
+   "nearest_vertex_distance_m": 5.300876085754166e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.47126,
+    -0.136616,
+    2.01062
+   ],
+   "nearest_vertex_distance_m": 5.30232497010016e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.47126,
+    0.0545936,
+    2.01062
+   ],
+   "nearest_vertex_distance_m": 5.30088327221219e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.34693,
+    0.0543451,
+    2.01035
+   ],
+   "nearest_vertex_distance_m": 4.073100716820738e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.59558,
+    -0.10961,
+    2.01083
+   ],
+   "nearest_vertex_distance_m": 1.2706460064860345e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.59558,
+    0.0548051,
+    2.01083
+   ],
+   "nearest_vertex_distance_m": 1.2582263502381187e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.59558,
+    -4.23273e-16,
+    2.01083
+   ],
+   "nearest_vertex_distance_m": 1.258176396839966e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.59558,
+    0.0822076,
+    2.01083
+   ],
+   "nearest_vertex_distance_m": 1.2584789630317346e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.7199,
+    0.0549123,
+    2.01097
+   ],
+   "nearest_vertex_distance_m": 6.75684543478735e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.59558,
+    0.0548051,
+    2.01083
+   ],
+   "nearest_vertex_distance_m": 1.2582263502381187e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.7199,
+    -4.72935e-16,
+    2.01097
+   ],
+   "nearest_vertex_distance_m": 6.756756795121664e-06,
+   "vertex_valence": 8,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.7199,
+    0.0274561,
+    2.01097
+   ],
+   "nearest_vertex_distance_m": 6.7568358983035646e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.84423,
+    0.0548348,
+    2.011
+   ],
+   "nearest_vertex_distance_m": 3.049519486402566e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    5.84423,
+    0.0822522,
+    2.011
+   ],
+   "nearest_vertex_distance_m": 3.049555231592219e-06,
+   "vertex_valence": 6,
+   "axis_parallel_edges_at_vertex": [
+    "y"
+   ],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  },
+  {
+   "point_m": [
+    6.68964,
+    0.00511623,
+    6.08996
+   ],
+   "nearest_vertex_distance_m": 0.025378185797770035,
+   "vertex_valence": 8,
+   "axis_parallel_edges_at_vertex": [],
+   "edges_with_one_zero_component_at_vertex": [
+    "x",
+    "z"
+   ]
+  }
+ ]
+}

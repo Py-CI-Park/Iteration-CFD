@@ -1,0 +1,9 @@
+{
+ "source": "candidates\\r6-b\\attempt02\\fuselage.stl",
+ "axis_parallel_edges_before": 504,
+ "flipped": 500,
+ "skipped": 4,
+ "axis_parallel_edges_after": 4,
+ "surfaceCheck_locations_after_flip": 8,
+ "note": "diagnostic copy only; candidate unchanged; no vertex moved"
+}

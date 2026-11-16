@@ -1,0 +1,66 @@
+{
+ "tag": "r6-a",
+ "attempt": "attempt02",
+ "tessellation": "quad",
+ "params": {
+  "build_args": "",
+  "aspect_fuselage": "3.0",
+  "aspect_wing_horizontal": "1.8",
+  "aspect_vertical": "1.0"
+ },
+ "steps": [
+  {
+   "step": "blender_render",
+   "wall_s": 10.34,
+   "returncode": 0,
+   "cmd": "D:\\Chanil_Park\\Project\\Programming\\Aircraft-Workbench\\.workstation\\tools\\blender-5.2.2-portable\\blender.exe -b --factory-startup --disable-autoexec --python D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\blender_r6.py --python-exit-code 1 -- --render --tag r6-a --npz-dir D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-qual",
+   "log": "blender-render.log"
+  }
+ ],
+ "inputs_sha256_before": {
+  "research\\a321-integration\\evidence\\reconstruction-r3.json": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "research\\a321-integration\\artifacts\\shell-r3\\fuselage.stl": "9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80",
+  "research\\a321-integration\\artifacts\\shell-r3\\wing.stl": "b23c8eab3652f581df5a4e058485a9c62085eab38b2c7cea90169e19a0ed3317",
+  "research\\a321-integration\\artifacts\\shell-r3\\horizontal.stl": "94b34576f4f994acf27c7255d0c1af2029d6de9c4ebc66d2353fae9430240a3e",
+  "research\\a321-integration\\artifacts\\shell-r3\\vertical.stl": "6cfc20121dbcc4772bb04b8cb10934494660e9803a003313844cda8ac022bc18",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02.json": "20914b475e8bf9bce8923df55780ce4a7d2b7173ed97f8f0b422b801f0b1bbb5",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02a.json": "d945d55a8cd661b355cb994616e9dc16722b71922fba6e7aaf84c9e4253cda38",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02b.json": "ea92b154723f95ec2235186992c6279646fb4d37dfe633629c598ac69efbd024",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02c.json": "f3f891365582bafd942636744ae2327d4acbe9d6529d8bebcc4a3b30fc06ba14"
+ },
+ "inputs_sha256_after": {
+  "research\\a321-integration\\evidence\\reconstruction-r3.json": "405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb",
+  "research\\a321-integration\\artifacts\\shell-r3\\fuselage.stl": "9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80",
+  "research\\a321-integration\\artifacts\\shell-r3\\wing.stl": "b23c8eab3652f581df5a4e058485a9c62085eab38b2c7cea90169e19a0ed3317",
+  "research\\a321-integration\\artifacts\\shell-r3\\horizontal.stl": "94b34576f4f994acf27c7255d0c1af2029d6de9c4ebc66d2353fae9430240a3e",
+  "research\\a321-integration\\artifacts\\shell-r3\\vertical.stl": "6cfc20121dbcc4772bb04b8cb10934494660e9803a003313844cda8ac022bc18",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02.json": "20914b475e8bf9bce8923df55780ce4a7d2b7173ed97f8f0b422b801f0b1bbb5",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02a.json": "d945d55a8cd661b355cb994616e9dc16722b71922fba6e7aaf84c9e4253cda38",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02b.json": "ea92b154723f95ec2235186992c6279646fb4d37dfe633629c598ac69efbd024",
+  "research\\a321-quality\\r6\\plans\\r6-geometry-contract-02c.json": "f3f891365582bafd942636744ae2327d4acbe9d6529d8bebcc4a3b30fc06ba14"
+ },
+ "inputs_unchanged": true,
+ "artifact_sha256": {
+  "a3-reference.json": "9ef2cb621859eb3004a62ef244ef80bd9c3383173a4ea29797d416fc7d18ee01",
+  "display-union-check.json": "67cb6d6c63bc38466fb2ad79aba0945621de927f340a1ff486199ce64f3668ee",
+  "feature-manifest.json": "e007415242fc7617ebc10055f00c3e296627983ecdf696cdd2a9d2b75b703ba6",
+  "features-fuselage.json": "53f1f3f0161a1ae9243820fd0490fa3b412a1a4da2a84384c15d68a39163b222",
+  "features-horizontal.json": "79f6616c6e93e25c3ff700638307695a7fd987a11e5ca9addd4807ca82d07678",
+  "features-vertical.json": "62ceb38b9bf79ef32a81150a18948bc37b06f8e9f7c03516e95948a97bfbb694",
+  "features-wing.json": "3fd8a38bdbab7dbe621f322925a457c430ea035bd689e5cfe990cbbea4e74a3c",
+  "fuselage.npz": "09f015292ba9e6ea18c532f182bbee91f05fbbfa005349cde9a044c8623d8049",
+  "fuselage.stl": "e7012a020b213df918c65614d7c2790cabb94c9923cd3117f1aad592e544c7ed",
+  "g7-readback.json": "77b6f253d85ee35cb635dc39af3425347cb3b9c2ce901e2c9a95ecaee2dff714",
+  "gate-table.json": "79657fac7b6b9123645465f4e79fbd8a760234946c4eff883e6ba70935d67119",
+  "horizontal.npz": "a471b9798c3cfa895f1516ec5e52621ef342a39bc2a4f50b6afe30914190751b",
+  "horizontal.stl": "29b7986d92bdfde4413ca14886e977caff569d3db8d057294efea2d254d3c053",
+  "r6-a.blend": "601240693f86722c9dccb20a26f31318ef9b9ebbae5bf31e0e3cc47ffc66536d",
+  "receipt-partial-1794792865.json": "84cac59b1c7787c9528fd15c8fafb25f3830ea5f9546035c032d1f42d993dd5f",
+  "receipt.json": "66830379e9a3b1a7fe514261e0c84db9cc90ce90d8041b52058ff532a102056b",
+  "vertical.npz": "4e55cff808d68330d21ea9d7bcb0b315d56493c311d05304484d46a1d9a5415c",
+  "vertical.stl": "f56c54c9e869f15bf41aa4a0aaeb86ed43b334c80cdde3b2c7e76d19789e89a0",
+  "wing.npz": "80ccab683165107987a67d379033cfb755253f7ea527a7492861185dbc981394",
+  "wing.stl": "2afcb289d742d06e495f15069ff78da5f0c4241dca3d86a2646a4fca895aa749"
+ },
+ "date_local": "2026-11-16 10:34:45"
+}

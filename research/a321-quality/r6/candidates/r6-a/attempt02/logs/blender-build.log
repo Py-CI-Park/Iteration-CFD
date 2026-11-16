@@ -1,0 +1,13 @@
+Info: Saved as "r6-a.blend"
+Info: File exported successfully
+Info: File exported successfully
+Info: File exported successfully
+Info: File exported successfully
+BUILD_OK {'fuselage': (175026, 350048), 'wing': (192558, 385112), 'horizontal': (72622, 145240), 'vertical': (58958, 117912)} 5.2.2 LTS
+Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:37:04)
+Timer 'STL Export' took 351.78 ms
+Timer 'STL Export' took 378.35 ms
+Timer 'STL Export' took 177.82 ms
+Timer 'STL Export' took 123.65 ms
+
+Blender quit

@@ -1,0 +1,120 @@
+{
+ "effectively_closed_after_endpoint_merge_1e-6": true,
+ "arc_endpoints": 4,
+ "open_arc_endpoint_gaps": [
+  {
+   "a_m": [
+    42.3626,
+    1.53144e-17,
+    5.78799
+   ],
+   "b_m": [
+    42.3626,
+    1.54074e-33,
+    5.78799
+   ],
+   "gap_m": 1.53144e-17
+  },
+  {
+   "a_m": [
+    35.9452,
+    8.72548e-17,
+    6.13218
+   ],
+   "b_m": [
+    35.9452,
+    -3.85186e-34,
+    6.13218
+   ],
+   "gap_m": 8.72548e-17
+  },
+  {
+   "a_m": [
+    35.9452,
+    8.72548e-17,
+    6.13218
+   ],
+   "b_m": [
+    42.3626,
+    1.54074e-33,
+    5.78799
+   ],
+   "gap_m": 6.426623492635928
+  },
+  {
+   "a_m": [
+    42.3626,
+    1.53144e-17,
+    5.78799
+   ],
+   "b_m": [
+    35.9452,
+    -3.85186e-34,
+    6.13218
+   ],
+   "gap_m": 6.426623492635928
+  }
+ ],
+ "edge_mesh_obj": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\attempts\\sbf-r6-b-attempt01-vertical-zVvnmS\\constant\\extendedFeatureEdgeMesh\\fuselage_other_intersection_edgeMesh.obj",
+ "loops": [
+  {
+   "vertices": 307,
+   "edges": 306,
+   "closed": false,
+   "min_surface_angle_deg": 22.468817533301426,
+   "p5_angle_deg": 31.367141203742566,
+   "centroid_m": [
+    39.256095114006534,
+    -0.11872838002931588,
+    5.989233908794791
+   ],
+   "bbox_min_m": [
+    35.9452,
+    -0.213021,
+    5.78799
+   ],
+   "bbox_max_m": [
+    42.3626,
+    1.54074e-33,
+    6.13218
+   ],
+   "worst_edge_midpoint_m": [
+    35.9453,
+    -0.00083707,
+    6.132175
+   ]
+  },
+  {
+   "vertices": 307,
+   "edges": 306,
+   "closed": false,
+   "min_surface_angle_deg": 22.468839439361286,
+   "p5_angle_deg": 31.365736587934485,
+   "centroid_m": [
+    39.256095114006534,
+    0.11872834177850151,
+    5.989233908794791
+   ],
+   "bbox_min_m": [
+    35.9452,
+    1.53144e-17,
+    5.78799
+   ],
+   "bbox_max_m": [
+    42.3626,
+    0.213021,
+    6.13218
+   ],
+   "worst_edge_midpoint_m": [
+    35.9453,
+    0.0008370150000000436,
+    6.132175
+   ]
+  }
+ ],
+ "loop_count": 2,
+ "all_closed": false,
+ "min_surface_angle_deg": 22.468817533301426,
+ "edges": 612,
+ "points_unique": 614
+}

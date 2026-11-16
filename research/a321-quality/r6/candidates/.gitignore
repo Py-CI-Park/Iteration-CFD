@@ -1,0 +1,5 @@
+# attempt01 binaries are kept on disk only; receipts, gate tables and SHA256 stay tracked
+*/attempt01/*.stl
+*/attempt01/*.blend
+*/attempt01/*.blend1
+*.blend1

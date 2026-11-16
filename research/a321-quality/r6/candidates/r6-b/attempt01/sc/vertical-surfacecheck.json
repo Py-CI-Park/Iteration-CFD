@@ -1,0 +1,11 @@
+{
+ "locations": 0,
+ "end_reached": true,
+ "fatal": false,
+ "closed": true,
+ "attempt_dir": "sc-r6-b-attempt01-vertical-Krv4it",
+ "wall_s": 1.68,
+ "min_quality": 0.0159687,
+ "stl_sha_unchanged": true,
+ "outputThreshold": 100
+}

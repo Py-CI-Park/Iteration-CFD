@@ -1,0 +1,11 @@
+{
+ "locations": 1568,
+ "end_reached": true,
+ "fatal": false,
+ "closed": true,
+ "attempt_dir": "sc-r6-a-attempt02-fuselage-bDwyZW",
+ "wall_s": 10.87,
+ "min_quality": 0.00580293,
+ "stl_sha_unchanged": true,
+ "outputThreshold": 100
+}

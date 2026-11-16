@@ -1,0 +1,75 @@
+{
+ "surfaceCheck": "OpenFOAM v1912, -checkSelfIntersection -outputThreshold 100",
+ "cases": [
+  {
+   "case": "plain_32x100",
+   "triangles": 6336,
+   "surfaceCheck_locations": 2497
+  },
+  {
+   "case": "large_128x300",
+   "triangles": 76544,
+   "surfaceCheck_locations": 11410
+  },
+  {
+   "case": "rotate_z_0.37rad",
+   "triangles": 6336,
+   "surfaceCheck_locations": 98
+  },
+  {
+   "case": "rotate_xyz",
+   "triangles": 6336,
+   "surfaceCheck_locations": 26
+  },
+  {
+   "case": "stagger_half_cell_alternate_rings",
+   "triangles": 6336,
+   "surfaceCheck_locations": 0
+  },
+  {
+   "case": "jitter_1e-05_xyz",
+   "triangles": 6336,
+   "surfaceCheck_locations": 0
+  },
+  {
+   "case": "jitter_1e-05_x",
+   "triangles": 6336,
+   "surfaceCheck_locations": 2346
+  },
+  {
+   "case": "jitter_1e-05_y",
+   "triangles": 6336,
+   "surfaceCheck_locations": 0
+  },
+  {
+   "case": "jitter_1e-05_z",
+   "triangles": 6336,
+   "surfaceCheck_locations": 0
+  },
+  {
+   "case": "jitter_0.001_xyz",
+   "triangles": 6336,
+   "surfaceCheck_locations": 0
+  },
+  {
+   "case": "jitter_0.001_x",
+   "triangles": 6336,
+   "surfaceCheck_locations": 2487
+  },
+  {
+   "case": "jitter_0.001_y",
+   "triangles": 6336,
+   "surfaceCheck_locations": 0
+  },
+  {
+   "case": "jitter_0.001_z",
+   "triangles": 6336,
+   "surfaceCheck_locations": 0
+  },
+  {
+   "case": "leaning_strip_32x100",
+   "triangles": 6336,
+   "surfaceCheck_locations": 0
+  }
+ ]
+}

@@ -1,0 +1,765 @@
+{
+ "attempt": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\candidates\\r6-a\\attempt02",
+ "parts": {
+  "fuselage": {
+   "name": "fuselage",
+   "triangles": 350048,
+   "rows": [
+    {
+     "metric": "G1 watertight, boundary/nonmanifold edges, components, Euler",
+     "value": [
+      0,
+      0,
+      1,
+      2
+     ],
+     "limit": "[0,0,1,2] (genus 0)",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G2 winding consistent / outward / volume m3",
+     "value": [
+      true,
+      true,
+      466.47506354840203
+     ],
+     "limit": "consistent, outward, V>0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 locator pairs",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 PyMeshLab selected faces",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 surfaceCheck locations (End reached, no FATAL)",
+     "value": 1568,
+     "limit": 0,
+     "pass": false,
+     "note": ""
+    },
+    {
+     "metric": "G4 station points: max distance ledger point -> nearest vertex (m)",
+     "value": 0.0,
+     "limit": 1e-05,
+     "pass": true,
+     "note": "23296 ledger points; vertices include every ledger point"
+    },
+    {
+     "metric": "G4 bounds vs R3 (m)",
+     "value": 0.0,
+     "limit": 1e-05,
+     "pass": true,
+     "note": "R6 lo [0.0, -1.975000023841858, 1.9500000476837158] hi [44.5099983215332, 1.975000023841858, 6.1323561668396]"
+    },
+    {
+     "metric": "G4 between-station sampled deviation vs R3 (m)",
+     "value": 0.02683185787179266,
+     "limit": 0.025,
+     "pass": false,
+     "note": "two-sided 20000-sample max (lower bound of Hausdorff)"
+    },
+    {
+     "metric": "G4 relative volume change vs R3 (x2 for mirrored)",
+     "value": 0.0003467794796401183,
+     "limit": 0.01,
+     "pass": true,
+     "note": "R6 466.475064 m3 vs R3 466.313356"
+    },
+    {
+     "metric": "G5 Q_OF min",
+     "value": 0.005802925994629998,
+     "limit": ">= 0.001",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 Q_OF p1",
+     "value": 0.06081431589867729,
+     "limit": ">= 0.01",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 min angle min (deg)",
+     "value": 1.7885609942721767,
+     "limit": ">= 1.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 min angle p5 (deg)",
+     "value": 9.110792220531328,
+     "limit": ">= 5.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 aspect max",
+     "value": 32.05490725362797,
+     "limit": "<= 100.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 aspect p99",
+     "value": 14.205711639215323,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent area ratio max",
+     "value": 12.94709683293341,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent area ratio p99",
+     "value": 3.970147945622446,
+     "limit": "<= 10.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent longest-edge ratio p99",
+     "value": 1.6152433852606494,
+     "limit": "<= 3.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 max vertex valence",
+     "value": 8,
+     "limit": "<= 8",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G6 non-feature dihedral max (deg)",
+     "value": 19.20939681590877,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": "feature edges excluded: 3691; edges >30 deg: 0"
+    },
+    {
+     "metric": "G6 non-feature dihedral p99 (deg)",
+     "value": 4.759572967698815,
+     "limit": "<= 10.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G6 station-kink ratio (declared feature rows excluded from A)",
+     "value": 0.3478102228979856,
+     "limit": "<= 1.5",
+     "pass": true,
+     "note": "raw 0.6852864016329565, A=75018 B=119874 meanA 0.4114873067069198 meanB 0.6004603414373818; declared kink stations []"
+    },
+    {
+     "metric": "G7 fresh-process .blend reopen equals exported STL",
+     "value": true,
+     "limit": "equal",
+     "pass": true,
+     "note": ""
+    }
+   ],
+   "pass_all": false,
+   "undefined_rows": [],
+   "kink_detail": {
+    "A_count": 75018,
+    "B_count": 119874,
+    "mean_A": 0.4114873067069198,
+    "mean_B": 0.6004603414373818,
+    "A_excl_count": 72773,
+    "mean_A_excl": 0.20884624519673628,
+    "A_feature_edges_removed": 2245,
+    "ratio_raw": 0.6852864016329565,
+    "ratio_without_kink_rows": 0.3478102228979856
+   }
+  },
+  "wing": {
+   "name": "wing",
+   "triangles": 385112,
+   "rows": [
+    {
+     "metric": "G1 watertight, boundary/nonmanifold edges, components, Euler",
+     "value": [
+      0,
+      0,
+      1,
+      2
+     ],
+     "limit": "[0,0,1,2] (genus 0)",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G2 winding consistent / outward / volume m3",
+     "value": [
+      true,
+      true,
+      42.63920146026933
+     ],
+     "limit": "consistent, outward, V>0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 locator pairs",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 PyMeshLab selected faces",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 surfaceCheck locations (End reached, no FATAL)",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G4 station points: max distance ledger point -> nearest vertex (m)",
+     "value": 0.0,
+     "limit": 1e-05,
+     "pass": true,
+     "note": "25472 ledger points; vertices include every ledger point"
+    },
+    {
+     "metric": "G4 bounds vs R3 (m)",
+     "value": 0.0,
+     "limit": 1e-05,
+     "pass": true,
+     "note": "R6 lo [16.027883529663086, -16.290000915527344, 2.600625991821289] hi [26.13878059387207, 16.290000915527344, 4.57029390335083]"
+    },
+    {
+     "metric": "G4 between-station sampled deviation vs R3 (m)",
+     "value": 0.0008318219820640161,
+     "limit": 0.01,
+     "pass": true,
+     "note": "two-sided 20000-sample max (lower bound of Hausdorff)"
+    },
+    {
+     "metric": "G4 relative volume change vs R3 (x2 for mirrored)",
+     "value": 3.275727848252055e-05,
+     "limit": 0.01,
+     "pass": true,
+     "note": "R6 42.639201 m3 vs R3 42.637805"
+    },
+    {
+     "metric": "G5 Q_OF min",
+     "value": 0.023986213226801247,
+     "limit": ">= 0.001",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 Q_OF p1",
+     "value": 0.11375277031477492,
+     "limit": ">= 0.01",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 min angle min (deg)",
+     "value": 2.100777188082337,
+     "limit": ">= 1.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 min angle p5 (deg)",
+     "value": 6.549428451778119,
+     "limit": ">= 5.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 aspect max",
+     "value": 27.66441362771285,
+     "limit": "<= 100.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 aspect p99",
+     "value": 12.991584513951194,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent area ratio max",
+     "value": 22.021195490160498,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent area ratio p99",
+     "value": 2.301643465710165,
+     "limit": "<= 10.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent longest-edge ratio p99",
+     "value": 1.0984277698036367,
+     "limit": "<= 3.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 max vertex valence",
+     "value": 8,
+     "limit": "<= 8",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G6 non-feature dihedral max (deg)",
+     "value": 7.342370733169614,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": "feature edges excluded: 2376; edges >30 deg: 0"
+    },
+    {
+     "metric": "G6 non-feature dihedral p99 (deg)",
+     "value": 6.40341616516871,
+     "limit": "<= 10.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G6 station-kink ratio (declared feature rows excluded from A)",
+     "value": "undefined",
+     "limit": "<= 1.5",
+     "pass": null,
+     "note": "UNDEFINED (mean B below 0.01 deg float32 floor; mean A excl. features 0.008047498200773832 deg); raw None, A=31668 B=163576 meanA 0.8507649915912119 meanB 0.008827290371888386; declared kink stations [0, 37, 41]"
+    },
+    {
+     "metric": "G7 fresh-process .blend reopen equals exported STL",
+     "value": true,
+     "limit": "equal",
+     "pass": true,
+     "note": ""
+    }
+   ],
+   "pass_all": true,
+   "undefined_rows": [
+    "G6 station-kink ratio (declared feature rows excluded from A)"
+   ],
+   "kink_detail": {
+    "A_count": 31668,
+    "B_count": 163576,
+    "mean_A": 0.8507649915912119,
+    "mean_B": 0.008827290371888386,
+    "A_excl_count": 30670,
+    "mean_A_excl": 0.008047498200773832,
+    "A_feature_edges_removed": 998,
+    "ratio_raw": null,
+    "ratio_without_kink_rows": null
+   }
+  },
+  "horizontal": {
+   "name": "horizontal",
+   "triangles": 145240,
+   "rows": [
+    {
+     "metric": "G1 watertight, boundary/nonmanifold edges, components, Euler",
+     "value": [
+      0,
+      0,
+      1,
+      2
+     ],
+     "limit": "[0,0,1,2] (genus 0)",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G2 winding consistent / outward / volume m3",
+     "value": [
+      true,
+      true,
+      5.847282590500132
+     ],
+     "limit": "consistent, outward, V>0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 locator pairs",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 PyMeshLab selected faces",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 surfaceCheck locations (End reached, no FATAL)",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G4 station points: max distance ledger point -> nearest vertex (m)",
+     "value": 0.0,
+     "limit": 1e-05,
+     "pass": true,
+     "note": "12768 ledger points; vertices include every ledger point"
+    },
+    {
+     "metric": "G4 bounds vs R3 (m)",
+     "value": 0.0,
+     "limit": 1e-05,
+     "pass": true,
+     "note": "R6 lo [38.35279083251953, -6.224999904632568, 4.404654026031494] hi [43.69976043701172, 6.224999904632568, 5.492030620574951]"
+    },
+    {
+     "metric": "G4 between-station sampled deviation vs R3 (m)",
+     "value": 0.0007971888514480242,
+     "limit": 0.01,
+     "pass": true,
+     "note": "two-sided 20000-sample max (lower bound of Hausdorff)"
+    },
+    {
+     "metric": "G4 relative volume change vs R3 (x2 for mirrored)",
+     "value": 7.855729355546721e-05,
+     "limit": 0.01,
+     "pass": true,
+     "note": "R6 5.847283 m3 vs R3 5.846823"
+    },
+    {
+     "metric": "G5 Q_OF min",
+     "value": 0.054147107312420374,
+     "limit": ">= 0.001",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 Q_OF p1",
+     "value": 0.13954523653315584,
+     "limit": ">= 0.01",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 min angle min (deg)",
+     "value": 2.399859977144466,
+     "limit": ">= 1.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 min angle p5 (deg)",
+     "value": 6.072709418359906,
+     "limit": ">= 5.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 aspect max",
+     "value": 24.30472703467384,
+     "limit": "<= 100.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 aspect p99",
+     "value": 10.66074098133984,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent area ratio max",
+     "value": 17.436658525170575,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent area ratio p99",
+     "value": 2.6585583232945016,
+     "limit": "<= 10.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent longest-edge ratio p99",
+     "value": 1.1674698037406195,
+     "limit": "<= 3.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 max vertex valence",
+     "value": 8,
+     "limit": "<= 8",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G6 non-feature dihedral max (deg)",
+     "value": 9.308741736549587,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": "feature edges excluded: 1010; edges >30 deg: 0"
+    },
+    {
+     "metric": "G6 non-feature dihedral p99 (deg)",
+     "value": 8.049739776000708,
+     "limit": "<= 10.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G6 station-kink ratio (declared feature rows excluded from A)",
+     "value": 1.284343291512345,
+     "limit": "<= 1.5",
+     "pass": true,
+     "note": "raw 84.61285988978582, A=16332 B=57672 meanA 1.3071590721948463 meanB 0.015448704533773146; declared kink stations [0]"
+    },
+    {
+     "metric": "G7 fresh-process .blend reopen equals exported STL",
+     "value": true,
+     "limit": "equal",
+     "pass": true,
+     "note": ""
+    }
+   ],
+   "pass_all": true,
+   "undefined_rows": [],
+   "kink_detail": {
+    "A_count": 16332,
+    "B_count": 57672,
+    "mean_A": 1.3071590721948463,
+    "mean_B": 0.015448704533773146,
+    "A_excl_count": 15992,
+    "mean_A_excl": 0.01984144003050789,
+    "A_feature_edges_removed": 340,
+    "ratio_raw": 84.61285988978582,
+    "ratio_without_kink_rows": 1.284343291512345
+   }
+  },
+  "vertical": {
+   "name": "vertical",
+   "triangles": 117912,
+   "rows": [
+    {
+     "metric": "G1 watertight, boundary/nonmanifold edges, components, Euler",
+     "value": [
+      0,
+      0,
+      1,
+      2
+     ],
+     "limit": "[0,0,1,2] (genus 0)",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G2 winding consistent / outward / volume m3",
+     "value": [
+      true,
+      true,
+      5.186563584244298
+     ],
+     "limit": "consistent, outward, V>0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 locator pairs",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 PyMeshLab selected faces",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G3 surfaceCheck locations (End reached, no FATAL)",
+     "value": 0,
+     "limit": 0,
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G4 station points: max distance ledger point -> nearest vertex (m)",
+     "value": 0.0,
+     "limit": 1e-05,
+     "pass": true,
+     "note": "7296 ledger points; vertices include every ledger point"
+    },
+    {
+     "metric": "G4 bounds vs R3 (m)",
+     "value": 0.0,
+     "limit": 1e-05,
+     "pass": true,
+     "note": "R6 lo [35.250892639160156, -0.23016923666000366, 5.5] hi [43.678985595703125, 0.23016923666000366, 11.960000038146973]"
+    },
+    {
+     "metric": "G4 between-station sampled deviation vs R3 (m)",
+     "value": 0.001190396727590298,
+     "limit": 0.01,
+     "pass": true,
+     "note": "two-sided 20000-sample max (lower bound of Hausdorff)"
+    },
+    {
+     "metric": "G4 relative volume change vs R3 (x2 for mirrored)",
+     "value": 6.56643400059772e-05,
+     "limit": 0.01,
+     "pass": true,
+     "note": "R6 5.186564 m3 vs R3 5.186223"
+    },
+    {
+     "metric": "G5 Q_OF min",
+     "value": 0.00466897797758405,
+     "limit": ">= 0.001",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 Q_OF p1",
+     "value": 0.019702598025153617,
+     "limit": ">= 0.01",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 min angle min (deg)",
+     "value": 1.185867251292229,
+     "limit": ">= 1.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 min angle p5 (deg)",
+     "value": 5.383140674253521,
+     "limit": ">= 5.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 aspect max",
+     "value": 50.23194448149804,
+     "limit": "<= 100.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 aspect p99",
+     "value": 16.684127653165422,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent area ratio max",
+     "value": 25.405389771783543,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent area ratio p99",
+     "value": 2.60551025748546,
+     "limit": "<= 10.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 adjacent longest-edge ratio p99",
+     "value": 1.334767099549891,
+     "limit": "<= 3.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G5 max vertex valence",
+     "value": 7,
+     "limit": "<= 8",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G6 non-feature dihedral max (deg)",
+     "value": 12.408862019747758,
+     "limit": "<= 30.0",
+     "pass": true,
+     "note": "feature edges excluded: 2009; edges >30 deg: 0"
+    },
+    {
+     "metric": "G6 non-feature dihedral p99 (deg)",
+     "value": 7.522375064876705,
+     "limit": "<= 10.0",
+     "pass": true,
+     "note": ""
+    },
+    {
+     "metric": "G6 station-kink ratio (declared feature rows excluded from A)",
+     "value": "undefined",
+     "limit": "<= 1.5",
+     "pass": null,
+     "note": "UNDEFINED (mean B below 0.01 deg float32 floor; mean A excl. features 0.0014147211618277522 deg); raw None, A=10068 B=50126 meanA 2.231464324895477 meanB 0.0016988313907696582; declared kink stations [7, 8, 9, 11, 12, 19, 20, 71, 72, 73, 74]"
+    },
+    {
+     "metric": "G7 fresh-process .blend reopen equals exported STL",
+     "value": true,
+     "limit": "equal",
+     "pass": true,
+     "note": ""
+    }
+   ],
+   "pass_all": true,
+   "undefined_rows": [
+    "G6 station-kink ratio (declared feature rows excluded from A)"
+   ],
+   "kink_detail": {
+    "A_count": 10068,
+    "B_count": 50126,
+    "mean_A": 2.231464324895477,
+    "mean_B": 0.0016988313907696582,
+    "A_excl_count": 8614,
+    "mean_A_excl": 0.0014147211618277522,
+    "A_feature_edges_removed": 1454,
+    "ratio_raw": null,
+    "ratio_without_kink_rows": null
+   }
+  }
+ }
+}

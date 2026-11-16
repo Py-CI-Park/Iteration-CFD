@@ -1,0 +1,11 @@
+{
+ "locations": 0,
+ "end_reached": true,
+ "fatal": false,
+ "closed": true,
+ "attempt_dir": "sc-r6-b-attempt02-vertical-WYkOxX",
+ "wall_s": 1.65,
+ "min_quality": 0.00466898,
+ "stl_sha_unchanged": true,
+ "outputThreshold": 100
+}

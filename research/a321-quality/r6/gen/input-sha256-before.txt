@@ -1,0 +1,9 @@
+405aec921c5f492a6841c89102cb0215141a920906baed94298c5c2d3fef15cb *research/a321-integration/evidence/reconstruction-r3.json
+9f5ec861c79a8303301b64ed48c2abac4890c0a5db272188e12001d1fdc56b80 *research/a321-integration/artifacts/shell-r3/fuselage.stl
+b23c8eab3652f581df5a4e058485a9c62085eab38b2c7cea90169e19a0ed3317 *research/a321-integration/artifacts/shell-r3/wing.stl
+94b34576f4f994acf27c7255d0c1af2029d6de9c4ebc66d2353fae9430240a3e *research/a321-integration/artifacts/shell-r3/horizontal.stl
+6cfc20121dbcc4772bb04b8cb10934494660e9803a003313844cda8ac022bc18 *research/a321-integration/artifacts/shell-r3/vertical.stl
+20914b475e8bf9bce8923df55780ce4a7d2b7173ed97f8f0b422b801f0b1bbb5 *research/a321-quality/r6/plans/r6-geometry-contract-02.json
+d945d55a8cd661b355cb994616e9dc16722b71922fba6e7aaf84c9e4253cda38 *research/a321-quality/r6/plans/r6-geometry-contract-02a.json
+2816f3e811339f3c17702b8d362211693d687735fd4ebe3f65ed941864a732cf *research/a321-quality/r6/reference/reference-dimensions.json
+ea92b154723f95ec2235186992c6279646fb4d37dfe633629c598ac69efbd024 *research/a321-quality/r6/plans/r6-geometry-contract-02b.json

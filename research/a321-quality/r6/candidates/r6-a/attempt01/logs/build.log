@@ -1,0 +1,5 @@
+fuselage vertices 123744 triangles 247484 max valence 8 volume 466.471715
+wing vertices 190362 triangles 380720 max valence 8 volume 42.639201
+horizontal vertices 71138 triangles 142272 max valence 8 volume 5.847283
+vertical vertices 58324 triangles 116644 max valence 7 volume 5.186563
+sha256 feature-manifest a51e1124ef353130b59c57281d3dc798178f3d08377f06983e939174e23094cb

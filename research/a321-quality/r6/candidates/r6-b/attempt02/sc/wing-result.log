@@ -1,0 +1,83 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:                                        |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : OPENFOAM=1912 patch=200626
+Arch   : "LSB;label=32;scalar=64"
+Exec   : surfaceCheck -checkSelfIntersection -outputThreshold 100 input.stl
+Date   : Nov 16 2026
+Time   : 10:31:50
+Host   : WORKSTATION
+PID    : 15324
+I/O    : uncollated
+Case   : /mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/r6/gen/attempts/sc-r6-b-attempt02-wing-R79yCZ
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Reading surface from "input.stl" ...
+
+Statistics:
+Triangles    : 385112 in 1 region(s)
+Vertices     : 192558
+Bounding Box : (16.0279 -16.29 2.60063) (26.1388 16.29 4.57029)
+
+Region	Size
+------	----
+patch0	385112
+
+
+Surface has no illegal triangles.
+
+Triangle quality (equilateral=1, collapsed=0):
+    0 .. 0.05  : 0.000150606
+    0.05 .. 0.1  : 0.00208251
+    0.1 .. 0.15  : 0.0154449
+    0.15 .. 0.2  : 0.0551528
+    0.2 .. 0.25  : 0.00329255
+    0.25 .. 0.3  : 0.00117888
+    0.3 .. 0.35  : 0.00896363
+    0.35 .. 0.4  : 0.0353508
+    0.4 .. 0.45  : 0.0756923
+    0.45 .. 0.5  : 0.201048
+    0.5 .. 0.55  : 0.123995
+    0.55 .. 0.6  : 0.0842768
+    0.6 .. 0.65  : 0.0576144
+    0.65 .. 0.7  : 0.0479341
+    0.7 .. 0.75  : 0.0503282
+    0.75 .. 0.8  : 0.0466254
+    0.8 .. 0.85  : 0.0332059
+    0.85 .. 0.9  : 0.0402221
+    0.9 .. 0.95  : 0.0651083
+    0.95 .. 1  : 0.0523328
+
+    min 0.0239862 for triangle 382484
+    max 0.998135 for triangle 382587
+
+Edges:
+    min 7.43866e-05 for edge 573860 points (24.4981 -16.29 4.48264)(24.498 -16.29 4.48264)
+    max 0.178183 for edge 286697 points (19.8305 0 3.33731)(19.6526 0 3.34811)
+
+Checking for points less than 1e-6 of bounding box ((10.1109 32.58 1.96967) metre) apart.
+Found 0 nearby points.
+
+Surface is closed. All edges connected to two faces.
+
+Number of unconnected parts : 1
+
+Number of zones (connected area with consistent normal) : 1
+
+Checking self-intersection.
+Surface is not self-intersecting
+
+
+End
+
+real 2.62
+user 1.90
+sys 0.25
