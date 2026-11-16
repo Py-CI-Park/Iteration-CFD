@@ -1,0 +1,64 @@
+{
+  "contract_id": "r7-geometry-contract-03",
+  "status": "PRE_CANDIDATE_METHOD_AND_GATE_LIST_NUMBERS_IN_03A",
+  "authored": "2026-11-16 KST, orchestrator (Opus), before any R7 fuselage surface exists",
+  "owner_decision": "2026-11-16 owner reply to the R6-c decision request: 'A 추천안으로 진행' (option A: rebuild the fuselage against the official drawing outlines in Blender with parametric sections, new contract 03), 'A321 형상만 진행' (A321 only, no A320 work), OpenVSP download and use approved.",
+  "nature_of_change": "REFERENCE CHANGE, not a relaxation. The fuselage fidelity reference changes from the R3 ledger fuselage to curves traced from the official drawing and normalised to its printed dimensions. R6-a/R6-b/R6-c verdicts stay as recorded (M3 FAIL). Every 02a quality threshold, the three-checker self-intersection 0 rule and the assembly gates are carried over unchanged.",
+  "why": {
+    "r6_c_evidence": "R6-c fuselage: surfaceCheck 48 (35 at axis-parallel ring edges on the exactly flat R3 belly clip whose flips fold the surface, 8 on the near-flat crown centreline, unexplained, 5 near the belly); dense exact G4 28.28 mm in x 0.25-0.498 m where R3 is one planar facet (limit 25 mm). Wing/horizontal/vertical pass every gate (dense 0.93/0.93/1.36 mm).",
+    "judgement": "the flat R3 belly/crown clips fix axis-parallel geometry that the method cannot remove without folding; this is a judgement, not a proof (the 8 crown records are unexplained)",
+    "not_used_as_evidence": "the drawing side-sheet belly height 1.80 m vs R3 1.95 m is ground-referenced, attitude/weight dependent and 1-2 % off in vertical scale; it is NOT evidence of an R3 shape defect and is not used"
+  },
+  "scope": {
+    "rebuilt": "fuselage only",
+    "reused_byte_identical": {
+      "source": "research/a321-quality/r6/candidates/r6-c/attempt01 (local, git-ignored STLs)",
+      "sha256": {
+        "wing.stl": "7577e3ad35c73ca6b86d2f8450e6fa56961fdb38542668333c62fea176f0c252",
+        "horizontal.stl": "21a5a1ee2e0a28c915c21f41d51dff20ae6e3d926d83479d7d6d1f359e4808a1",
+        "vertical.stl": "e6fe6f0f81e34b01c4e28052eda4ec8950ee1f2e57ad6d0d3712edb72a93c890"
+      },
+      "rule": "copied, never regenerated or edited; SHA re-checked in every R7 attempt receipt"
+    },
+    "not_in_scope": "A320/A320neo, sharklet, engines/pylons, gear, flap-track fairings, any mesher, solver, VSPAERO or GPU run"
+  },
+  "frame": "R3 frame kept: x = 0 at the nose tip, x = 44.51 m at the tail-cone tip, y = 0 symmetry plane, z as in R3. The constant-section crown and belly z of R3 (measured in 03a) anchor the vertical position of the traced side profile, so the reused wing/tail stay where they were relative to the fuselage frame.",
+  "method": {
+    "M1_trace": "Fuselage outline curves are taken from the vector paths of the drawing (page 74 top view: half-width w(x); page 73 side view: crown z_c(x) and belly z_b(x)) by the separate reference tool (PyMuPDF, AGPL, kept as a separate program). Raw traced polylines and page rasters stay OUTSIDE the repository; only fitted curve parameters, residual statistics and the trace SHA are committed.",
+    "M2_normalise": "Each view is scaled independently so that the printed dimensions are reproduced exactly: length 44.51 m (both views), maximum width 3.95 m (top), maximum height 4.14 m (side). The side profile is then shifted in z so its constant-section crown and belly match the R3 frame (03a gives the offset).",
+    "M3_fit": "w(x), z_c(x), z_b(x) are least-squares cubic B-splines (C2) with a knot rule fixed in 03a; where a fit overshoots the traced extreme it falls back to Fritsch-Carlson C1 on the same knots (02b rule). Nose and tail behave as smooth closures: w, z_c - z_b -> 0 only at the 1 mm closure-cap bands of 02b.",
+    "M4_section_family": "MODELLING ASSUMPTION (declared, not drawing data): every ring is two half-ellipses sharing the maximum-width line z_w(x): upper semi-axes (w/2, z_c - z_w), lower semi-axes (w/2, z_w - z_b), joined with vertical tangents at the sides (C1, curvature jump allowed and reported). z_w(x) = z_b(x) + rho * (z_c(x) - z_b(x)) with rho constant, equal to the R3 constant-section ratio measured in 03a. Consequences required by this contract: curvature at crown and belly is non-zero in every ring (no flat clip), and every ring has a vertex exactly at y = 0 on the crown and on the belly.",
+    "M5_tessellation": "Rings at x stations chosen by a curvature/spacing rule fixed in 03a (no ledger exists for the R7 fuselage); 02c leaning-strip tessellation; 02d axis-parallel edge flip with the QUAD-SCOPE fold reading (the flip is refused if any dihedral of the two new triangles or their four outer neighbour edges exceeds the old maximum of that set + 1 deg) and a quality margin (new min Q_OF >= old min Q_OF of the pair). No jitter, no vertex moved after placement, no boolean/remesh/decimate/cleanup.",
+    "M6_environment": "Blender 5.2.2 headless bpy as the scripted build/inspection/export environment (separate GPL adapter), same as R6."
+  },
+  "step_0_barrel_gate": "Before any R7 fuselage is generated: a synthetic barrel (constant two-half-ellipse section with the 03a rho, w = 3.95 m, height 4.14 m, length >= 10 m, same ring spacing rule, open ends closed with 02b caps) is tessellated with M5 and checked with all three checkers. If surfaceCheck is not 0, STOP and report; no R7 fuselage is generated under 03.",
+  "gates_per_fuselage": {
+    "G1_closure": "unchanged (watertight, 0 boundary/non-manifold edges, 1 component, Euler 2)",
+    "G2_orientation": "unchanged",
+    "G3_self_intersection": "unchanged: locator 0, PyMeshLab 0, surfaceCheck v1912 0 (gate)",
+    "G4R_fidelity_replaces_G4_for_fuselage": {
+      "printed_dimensions": "length 44.51 m, max width 3.95 m, max height 4.14 m reproduced within 1e-5 m (vertices placed at the extremes)",
+      "own_defining_curves": "dense two-sided deviation of the tessellated surface from the analytic M3+M4 surface <= limit fixed in 03a",
+      "drawing_outline_band": "top and side silhouettes of the candidate vs the normalised traced outlines <= per-view band fixed in 03a FROM THE MEASURED DRAWING CONSISTENCY (not a chosen number)",
+      "reported_not_gated": "dense deviation and volume difference vs the R3 fuselage"
+    },
+    "G5_quality": "every 02a threshold unchanged",
+    "G6_smoothness": "kink ratio with the R7 ring stations as the station set; 02a limit 1.5 and the 02d fallback unchanged",
+    "G7_native_binding": "unchanged"
+  },
+  "gates_assembly": {
+    "A1_junctions": "unchanged (wing 2, horizontal 2, vertical 1 closed loops)",
+    "A2_no_grazing": "unchanged (>= 5 deg)",
+    "A3_drawing_band": "unchanged (+-0.1 m printed-dimension band)",
+    "A4_visual": "unchanged (Blender orthographic + Ego Lite Studio)",
+    "A5_root_embedment": "NEW: every reused component's root portion lies inside the R7 fuselage by at least the minimum margin fixed in 03a (measured on the traced outline BEFORE the fuselage surface exists). The vertical-tail root on the tail-cone crown is the expected tightest location. If the traced outline violates the margin, report and stop; the reused components are not edited."
+  },
+  "numbers_locked_later": "r7-geometry-contract-03a: R3 constant-section crown/belly z and rho, knot rule, ring spacing rule, own-curve deviation limit, per-view outline band, A5 margin. 03a is committed after the trace and embedment measurements and before the barrel test and any R7 fuselage.",
+  "independent_comparison": "An OpenVSP 3.56.0 model of the same printed dimensions is built independently (its worker never sees the R7 fuselage) and checked with the same checkers; geometry only (dimensions, CompGeom watertight output, checker results). VSPAERO is an aero solve and is NOT run under this contract; it is a later owner decision.",
+  "references": [
+    "Airbus A321 Aircraft Characteristics - Airport and Maintenance Planning (FIGURE-2-2-0-991-012-A01, pages 73-74), own measurements, not OEM engineering data",
+    "Fritsch & Carlson 1980, SIAM J. Numer. Anal. 17(2) (monotone C1 fallback)",
+    "AIAA DPW-IV gridding guidelines (surface spacing growth < 1.25 used for ring spacing in 03a)",
+    "OpenVSP 3.56.0 (NOSA 1.3), CompGeom watertight output"
+  ]
+}
