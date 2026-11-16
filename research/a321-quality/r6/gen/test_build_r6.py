@@ -159,3 +159,22 @@ def test_cap_end_spacing_returns_one_height_per_boundary_edge():
     caps[0]["triangles"] = len(faces)
     h = build_r6.cap_end_spacing(ring, np.vstack([np.zeros((0, 3), dtype=int), faces]), caps, 0)
     assert len(h) == 1 and h[0].shape == (8,) and np.all(h[0] > 0)
+
+
+def test_point_triangle_distance_regions():
+    import r6_dev
+    a, b, c = (np.array([[0.0, 0, 0]]), np.array([[1.0, 0, 0]]), np.array([[0.0, 1, 0]]))
+    cases = {(0.2, 0.2, 1.0): 1.0, (-1.0, -1.0, 0.0): np.sqrt(2.0), (2.0, 0.0, 0.0): 1.0, (0.7, 0.7, 0.0): abs(0.7 + 0.7 - 1) / np.sqrt(2)}
+    for p, want in cases.items():
+        got = r6_dev.point_triangle_distance(np.array([p]), a, b, c)[0]
+        assert abs(got - want) < 1e-12, (p, got, want)
+
+
+def test_flip_removes_axis_parallel_diagonal_and_keeps_vertices():
+    import r6_flip
+    v = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.5, 1.0, 0.0]])  # edge 0-1 is x-parallel, 1-2 y-parallel
+    faces = np.array([[0, 1, 2], [0, 2, 3]])
+    limits = {"Q_MIN": 1e-3, "ANGLE_MIN_DEG": 1.0, "ASPECT_MAX": 100.0, "GRADE_AREA_MAX": 30.0, "VALENCE_MAX": 8}
+    new, rec = r6_flip.flip_axis_parallel(v, faces, set(), limits)
+    assert rec["axis_parallel_edges_found"] >= 1 and len(rec["flips"]) + len(rec["refusals"]) == rec["axis_parallel_edges_found"]
+    assert new.shape == faces.shape and set(new.ravel()) == set(faces.ravel())  # same vertices, connectivity only

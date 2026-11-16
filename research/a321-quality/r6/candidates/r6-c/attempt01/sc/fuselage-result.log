@@ -1,0 +1,185 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:                                        |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : OPENFOAM=1912 patch=200626
+Arch   : "LSB;label=32;scalar=64"
+Exec   : surfaceCheck -checkSelfIntersection -outputThreshold 100 input.stl
+Date   : Nov 16 2026
+Time   : 10:54:37
+Host   : WORKSTATION
+PID    : 15708
+I/O    : uncollated
+Case   : /mnt/d/Chanil_Park/Project/Programming/Iteration-CFD-a321-preflight/research/a321-quality/r6/gen/attempts/sc-r6-c-attempt01-fuselage-WKpwzi
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Reading surface from "input.stl" ...
+
+Statistics:
+Triangles    : 350048 in 1 region(s)
+Vertices     : 175026
+Bounding Box : (0 -1.975 1.95) (44.51 1.975 6.13236)
+
+Region	Size
+------	----
+patch0	350048
+
+
+Surface has no illegal triangles.
+
+Triangle quality (equilateral=1, collapsed=0):
+    0 .. 0.05  : 0.00786464
+    0.05 .. 0.1  : 0.0174833
+    0.1 .. 0.15  : 0.0119555
+    0.15 .. 0.2  : 0.0111328
+    0.2 .. 0.25  : 0.0515386
+    0.25 .. 0.3  : 0.0850169
+    0.3 .. 0.35  : 0.0351837
+    0.35 .. 0.4  : 0.0271106
+    0.4 .. 0.45  : 0.0308015
+    0.45 .. 0.5  : 0.0825315
+    0.5 .. 0.55  : 0.0608231
+    0.55 .. 0.6  : 0.0450253
+    0.6 .. 0.65  : 0.03129
+    0.65 .. 0.7  : 0.0447881
+    0.7 .. 0.75  : 0.117321
+    0.75 .. 0.8  : 0.161255
+    0.8 .. 0.85  : 0.0994035
+    0.85 .. 0.9  : 0.0545611
+    0.9 .. 0.95  : 0.0207372
+    0.95 .. 1  : 0.00417657
+
+    min 0.00132252 for triangle 597
+    max 0.999947 for triangle 55141
+
+Edges:
+    min 2.6518e-06 for edge 167 points (0 -0.00020831 3.45836)(0 -0.000208702 3.45835)
+    max 0.270959 for edge 111566 points (5.47126 -0.218903 2.01062)(5.22261 -0.326571 2.01006)
+
+Checking for points less than 1e-6 of bounding box ((44.51 3.95 4.18236) metre) apart.
+    small edge between points 6236 (0.000297865 -4.4432e-05 3.45466) and 6237 (0.000297865 -1.35387e-18 3.45466) distance:4.44345e-05
+    small edge between points 6038 (0.000273794 -4.11791e-05 3.45492) and 6039 (0.000273794 -1.32073e-18 3.45492) distance:4.11819e-05
+    small edge between points 5840 (0.000251437 -3.81578e-05 3.45517) and 5841 (0.000251437 -1.28995e-18 3.45517) distance:3.81608e-05
+    small edge between points 5642 (0.000230739 -3.53608e-05 3.4554) and 5643 (0.000230739 -1.26146e-18 3.4554) distance:3.5364e-05
+    small edge between points 5444 (0.000211506 -3.27617e-05 3.45561) and 5445 (0.000211506 -1.23498e-18 3.45561) distance:3.27651e-05
+    small edge between points 5246 (0.000193783 -3.03667e-05 3.4558) and 5247 (0.000193783 -1.21059e-18 3.4558) distance:3.03676e-05
+    small edge between points 5048 (0.000177289 -2.81377e-05 3.45599) and 5049 (0.000177289 -1.18788e-18 3.45598) distance:2.81418e-05
+    small edge between points 4454 (0.000134759 -2.23904e-05 3.45645) and 4455 (0.000134759 -1.12933e-18 3.45645) distance:2.23917e-05
+    close unconnected points 4456 (0.000134759 2.23904e-05 3.45645) and 4454 (0.000134759 -2.23904e-05 3.45645) distance:4.47808e-05
+    small edge between points 4256 (0.000122623 -2.07503e-05 3.45659) and 4257 (0.000122623 -1.11263e-18 3.45659) distance:2.07517e-05
+    close unconnected points 4258 (0.000122623 2.07503e-05 3.45659) and 4256 (0.000122623 -2.07503e-05 3.45659) distance:4.15007e-05
+    small edge between points 4059 (0.000111369 -1.92295e-05 3.45671) and 4060 (0.000111369 -1.09713e-18 3.45671) distance:1.9231e-05
+    close unconnected points 4061 (0.000111369 1.92295e-05 3.45671) and 4059 (0.000111369 -1.92295e-05 3.45671) distance:3.8459e-05
+    small edge between points 3665 (0.000100936 -1.78197e-05 3.45683) and 3862 (0.000100936 -1.08277e-18 3.45683) distance:1.78213e-05
+    close unconnected points 3666 (0.000100936 1.78197e-05 3.45683) and 3665 (0.000100936 -1.78197e-05 3.45683) distance:3.56394e-05
+    close unconnected points 3467 (9.12675e-05 -1.65131e-05 3.45693) and 3664 (9.12675e-05 -1.06946e-18 3.45693) distance:1.65131e-05
+    close unconnected points 3469 (9.12675e-05 1.65131e-05 3.45693) and 3467 (9.12675e-05 -1.65131e-05 3.45693) distance:3.30261e-05
+    close unconnected points 3465 (8.23056e-05 -1.5302e-05 3.45703) and 3466 (8.23056e-05 -1.05712e-18 3.45703) distance:1.5302e-05
+    close unconnected points 3468 (8.23056e-05 1.5302e-05 3.45703) and 3465 (8.23056e-05 -1.5302e-05 3.45703) distance:3.0604e-05
+    close unconnected points 3268 (7.39967e-05 1.41791e-05 3.45712) and 3266 (7.39967e-05 -1.41791e-05 3.45712) distance:2.83583e-05
+    small edge between points 3069 (6.62897e-05 -1.31377e-05 3.45721) and 3070 (6.62897e-05 -1.03508e-18 3.45721) distance:1.31398e-05
+    close unconnected points 3071 (6.62897e-05 1.31377e-05 3.45721) and 3069 (6.62897e-05 -1.31377e-05 3.45721) distance:2.62753e-05
+    small edge between points 2870 (5.91371e-05 -1.21711e-05 3.45729) and 2871 (5.91371e-05 -1.02523e-18 3.45729) distance:1.21734e-05
+    close unconnected points 2872 (5.91371e-05 1.21711e-05 3.45729) and 2870 (5.91371e-05 -1.21711e-05 3.45729) distance:2.43421e-05
+    close unconnected points 2869 (5.91371e-05 -2.43329e-05 3.45729) and 2872 (5.91371e-05 1.21711e-05 3.45729) distance:3.65071e-05
+    close unconnected points 2675 (5.2495e-05 1.12735e-05 3.45736) and 2673 (5.2495e-05 -1.12735e-05 3.45736) distance:2.2547e-05
+    close unconnected points 2672 (5.2495e-05 -2.25384e-05 3.45736) and 2675 (5.2495e-05 1.12735e-05 3.45736) distance:3.38127e-05
+    small edge between points 2475 (4.6402e-05 -1.04501e-05 3.45743) and 2476 (4.6402e-05 -1.0077e-18 3.45743) distance:1.04528e-05
+    close unconnected points 2477 (4.6402e-05 1.04501e-05 3.45743) and 2475 (4.6402e-05 -1.04501e-05 3.45743) distance:2.09002e-05
+    close unconnected points 2474 (4.6402e-05 -2.08922e-05 3.45743) and 2477 (4.6402e-05 1.04501e-05 3.45743) distance:3.13459e-05
+    close unconnected points 2478 (4.6402e-05 2.08922e-05 3.45743) and 2474 (4.6402e-05 -2.08922e-05 3.45743) distance:4.17844e-05
+    small edge between points 2081 (4.07552e-05 -9.68701e-06 3.45749) and 2279 (4.07552e-05 -9.99924e-19 3.45749) distance:9.68995e-06
+    close unconnected points 2082 (4.07552e-05 9.68701e-06 3.45749) and 2081 (4.07552e-05 -9.68701e-06 3.45749) distance:1.9374e-05
+    close unconnected points 2278 (4.07552e-05 -1.93666e-05 3.45749) and 2082 (4.07552e-05 9.68701e-06 3.45749) distance:2.90546e-05
+    close unconnected points 2280 (4.07552e-05 1.93666e-05 3.45749) and 2278 (4.07552e-05 -1.93666e-05 3.45749) distance:3.87333e-05
+    close unconnected points 1884 (3.55066e-05 -8.97773e-06 3.45755) and 2080 (3.55066e-05 -9.92699e-19 3.45755) distance:8.97773e-06
+    close unconnected points 1885 (3.55066e-05 8.97773e-06 3.45755) and 1884 (3.55066e-05 -8.97773e-06 3.45755) distance:1.79555e-05
+    close unconnected points 2079 (3.55066e-05 -1.79486e-05 3.45755) and 1885 (3.55066e-05 8.97773e-06 3.45755) distance:2.69274e-05
+    close unconnected points 2083 (3.55066e-05 1.79486e-05 3.45755) and 2079 (3.55066e-05 -1.79486e-05 3.45755) distance:3.58972e-05
+    close unconnected points 2078 (3.55066e-05 -2.69058e-05 3.45755) and 2083 (3.55066e-05 1.79486e-05 3.45755) distance:4.48602e-05
+    close unconnected points 1685 (3.06257e-05 -8.31813e-06 3.4576) and 1883 (3.06257e-05 -9.85979e-19 3.4576) distance:8.31813e-06
+    close unconnected points 1687 (3.06257e-05 8.31813e-06 3.4576) and 1685 (3.06257e-05 -8.31813e-06 3.4576) distance:1.66363e-05
+    close unconnected points 1882 (3.06257e-05 -1.66299e-05 3.4576) and 1687 (3.06257e-05 8.31813e-06 3.4576) distance:2.49526e-05
+    close unconnected points 1886 (3.06257e-05 1.66299e-05 3.4576) and 1882 (3.06257e-05 -1.66299e-05 3.4576) distance:3.32599e-05
+    close unconnected points 1881 (3.06257e-05 -2.49291e-05 3.4576) and 1886 (3.06257e-05 1.66299e-05 3.4576) distance:4.15617e-05
+    close unconnected points 1683 (2.60871e-05 -7.7048e-06 3.45765) and 1684 (2.60871e-05 -9.79731e-19 3.45765) distance:7.7048e-06
+    close unconnected points 1686 (2.60871e-05 7.7048e-06 3.45765) and 1683 (2.60871e-05 -7.7048e-06 3.45765) distance:1.54096e-05
+    close unconnected points 1682 (2.60871e-05 -1.54037e-05 3.45765) and 1686 (2.60871e-05 7.7048e-06 3.45765) distance:2.31098e-05
+    close unconnected points 1688 (2.60871e-05 1.54037e-05 3.45765) and 1682 (2.60871e-05 -1.54037e-05 3.45765) distance:3.08075e-05
+    close unconnected points 1681 (2.60871e-05 -2.30909e-05 3.45765) and 1688 (2.60871e-05 1.54037e-05 3.45765) distance:3.84976e-05
+    small edge between points 1485 (2.18702e-05 -7.13495e-06 3.4577) and 1486 (2.18702e-05 -9.73926e-19 3.4577) distance:7.13893e-06
+    close unconnected points 1487 (2.18702e-05 7.13495e-06 3.4577) and 1485 (2.18702e-05 -7.13495e-06 3.4577) distance:1.42699e-05
+    close unconnected points 1484 (2.18702e-05 -1.42645e-05 3.4577) and 1487 (2.18702e-05 7.13495e-06 3.4577) distance:2.14007e-05
+    close unconnected points 1488 (2.18702e-05 1.42645e-05 3.4577) and 1484 (2.18702e-05 -1.42645e-05 3.4577) distance:2.85289e-05
+    close unconnected points 1483 (2.18702e-05 -2.13831e-05 3.4577) and 1488 (2.18702e-05 1.42645e-05 3.4577) distance:3.56508e-05
+    close unconnected points 1489 (2.18702e-05 2.13831e-05 3.4577) and 1483 (2.18702e-05 -2.13831e-05 3.4577) distance:4.27662e-05
+    small edge between points 1092 (1.80109e-05 -6.61342e-06 3.45774) and 1288 (1.80109e-05 -9.68614e-19 3.45774) distance:6.61771e-06
+    close unconnected points 1093 (1.80109e-05 6.61342e-06 3.45774) and 1092 (1.80109e-05 -6.61342e-06 3.45774) distance:1.32268e-05
+    close unconnected points 1287 (1.80109e-05 -1.32218e-05 3.45774) and 1093 (1.80109e-05 6.61342e-06 3.45774) distance:1.98367e-05
+    close unconnected points 1289 (1.80109e-05 1.32218e-05 3.45774) and 1287 (1.80109e-05 -1.32218e-05 3.45774) distance:2.64436e-05
+    close unconnected points 1286 (1.80109e-05 -1.98201e-05 3.45774) and 1289 (1.80109e-05 1.32218e-05 3.45774) distance:3.30454e-05
+    close unconnected points 1290 (1.80109e-05 1.98201e-05 3.45774) and 1286 (1.80109e-05 -1.98201e-05 3.45774) distance:3.96402e-05
+    close unconnected points 894 (1.44275e-05 -6.12917e-06 3.45778) and 1091 (1.44275e-05 -9.6368e-19 3.45778) distance:6.12917e-06
+    close unconnected points 895 (1.44275e-05 6.12917e-06 3.45778) and 894 (1.44275e-05 -6.12917e-06 3.45778) distance:1.22583e-05
+    close unconnected points 1090 (1.44275e-05 -1.22537e-05 3.45778) and 895 (1.44275e-05 6.12917e-06 3.45778) distance:1.83844e-05
+    close unconnected points 1094 (1.44275e-05 1.22537e-05 3.45778) and 1090 (1.44275e-05 -1.22537e-05 3.45778) distance:2.45073e-05
+    close unconnected points 1089 (1.44275e-05 -1.83688e-05 3.45778) and 1094 (1.44275e-05 1.22537e-05 3.45778) distance:3.06262e-05
+    close unconnected points 1095 (1.44275e-05 1.83688e-05 3.45778) and 1089 (1.44275e-05 -1.83688e-05 3.45778) distance:3.67377e-05
+    close unconnected points 1088 (1.44275e-05 -2.447e-05 3.45778) and 1095 (1.44275e-05 1.83688e-05 3.45778) distance:4.28415e-05
+    close unconnected points 696 (1.10952e-05 -5.67886e-06 3.45781) and 893 (1.10952e-05 -9.59093e-19 3.45781) distance:5.67886e-06
+    close unconnected points 698 (1.10952e-05 5.67886e-06 3.45781) and 696 (1.10952e-05 -5.67886e-06 3.45781) distance:1.13577e-05
+    close unconnected points 892 (1.10952e-05 -1.13534e-05 3.45781) and 698 (1.10952e-05 5.67886e-06 3.45781) distance:1.70339e-05
+    close unconnected points 896 (1.10952e-05 1.13534e-05 3.45781) and 892 (1.10952e-05 -1.13534e-05 3.45781) distance:2.27068e-05
+    close unconnected points 891 (1.10952e-05 -1.70193e-05 3.45782) and 896 (1.10952e-05 1.13534e-05 3.45781) distance:2.83737e-05
+    close unconnected points 897 (1.10952e-05 1.70193e-05 3.45782) and 891 (1.10952e-05 -1.70193e-05 3.45782) distance:3.40386e-05
+    close unconnected points 890 (1.10952e-05 -2.26722e-05 3.45782) and 897 (1.10952e-05 1.70193e-05 3.45782) distance:3.96979e-05
+    close unconnected points 694 (8.00103e-06 -5.26072e-06 3.45785) and 695 (8.00103e-06 -9.54834e-19 3.45785) distance:5.26072e-06
+    close unconnected points 697 (8.00103e-06 5.26072e-06 3.45785) and 694 (8.00103e-06 -5.26072e-06 3.45785) distance:1.05214e-05
+    close unconnected points 496 (8.00103e-06 -1.05174e-05 3.45785) and 697 (8.00103e-06 5.26072e-06 3.45785) distance:1.57799e-05
+    close unconnected points 499 (8.00103e-06 1.05174e-05 3.45785) and 496 (8.00103e-06 -1.05174e-05 3.45785) distance:2.10349e-05
+    close unconnected points 693 (8.00103e-06 -1.57661e-05 3.45785) and 499 (8.00103e-06 1.05174e-05 3.45785) distance:2.62846e-05
+    close unconnected points 699 (8.00103e-06 1.57661e-05 3.45785) and 693 (8.00103e-06 -1.57661e-05 3.45785) distance:3.15323e-05
+    close unconnected points 700 (8.00103e-06 2.10028e-05 3.45785) and 692 (8.00103e-06 -2.10028e-05 3.45785) distance:4.20056e-05
+    small edge between points 200 (5.12952e-06 -4.87267e-06 3.45788) and 497 (5.12952e-06 -9.50881e-19 3.45788) distance:4.8785e-06
+    close unconnected points 203 (5.12952e-06 4.87267e-06 3.45788) and 200 (5.12952e-06 -4.87267e-06 3.45788) distance:9.74534e-06
+    close unconnected points 495 (5.12952e-06 -9.74163e-06 3.45788) and 203 (5.12952e-06 4.87267e-06 3.45788) distance:1.46143e-05
+    close unconnected points 498 (5.12952e-06 9.74163e-06 3.45788) and 495 (5.12952e-06 -9.74163e-06 3.45788) distance:1.94833e-05
+    close unconnected points 494 (5.12952e-06 -1.46032e-05 3.45788) and 498 (5.12952e-06 9.74163e-06 3.45788) distance:2.43495e-05
+    close unconnected points 500 (5.12952e-06 1.46032e-05 3.45788) and 494 (5.12952e-06 -1.46032e-05 3.45788) distance:2.92063e-05
+    close unconnected points 493 (5.12952e-06 -1.94536e-05 3.45788) and 500 (5.12952e-06 1.46032e-05 3.45788) distance:3.40576e-05
+    close unconnected points 501 (5.12952e-06 1.94536e-05 3.45788) and 493 (5.12952e-06 -1.94536e-05 3.45788) distance:3.89072e-05
+    close unconnected points 197 (2.45924e-06 -4.51182e-06 3.45791) and 199 (2.45924e-06 -9.47205e-19 3.45791) distance:4.51182e-06
+    close unconnected points 202 (2.45924e-06 4.51182e-06 3.45791) and 197 (2.45924e-06 -4.51182e-06 3.45791) distance:9.02364e-06
+    close unconnected points 195 (2.45924e-06 -9.0202e-06 3.45791) and 202 (2.45924e-06 4.51182e-06 3.45791) distance:1.35341e-05
+    close unconnected points 205 (2.45924e-06 9.0202e-06 3.45791) and 195 (2.45924e-06 -9.0202e-06 3.45791) distance:1.80404e-05
+    close unconnected points 193 (2.45924e-06 -1.35217e-05 3.45791) and 205 (2.45924e-06 9.0202e-06 3.45791) distance:2.25432e-05
+    close unconnected points 207 (2.45924e-06 1.35217e-05 3.45791) and 193 (2.45924e-06 -1.35217e-05 3.45791) distance:2.70434e-05
+    close unconnected points 191 (2.45924e-06 -1.80129e-05 3.45791) and 207 (2.45924e-06 1.35217e-05 3.45791) distance:3.15355e-05
+    close unconnected points 209 (2.45924e-06 1.80129e-05 3.45791) and 191 (2.45924e-06 -1.80129e-05 3.45791) distance:3.60258e-05
+    small edge between points 196 (0 -4.17948e-06 3.45794) and 198 (0 -9.43819e-19 3.45794) distance:4.17948e-06
+Suppressing further warning messages. Use -outputThreshold to increase number of warnings.
+Found 233 nearby points.
+
+Surface is closed. All edges connected to two faces.
+
+Number of unconnected parts : 1
+
+Number of zones (connected area with consistent normal) : 1
+
+Checking self-intersection.
+Surface is self-intersecting at 48 locations.
+Writing intersection points to "selfInterPoints.obj"
+
+
+End
+
+real 8.98
+user 8.12
+sys 0.29

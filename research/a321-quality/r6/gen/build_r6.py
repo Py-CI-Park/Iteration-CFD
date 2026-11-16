@@ -7,7 +7,7 @@
 # Provenance: see PROVENANCE.md. No GPL-licensed source was consulted.
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["numpy"]
+# dependencies = ["numpy", "scipy"]
 # ///
 """R6-a generator: station ledger -> four closed component surfaces (npz) + feature manifest.
 
@@ -28,7 +28,10 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import r6_dev
+import r6_flip
 import r6_grid
+import r6_io
 import r6_ledger
 import r6_tess
 
@@ -130,15 +133,39 @@ def cap_end_spacing(vertices: np.ndarray, faces: np.ndarray, caps: list, n_grid_
     return out
 
 
-def build_component(part: r6_ledger.Part, params: r6_grid.GridParams, tess: str = "quad") -> dict:
+def load_limits() -> dict:
+    """02a per-triangle limits used by the 02d flip rule."""
+    th = json.loads((Path(__file__).resolve().parents[1] / "plans/r6-geometry-contract-02a.json").read_text())["thresholds_per_component"]
+    return {k: th[k]["value"] for k in ("Q_MIN", "ANGLE_MIN_DEG", "ASPECT_MAX", "GRADE_AREA_MAX", "VALENCE_MAX")}
+
+
+def apply_flip(built: dict) -> dict:
+    """Contract 02d edge flip on a finished component; connectivity only (vertices untouched)."""
+    manifest = built["manifest"]
+    feature_edges = set()
+    for f in manifest["features"]:
+        ids = list(f["ids"]) + ([f["ids"][0]] if f["closed"] else [])
+        feature_edges |= {(min(a, b), max(a, b)) for a, b in zip(ids[:-1], ids[1:], strict=True)}
+    faces, record = r6_flip.flip_axis_parallel(built["vertices"], built["faces"], feature_edges, load_limits())
+    val = valence(faces, len(built["vertices"]))
+    manifest.update({"max_valence": int(val.max()), "valence_histogram": np.bincount(val).tolist(), "edge_flip": record})
+    return {**built, "faces": faces}
+
+
+def build_component(part: r6_ledger.Part, params: r6_grid.GridParams, tess: str = "quad", flip: bool = False, surface=None) -> dict:
+    built = _build_component(part, params, tess, surface)
+    return apply_flip(built) if flip else built
+
+
+def _build_component(part: r6_ledger.Part, params: r6_grid.GridParams, tess: str = "quad", surface=None) -> dict:
     if part.name != "fuselage" and params.end_h == (-1.0, -1.0):  # auto: measure the caps on a first pass, rebuild with matched ends
-        first = build_component(part, replace(params, end_h=(0.0, 0.0)), tess)
+        first = _build_component(part, replace(params, end_h=(0.0, 0.0)), tess)
         n_faces = first["manifest"]["grid_triangles"]
         h_j = cap_end_spacing(first["vertices"], first["faces"], first["manifest"]["caps"], n_faces)
         guess = [float(np.sqrt(h.min() * h.max())) for h in h_j]
         end_h, best = list(guess), None
         for attempt in range(6):  # strip height per column differs (line speed), so rescale the imposed spacing from the realised strips
-            built = build_component(part, replace(params, end_h=(end_h[0], end_h[1])), tess)
+            built = _build_component(part, replace(params, end_h=(end_h[0], end_h[1])), tess)
             pts = built["grid"].points3d()
             length = [np.linalg.norm(pts[1] - pts[0], axis=1), np.linalg.norm(pts[-2] - pts[-1], axis=1)]
             ratio = [0.5 * (L + np.roll(L, -1)) / h for L, h in zip(length, h_j, strict=True)]  # realised strip height / matching height, per edge
@@ -152,13 +179,13 @@ def build_component(part: r6_ledger.Part, params: r6_grid.GridParams, tess: str 
             end_h = [h * f for h, f in zip(end_h, factor, strict=True)]
         target = guess
         if params.end_bias != 1.0:  # deliberate shift of the balanced end spacing toward taller strips (angle gate vs area-ratio gate)
-            built = build_component(part, replace(params, end_h=(best[2][0] * params.end_bias, best[2][1] * params.end_bias)), tess)
+            built = _build_component(part, replace(params, end_h=(best[2][0] * params.end_bias, best[2][1] * params.end_bias)), tess)
             best = (best[0], built, [h * params.end_bias for h in best[2]], best[3])
         built = best[1]
         built["manifest"]["end_spacing_m"] = {"initial_first_last": target, "imposed_first_last": best[2], "column_spread_sqrt_max_over_min": best[3], "passes": attempt + 1,
                                               "rule": "start sqrt(min*max) of h_j=2*A_cap/edge; rescale so sqrt(max*min) of realised first-strip height / h_j over boundary edges is 1"}
         return built
-    grid = r6_grid.build_grid(part, params)
+    grid = r6_grid.build_grid(part, params, surface)
     points = grid.points3d()
     leaning: list[int] = []
     if tess == "lean":
@@ -209,6 +236,8 @@ def main() -> None:
     ap.add_argument("--grade", type=float, default=1.25)
     ap.add_argument("--h-max", type=float, default=0.125)
     ap.add_argument("--end-match", action="store_true", help="airfoil parts: measure the planar caps and set the end row spacing so strip and cap faces match")
+    ap.add_argument("--flip", action="store_true", help="02d: flip exactly axis-parallel edges to the other diagonal where the 02d rule allows")
+    ap.add_argument("--dev-limit", type=float, default=0.0, help="02d: fuselage lines use Fritsch-Carlson when C2 deviates more than this (m) from R3; 0 = off")
     ap.add_argument("--long-turn", type=float, default=0.0, help="max turning (deg) of a grid line between rows; 0 = off")
     ap.add_argument("--end-bias", type=float, default=1.0)
     ap.add_argument("--cap-density", type=float, default=1.0)
@@ -217,15 +246,21 @@ def main() -> None:
     args.out_dir.mkdir(parents=True, exist_ok=False)
     parts = r6_ledger.load_parts()
     base = r6_grid.GridParams(turn_limit_deg=args.turn_limit, grade=args.grade, h_max=args.h_max,
-                              hard_factor=args.hard_factor, insertion_cap=args.insertion_cap, cap_density=args.cap_density, end_bias=args.end_bias, long_turn_deg=args.long_turn)
+                              hard_factor=args.hard_factor, insertion_cap=args.insertion_cap, cap_density=args.cap_density, end_bias=args.end_bias, long_turn_deg=args.long_turn, dev_limit_m=args.dev_limit)
     contracts = ["r6-geometry-contract-02", "r6-geometry-contract-02a", "r6-geometry-contract-02b"]
-    manifest = {"contract": contracts + (["r6-geometry-contract-02c"] if args.tess == "lean" else []), "tessellation": args.tess,
+    contracts += ["r6-geometry-contract-02c"] if args.tess == "lean" else []
+    contracts += ["r6-geometry-contract-02d"] if (args.flip or args.dev_limit > 0) else []
+    r3_fuselage = None
+    if args.dev_limit > 0:
+        tri = r6_io.read_stl(r6_ledger.R3_DIR / "fuselage.stl").astype(np.float64)
+        r3_fuselage = r6_dev.TriangleSurface(tri)
+    manifest = {"contract": contracts, "tessellation": args.tess,
                 "ledger_sha256": r6_ledger.LEDGER_SHA, "parts": {}, "params": {}}
     for name in NAMES:
         params = replace(base, aspect_factor={"fuselage": args.aspect_fuselage, "vertical": args.aspect_vertical}.get(name, args.aspect_wing),
                          ref_percentile=args.percentile_fuselage if name == "fuselage" else args.percentile_wing,
                          end_h=(-1.0, -1.0) if args.end_match else (0.0, 0.0))
-        built = build_component(parts[name], params, args.tess)
+        built = build_component(parts[name], params, args.tess, flip=args.flip, surface=r3_fuselage if name == "fuselage" else None)
         np.savez_compressed(args.out_dir / f"{name}.npz", vertices=built["vertices"], faces=built["faces"])
         manifest["parts"][name] = built["manifest"]
         manifest["params"][name] = asdict(params)

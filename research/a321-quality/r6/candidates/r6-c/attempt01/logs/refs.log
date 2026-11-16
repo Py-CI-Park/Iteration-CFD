@@ -1,0 +1,20 @@
+{
+ "wing": {
+  "source": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\artifacts\\shell-r3\\wing.stl",
+  "source_sha256": "b23c8eab3652f581df5a4e058485a9c62085eab38b2c7cea90169e19a0ed3317",
+  "triangles_in": 25600,
+  "cap_triangles_removed": 128,
+  "triangles_out": 50944,
+  "sha256": "23ca85537dd357223caa0ec50668770b026ee04ae16f051dc3865f6e8b730c1d",
+  "r3_half_volume_m3": 21.31890238091243
+ },
+ "horizontal": {
+  "source": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-integration\\artifacts\\shell-r3\\horizontal.stl",
+  "source_sha256": "94b34576f4f994acf27c7255d0c1af2029d6de9c4ebc66d2353fae9430240a3e",
+  "triangles_in": 12864,
+  "cap_triangles_removed": 96,
+  "triangles_out": 25536,
+  "sha256": "e752ca99f02947963dc2f7425824d88b6cf59efacc75ee6918c7e4a670f2548d",
+  "r3_half_volume_m3": 2.9234116399436836
+ }
+}

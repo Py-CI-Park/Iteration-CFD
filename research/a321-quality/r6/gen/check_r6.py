@@ -84,7 +84,7 @@ def station_ratios(vertices, faces, edges, part, kink_stations, features=None):
     sa_excl = sa & ~np.isin(s0, list(kink_set)) & ~on_feature
     mean = lambda m: float(angles[m].mean()) if m.any() else None  # noqa: E731
     out = {"A_count": int(sa.sum()), "B_count": int(sb.sum()), "mean_A": mean(sa), "mean_B": mean(sb),
-           "A_excl_count": int(sa_excl.sum()), "mean_A_excl": mean(sa_excl), "A_feature_edges_removed": int((sa & on_feature).sum())}
+           "A_excl_count": int(sa_excl.sum()), "mean_A_excl": mean(sa_excl), "p99_A_excl": float(np.percentile(angles[sa_excl], 99)) if sa_excl.any() else None, "A_feature_edges_removed": int((sa & on_feature).sum())}
     for key, num in (("ratio_raw", out["mean_A"]), ("ratio_without_kink_rows", out["mean_A_excl"])):
         out[key] = num / out["mean_B"] if num is not None and out["mean_B"] and out["mean_B"] >= 0.01 else None
     return out
@@ -153,14 +153,27 @@ def evaluate_part(att: Path, name: str, parts, manifest) -> dict:
     kink_stations = [abs(kk["index"] - center) if center is not None else kk["index"] for kk in manifest["parts"][name]["kinks_detected"]]
     kr = station_ratios(vertices, faces, edges, part, kink_stations, json.loads((att / f"features-{name}.json").read_text()))
     ratio = kr["ratio_without_kink_rows"] if kr["ratio_without_kink_rows"] is not None else kr["ratio_raw"]
-    undefined = ratio is None  # B below the 0.01 deg float32 floor: ratio undefined, A distribution reported (not scored PASS or FAIL)
-    rows.append(row("G6 station-kink ratio (declared feature rows excluded from A)", "undefined" if undefined else ratio, f"<= {V['KINK_MAX']}",
-                    None if undefined else ratio <= V["KINK_MAX"],
-                    ("UNDEFINED (mean B below 0.01 deg float32 floor; mean A excl. features %s deg); " % kr["mean_A_excl"] if undefined else "") + f"raw {kr['ratio_raw']}, A={kr['A_count']} B={kr['B_count']} meanA {kr['mean_A']} meanB {kr['mean_B']}; declared kink stations {sorted(set(kink_stations))}"))
+    undefined = ratio is None  # B below the 0.01 deg float32 floor: ratio undefined
+    d02 = "r6-geometry-contract-02d" in manifest["contract"]
+    base = f"raw {kr['ratio_raw']}, A={kr['A_count']} B={kr['B_count']} meanA {kr['mean_A']} meanB {kr['mean_B']}; declared kink stations {sorted(set(kink_stations))}"
+    if undefined and d02:  # 02d fallback: station-edge turning mean <= 0.05 deg and p99 <= 0.5 deg
+        ma, pa = kr["mean_A_excl"], kr["p99_A_excl"]
+        ok = ma is not None and ma <= 0.05 and pa <= 0.5
+        rows.append(row("G6 station-edge turning (02d fallback: ratio denominator < 0.01 deg): mean / p99 (deg)", [ma, pa], "mean <= 0.05, p99 <= 0.5", ok,
+                        "ratio undefined, 02d fallback applied; " + base))
+    else:
+        rows.append(row("G6 station-kink ratio (declared feature rows excluded from A)", "undefined" if undefined else ratio, f"<= {V['KINK_MAX']}",
+                        None if undefined else ratio <= V["KINK_MAX"],
+                        ("UNDEFINED (mean B below 0.01 deg float32 floor; mean A excl. features %s deg); " % kr["mean_A_excl"] if undefined else "") + base))
+    lm = [x for x in manifest["parts"][name].get("line_interpolation_per_segment", []) if "fc_max_deviation_m" in x]
+    if lm:  # 02d dense line deviation (reported next to the sampled G4 row; the 25 mm limit applies to the Fritsch-Carlson result)
+        worst = max((x["fc_max_deviation_m"] if x["fc_max_deviation_m"] is not None else x["c2_max_deviation_m"]) for x in lm)
+        rows.append(row("G4 (02d) longitudinal-line max deviation vs R3, dense line sampling (m)", worst, LIM_FIDELITY[name], worst <= LIM_FIDELITY[name],
+                        "deterministic 8 samples per interval on every grid line; the random-surface G4 row above can miss tiny regions"))
     g7 = json.loads((att / "g7-readback.json").read_text())["objects"][name]
     ok7 = g7["modifiers"] == 0 and g7["world_equals_npz"] and g7["triangles_equal_npz"] and (g7["triangles_equal_stl_in_order"] or g7.get("triangles_equal_stl_as_set", False))
     rows.append(row("G7 fresh-process .blend reopen equals exported STL", ok7, "equal", ok7))
-    return {"name": name, "triangles": len(faces), "rows": rows, "pass_all": all(r["pass"] is not False for r in rows), "undefined_rows": [r["metric"] for r in rows if r["pass"] is None], "kink_detail": kr}
+    return {"name": name, "triangles": len(faces), "rows": rows, "pass_all": all(r["pass"] is not False for r in rows), "undefined_rows": [r["metric"] for r in rows if r["pass"] is None], "edge_flip": {k: v for k, v in manifest["parts"][name].get("edge_flip", {}).items() if k not in ("flips", "refusals", "limits_used")}, "kink_detail": kr}
 
 
 def main() -> None:

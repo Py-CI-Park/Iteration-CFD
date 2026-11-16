@@ -1,0 +1,67 @@
+{
+ "effectively_closed_after_endpoint_merge_1e-6": true,
+ "arc_endpoints": 0,
+ "open_arc_endpoint_gaps": [],
+ "edge_mesh_obj": "D:\\Chanil_Park\\Project\\Programming\\Iteration-CFD-a321-preflight\\research\\a321-quality\\r6\\gen\\attempts\\sbf-r6-c-attempt01-wing-JQT6FS\\constant\\extendedFeatureEdgeMesh\\fuselage_other_intersection_edgeMesh.obj",
+ "loops": [
+  {
+   "vertices": 822,
+   "edges": 822,
+   "closed": true,
+   "min_surface_angle_deg": 44.95227324142778,
+   "p5_angle_deg": 47.487821764228414,
+   "centroid_m": [
+    20.137862652068137,
+    -1.7661149148418522,
+    3.1406116423357635
+   ],
+   "bbox_min_m": [
+    16.9617,
+    -1.91096,
+    2.77736
+   ],
+   "bbox_max_m": [
+    23.2773,
+    -1.57674,
+    3.49982
+   ],
+   "worst_edge_midpoint_m": [
+    18.452350000000003,
+    -1.580755,
+    2.7815250000000002
+   ]
+  },
+  {
+   "vertices": 822,
+   "edges": 822,
+   "closed": true,
+   "min_surface_angle_deg": 45.089973005536514,
+   "p5_angle_deg": 47.54614855028421,
+   "centroid_m": [
+    20.138050121654516,
+    1.7661297688564512,
+    3.1406323357664223
+   ],
+   "bbox_min_m": [
+    16.9617,
+    1.57679,
+    2.77743
+   ],
+   "bbox_max_m": [
+    23.2773,
+    1.91094,
+    3.49979
+   ],
+   "worst_edge_midpoint_m": [
+    18.474800000000002,
+    1.5802900000000002,
+    2.78099
+   ]
+  }
+ ],
+ "loop_count": 2,
+ "all_closed": true,
+ "min_surface_angle_deg": 44.95227324142778,
+ "edges": 1644,
+ "points_unique": 1644
+}

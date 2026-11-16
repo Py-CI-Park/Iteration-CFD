@@ -1,0 +1,11 @@
+{
+ "locations": 0,
+ "end_reached": true,
+ "fatal": false,
+ "closed": true,
+ "attempt_dir": "sc-r6-c-attempt01-horizontal-5K5PBZ",
+ "wall_s": 1.98,
+ "min_quality": 0.00108254,
+ "stl_sha_unchanged": true,
+ "outputThreshold": 100
+}

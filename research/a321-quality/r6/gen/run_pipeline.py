@@ -82,7 +82,7 @@ def main() -> None:
     logs = att / "logs"
     logs.mkdir(parents=True, exist_ok=True) if att.exists() else att.mkdir(parents=True)
     logs.mkdir(exist_ok=True)
-    inputs = [LEDGER, *(R3 / f"{n}.stl" for n in NAMES), *(R6 / f"plans/r6-geometry-contract-02{s}.json" for s in ("", "a", "b", "c"))]
+    inputs = [LEDGER, *(R3 / f"{n}.stl" for n in NAMES), *(R6 / f"plans/r6-geometry-contract-02{s}.json" for s in ("", "a", "b", "c", "d"))]
     before = {str(p.relative_to(REPO)): sha(p) for p in inputs}
     if want("build"):
         cmd = [sys.executable, HERE / "build_r6.py", "--out-dir", att / "_build", "--aspect-fuselage", args.aspect_fuselage, "--aspect-wing", args.aspect_wing,

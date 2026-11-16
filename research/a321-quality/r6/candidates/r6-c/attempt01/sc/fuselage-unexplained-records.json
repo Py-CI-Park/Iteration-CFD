@@ -1,0 +1,244 @@
+{
+ "summary": {
+  "unexplained_records": 13,
+  "records_total": 48,
+  "with_near_parallel_edges_within_4ulp": 0,
+  "with_coplanar_horizontal_triangles": 0
+ },
+ "records": [
+  {
+   "point_m": [
+    4.40433,
+    -0.316506,
+    2.01469
+   ],
+   "nearest_vertex_distance_m": 3.3902591813343925e-06,
+   "valence": 5,
+   "edges_in_radius": 6,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 261.0,
+   "exactly_parallel_edges_in_radius": 0,
+   "distinct_z_values_in_radius": 5,
+   "z_range_ulps": 31526.0,
+   "distinct_y_values_in_radius": 6,
+   "triangles_in_radius": 13,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    5.65001,
+    0.0548746,
+    2.01091
+   ],
+   "nearest_vertex_distance_m": 5.468450331918815e-06,
+   "valence": 5,
+   "edges_in_radius": 18,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 0.0,
+   "exactly_parallel_edges_in_radius": 1,
+   "distinct_z_values_in_radius": 3,
+   "z_range_ulps": 762.0,
+   "distinct_y_values_in_radius": 13,
+   "triangles_in_radius": 27,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    5.65001,
+    -0.0548746,
+    2.01091
+   ],
+   "nearest_vertex_distance_m": 5.468450331918815e-06,
+   "valence": 5,
+   "edges_in_radius": 18,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 0.0,
+   "exactly_parallel_edges_in_radius": 1,
+   "distinct_z_values_in_radius": 3,
+   "z_range_ulps": 762.0,
+   "distinct_y_values_in_radius": 13,
+   "triangles_in_radius": 27,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    5.65001,
+    0.0548746,
+    2.01091
+   ],
+   "nearest_vertex_distance_m": 5.468450331918815e-06,
+   "valence": 5,
+   "edges_in_radius": 18,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 0.0,
+   "exactly_parallel_edges_in_radius": 1,
+   "distinct_z_values_in_radius": 3,
+   "z_range_ulps": 762.0,
+   "distinct_y_values_in_radius": 13,
+   "triangles_in_radius": 27,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    5.65001,
+    0.0548746,
+    2.01091
+   ],
+   "nearest_vertex_distance_m": 5.468450331918815e-06,
+   "valence": 5,
+   "edges_in_radius": 18,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 0.0,
+   "exactly_parallel_edges_in_radius": 1,
+   "distinct_z_values_in_radius": 3,
+   "z_range_ulps": 762.0,
+   "distinct_y_values_in_radius": 13,
+   "triangles_in_radius": 27,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    6.04733,
+    0.000493253,
+    6.09
+   ],
+   "nearest_vertex_distance_m": 0.0008188724883289033,
+   "valence": 6,
+   "edges_in_radius": 44,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 376.0,
+   "exactly_parallel_edges_in_radius": 0,
+   "distinct_z_values_in_radius": 10,
+   "z_range_ulps": 3323.0,
+   "distinct_y_values_in_radius": 23,
+   "triangles_in_radius": 44,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    6.0847,
+    0.000167685,
+    6.09
+   ],
+   "nearest_vertex_distance_m": 0.0003093701215780633,
+   "valence": 6,
+   "edges_in_radius": 40,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 397.0,
+   "exactly_parallel_edges_in_radius": 0,
+   "distinct_z_values_in_radius": 9,
+   "z_range_ulps": 1696.0,
+   "distinct_y_values_in_radius": 21,
+   "triangles_in_radius": 38,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    9.83083,
+    0.0069452,
+    6.08994
+   ],
+   "nearest_vertex_distance_m": 0.02437693599279404,
+   "valence": 6,
+   "edges_in_radius": 12,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 462.0,
+   "exactly_parallel_edges_in_radius": 0,
+   "distinct_z_values_in_radius": 5,
+   "z_range_ulps": 1785.0,
+   "distinct_y_values_in_radius": 10,
+   "triangles_in_radius": 18,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    10.4077,
+    0.0120246,
+    6.0899
+   ],
+   "nearest_vertex_distance_m": 0.03844661397233552,
+   "valence": 8,
+   "edges_in_radius": 15,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 471.0,
+   "exactly_parallel_edges_in_radius": 0,
+   "distinct_z_values_in_radius": 6,
+   "z_range_ulps": 3937.0,
+   "distinct_y_values_in_radius": 10,
+   "triangles_in_radius": 30,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    20.9789,
+    0.00687295,
+    6.08994
+   ],
+   "nearest_vertex_distance_m": 0.014089662811251886,
+   "valence": 6,
+   "edges_in_radius": 30,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 450.0,
+   "exactly_parallel_edges_in_radius": 0,
+   "distinct_z_values_in_radius": 9,
+   "z_range_ulps": 3816.0,
+   "distinct_y_values_in_radius": 16,
+   "triangles_in_radius": 38,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    21.0751,
+    0.000985623,
+    6.08999
+   ],
+   "nearest_vertex_distance_m": 0.0013208353677944807,
+   "valence": 6,
+   "edges_in_radius": 80,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 453.0,
+   "exactly_parallel_edges_in_radius": 0,
+   "distinct_z_values_in_radius": 15,
+   "z_range_ulps": 1812.0,
+   "distinct_y_values_in_radius": 37,
+   "triangles_in_radius": 80,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    21.1336,
+    0.012691,
+    6.08989
+   ],
+   "nearest_vertex_distance_m": 0.012932203910536448,
+   "valence": 8,
+   "edges_in_radius": 167,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 298.0,
+   "exactly_parallel_edges_in_radius": 0,
+   "distinct_z_values_in_radius": 43,
+   "z_range_ulps": 3920.0,
+   "distinct_y_values_in_radius": 78,
+   "triangles_in_radius": 142,
+   "coplanar_horizontal_triangles_in_radius": 0
+  },
+  {
+   "point_m": [
+    27.3523,
+    0.0253974,
+    6.08979
+   ],
+   "nearest_vertex_distance_m": 1.6617296606376362e-05,
+   "valence": 6,
+   "edges_in_radius": 18,
+   "edges_with_two_minor_components_within_4_ulp_not_exact": 0,
+   "smallest_second_component_ulps": 437.0,
+   "exactly_parallel_edges_in_radius": 0,
+   "distinct_z_values_in_radius": 6,
+   "z_range_ulps": 3734.0,
+   "distinct_y_values_in_radius": 8,
+   "triangles_in_radius": 21,
+   "coplanar_horizontal_triangles_in_radius": 0
+  }
+ ]
+}

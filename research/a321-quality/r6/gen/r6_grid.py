@@ -38,6 +38,7 @@ class GridParams:
     samples_per_interval: int = 96
     closure_stations: int = 1  # fuselage: stations treated as closure band at each end
     cap_density: float = 1.0  # airfoil caps: interior rows per column = round(cap_density * thickness / local ring edge)
+    dev_limit_m: float = 0.0  # 02d: fuselage lines use FC when the C2 curve deviates more than this from the R3 surface (0 = off)
     long_turn_deg: float = 0.0  # max turning (deg) of any grid line between consecutive rows (0 = off): bounds the dihedral across ring edges
     end_bias: float = 1.0  # multiplier applied to the balanced end spacing after it is solved
     end_h: tuple = (0.0, 0.0)  # airfoil parts: grid-line spacing (m) imposed at the first/last capped end, then graded by `grade` (0 = off)
@@ -172,7 +173,22 @@ def row_positions(part: r6_ledger.Part, t_nodes: FloatArray, segments, n_col: in
     return np.asarray(rows)
 
 
-def build_grid(part: r6_ledger.Part, params: GridParams) -> Grid:
+def make_deviation(part: r6_ledger.Part, surface):
+    """deviation(tq, plane points) -> per-column max distance to `surface` (3D points rebuilt from the axis coordinate and plane coordinates)."""
+    ax = part.axis
+    a1, a2 = r6_sections._plane_axes(ax)
+
+    def deviation(tq: FloatArray, pts: FloatArray) -> FloatArray:
+        s, n = pts.shape[:2]
+        p3 = np.empty((s, n, 3))
+        p3[..., ax] = tq[:, None]
+        p3[..., a1], p3[..., a2] = pts[..., 0], pts[..., 1]
+        return surface.distance(p3.reshape(-1, 3)).reshape(s, n).max(axis=0)
+
+    return deviation
+
+
+def build_grid(part: r6_ledger.Part, params: GridParams, surface=None) -> Grid:
     """Full pipeline for one component's vertex grid."""
     t, rings = full_stations(part)
     kink_list = part_kinks(part, t, rings)
@@ -183,7 +199,7 @@ def build_grid(part: r6_ledger.Part, params: GridParams) -> Grid:
         c = params.closure_stations
         closure = [c, len(t) - 1 - c]
         kink_idx += closure
-    segments = r6_lines.build_segments(t, plane, kink_idx)
+    segments = r6_lines.build_segments(t, plane, kink_idx, deviation=make_deviation(part, surface) if surface is not None else None, dev_limit=params.dev_limit_m)
     n_col = plane.shape[1]
     rows = row_positions(part, t, segments, n_col, params)
     values = r6_lines.evaluate_lines(segments, rows, n_col, 2)
@@ -194,7 +210,10 @@ def build_grid(part: r6_ledger.Part, params: GridParams) -> Grid:
     records = {
         "ring_curve_kinds": {k: int(sum(1 for x in ring_kinds if x == k)) for k in sorted(set(ring_kinds))},
         "inserted_per_segment": inserted.tolist(),
-        "line_method": [{"stations": [int(sg.a), int(sg.b)], "fc_lines": int(sg.use_fc.sum()), "lines": int(len(sg.use_fc))}
+        "line_method": [{"stations": [int(sg.a), int(sg.b)], "fc_lines": int(sg.use_fc.sum()), "lines": int(len(sg.use_fc)),
+                         **({"fc_because_overshoot": int(sg.over.sum()), "fc_because_deviation_only": int((sg.use_fc & ~sg.over).sum()),
+                             "c2_max_deviation_m": float(sg.dev_c2.max()), "fc_max_deviation_m": float(np.nanmax(sg.dev_fc)) if np.isfinite(sg.dev_fc).any() else None,
+                             "c2_lines_max_deviation_m": float(sg.dev_c2[~sg.use_fc].max()) if (~sg.use_fc).any() else None} if sg.dev_c2 is not None else {})}
                         for sg in segments],
         "kinks": kink_list,
         "closure_station_indices": closure,

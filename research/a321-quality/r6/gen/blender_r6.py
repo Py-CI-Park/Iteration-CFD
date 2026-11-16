@@ -153,12 +153,15 @@ def setup_render(width: int) -> bpy.types.Object:
     scene.cycles.use_denoising = False
     scene.render.resolution_x, scene.render.resolution_y = width, int(width * 0.55)
     scene.render.image_settings.file_format = "PNG"
+    scene.view_settings.view_transform = "Standard"
+    scene.view_settings.exposure = -0.6
     world = bpy.data.worlds.new("w")
     world.use_nodes = True
     world.node_tree.nodes["Background"].inputs[0].default_value = (0.9, 0.92, 0.95, 1.0)
+    world.node_tree.nodes["Background"].inputs[1].default_value = 0.35  # ambient strength (was 1.0: washed-out images)
     scene.world = world
     sun = bpy.data.objects.new("sun", bpy.data.lights.new("sun", "SUN"))
-    sun.data.energy = 3.0
+    sun.data.energy = 2.2
     sun.rotation_euler = (math.radians(40), math.radians(20), math.radians(30))
     scene.collection.objects.link(sun)
     cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
